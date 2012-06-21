@@ -1,0 +1,403 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - main/php_network.h</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../index.html">directory</a> - <a href="index.html">main</a> - php_network.h (source / <a href="php_network.h.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">12</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">2</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Author: Stig Venaas &lt;venaas@uninett.no&gt;                              |
+<span class="lineNum">      16 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      17 </span>                :  */
+<span class="lineNum">      18 </span>                : 
+<span class="lineNum">      19 </span>                : /* $Id$ */
+<span class="lineNum">      20 </span>                : 
+<span class="lineNum">      21 </span>                : #ifndef _PHP_NETWORK_H
+<span class="lineNum">      22 </span>                : #define _PHP_NETWORK_H
+<span class="lineNum">      23 </span>                : 
+<span class="lineNum">      24 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">      25 </span>                : # include &quot;win32/inet.h&quot;
+<span class="lineNum">      26 </span>                : #else
+<span class="lineNum">      27 </span>                : # undef closesocket
+<span class="lineNum">      28 </span>                : # define closesocket close
+<span class="lineNum">      29 </span>                : #endif
+<span class="lineNum">      30 </span>                : 
+<span class="lineNum">      31 </span>                : #ifndef HAVE_SHUTDOWN
+<span class="lineNum">      32 </span>                : #undef shutdown
+<span class="lineNum">      33 </span>                : #define shutdown(s,n)   /* nothing */
+<span class="lineNum">      34 </span>                : #endif
+<span class="lineNum">      35 </span>                : 
+<span class="lineNum">      36 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">      37 </span>                : # ifdef EWOULDBLOCK
+<span class="lineNum">      38 </span>                : #  undef EWOULDBLOCK
+<span class="lineNum">      39 </span>                : # endif
+<span class="lineNum">      40 </span>                : # ifdef EINPROGRESS
+<span class="lineNum">      41 </span>                : #  undef EINPROGRESS
+<span class="lineNum">      42 </span>                : # endif
+<span class="lineNum">      43 </span>                : # define EWOULDBLOCK WSAEWOULDBLOCK
+<span class="lineNum">      44 </span>                : # define EINPROGRESS    WSAEWOULDBLOCK
+<span class="lineNum">      45 </span>                : # define fsync _commit
+<span class="lineNum">      46 </span>                : # define ftruncate(a, b) chsize(a, b)
+<span class="lineNum">      47 </span>                : #endif /* defined(PHP_WIN32) */
+<span class="lineNum">      48 </span>                : 
+<span class="lineNum">      49 </span>                : #ifndef EWOULDBLOCK
+<span class="lineNum">      50 </span>                : # define EWOULDBLOCK EAGAIN
+<span class="lineNum">      51 </span>                : #endif
+<span class="lineNum">      52 </span>                : 
+<span class="lineNum">      53 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">      54 </span>                : #define php_socket_errno() WSAGetLastError()
+<span class="lineNum">      55 </span>                : #else
+<span class="lineNum">      56 </span>                : #define php_socket_errno() errno
+<span class="lineNum">      57 </span>                : #endif
+<span class="lineNum">      58 </span>                : 
+<span class="lineNum">      59 </span>                : /* like strerror, but caller must efree the returned string,
+<span class="lineNum">      60 </span>                :  * unless buf is not NULL.
+<span class="lineNum">      61 </span>                :  * Also works sensibly for win32 */
+<span class="lineNum">      62 </span>                : BEGIN_EXTERN_C()
+<span class="lineNum">      63 </span>                : PHPAPI char *php_socket_strerror(long err, char *buf, size_t bufsize);
+<span class="lineNum">      64 </span>                : END_EXTERN_C()
+<span class="lineNum">      65 </span>                : 
+<span class="lineNum">      66 </span>                : #ifdef HAVE_NETINET_IN_H
+<span class="lineNum">      67 </span>                : # include &lt;netinet/in.h&gt;
+<span class="lineNum">      68 </span>                : #endif
+<span class="lineNum">      69 </span>                : 
+<span class="lineNum">      70 </span>                : #ifdef HAVE_SYS_SOCKET_H
+<span class="lineNum">      71 </span>                : #include &lt;sys/socket.h&gt;
+<span class="lineNum">      72 </span>                : #endif
+<span class="lineNum">      73 </span>                : 
+<span class="lineNum">      74 </span>                : /* These are here, rather than with the win32 counterparts above,
+<span class="lineNum">      75 </span>                :  * since &lt;sys/socket.h&gt; defines them. */
+<span class="lineNum">      76 </span>                : #ifndef SHUT_RD
+<span class="lineNum">      77 </span>                : # define SHUT_RD 0
+<span class="lineNum">      78 </span>                : # define SHUT_WR 1
+<span class="lineNum">      79 </span>                : # define SHUT_RDWR 2
+<span class="lineNum">      80 </span>                : #endif
+<span class="lineNum">      81 </span>                : 
+<span class="lineNum">      82 </span>                : #ifdef HAVE_SYS_TIME_H
+<span class="lineNum">      83 </span>                : #include &lt;sys/time.h&gt;
+<span class="lineNum">      84 </span>                : #endif
+<span class="lineNum">      85 </span>                : 
+<span class="lineNum">      86 </span>                : #ifdef HAVE_STDDEF_H
+<span class="lineNum">      87 </span>                : #include &lt;stddef.h&gt;
+<span class="lineNum">      88 </span>                : #endif
+<span class="lineNum">      89 </span>                : 
+<span class="lineNum">      90 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">      91 </span>                : typedef SOCKET php_socket_t;
+<span class="lineNum">      92 </span>                : #else
+<span class="lineNum">      93 </span>                : typedef int php_socket_t;
+<span class="lineNum">      94 </span>                : #endif
+<span class="lineNum">      95 </span>                : 
+<span class="lineNum">      96 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">      97 </span>                : # define SOCK_ERR INVALID_SOCKET
+<span class="lineNum">      98 </span>                : # define SOCK_CONN_ERR SOCKET_ERROR
+<span class="lineNum">      99 </span>                : # define SOCK_RECV_ERR SOCKET_ERROR
+<span class="lineNum">     100 </span>                : #else
+<span class="lineNum">     101 </span>                : # define SOCK_ERR -1
+<span class="lineNum">     102 </span>                : # define SOCK_CONN_ERR -1
+<span class="lineNum">     103 </span>                : # define SOCK_RECV_ERR -1
+<span class="lineNum">     104 </span>                : #endif
+<span class="lineNum">     105 </span>                : 
+<span class="lineNum">     106 </span>                : /* uncomment this to debug poll(2) emulation on systems that have poll(2) */
+<span class="lineNum">     107 </span>                : /* #define PHP_USE_POLL_2_EMULATION 1 */
+<span class="lineNum">     108 </span>                : 
+<span class="lineNum">     109 </span>                : #if defined(HAVE_SYS_POLL_H) &amp;&amp; defined(HAVE_POLL)
+<span class="lineNum">     110 </span>                : # include &lt;sys/poll.h&gt;
+<span class="lineNum">     111 </span>                : typedef struct pollfd php_pollfd;
+<span class="lineNum">     112 </span>                : #else
+<span class="lineNum">     113 </span>                : typedef struct _php_pollfd {
+<span class="lineNum">     114 </span>                :         php_socket_t fd;
+<span class="lineNum">     115 </span>                :         short events;
+<span class="lineNum">     116 </span>                :         short revents;
+<span class="lineNum">     117 </span>                : } php_pollfd;
+<span class="lineNum">     118 </span>                : 
+<span class="lineNum">     119 </span>                : PHPAPI int php_poll2(php_pollfd *ufds, unsigned int nfds, int timeout);
+<span class="lineNum">     120 </span>                : 
+<span class="lineNum">     121 </span>                : #ifndef POLLIN
+<span class="lineNum">     122 </span>                : # define POLLIN      0x0001    /* There is data to read */
+<span class="lineNum">     123 </span>                : # define POLLPRI     0x0002    /* There is urgent data to read */
+<span class="lineNum">     124 </span>                : # define POLLOUT     0x0004    /* Writing now will not block */
+<span class="lineNum">     125 </span>                : # define POLLERR     0x0008    /* Error condition */
+<span class="lineNum">     126 </span>                : # define POLLHUP     0x0010    /* Hung up */
+<span class="lineNum">     127 </span>                : # define POLLNVAL    0x0020    /* Invalid request: fd not open */
+<span class="lineNum">     128 </span>                : #endif
+<span class="lineNum">     129 </span>                : 
+<span class="lineNum">     130 </span>                : # ifndef PHP_USE_POLL_2_EMULATION
+<span class="lineNum">     131 </span>                : #  define PHP_USE_POLL_2_EMULATION 1
+<span class="lineNum">     132 </span>                : # endif
+<span class="lineNum">     133 </span>                : #endif
+<span class="lineNum">     134 </span>                : 
+<span class="lineNum">     135 </span>                : #define PHP_POLLREADABLE        (POLLIN|POLLERR|POLLHUP)
+<span class="lineNum">     136 </span>                : 
+<span class="lineNum">     137 </span>                : #ifndef PHP_USE_POLL_2_EMULATION
+<span class="lineNum">     138 </span>                : # define php_poll2(ufds, nfds, timeout)         poll(ufds, nfds, timeout)
+<span class="lineNum">     139 </span>                : #endif
+<a name="140"><span class="lineNum">     140 </span>                : </a>
+<span class="lineNum">     141 </span>                : /* timeval-to-timeout (for poll(2)) */
+<span class="lineNum">     142 </span><span class="lineNoCov">              0 : static inline int php_tvtoto(struct timeval *timeouttv)</span>
+<span class="lineNum">     143 </span>                : {
+<span class="lineNum">     144 </span><span class="lineNoCov">              0 :         if (timeouttv) {</span>
+<span class="lineNum">     145 </span><span class="lineNoCov">              0 :                 return (timeouttv-&gt;tv_sec * 1000) + (timeouttv-&gt;tv_usec / 1000);</span>
+<span class="lineNum">     146 </span>                :         }
+<span class="lineNum">     147 </span><span class="lineNoCov">              0 :         return -1;</span>
+<span class="lineNum">     148 </span>                : }
+<span class="lineNum">     149 </span>                : 
+<span class="lineNum">     150 </span>                : /* hybrid select(2)/poll(2) for a single descriptor.
+<span class="lineNum">     151 </span>                :  * timeouttv follows same rules as select(2), but is reduced to millisecond accuracy.
+<a name="152"><span class="lineNum">     152 </span>                :  * Returns 0 on timeout, -1 on error, or the event mask (ala poll(2)).</a>
+<span class="lineNum">     153 </span>                :  */
+<span class="lineNum">     154 </span><span class="lineNoCov">              0 : static inline int php_pollfd_for(php_socket_t fd, int events, struct timeval *timeouttv)</span>
+<span class="lineNum">     155 </span>                : {
+<span class="lineNum">     156 </span>                :         php_pollfd p;
+<span class="lineNum">     157 </span>                :         int n;
+<span class="lineNum">     158 </span>                : 
+<span class="lineNum">     159 </span><span class="lineNoCov">              0 :         p.fd = fd;</span>
+<span class="lineNum">     160 </span><span class="lineNoCov">              0 :         p.events = events;</span>
+<span class="lineNum">     161 </span><span class="lineNoCov">              0 :         p.revents = 0;</span>
+<span class="lineNum">     162 </span>                : 
+<span class="lineNum">     163 </span><span class="lineNoCov">              0 :         n = php_poll2(&amp;p, 1, php_tvtoto(timeouttv));</span>
+<span class="lineNum">     164 </span>                : 
+<span class="lineNum">     165 </span><span class="lineNoCov">              0 :         if (n &gt; 0) {</span>
+<span class="lineNum">     166 </span><span class="lineNoCov">              0 :                 return p.revents;</span>
+<span class="lineNum">     167 </span>                :         }
+<span class="lineNum">     168 </span>                : 
+<span class="lineNum">     169 </span><span class="lineNoCov">              0 :         return n;</span>
+<span class="lineNum">     170 </span>                : }
+<span class="lineNum">     171 </span>                : 
+<span class="lineNum">     172 </span>                : static inline int php_pollfd_for_ms(php_socket_t fd, int events, int timeout)
+<span class="lineNum">     173 </span>                : {
+<span class="lineNum">     174 </span>                :         php_pollfd p;
+<span class="lineNum">     175 </span>                :         int n;
+<span class="lineNum">     176 </span>                : 
+<span class="lineNum">     177 </span>                :         p.fd = fd;
+<span class="lineNum">     178 </span>                :         p.events = events;
+<span class="lineNum">     179 </span>                :         p.revents = 0;
+<span class="lineNum">     180 </span>                : 
+<span class="lineNum">     181 </span>                :         n = php_poll2(&amp;p, 1, timeout);
+<span class="lineNum">     182 </span>                : 
+<span class="lineNum">     183 </span>                :         if (n &gt; 0) {
+<span class="lineNum">     184 </span>                :                 return p.revents;
+<span class="lineNum">     185 </span>                :         }
+<span class="lineNum">     186 </span>                : 
+<span class="lineNum">     187 </span>                :         return n;
+<span class="lineNum">     188 </span>                : }
+<span class="lineNum">     189 </span>                : 
+<span class="lineNum">     190 </span>                : /* emit warning and suggestion for unsafe select(2) usage */
+<span class="lineNum">     191 </span>                : PHPAPI void _php_emit_fd_setsize_warning(int max_fd);
+<span class="lineNum">     192 </span>                : 
+<span class="lineNum">     193 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">     194 </span>                : /* it is safe to FD_SET too many fd's under win32; the macro will simply ignore
+<span class="lineNum">     195 </span>                :  * descriptors that go beyond the default FD_SETSIZE */
+<span class="lineNum">     196 </span>                : # define PHP_SAFE_FD_SET(fd, set)       FD_SET(fd, set)
+<span class="lineNum">     197 </span>                : # define PHP_SAFE_FD_CLR(fd, set)       FD_CLR(fd, set)
+<span class="lineNum">     198 </span>                : # define PHP_SAFE_FD_ISSET(fd, set)     FD_ISSET(fd, set)
+<span class="lineNum">     199 </span>                : # define PHP_SAFE_MAX_FD(m, n)          do { if (n + 1 &gt;= FD_SETSIZE) { _php_emit_fd_setsize_warning(n); }} while(0)
+<span class="lineNum">     200 </span>                : #else
+<span class="lineNum">     201 </span>                : # define PHP_SAFE_FD_SET(fd, set)       do { if (fd &lt; FD_SETSIZE) FD_SET(fd, set); } while(0)
+<span class="lineNum">     202 </span>                : # define PHP_SAFE_FD_CLR(fd, set)       do { if (fd &lt; FD_SETSIZE) FD_CLR(fd, set); } while(0)
+<span class="lineNum">     203 </span>                : # define PHP_SAFE_FD_ISSET(fd, set)     ((fd &lt; FD_SETSIZE) &amp;&amp; FD_ISSET(fd, set))
+<span class="lineNum">     204 </span>                : # define PHP_SAFE_MAX_FD(m, n)          do { if (m &gt;= FD_SETSIZE) { _php_emit_fd_setsize_warning(m); m = FD_SETSIZE - 1; }} while(0)
+<span class="lineNum">     205 </span>                : #endif
+<span class="lineNum">     206 </span>                : 
+<span class="lineNum">     207 </span>                : 
+<span class="lineNum">     208 </span>                : #define PHP_SOCK_CHUNK_SIZE     8192
+<span class="lineNum">     209 </span>                : 
+<span class="lineNum">     210 </span>                : #ifdef HAVE_SOCKADDR_STORAGE
+<span class="lineNum">     211 </span>                : typedef struct sockaddr_storage php_sockaddr_storage;
+<span class="lineNum">     212 </span>                : #else
+<span class="lineNum">     213 </span>                : typedef struct {
+<span class="lineNum">     214 </span>                : #ifdef HAVE_SOCKADDR_SA_LEN
+<span class="lineNum">     215 </span>                :                 unsigned char ss_len;
+<span class="lineNum">     216 </span>                :                 unsigned char ss_family;
+<span class="lineNum">     217 </span>                : #else
+<span class="lineNum">     218 </span>                :         unsigned short ss_family;
+<span class="lineNum">     219 </span>                : #endif
+<span class="lineNum">     220 </span>                :         char info[126];
+<span class="lineNum">     221 </span>                : } php_sockaddr_storage;
+<span class="lineNum">     222 </span>                : #endif
+<span class="lineNum">     223 </span>                : 
+<span class="lineNum">     224 </span>                : BEGIN_EXTERN_C()
+<span class="lineNum">     225 </span>                : PHPAPI int php_network_getaddresses(const char *host, int socktype, struct sockaddr ***sal, char **error_string TSRMLS_DC);
+<span class="lineNum">     226 </span>                : PHPAPI void php_network_freeaddresses(struct sockaddr **sal);
+<span class="lineNum">     227 </span>                : 
+<span class="lineNum">     228 </span>                : PHPAPI php_socket_t php_network_connect_socket_to_host(const char *host, unsigned short port,
+<span class="lineNum">     229 </span>                :                 int socktype, int asynchronous, struct timeval *timeout, char **error_string,
+<span class="lineNum">     230 </span>                :                 int *error_code, char *bindto, unsigned short bindport 
+<span class="lineNum">     231 </span>                :                 TSRMLS_DC);
+<span class="lineNum">     232 </span>                : 
+<span class="lineNum">     233 </span>                : PHPAPI int php_network_connect_socket(php_socket_t sockfd,
+<span class="lineNum">     234 </span>                :                 const struct sockaddr *addr,
+<span class="lineNum">     235 </span>                :                 socklen_t addrlen,
+<span class="lineNum">     236 </span>                :                 int asynchronous,
+<span class="lineNum">     237 </span>                :                 struct timeval *timeout,
+<span class="lineNum">     238 </span>                :                 char **error_string,
+<span class="lineNum">     239 </span>                :                 int *error_code);
+<span class="lineNum">     240 </span>                : 
+<span class="lineNum">     241 </span>                : #define php_connect_nonb(sock, addr, addrlen, timeout) \
+<span class="lineNum">     242 </span>                :         php_network_connect_socket((sock), (addr), (addrlen), 0, (timeout), NULL, NULL)
+<span class="lineNum">     243 </span>                : 
+<span class="lineNum">     244 </span>                : PHPAPI php_socket_t php_network_bind_socket_to_local_addr(const char *host, unsigned port,
+<span class="lineNum">     245 </span>                :                 int socktype, char **error_string, int *error_code
+<span class="lineNum">     246 </span>                :                 TSRMLS_DC);
+<span class="lineNum">     247 </span>                : 
+<span class="lineNum">     248 </span>                : PHPAPI php_socket_t php_network_accept_incoming(php_socket_t srvsock,
+<span class="lineNum">     249 </span>                :                 char **textaddr, long *textaddrlen,
+<span class="lineNum">     250 </span>                :                 struct sockaddr **addr,
+<span class="lineNum">     251 </span>                :                 socklen_t *addrlen,
+<span class="lineNum">     252 </span>                :                 struct timeval *timeout,
+<span class="lineNum">     253 </span>                :                 char **error_string,
+<span class="lineNum">     254 </span>                :                 int *error_code
+<span class="lineNum">     255 </span>                :                 TSRMLS_DC);
+<span class="lineNum">     256 </span>                : 
+<span class="lineNum">     257 </span>                : PHPAPI int php_network_get_sock_name(php_socket_t sock, 
+<span class="lineNum">     258 </span>                :                 char **textaddr, long *textaddrlen,
+<span class="lineNum">     259 </span>                :                 struct sockaddr **addr,
+<span class="lineNum">     260 </span>                :                 socklen_t *addrlen
+<span class="lineNum">     261 </span>                :                 TSRMLS_DC);
+<span class="lineNum">     262 </span>                :         
+<span class="lineNum">     263 </span>                : PHPAPI int php_network_get_peer_name(php_socket_t sock, 
+<span class="lineNum">     264 </span>                :                 char **textaddr, long *textaddrlen,
+<span class="lineNum">     265 </span>                :                 struct sockaddr **addr,
+<span class="lineNum">     266 </span>                :                 socklen_t *addrlen
+<span class="lineNum">     267 </span>                :                 TSRMLS_DC);
+<span class="lineNum">     268 </span>                : 
+<span class="lineNum">     269 </span>                : PHPAPI void php_any_addr(int family, php_sockaddr_storage *addr, unsigned short port);
+<span class="lineNum">     270 </span>                : PHPAPI int php_sockaddr_size(php_sockaddr_storage *addr);
+<span class="lineNum">     271 </span>                : END_EXTERN_C()
+<span class="lineNum">     272 </span>                : 
+<span class="lineNum">     273 </span>                : struct _php_netstream_data_t    {
+<span class="lineNum">     274 </span>                :         php_socket_t socket;
+<span class="lineNum">     275 </span>                :         char is_blocked;
+<span class="lineNum">     276 </span>                :         struct timeval timeout;
+<span class="lineNum">     277 </span>                :         char timeout_event;
+<span class="lineNum">     278 </span>                :         size_t ownsize;
+<span class="lineNum">     279 </span>                : };
+<span class="lineNum">     280 </span>                : typedef struct _php_netstream_data_t php_netstream_data_t;
+<span class="lineNum">     281 </span>                : PHPAPI extern php_stream_ops php_stream_socket_ops;
+<span class="lineNum">     282 </span>                : extern php_stream_ops php_stream_generic_socket_ops;
+<span class="lineNum">     283 </span>                : #define PHP_STREAM_IS_SOCKET    (&amp;php_stream_socket_ops)
+<span class="lineNum">     284 </span>                : 
+<span class="lineNum">     285 </span>                : BEGIN_EXTERN_C()
+<span class="lineNum">     286 </span>                : PHPAPI php_stream *_php_stream_sock_open_from_socket(php_socket_t socket, const char *persistent_id STREAMS_DC TSRMLS_DC );
+<span class="lineNum">     287 </span>                : /* open a connection to a host using php_hostconnect and return a stream */
+<span class="lineNum">     288 </span>                : PHPAPI php_stream *_php_stream_sock_open_host(const char *host, unsigned short port,
+<span class="lineNum">     289 </span>                :                 int socktype, struct timeval *timeout, const char *persistent_id STREAMS_DC TSRMLS_DC);
+<span class="lineNum">     290 </span>                : PHPAPI void php_network_populate_name_from_sockaddr(
+<span class="lineNum">     291 </span>                :                 /* input address */
+<span class="lineNum">     292 </span>                :                 struct sockaddr *sa, socklen_t sl,
+<span class="lineNum">     293 </span>                :                 /* output readable address */
+<span class="lineNum">     294 </span>                :                 char **textaddr, long *textaddrlen,
+<span class="lineNum">     295 </span>                :                 /* output address */
+<span class="lineNum">     296 </span>                :                 struct sockaddr **addr,
+<span class="lineNum">     297 </span>                :                 socklen_t *addrlen
+<span class="lineNum">     298 </span>                :                 TSRMLS_DC);
+<span class="lineNum">     299 </span>                : 
+<span class="lineNum">     300 </span>                : PHPAPI int php_network_parse_network_address_with_port(const char *addr,
+<span class="lineNum">     301 </span>                :                 long addrlen, struct sockaddr *sa, socklen_t *sl TSRMLS_DC);
+<span class="lineNum">     302 </span>                : END_EXTERN_C()
+<span class="lineNum">     303 </span>                : 
+<span class="lineNum">     304 </span>                : #define php_stream_sock_open_from_socket(socket, persistent)    _php_stream_sock_open_from_socket((socket), (persistent) STREAMS_CC TSRMLS_CC)
+<span class="lineNum">     305 </span>                : #define php_stream_sock_open_host(host, port, socktype, timeout, persistent)    _php_stream_sock_open_host((host), (port), (socktype), (timeout), (persistent) STREAMS_CC TSRMLS_CC)
+<span class="lineNum">     306 </span>                : 
+<span class="lineNum">     307 </span>                : /* {{{ memory debug */
+<span class="lineNum">     308 </span>                : #define php_stream_sock_open_from_socket_rel(socket, persistent)        _php_stream_sock_open_from_socket((socket), (persistent) STREAMS_REL_CC TSRMLS_CC)
+<span class="lineNum">     309 </span>                : #define php_stream_sock_open_host_rel(host, port, socktype, timeout, persistent)        _php_stream_sock_open_host((host), (port), (socktype), (timeout), (persistent) STREAMS_REL_CC TSRMLS_CC)
+<span class="lineNum">     310 </span>                : #define php_stream_sock_open_unix_rel(path, pathlen, persistent, timeval)       _php_stream_sock_open_unix((path), (pathlen), (persistent), (timeval) STREAMS_REL_CC TSRMLS_CC)
+<span class="lineNum">     311 </span>                : 
+<span class="lineNum">     312 </span>                : /* }}} */
+<span class="lineNum">     313 </span>                : 
+<span class="lineNum">     314 </span>                : #endif /* _PHP_NETWORK_H */
+<span class="lineNum">     315 </span>                : 
+<span class="lineNum">     316 </span>                : /*
+<span class="lineNum">     317 </span>                :  * Local variables:
+<span class="lineNum">     318 </span>                :  * tab-width: 8
+<span class="lineNum">     319 </span>                :  * c-basic-offset: 8
+<span class="lineNum">     320 </span>                :  * End:
+<span class="lineNum">     321 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

@@ -1,0 +1,135 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - ext/standard/crc32.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../index.html">directory</a> - <a href="index.html">ext/standard</a> - crc32.c (source / <a href="crc32.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">8</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">1</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Author: Rasmus Lerdorf &lt;rasmus@php.net&gt;                              |
+<span class="lineNum">      16 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      17 </span>                : */
+<span class="lineNum">      18 </span>                : 
+<span class="lineNum">      19 </span>                : /* $Id$ */
+<span class="lineNum">      20 </span>                : 
+<span class="lineNum">      21 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">      22 </span>                : #include &quot;basic_functions.h&quot;
+<span class="lineNum">      23 </span>                : #include &quot;crc32.h&quot;
+<span class="lineNum">      24 </span>                : 
+<a name="25"><span class="lineNum">      25 </span>                : /* {{{ proto string crc32(string str)</a>
+<span class="lineNum">      26 </span>                :    Calculate the crc32 polynomial of a string */
+<span class="lineNum">      27 </span><span class="lineNoCov">              0 : PHP_NAMED_FUNCTION(php_if_crc32)</span>
+<span class="lineNum">      28 </span>                : {
+<span class="lineNum">      29 </span>                :         char *p;
+<span class="lineNum">      30 </span>                :         int len, nr;
+<span class="lineNum">      31 </span><span class="lineNoCov">              0 :         php_uint32 crcinit = 0;</span>
+<span class="lineNum">      32 </span>                :         register php_uint32 crc;
+<span class="lineNum">      33 </span>                : 
+<span class="lineNum">      34 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;s&quot;, &amp;p, &amp;nr) == FAILURE) {</span>
+<span class="lineNum">      35 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">      36 </span>                :         }
+<span class="lineNum">      37 </span><span class="lineNoCov">              0 :         crc = crcinit^0xFFFFFFFF;</span>
+<span class="lineNum">      38 </span>                : 
+<span class="lineNum">      39 </span><span class="lineNoCov">              0 :         for (len =+nr; nr--; ++p) {</span>
+<span class="lineNum">      40 </span><span class="lineNoCov">              0 :                 crc = ((crc &gt;&gt; 8) &amp; 0x00FFFFFF) ^ crc32tab[(crc ^ (*p)) &amp; 0xFF ];</span>
+<span class="lineNum">      41 </span>                :         }
+<span class="lineNum">      42 </span><span class="lineNoCov">              0 :         RETVAL_LONG(crc^0xFFFFFFFF);</span>
+<span class="lineNum">      43 </span>                : }
+<span class="lineNum">      44 </span>                : /* }}} */
+<span class="lineNum">      45 </span>                : 
+<span class="lineNum">      46 </span>                : /*
+<span class="lineNum">      47 </span>                :  * Local variables:
+<span class="lineNum">      48 </span>                :  * tab-width: 4
+<span class="lineNum">      49 </span>                :  * c-basic-offset: 4
+<span class="lineNum">      50 </span>                :  * End:
+<span class="lineNum">      51 </span>                :  * vim600: sw=4 ts=4 fdm=marker
+<span class="lineNum">      52 </span>                :  * vim&lt;600: sw=4 ts=4
+<span class="lineNum">      53 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

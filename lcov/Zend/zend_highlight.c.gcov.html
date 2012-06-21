@@ -1,0 +1,314 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - Zend/zend_highlight.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../index.html">directory</a> - <a href="index.html">Zend</a> - zend_highlight.c (source / <a href="zend_highlight.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">97</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">4</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | Zend Engine                                                          |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1998-2012 Zend Technologies Ltd. (http://www.zend.com) |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 2.00 of the Zend license,     |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        | 
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.zend.com/license/2_00.txt.                                |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the Zend license and are unable to  |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@zend.com so we can mail you a copy immediately.              |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Authors: Andi Gutmans &lt;andi@zend.com&gt;                                |
+<span class="lineNum">      16 </span>                :    |          Zeev Suraski &lt;zeev@zend.com&gt;                                |
+<span class="lineNum">      17 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      18 </span>                : */
+<span class="lineNum">      19 </span>                : 
+<span class="lineNum">      20 </span>                : /* $Id$ */
+<span class="lineNum">      21 </span>                : 
+<span class="lineNum">      22 </span>                : #include &quot;zend.h&quot;
+<span class="lineNum">      23 </span>                : #include &lt;zend_language_parser.h&gt;
+<span class="lineNum">      24 </span>                : #include &quot;zend_compile.h&quot;
+<span class="lineNum">      25 </span>                : #include &quot;zend_highlight.h&quot;
+<span class="lineNum">      26 </span>                : #include &quot;zend_ptr_stack.h&quot;
+<a name="27"><span class="lineNum">      27 </span>                : #include &quot;zend_globals.h&quot;</a>
+<span class="lineNum">      28 </span>                : 
+<span class="lineNum">      29 </span><span class="lineNoCov">              0 : ZEND_API void zend_html_putc(char c)</span>
+<span class="lineNum">      30 </span>                : {
+<span class="lineNum">      31 </span><span class="lineNoCov">              0 :         switch (c) {</span>
+<span class="lineNum">      32 </span>                :                 case '\n':
+<span class="lineNum">      33 </span><span class="lineNoCov">              0 :                         ZEND_PUTS(&quot;&lt;br /&gt;&quot;);</span>
+<span class="lineNum">      34 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">      35 </span>                :                 case '&lt;':
+<span class="lineNum">      36 </span><span class="lineNoCov">              0 :                         ZEND_PUTS(&quot;&amp;lt;&quot;);</span>
+<span class="lineNum">      37 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">      38 </span>                :                 case '&gt;':
+<span class="lineNum">      39 </span><span class="lineNoCov">              0 :                         ZEND_PUTS(&quot;&amp;gt;&quot;);</span>
+<span class="lineNum">      40 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">      41 </span>                :                 case '&amp;':
+<span class="lineNum">      42 </span><span class="lineNoCov">              0 :                         ZEND_PUTS(&quot;&amp;amp;&quot;);</span>
+<span class="lineNum">      43 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">      44 </span>                :                 case ' ':
+<span class="lineNum">      45 </span><span class="lineNoCov">              0 :                         ZEND_PUTS(&quot;&amp;nbsp;&quot;);</span>
+<span class="lineNum">      46 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">      47 </span>                :                 case '\t':
+<span class="lineNum">      48 </span><span class="lineNoCov">              0 :                         ZEND_PUTS(&quot;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&quot;);</span>
+<span class="lineNum">      49 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">      50 </span>                :                 default:
+<span class="lineNum">      51 </span><span class="lineNoCov">              0 :                         ZEND_PUTC(c);</span>
+<span class="lineNum">      52 </span>                :                         break;
+<span class="lineNum">      53 </span>                :         }
+<span class="lineNum">      54 </span><span class="lineNoCov">              0 : }</span>
+<a name="55"><span class="lineNum">      55 </span>                : </a>
+<span class="lineNum">      56 </span>                : 
+<span class="lineNum">      57 </span><span class="lineNoCov">              0 : ZEND_API void zend_html_puts(const char *s, uint len TSRMLS_DC)</span>
+<span class="lineNum">      58 </span>                : {
+<span class="lineNum">      59 </span><span class="lineNoCov">              0 :         const unsigned char *ptr = (const unsigned char*)s, *end = ptr + len;</span>
+<span class="lineNum">      60 </span>                :         unsigned char *filtered;
+<span class="lineNum">      61 </span>                :         size_t filtered_len;
+<span class="lineNum">      62 </span>                : 
+<span class="lineNum">      63 </span><span class="lineNoCov">              0 :         if (LANG_SCNG(output_filter)) {</span>
+<span class="lineNum">      64 </span><span class="lineNoCov">              0 :                 LANG_SCNG(output_filter)(&amp;filtered, &amp;filtered_len, ptr, len TSRMLS_CC);</span>
+<span class="lineNum">      65 </span><span class="lineNoCov">              0 :                 ptr = filtered;</span>
+<span class="lineNum">      66 </span><span class="lineNoCov">              0 :                 end = filtered + filtered_len;</span>
+<span class="lineNum">      67 </span>                :         }
+<span class="lineNum">      68 </span>                : 
+<span class="lineNum">      69 </span><span class="lineNoCov">              0 :         while (ptr&lt;end) {</span>
+<span class="lineNum">      70 </span><span class="lineNoCov">              0 :                 if (*ptr==' ') {</span>
+<span class="lineNum">      71 </span>                :                         do {
+<span class="lineNum">      72 </span><span class="lineNoCov">              0 :                                 zend_html_putc(*ptr);</span>
+<span class="lineNum">      73 </span><span class="lineNoCov">              0 :                         } while ((++ptr &lt; end) &amp;&amp; (*ptr==' '));</span>
+<span class="lineNum">      74 </span>                :                 } else {
+<span class="lineNum">      75 </span><span class="lineNoCov">              0 :                         zend_html_putc(*ptr++);</span>
+<span class="lineNum">      76 </span>                :                 }
+<span class="lineNum">      77 </span>                :         }
+<span class="lineNum">      78 </span>                : 
+<span class="lineNum">      79 </span><span class="lineNoCov">              0 :         if (LANG_SCNG(output_filter)) {</span>
+<span class="lineNum">      80 </span><span class="lineNoCov">              0 :                 efree(filtered);</span>
+<span class="lineNum">      81 </span>                :         }
+<span class="lineNum">      82 </span><span class="lineNoCov">              0 : }</span>
+<a name="83"><span class="lineNum">      83 </span>                : </a>
+<span class="lineNum">      84 </span>                : 
+<span class="lineNum">      85 </span><span class="lineNoCov">              0 : ZEND_API void zend_highlight(zend_syntax_highlighter_ini *syntax_highlighter_ini TSRMLS_DC)</span>
+<span class="lineNum">      86 </span>                : {
+<span class="lineNum">      87 </span>                :         zval token;
+<span class="lineNum">      88 </span>                :         int token_type;
+<span class="lineNum">      89 </span><span class="lineNoCov">              0 :         char *last_color = syntax_highlighter_ini-&gt;highlight_html;</span>
+<span class="lineNum">      90 </span>                :         char *next_color;
+<span class="lineNum">      91 </span>                : 
+<span class="lineNum">      92 </span><span class="lineNoCov">              0 :         zend_printf(&quot;&lt;code&gt;&quot;);</span>
+<span class="lineNum">      93 </span><span class="lineNoCov">              0 :         zend_printf(&quot;&lt;span style=\&quot;color: %s\&quot;&gt;\n&quot;, last_color);</span>
+<span class="lineNum">      94 </span>                :         /* highlight stuff coming back from zendlex() */
+<span class="lineNum">      95 </span><span class="lineNoCov">              0 :         token.type = 0;</span>
+<span class="lineNum">      96 </span><span class="lineNoCov">              0 :         while ((token_type=lex_scan(&amp;token TSRMLS_CC))) {</span>
+<span class="lineNum">      97 </span><span class="lineNoCov">              0 :                 switch (token_type) {</span>
+<span class="lineNum">      98 </span>                :                         case T_INLINE_HTML:
+<span class="lineNum">      99 </span><span class="lineNoCov">              0 :                                 next_color = syntax_highlighter_ini-&gt;highlight_html;</span>
+<span class="lineNum">     100 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     101 </span>                :                         case T_COMMENT:
+<span class="lineNum">     102 </span>                :                         case T_DOC_COMMENT:
+<span class="lineNum">     103 </span><span class="lineNoCov">              0 :                                 next_color = syntax_highlighter_ini-&gt;highlight_comment;</span>
+<span class="lineNum">     104 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     105 </span>                :                         case T_OPEN_TAG:
+<span class="lineNum">     106 </span>                :                         case T_OPEN_TAG_WITH_ECHO:
+<span class="lineNum">     107 </span><span class="lineNoCov">              0 :                                 next_color = syntax_highlighter_ini-&gt;highlight_default;</span>
+<span class="lineNum">     108 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     109 </span>                :                         case T_CLOSE_TAG:
+<span class="lineNum">     110 </span><span class="lineNoCov">              0 :                                 next_color = syntax_highlighter_ini-&gt;highlight_default;</span>
+<span class="lineNum">     111 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     112 </span>                :                         case '&quot;':
+<span class="lineNum">     113 </span>                :                         case T_ENCAPSED_AND_WHITESPACE:
+<span class="lineNum">     114 </span>                :                         case T_CONSTANT_ENCAPSED_STRING:
+<span class="lineNum">     115 </span><span class="lineNoCov">              0 :                                 next_color = syntax_highlighter_ini-&gt;highlight_string;</span>
+<span class="lineNum">     116 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     117 </span>                :                         case T_WHITESPACE:
+<span class="lineNum">     118 </span><span class="lineNoCov">              0 :                                 zend_html_puts((char*)LANG_SCNG(yy_text), LANG_SCNG(yy_leng) TSRMLS_CC);  /* no color needed */</span>
+<span class="lineNum">     119 </span><span class="lineNoCov">              0 :                                 token.type = 0;</span>
+<span class="lineNum">     120 </span><span class="lineNoCov">              0 :                                 continue;</span>
+<span class="lineNum">     121 </span>                :                                 break;
+<span class="lineNum">     122 </span>                :                         default:
+<span class="lineNum">     123 </span><span class="lineNoCov">              0 :                                 if (token.type == 0) {</span>
+<span class="lineNum">     124 </span><span class="lineNoCov">              0 :                                         next_color = syntax_highlighter_ini-&gt;highlight_keyword;</span>
+<span class="lineNum">     125 </span>                :                                 } else {
+<span class="lineNum">     126 </span><span class="lineNoCov">              0 :                                         next_color = syntax_highlighter_ini-&gt;highlight_default;</span>
+<span class="lineNum">     127 </span>                :                                 }
+<span class="lineNum">     128 </span>                :                                 break;
+<span class="lineNum">     129 </span>                :                 }
+<span class="lineNum">     130 </span>                : 
+<span class="lineNum">     131 </span><span class="lineNoCov">              0 :                 if (last_color != next_color) {</span>
+<span class="lineNum">     132 </span><span class="lineNoCov">              0 :                         if (last_color != syntax_highlighter_ini-&gt;highlight_html) {</span>
+<span class="lineNum">     133 </span><span class="lineNoCov">              0 :                                 zend_printf(&quot;&lt;/span&gt;&quot;);</span>
+<span class="lineNum">     134 </span>                :                         }
+<span class="lineNum">     135 </span><span class="lineNoCov">              0 :                         last_color = next_color;</span>
+<span class="lineNum">     136 </span><span class="lineNoCov">              0 :                         if (last_color != syntax_highlighter_ini-&gt;highlight_html) {</span>
+<span class="lineNum">     137 </span><span class="lineNoCov">              0 :                                 zend_printf(&quot;&lt;span style=\&quot;color: %s\&quot;&gt;&quot;, last_color);</span>
+<span class="lineNum">     138 </span>                :                         }
+<span class="lineNum">     139 </span>                :                 }
+<span class="lineNum">     140 </span>                : 
+<span class="lineNum">     141 </span><span class="lineNoCov">              0 :                 zend_html_puts((char*)LANG_SCNG(yy_text), LANG_SCNG(yy_leng) TSRMLS_CC);</span>
+<span class="lineNum">     142 </span>                : 
+<span class="lineNum">     143 </span><span class="lineNoCov">              0 :                 if (token.type == IS_STRING) {</span>
+<span class="lineNum">     144 </span><span class="lineNoCov">              0 :                         switch (token_type) {</span>
+<span class="lineNum">     145 </span>                :                                 case T_OPEN_TAG:
+<span class="lineNum">     146 </span>                :                                 case T_OPEN_TAG_WITH_ECHO:
+<span class="lineNum">     147 </span>                :                                 case T_CLOSE_TAG:
+<span class="lineNum">     148 </span>                :                                 case T_WHITESPACE:
+<span class="lineNum">     149 </span>                :                                 case T_COMMENT:
+<span class="lineNum">     150 </span>                :                                 case T_DOC_COMMENT:
+<span class="lineNum">     151 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">     152 </span>                :                                 default:
+<span class="lineNum">     153 </span><span class="lineNoCov">              0 :                                         efree(token.value.str.val);</span>
+<span class="lineNum">     154 </span>                :                                         break;
+<span class="lineNum">     155 </span>                :                         }
+<span class="lineNum">     156 </span><span class="lineNoCov">              0 :                 } else if (token_type == T_END_HEREDOC) {</span>
+<span class="lineNum">     157 </span><span class="lineNoCov">              0 :                         efree(token.value.str.val);</span>
+<span class="lineNum">     158 </span>                :                 }
+<span class="lineNum">     159 </span><span class="lineNoCov">              0 :                 token.type = 0;</span>
+<span class="lineNum">     160 </span>                :         }
+<span class="lineNum">     161 </span>                : 
+<span class="lineNum">     162 </span><span class="lineNoCov">              0 :         if (last_color != syntax_highlighter_ini-&gt;highlight_html) {</span>
+<span class="lineNum">     163 </span><span class="lineNoCov">              0 :                 zend_printf(&quot;&lt;/span&gt;\n&quot;);</span>
+<span class="lineNum">     164 </span>                :         }
+<span class="lineNum">     165 </span><span class="lineNoCov">              0 :         zend_printf(&quot;&lt;/span&gt;\n&quot;);</span>
+<span class="lineNum">     166 </span><span class="lineNoCov">              0 :         zend_printf(&quot;&lt;/code&gt;&quot;);</span>
+<a name="167"><span class="lineNum">     167 </span><span class="lineNoCov">              0 : }</span></a>
+<span class="lineNum">     168 </span>                : 
+<span class="lineNum">     169 </span><span class="lineNoCov">              0 : ZEND_API void zend_strip(TSRMLS_D)</span>
+<span class="lineNum">     170 </span>                : {
+<span class="lineNum">     171 </span>                :         zval token;
+<span class="lineNum">     172 </span>                :         int token_type;
+<span class="lineNum">     173 </span><span class="lineNoCov">              0 :         int prev_space = 0;</span>
+<span class="lineNum">     174 </span>                : 
+<span class="lineNum">     175 </span><span class="lineNoCov">              0 :         token.type = 0;</span>
+<span class="lineNum">     176 </span><span class="lineNoCov">              0 :         while ((token_type=lex_scan(&amp;token TSRMLS_CC))) {</span>
+<span class="lineNum">     177 </span><span class="lineNoCov">              0 :                 switch (token_type) {</span>
+<span class="lineNum">     178 </span>                :                         case T_WHITESPACE:
+<span class="lineNum">     179 </span><span class="lineNoCov">              0 :                                 if (!prev_space) {</span>
+<span class="lineNum">     180 </span><span class="lineNoCov">              0 :                                         zend_write(&quot; &quot;, sizeof(&quot; &quot;) - 1);</span>
+<span class="lineNum">     181 </span><span class="lineNoCov">              0 :                                         prev_space = 1;</span>
+<span class="lineNum">     182 </span>                :                                 }
+<span class="lineNum">     183 </span>                :                                                 /* lack of break; is intentional */
+<span class="lineNum">     184 </span>                :                         case T_COMMENT:
+<span class="lineNum">     185 </span>                :                         case T_DOC_COMMENT:
+<span class="lineNum">     186 </span><span class="lineNoCov">              0 :                                 token.type = 0;</span>
+<span class="lineNum">     187 </span><span class="lineNoCov">              0 :                                 continue;</span>
+<span class="lineNum">     188 </span>                :                         
+<span class="lineNum">     189 </span>                :                         case T_END_HEREDOC:
+<span class="lineNum">     190 </span><span class="lineNoCov">              0 :                                 zend_write((char*)LANG_SCNG(yy_text), LANG_SCNG(yy_leng));</span>
+<span class="lineNum">     191 </span><span class="lineNoCov">              0 :                                 efree(token.value.str.val);</span>
+<span class="lineNum">     192 </span>                :                                 /* read the following character, either newline or ; */
+<span class="lineNum">     193 </span><span class="lineNoCov">              0 :                                 if (lex_scan(&amp;token TSRMLS_CC) != T_WHITESPACE) {</span>
+<span class="lineNum">     194 </span><span class="lineNoCov">              0 :                                         zend_write((char*)LANG_SCNG(yy_text), LANG_SCNG(yy_leng));</span>
+<span class="lineNum">     195 </span>                :                                 }
+<span class="lineNum">     196 </span><span class="lineNoCov">              0 :                                 zend_write(&quot;\n&quot;, sizeof(&quot;\n&quot;) - 1);</span>
+<span class="lineNum">     197 </span><span class="lineNoCov">              0 :                                 prev_space = 1;</span>
+<span class="lineNum">     198 </span><span class="lineNoCov">              0 :                                 token.type = 0;</span>
+<span class="lineNum">     199 </span><span class="lineNoCov">              0 :                                 continue;</span>
+<span class="lineNum">     200 </span>                : 
+<span class="lineNum">     201 </span>                :                         default:
+<span class="lineNum">     202 </span><span class="lineNoCov">              0 :                                 zend_write((char*)LANG_SCNG(yy_text), LANG_SCNG(yy_leng));</span>
+<span class="lineNum">     203 </span>                :                                 break;
+<span class="lineNum">     204 </span>                :                 }
+<span class="lineNum">     205 </span>                : 
+<span class="lineNum">     206 </span><span class="lineNoCov">              0 :                 if (token.type == IS_STRING) {</span>
+<span class="lineNum">     207 </span><span class="lineNoCov">              0 :                         switch (token_type) {</span>
+<span class="lineNum">     208 </span>                :                                 case T_OPEN_TAG:
+<span class="lineNum">     209 </span>                :                                 case T_OPEN_TAG_WITH_ECHO:
+<span class="lineNum">     210 </span>                :                                 case T_CLOSE_TAG:
+<span class="lineNum">     211 </span>                :                                 case T_WHITESPACE:
+<span class="lineNum">     212 </span>                :                                 case T_COMMENT:
+<span class="lineNum">     213 </span>                :                                 case T_DOC_COMMENT:
+<span class="lineNum">     214 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">     215 </span>                : 
+<span class="lineNum">     216 </span>                :                                 default:
+<span class="lineNum">     217 </span><span class="lineNoCov">              0 :                                         efree(token.value.str.val);</span>
+<span class="lineNum">     218 </span>                :                                         break;
+<span class="lineNum">     219 </span>                :                         }
+<span class="lineNum">     220 </span>                :                 }
+<span class="lineNum">     221 </span><span class="lineNoCov">              0 :                 prev_space = token.type = 0;</span>
+<span class="lineNum">     222 </span>                :         }
+<span class="lineNum">     223 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     224 </span>                : 
+<span class="lineNum">     225 </span>                : /*
+<span class="lineNum">     226 </span>                :  * Local variables:
+<span class="lineNum">     227 </span>                :  * tab-width: 4
+<span class="lineNum">     228 </span>                :  * c-basic-offset: 4
+<span class="lineNum">     229 </span>                :  * indent-tabs-mode: t
+<span class="lineNum">     230 </span>                :  * End:
+<span class="lineNum">     231 </span>                :  */
+<span class="lineNum">     232 </span>                : 
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

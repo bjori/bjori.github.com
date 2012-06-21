@@ -1,0 +1,209 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - Zend/zend_qsort.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../index.html">directory</a> - <a href="index.html">Zend</a> - zend_qsort.c (source / <a href="zend_qsort.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">46</td>
+          <td class="headerCovTableEntry">43</td>
+          <td class="headerCovTableEntryHi">93.5 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">2</td>
+          <td class="headerCovTableEntry">2</td>
+          <td class="headerCovTableEntryHi">100.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | Zend Engine                                                          |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1998-2012 Zend Technologies Ltd. (http://www.zend.com) |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 2.00 of the Zend license,     |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        | 
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.zend.com/license/2_00.txt.                                |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the Zend license and are unable to  |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@zend.com so we can mail you a copy immediately.              |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Authors: Sterling Hughes &lt;sterling@php.net&gt;                          |
+<span class="lineNum">      16 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      17 </span>                : */
+<span class="lineNum">      18 </span>                : 
+<span class="lineNum">      19 </span>                : /* $Id$ */
+<span class="lineNum">      20 </span>                : 
+<span class="lineNum">      21 </span>                : #include &quot;zend.h&quot;
+<span class="lineNum">      22 </span>                : 
+<span class="lineNum">      23 </span>                : #include &lt;limits.h&gt;
+<span class="lineNum">      24 </span>                : 
+<a name="25"><span class="lineNum">      25 </span>                : #define QSORT_STACK_SIZE (sizeof(size_t) * CHAR_BIT)</a>
+<span class="lineNum">      26 </span>                : 
+<span class="lineNum">      27 </span><span class="lineCov">            170 : static void _zend_qsort_swap(void *a, void *b, size_t siz)</span>
+<span class="lineNum">      28 </span>                : {
+<span class="lineNum">      29 </span>                :         register char  *tmp_a_char;
+<span class="lineNum">      30 </span>                :         register char  *tmp_b_char;
+<span class="lineNum">      31 </span>                :         register int   *tmp_a_int;
+<span class="lineNum">      32 </span>                :         register int   *tmp_b_int;
+<span class="lineNum">      33 </span>                :         register size_t i;
+<span class="lineNum">      34 </span>                :         int             t_i;
+<span class="lineNum">      35 </span>                :         char            t_c;
+<span class="lineNum">      36 </span>                : 
+<span class="lineNum">      37 </span><span class="lineCov">            170 :         tmp_a_int = (int *) a;</span>
+<span class="lineNum">      38 </span><span class="lineCov">            170 :         tmp_b_int = (int *) b;</span>
+<span class="lineNum">      39 </span>                : 
+<span class="lineNum">      40 </span><span class="lineCov">            680 :         for (i = sizeof(int); i &lt;= siz; i += sizeof(int)) {</span>
+<span class="lineNum">      41 </span><span class="lineCov">            510 :                 t_i = *tmp_a_int;</span>
+<span class="lineNum">      42 </span><span class="lineCov">            510 :                 *tmp_a_int++ = *tmp_b_int;</span>
+<span class="lineNum">      43 </span><span class="lineCov">            510 :                 *tmp_b_int++ = t_i;</span>
+<span class="lineNum">      44 </span>                :         }
+<span class="lineNum">      45 </span>                : 
+<span class="lineNum">      46 </span><span class="lineCov">            170 :         tmp_a_char = (char *) tmp_a_int;</span>
+<span class="lineNum">      47 </span><span class="lineCov">            170 :         tmp_b_char = (char *) tmp_b_int;</span>
+<span class="lineNum">      48 </span>                : 
+<span class="lineNum">      49 </span><span class="lineCov">            170 :         for (i = i - sizeof(int) + 1; i &lt;= siz; ++i) {</span>
+<span class="lineNum">      50 </span><span class="lineNoCov">              0 :                 t_c = *tmp_a_char;</span>
+<span class="lineNum">      51 </span><span class="lineNoCov">              0 :                 *tmp_a_char++ = *tmp_b_char;</span>
+<span class="lineNum">      52 </span><span class="lineNoCov">              0 :                 *tmp_b_char++ = t_c;</span>
+<span class="lineNum">      53 </span>                :         }
+<a name="54"><span class="lineNum">      54 </span><span class="lineCov">            170 : }</span></a>
+<span class="lineNum">      55 </span>                : 
+<span class="lineNum">      56 </span><span class="lineCov">              2 : ZEND_API void zend_qsort(void *base, size_t nmemb, size_t siz, compare_func_t compare TSRMLS_DC)</span>
+<span class="lineNum">      57 </span>                : {
+<span class="lineNum">      58 </span>                :         void           *begin_stack[QSORT_STACK_SIZE];
+<span class="lineNum">      59 </span>                :         void           *end_stack[QSORT_STACK_SIZE];
+<span class="lineNum">      60 </span>                :         register char  *begin;
+<span class="lineNum">      61 </span>                :         register char  *end;
+<span class="lineNum">      62 </span>                :         register char  *seg1;
+<span class="lineNum">      63 </span>                :         register char  *seg2;
+<span class="lineNum">      64 </span>                :         register char  *seg2p;
+<span class="lineNum">      65 </span>                :         register int    loop;
+<span class="lineNum">      66 </span>                :         uint            offset;
+<span class="lineNum">      67 </span>                : 
+<span class="lineNum">      68 </span><span class="lineCov">              2 :         begin_stack[0] = (char *) base;</span>
+<span class="lineNum">      69 </span><span class="lineCov">              2 :         end_stack[0]   = (char *) base + ((nmemb - 1) * siz);</span>
+<span class="lineNum">      70 </span>                : 
+<span class="lineNum">      71 </span><span class="lineCov">             40 :         for (loop = 0; loop &gt;= 0; --loop) {</span>
+<span class="lineNum">      72 </span><span class="lineCov">             38 :                 begin = begin_stack[loop];</span>
+<span class="lineNum">      73 </span><span class="lineCov">             38 :                 end   = end_stack[loop];</span>
+<span class="lineNum">      74 </span>                : 
+<span class="lineNum">      75 </span><span class="lineCov">            130 :                 while (begin &lt; end) {</span>
+<span class="lineNum">      76 </span><span class="lineCov">             54 :                         offset = (end - begin) &gt;&gt; 1;</span>
+<span class="lineNum">      77 </span><span class="lineCov">             54 :                         _zend_qsort_swap(begin, begin + (offset - (offset % siz)), siz);</span>
+<span class="lineNum">      78 </span>                : 
+<span class="lineNum">      79 </span><span class="lineCov">             54 :                         seg1 = begin + siz;</span>
+<span class="lineNum">      80 </span><span class="lineCov">             54 :                         seg2 = end;</span>
+<span class="lineNum">      81 </span>                : 
+<span class="lineNum">      82 </span>                :                         while (1) {
+<span class="lineNum">      83 </span><span class="lineCov">            394 :                                 for (; seg1 &lt; seg2 &amp;&amp; compare(begin, seg1 TSRMLS_CC) &gt; 0;</span>
+<span class="lineNum">      84 </span><span class="lineCov">            162 :                                      seg1 += siz);</span>
+<span class="lineNum">      85 </span>                : 
+<span class="lineNum">      86 </span><span class="lineCov">            324 :                                 for (; seg2 &gt;= seg1 &amp;&amp; compare(seg2, begin TSRMLS_CC) &gt; 0;</span>
+<span class="lineNum">      87 </span><span class="lineCov">             92 :                                      seg2 -= siz);</span>
+<span class="lineNum">      88 </span>                :                                 
+<span class="lineNum">      89 </span><span class="lineCov">            116 :                                 if (seg1 &gt;= seg2)</span>
+<span class="lineNum">      90 </span>                :                                         break;
+<span class="lineNum">      91 </span>                :                                 
+<span class="lineNum">      92 </span><span class="lineCov">             62 :                                 _zend_qsort_swap(seg1, seg2, siz);</span>
+<span class="lineNum">      93 </span>                : 
+<span class="lineNum">      94 </span><span class="lineCov">             62 :                                 seg1 += siz;</span>
+<span class="lineNum">      95 </span><span class="lineCov">             62 :                                 seg2 -= siz;</span>
+<span class="lineNum">      96 </span><span class="lineCov">             62 :                         }</span>
+<span class="lineNum">      97 </span>                : 
+<span class="lineNum">      98 </span><span class="lineCov">             54 :                         _zend_qsort_swap(begin, seg2, siz);</span>
+<span class="lineNum">      99 </span>                : 
+<span class="lineNum">     100 </span><span class="lineCov">             54 :                         seg2p = seg2;</span>
+<span class="lineNum">     101 </span>                :                         
+<span class="lineNum">     102 </span><span class="lineCov">             54 :                         if ((seg2p - begin) &lt;= (end - seg2p)) {</span>
+<span class="lineNum">     103 </span><span class="lineCov">             30 :                                 if ((seg2p + siz) &lt; end) {</span>
+<span class="lineNum">     104 </span><span class="lineCov">             14 :                                         begin_stack[loop] = seg2p + siz;</span>
+<span class="lineNum">     105 </span><span class="lineCov">             14 :                                         end_stack[loop++] = end;</span>
+<span class="lineNum">     106 </span>                :                                 }
+<span class="lineNum">     107 </span><span class="lineCov">             30 :                                 end = seg2p - siz;</span>
+<span class="lineNum">     108 </span>                :                         }
+<span class="lineNum">     109 </span>                :                         else {
+<span class="lineNum">     110 </span><span class="lineCov">             24 :                                 if ((seg2p - siz) &gt; begin) {</span>
+<span class="lineNum">     111 </span><span class="lineCov">             22 :                                         begin_stack[loop] = begin;</span>
+<span class="lineNum">     112 </span><span class="lineCov">             22 :                                         end_stack[loop++] = seg2p - siz;</span>
+<span class="lineNum">     113 </span>                :                                 }
+<span class="lineNum">     114 </span><span class="lineCov">             24 :                                 begin = seg2p + siz;</span>
+<span class="lineNum">     115 </span>                :                         }
+<span class="lineNum">     116 </span>                :                 }
+<span class="lineNum">     117 </span>                :         }
+<span class="lineNum">     118 </span><span class="lineCov">              2 : }</span>
+<span class="lineNum">     119 </span>                : 
+<span class="lineNum">     120 </span>                : /* 
+<span class="lineNum">     121 </span>                :  * Local Variables:
+<span class="lineNum">     122 </span>                :  * c-basic-offset: 4 
+<span class="lineNum">     123 </span>                :  * tab-width: 4
+<span class="lineNum">     124 </span>                :  * End:
+<span class="lineNum">     125 </span>                :  * vim600: fdm=marker
+<span class="lineNum">     126 </span>                :  * vim: noet sw=4 ts=4
+<span class="lineNum">     127 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

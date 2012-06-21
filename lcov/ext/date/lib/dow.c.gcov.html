@@ -1,0 +1,246 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - ext/date/lib/dow.c</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../../index.html">directory</a> - <a href="index.html">ext/date/lib</a> - dow.c (source / <a href="dow.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">60</td>
+          <td class="headerCovTableEntry">35</td>
+          <td class="headerCovTableEntryHi">58.3 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">10</td>
+          <td class="headerCovTableEntry">5</td>
+          <td class="headerCovTableEntryLo">50.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2010 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Authors: Derick Rethans &lt;derick@derickrethans.nl&gt;                    |
+<span class="lineNum">      16 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      17 </span>                :  */
+<span class="lineNum">      18 </span>                : 
+<span class="lineNum">      19 </span>                : /* $Id$ */
+<span class="lineNum">      20 </span>                : 
+<span class="lineNum">      21 </span>                : #include &quot;timelib.h&quot;
+<span class="lineNum">      22 </span>                : 
+<span class="lineNum">      23 </span>                : static int m_table_common[13] = { -1, 0, 3, 3, 6, 1, 4, 6, 2, 5, 0, 3, 5 }; /* 1 = jan */
+<a name="24"><span class="lineNum">      24 </span>                : static int m_table_leap[13] =   { -1, 6, 2, 3, 6, 1, 4, 6, 2, 5, 0, 3, 5 }; /* 1 = jan */</a>
+<span class="lineNum">      25 </span>                : 
+<span class="lineNum">      26 </span><span class="lineCov">              2 : static timelib_sll century_value(timelib_sll j)</span>
+<span class="lineNum">      27 </span>                : {
+<span class="lineNum">      28 </span><span class="lineCov">              2 :         timelib_sll i = j - 17;</span>
+<span class="lineNum">      29 </span><span class="lineCov">              2 :         timelib_sll c = (4 - i * 2 + (i + 1) / 4) % 7;</span>
+<span class="lineNum">      30 </span>                : 
+<span class="lineNum">      31 </span><span class="lineCov">              2 :         return c &lt; 0 ? c + 7 : c;</span>
+<a name="32"><span class="lineNum">      32 </span>                : }</a>
+<span class="lineNum">      33 </span>                : 
+<span class="lineNum">      34 </span><span class="lineCov">              2 : static timelib_sll timelib_day_of_week_ex(timelib_sll y, timelib_sll m, timelib_sll d, int iso)</span>
+<span class="lineNum">      35 </span>                : {
+<span class="lineNum">      36 </span>                :         timelib_sll c1, y1, m1, dow;
+<span class="lineNum">      37 </span>                : 
+<span class="lineNum">      38 </span>                :         /* Only valid for Gregorian calendar, commented out as we don't handle
+<span class="lineNum">      39 </span>                :          * julian calendar. We just return the 'wrong' day of week to be
+<span class="lineNum">      40 </span>                :          * consistent.
+<span class="lineNum">      41 </span>                :         if (y &lt; 1753) {
+<span class="lineNum">      42 </span>                :                 return -1;
+<span class="lineNum">      43 </span>                :         } */
+<span class="lineNum">      44 </span><span class="lineCov">              2 :         c1 = century_value(y / 100);</span>
+<span class="lineNum">      45 </span><span class="lineCov">              2 :         y1 = (y % 100);</span>
+<span class="lineNum">      46 </span><span class="lineCov">              2 :         m1 = timelib_is_leap(y) ? m_table_leap[m] : m_table_common[m];</span>
+<span class="lineNum">      47 </span><span class="lineCov">              2 :         dow = (c1 + y1 + m1 + (y1 / 4) + d) % 7;</span>
+<span class="lineNum">      48 </span><span class="lineCov">              2 :         if (iso) {</span>
+<span class="lineNum">      49 </span><span class="lineNoCov">              0 :                 if (dow == 0) {</span>
+<span class="lineNum">      50 </span><span class="lineNoCov">              0 :                         dow = 7;</span>
+<span class="lineNum">      51 </span>                :                 }
+<span class="lineNum">      52 </span>                :         }
+<span class="lineNum">      53 </span><span class="lineCov">              2 :         return dow;</span>
+<a name="54"><span class="lineNum">      54 </span>                : }</a>
+<span class="lineNum">      55 </span>                : 
+<span class="lineNum">      56 </span><span class="lineCov">              2 : timelib_sll timelib_day_of_week(timelib_sll y, timelib_sll m, timelib_sll d)</span>
+<span class="lineNum">      57 </span>                : {
+<span class="lineNum">      58 </span><span class="lineCov">              2 :         return timelib_day_of_week_ex(y, m, d, 0);</span>
+<a name="59"><span class="lineNum">      59 </span>                : }</a>
+<span class="lineNum">      60 </span>                : 
+<span class="lineNum">      61 </span><span class="lineNoCov">              0 : timelib_sll timelib_iso_day_of_week(timelib_sll y, timelib_sll m, timelib_sll d)</span>
+<span class="lineNum">      62 </span>                : {
+<span class="lineNum">      63 </span><span class="lineNoCov">              0 :         return timelib_day_of_week_ex(y, m, d, 1);</span>
+<span class="lineNum">      64 </span>                : }
+<span class="lineNum">      65 </span>                : 
+<span class="lineNum">      66 </span>                :                                 /*     jan  feb  mar  apr  may  jun  jul  aug  sep  oct  nov  dec */
+<span class="lineNum">      67 </span>                : static int d_table_common[13]  = {  0,   0,  31,  59,  90, 120, 151, 181, 212, 243, 273, 304, 334 };
+<span class="lineNum">      68 </span>                : static int d_table_leap[13]    = {  0,   0,  31,  60,  91, 121, 152, 182, 213, 244, 274, 305, 335 };
+<span class="lineNum">      69 </span>                : static int ml_table_common[13] = {  0,  31,  28,  31,  30,  31,  30,  31,  31,  30,  31,  30,  31 };
+<a name="70"><span class="lineNum">      70 </span>                : static int ml_table_leap[13]   = {  0,  31,  29,  31,  30,  31,  30,  31,  31,  30,  31,  30,  31 };</a>
+<span class="lineNum">      71 </span>                : 
+<span class="lineNum">      72 </span><span class="lineCov">              1 : timelib_sll timelib_day_of_year(timelib_sll y, timelib_sll m, timelib_sll d)</span>
+<span class="lineNum">      73 </span>                : {
+<span class="lineNum">      74 </span><span class="lineCov">              1 :         return (timelib_is_leap(y) ? d_table_leap[m] : d_table_common[m]) + d - 1;</span>
+<a name="75"><span class="lineNum">      75 </span>                : }</a>
+<span class="lineNum">      76 </span>                : 
+<span class="lineNum">      77 </span><span class="lineNoCov">              0 : timelib_sll timelib_days_in_month(timelib_sll y, timelib_sll m)</span>
+<span class="lineNum">      78 </span>                : {
+<span class="lineNum">      79 </span><span class="lineNoCov">              0 :         return timelib_is_leap(y) ? ml_table_leap[m] : ml_table_common[m];</span>
+<a name="80"><span class="lineNum">      80 </span>                : }</a>
+<span class="lineNum">      81 </span>                : 
+<span class="lineNum">      82 </span><span class="lineCov">              1 : void timelib_isoweek_from_date(timelib_sll y, timelib_sll m, timelib_sll d, timelib_sll *iw, timelib_sll *iy)</span>
+<span class="lineNum">      83 </span>                : {
+<span class="lineNum">      84 </span>                :         int y_leap, prev_y_leap, doy, jan1weekday, weekday;
+<span class="lineNum">      85 </span>                : 
+<span class="lineNum">      86 </span><span class="lineCov">              1 :         y_leap = timelib_is_leap(y);</span>
+<span class="lineNum">      87 </span><span class="lineCov">              1 :         prev_y_leap = timelib_is_leap(y-1);</span>
+<span class="lineNum">      88 </span><span class="lineCov">              1 :         doy = timelib_day_of_year(y, m, d) + 1;</span>
+<span class="lineNum">      89 </span><span class="lineCov">              1 :         if (y_leap &amp;&amp; m &gt; 2) {</span>
+<span class="lineNum">      90 </span><span class="lineCov">              1 :                 doy++;</span>
+<span class="lineNum">      91 </span>                :         }
+<span class="lineNum">      92 </span><span class="lineCov">              1 :         jan1weekday = timelib_day_of_week(y, 1, 1);</span>
+<span class="lineNum">      93 </span><span class="lineCov">              1 :         weekday = timelib_day_of_week(y, m, d);</span>
+<span class="lineNum">      94 </span><span class="lineCov">              1 :         if (weekday == 0) weekday = 7;</span>
+<span class="lineNum">      95 </span><span class="lineCov">              1 :         if (jan1weekday == 0) jan1weekday = 7;</span>
+<span class="lineNum">      96 </span>                :         /* Find if Y M D falls in YearNumber Y-1, WeekNumber 52 or 53 */
+<span class="lineNum">      97 </span><span class="lineCov">              1 :         if (doy &lt;= (8 - jan1weekday) &amp;&amp; jan1weekday &gt; 4) {</span>
+<span class="lineNum">      98 </span><span class="lineNoCov">              0 :                 *iy = y - 1;</span>
+<span class="lineNum">      99 </span><span class="lineNoCov">              0 :                 if (jan1weekday == 5 || (jan1weekday == 6 &amp;&amp; prev_y_leap)) {</span>
+<span class="lineNum">     100 </span><span class="lineNoCov">              0 :                         *iw = 53;</span>
+<span class="lineNum">     101 </span>                :                 } else {
+<span class="lineNum">     102 </span><span class="lineNoCov">              0 :                         *iw = 52;</span>
+<span class="lineNum">     103 </span>                :                 }
+<span class="lineNum">     104 </span>                :         } else {
+<span class="lineNum">     105 </span><span class="lineCov">              1 :                 *iy = y;</span>
+<span class="lineNum">     106 </span>                :         }
+<span class="lineNum">     107 </span>                :         /* 8. Find if Y M D falls in YearNumber Y+1, WeekNumber 1 */
+<span class="lineNum">     108 </span><span class="lineCov">              1 :         if (*iy == y) {</span>
+<span class="lineNum">     109 </span>                :                 int i;
+<span class="lineNum">     110 </span>                : 
+<span class="lineNum">     111 </span><span class="lineCov">              1 :                 i = y_leap ? 366 : 365;</span>
+<span class="lineNum">     112 </span><span class="lineCov">              1 :                 if ((i - (doy - y_leap)) &lt; (4 - weekday)) {</span>
+<span class="lineNum">     113 </span><span class="lineNoCov">              0 :                         *iy = y + 1;</span>
+<span class="lineNum">     114 </span><span class="lineNoCov">              0 :                         *iw = 1;</span>
+<span class="lineNum">     115 </span><span class="lineNoCov">              0 :                         return;</span>
+<span class="lineNum">     116 </span>                :                 }
+<span class="lineNum">     117 </span>                :         }
+<span class="lineNum">     118 </span>                :         /* 9. Find if Y M D falls in YearNumber Y, WeekNumber 1 through 53 */
+<span class="lineNum">     119 </span><span class="lineCov">              1 :         if (*iy == y) {</span>
+<span class="lineNum">     120 </span>                :                 int j;
+<span class="lineNum">     121 </span>                : 
+<span class="lineNum">     122 </span><span class="lineCov">              1 :                 j = doy + (7 - weekday) + (jan1weekday - 1);</span>
+<span class="lineNum">     123 </span><span class="lineCov">              1 :                 *iw = j / 7;</span>
+<span class="lineNum">     124 </span><span class="lineCov">              1 :                 if (jan1weekday &gt; 4) {</span>
+<span class="lineNum">     125 </span><span class="lineCov">              1 :                         *iw -= 1;</span>
+<span class="lineNum">     126 </span>                :                 }
+<span class="lineNum">     127 </span>                :         }
+<a name="128"><span class="lineNum">     128 </span>                : }</a>
+<span class="lineNum">     129 </span>                : 
+<span class="lineNum">     130 </span><span class="lineNoCov">              0 : timelib_sll timelib_daynr_from_weeknr(timelib_sll y, timelib_sll w, timelib_sll d)</span>
+<span class="lineNum">     131 </span>                : {
+<span class="lineNum">     132 </span>                :         timelib_sll dow, day;
+<span class="lineNum">     133 </span>                :         
+<span class="lineNum">     134 </span>                :         /* Figure out the dayofweek for y-1-1 */
+<span class="lineNum">     135 </span><span class="lineNoCov">              0 :         dow = timelib_day_of_week(y, 1, 1);</span>
+<span class="lineNum">     136 </span>                :         /* then use that to figure out the offset for day 1 of week 1 */
+<span class="lineNum">     137 </span><span class="lineNoCov">              0 :         day = 0 - (dow &gt; 4 ? dow - 7 : dow);</span>
+<span class="lineNum">     138 </span>                : 
+<span class="lineNum">     139 </span>                :         /* Add weeks and days */
+<span class="lineNum">     140 </span><span class="lineNoCov">              0 :         return day + ((w - 1) * 7) + d;</span>
+<a name="141"><span class="lineNum">     141 </span>                : }</a>
+<span class="lineNum">     142 </span>                : 
+<span class="lineNum">     143 </span><span class="lineNoCov">              0 : int timelib_valid_time(timelib_sll h, timelib_sll i, timelib_sll s)</span>
+<span class="lineNum">     144 </span>                : {
+<span class="lineNum">     145 </span><span class="lineNoCov">              0 :         if (h &lt; 0 || h &gt; 23 || i &lt; 0 || i &gt; 59 || s &lt; 0 || s &gt; 59) {</span>
+<span class="lineNum">     146 </span><span class="lineNoCov">              0 :                 return 0;</span>
+<span class="lineNum">     147 </span>                :         }
+<span class="lineNum">     148 </span><span class="lineNoCov">              0 :         return 1;</span>
+<a name="149"><span class="lineNum">     149 </span>                : }</a>
+<span class="lineNum">     150 </span>                : 
+<span class="lineNum">     151 </span><span class="lineNoCov">              0 : int timelib_valid_date(timelib_sll y, timelib_sll m, timelib_sll d)</span>
+<span class="lineNum">     152 </span>                : {
+<span class="lineNum">     153 </span><span class="lineNoCov">              0 :         if (m &lt; 1 || m &gt; 12 || d &lt; 1 || d &gt; timelib_days_in_month(y, m)) {</span>
+<span class="lineNum">     154 </span><span class="lineNoCov">              0 :                 return 0;</span>
+<span class="lineNum">     155 </span>                :         }
+<span class="lineNum">     156 </span><span class="lineNoCov">              0 :         return 1;</span>
+<span class="lineNum">     157 </span>                : }
+<span class="lineNum">     158 </span>                : #if 0
+<span class="lineNum">     159 </span>                : int main(void)
+<span class="lineNum">     160 </span>                : {
+<span class="lineNum">     161 </span>                :         printf(&quot;dow = %d\n&quot;, timelib_day_of_week(1978, 12, 22)); /* 5 */
+<span class="lineNum">     162 </span>                :         printf(&quot;dow = %d\n&quot;, timelib_day_of_week(2005,  2, 19)); /* 6 */
+<span class="lineNum">     163 </span>                : }
+<span class="lineNum">     164 </span>                : #endif
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

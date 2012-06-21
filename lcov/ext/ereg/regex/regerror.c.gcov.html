@@ -1,0 +1,212 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - ext/ereg/regex/regerror.c</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../../index.html">directory</a> - <a href="index.html">ext/ereg/regex</a> - regerror.c (source / <a href="regerror.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">29</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">2</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : #include &lt;sys/types.h&gt;</a>
+<span class="lineNum">       2 </span>                : #include &lt;stdio.h&gt;
+<span class="lineNum">       3 </span>                : #include &lt;string.h&gt;
+<span class="lineNum">       4 </span>                : #include &lt;ctype.h&gt;
+<span class="lineNum">       5 </span>                : #include &lt;limits.h&gt;
+<span class="lineNum">       6 </span>                : #include &lt;stdlib.h&gt;
+<span class="lineNum">       7 </span>                : 
+<span class="lineNum">       8 </span>                : #include &quot;regex.h&quot;
+<span class="lineNum">       9 </span>                : #include &quot;utils.h&quot;
+<span class="lineNum">      10 </span>                : #include &quot;regerror.ih&quot;
+<span class="lineNum">      11 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">      12 </span>                : 
+<span class="lineNum">      13 </span>                : /*
+<span class="lineNum">      14 </span>                :  = #define      REG_OKAY         0
+<span class="lineNum">      15 </span>                :  = #define      REG_NOMATCH      1
+<span class="lineNum">      16 </span>                :  = #define      REG_BADPAT       2
+<span class="lineNum">      17 </span>                :  = #define      REG_ECOLLATE     3
+<span class="lineNum">      18 </span>                :  = #define      REG_ECTYPE       4
+<span class="lineNum">      19 </span>                :  = #define      REG_EESCAPE      5
+<span class="lineNum">      20 </span>                :  = #define      REG_ESUBREG      6
+<span class="lineNum">      21 </span>                :  = #define      REG_EBRACK       7
+<span class="lineNum">      22 </span>                :  = #define      REG_EPAREN       8
+<span class="lineNum">      23 </span>                :  = #define      REG_EBRACE       9
+<span class="lineNum">      24 </span>                :  = #define      REG_BADBR       10
+<span class="lineNum">      25 </span>                :  = #define      REG_ERANGE      11
+<span class="lineNum">      26 </span>                :  = #define      REG_ESPACE      12
+<span class="lineNum">      27 </span>                :  = #define      REG_BADRPT      13
+<span class="lineNum">      28 </span>                :  = #define      REG_EMPTY       14
+<span class="lineNum">      29 </span>                :  = #define      REG_ASSERT      15
+<span class="lineNum">      30 </span>                :  = #define      REG_INVARG      16
+<span class="lineNum">      31 </span>                :  = #define      REG_ATOI        255     // convert name to number (!)
+<span class="lineNum">      32 </span>                :  = #define      REG_ITOA        0400    // convert number to name (!)
+<span class="lineNum">      33 </span>                :  */
+<span class="lineNum">      34 </span>                : static const struct rerr {
+<span class="lineNum">      35 </span>                :         int code;
+<span class="lineNum">      36 </span>                :         const char *name;
+<span class="lineNum">      37 </span>                :         const char *explain;
+<span class="lineNum">      38 </span>                : } rerrs[] = {
+<span class="lineNum">      39 </span>                :         {REG_OKAY,      &quot;REG_OKAY&quot;,   &quot;no errors detected&quot;},
+<span class="lineNum">      40 </span>                :         {REG_NOMATCH,   &quot;REG_NOMATCH&quot;,        &quot;regexec() failed to match&quot;},
+<span class="lineNum">      41 </span>                :         {REG_BADPAT,    &quot;REG_BADPAT&quot;, &quot;invalid regular expression&quot;},
+<span class="lineNum">      42 </span>                :         {REG_ECOLLATE,  &quot;REG_ECOLLATE&quot;,       &quot;invalid collating element&quot;},
+<span class="lineNum">      43 </span>                :         {REG_ECTYPE,    &quot;REG_ECTYPE&quot;, &quot;invalid character class&quot;},
+<span class="lineNum">      44 </span>                :         {REG_EESCAPE,   &quot;REG_EESCAPE&quot;,        &quot;trailing backslash (\\)&quot;},
+<span class="lineNum">      45 </span>                :         {REG_ESUBREG,   &quot;REG_ESUBREG&quot;,        &quot;invalid backreference number&quot;},
+<span class="lineNum">      46 </span>                :         {REG_EBRACK,    &quot;REG_EBRACK&quot;, &quot;brackets ([ ]) not balanced&quot;},
+<span class="lineNum">      47 </span>                :         {REG_EPAREN,    &quot;REG_EPAREN&quot;, &quot;parentheses not balanced&quot;},
+<span class="lineNum">      48 </span>                :         {REG_EBRACE,    &quot;REG_EBRACE&quot;, &quot;braces not balanced&quot;},
+<span class="lineNum">      49 </span>                :         {REG_BADBR,     &quot;REG_BADBR&quot;,  &quot;invalid repetition count(s)&quot;},
+<span class="lineNum">      50 </span>                :         {REG_ERANGE,    &quot;REG_ERANGE&quot;, &quot;invalid character range&quot;},
+<span class="lineNum">      51 </span>                :         {REG_ESPACE,    &quot;REG_ESPACE&quot;, &quot;out of memory&quot;},
+<span class="lineNum">      52 </span>                :         {REG_BADRPT,    &quot;REG_BADRPT&quot;, &quot;repetition-operator operand invalid&quot;},
+<span class="lineNum">      53 </span>                :         {REG_EMPTY,     &quot;REG_EMPTY&quot;,  &quot;empty (sub)expression&quot;},
+<span class="lineNum">      54 </span>                :         {REG_ASSERT,    &quot;REG_ASSERT&quot;, &quot;\&quot;can't happen\&quot; -- you found a bug&quot;},
+<span class="lineNum">      55 </span>                :         {REG_INVARG,    &quot;REG_INVARG&quot;, &quot;invalid argument to regex routine&quot;},
+<span class="lineNum">      56 </span>                :         {-1,            &quot;&quot;,           &quot;*** unknown regexp error code ***&quot;},
+<span class="lineNum">      57 </span>                : };
+<span class="lineNum">      58 </span>                : 
+<span class="lineNum">      59 </span>                : /*
+<span class="lineNum">      60 </span>                :  - regerror - the interface to error numbers
+<span class="lineNum">      61 </span>                :  = API_EXPORT(size_t) regerror(int, const regex_t *, char *, size_t);
+<span class="lineNum">      62 </span>                :  */
+<a name="63"><span class="lineNum">      63 </span>                : /* ARGSUSED */</a>
+<span class="lineNum">      64 </span>                : API_EXPORT(size_t)
+<span class="lineNum">      65 </span><span class="lineNoCov">              0 : regerror(</span>
+<span class="lineNum">      66 </span>                : int errcode,
+<span class="lineNum">      67 </span>                : const regex_t *preg,
+<span class="lineNum">      68 </span>                : char *errbuf,
+<span class="lineNum">      69 </span>                : size_t errbuf_size)
+<span class="lineNum">      70 </span>                : {
+<span class="lineNum">      71 </span>                :         register const struct rerr *r;
+<span class="lineNum">      72 </span>                :         register size_t len;
+<span class="lineNum">      73 </span><span class="lineNoCov">              0 :         register int target = errcode &amp;~ REG_ITOA;</span>
+<span class="lineNum">      74 </span>                :         register const char *s;
+<span class="lineNum">      75 </span>                :         char convbuf[50];
+<span class="lineNum">      76 </span>                : 
+<span class="lineNum">      77 </span><span class="lineNoCov">              0 :         if (errcode == REG_ATOI)</span>
+<span class="lineNum">      78 </span><span class="lineNoCov">              0 :                 s = regatoi(preg, convbuf, sizeof(convbuf));</span>
+<span class="lineNum">      79 </span>                :         else {
+<span class="lineNum">      80 </span><span class="lineNoCov">              0 :                 for (r = rerrs; r-&gt;code &gt;= 0; r++)</span>
+<span class="lineNum">      81 </span><span class="lineNoCov">              0 :                         if (r-&gt;code == target)</span>
+<span class="lineNum">      82 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">      83 </span>                :         
+<span class="lineNum">      84 </span><span class="lineNoCov">              0 :                 if (errcode&amp;REG_ITOA) {</span>
+<span class="lineNum">      85 </span><span class="lineNoCov">              0 :                         if (r-&gt;code &gt;= 0) {</span>
+<span class="lineNum">      86 </span><span class="lineNoCov">              0 :                                 (void) strncpy(convbuf, r-&gt;name, sizeof(convbuf) - 1);</span>
+<span class="lineNum">      87 </span><span class="lineNoCov">              0 :                                 convbuf[sizeof(convbuf) - 1] = '\0';</span>
+<span class="lineNum">      88 </span>                :                         } else {
+<span class="lineNum">      89 </span><span class="lineNoCov">              0 :                                 snprintf(convbuf, sizeof(convbuf), &quot;REG_0x%x&quot;, target);</span>
+<span class="lineNum">      90 </span>                :                         }
+<span class="lineNum">      91 </span>                :                         assert(strlen(convbuf) &lt; sizeof(convbuf));
+<span class="lineNum">      92 </span><span class="lineNoCov">              0 :                         s = convbuf;</span>
+<span class="lineNum">      93 </span>                :                 } else
+<span class="lineNum">      94 </span><span class="lineNoCov">              0 :                         s = r-&gt;explain;</span>
+<span class="lineNum">      95 </span>                :         }
+<span class="lineNum">      96 </span>                : 
+<span class="lineNum">      97 </span><span class="lineNoCov">              0 :         len = strlen(s) + 1;</span>
+<span class="lineNum">      98 </span><span class="lineNoCov">              0 :         if (errbuf_size &gt; 0) {</span>
+<span class="lineNum">      99 </span><span class="lineNoCov">              0 :                 if (errbuf_size &gt; len)</span>
+<span class="lineNum">     100 </span><span class="lineNoCov">              0 :                         (void) strcpy(errbuf, s);</span>
+<span class="lineNum">     101 </span>                :                 else {
+<span class="lineNum">     102 </span><span class="lineNoCov">              0 :                         (void) strncpy(errbuf, s, errbuf_size-1);</span>
+<span class="lineNum">     103 </span><span class="lineNoCov">              0 :                         errbuf[errbuf_size-1] = '\0';</span>
+<span class="lineNum">     104 </span>                :                 }
+<span class="lineNum">     105 </span>                :         }
+<span class="lineNum">     106 </span>                : 
+<span class="lineNum">     107 </span><span class="lineNoCov">              0 :         return(len);</span>
+<span class="lineNum">     108 </span>                : }
+<span class="lineNum">     109 </span>                : 
+<span class="lineNum">     110 </span>                : /*
+<span class="lineNum">     111 </span>                :  - regatoi - internal routine to implement REG_ATOI
+<span class="lineNum">     112 </span>                :  == static char *regatoi(const regex_t *preg, char *localbuf, int bufsize);
+<a name="113"><span class="lineNum">     113 </span>                :  */</a>
+<span class="lineNum">     114 </span>                : static char *
+<span class="lineNum">     115 </span><span class="lineNoCov">              0 : regatoi(preg, localbuf, bufsize)</span>
+<span class="lineNum">     116 </span>                : const regex_t *preg;
+<span class="lineNum">     117 </span>                : char *localbuf;
+<span class="lineNum">     118 </span>                : int bufsize;
+<span class="lineNum">     119 </span>                : {
+<span class="lineNum">     120 </span>                :         register const struct rerr *r;
+<span class="lineNum">     121 </span>                : 
+<span class="lineNum">     122 </span><span class="lineNoCov">              0 :         for (r = rerrs; r-&gt;code &gt;= 0; r++)</span>
+<span class="lineNum">     123 </span><span class="lineNoCov">              0 :                 if (strcmp(r-&gt;name, preg-&gt;re_endp) == 0)</span>
+<span class="lineNum">     124 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     125 </span><span class="lineNoCov">              0 :         if (r-&gt;code &lt; 0)</span>
+<span class="lineNum">     126 </span><span class="lineNoCov">              0 :                 return(&quot;0&quot;);</span>
+<span class="lineNum">     127 </span>                : 
+<span class="lineNum">     128 </span><span class="lineNoCov">              0 :         snprintf(localbuf, bufsize, &quot;%d&quot;, r-&gt;code);</span>
+<span class="lineNum">     129 </span><span class="lineNoCov">              0 :         return(localbuf);</span>
+<span class="lineNum">     130 </span>                : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

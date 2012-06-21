@@ -1,0 +1,716 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - ext/mongo/util/rs.c</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../../index.html">directory</a> - <a href="index.html">ext/mongo/util</a> - rs.c (source / <a href="rs.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">274</td>
+          <td class="headerCovTableEntry">170</td>
+          <td class="headerCovTableEntryHi">62.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">17</td>
+          <td class="headerCovTableEntry">16</td>
+          <td class="headerCovTableEntryHi">94.1 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : // rs.c</a>
+<span class="lineNum">       2 </span>                : /**
+<span class="lineNum">       3 </span>                :  *  Copyright 2009-2011 10gen, Inc.
+<span class="lineNum">       4 </span>                :  *
+<span class="lineNum">       5 </span>                :  *  Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+<span class="lineNum">       6 </span>                :  *  you may not use this file except in compliance with the License.
+<span class="lineNum">       7 </span>                :  *  You may obtain a copy of the License at
+<span class="lineNum">       8 </span>                :  *
+<span class="lineNum">       9 </span>                :  *  http://www.apache.org/licenses/LICENSE-2.0
+<span class="lineNum">      10 </span>                :  *
+<span class="lineNum">      11 </span>                :  *  Unless required by applicable law or agreed to in writing, software
+<span class="lineNum">      12 </span>                :  *  distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+<span class="lineNum">      13 </span>                :  *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+<span class="lineNum">      14 </span>                :  *  See the License for the specific language governing permissions and
+<span class="lineNum">      15 </span>                :  *  limitations under the License.
+<span class="lineNum">      16 </span>                :  */
+<span class="lineNum">      17 </span>                : 
+<span class="lineNum">      18 </span>                : #include &lt;php.h&gt;
+<span class="lineNum">      19 </span>                : 
+<span class="lineNum">      20 </span>                : #include &quot;../php_mongo.h&quot;
+<span class="lineNum">      21 </span>                : #include &quot;../bson.h&quot;
+<span class="lineNum">      22 </span>                : #include &quot;../mongo.h&quot;
+<span class="lineNum">      23 </span>                : #include &quot;../cursor.h&quot;
+<span class="lineNum">      24 </span>                : #include &quot;../db.h&quot;
+<span class="lineNum">      25 </span>                : 
+<span class="lineNum">      26 </span>                : #include &quot;log.h&quot;
+<span class="lineNum">      27 </span>                : #include &quot;rs.h&quot;
+<span class="lineNum">      28 </span>                : #include &quot;hash.h&quot;
+<span class="lineNum">      29 </span>                : #include &quot;pool.h&quot;
+<span class="lineNum">      30 </span>                : #include &quot;server.h&quot;
+<span class="lineNum">      31 </span>                : #include &quot;parse.h&quot;
+<span class="lineNum">      32 </span>                : 
+<span class="lineNum">      33 </span>                : extern zend_class_entry *mongo_ce_Mongo,
+<span class="lineNum">      34 </span>                :   *mongo_ce_DB,
+<span class="lineNum">      35 </span>                :   *mongo_ce_Cursor;
+<span class="lineNum">      36 </span>                : 
+<span class="lineNum">      37 </span>                : extern int le_prs;
+<span class="lineNum">      38 </span>                : 
+<span class="lineNum">      39 </span>                : ZEND_EXTERN_MODULE_GLOBALS(mongo);
+<span class="lineNum">      40 </span>                : 
+<span class="lineNum">      41 </span>                : /**
+<span class="lineNum">      42 </span>                :  * Add hosts from ht to *hosts[pos] and increment the index.
+<span class="lineNum">      43 </span>                :  */
+<span class="lineNum">      44 </span>                : static void add_hosts(char **hosts, int *pos, zval **list);
+<span class="lineNum">      45 </span>                : 
+<span class="lineNum">      46 </span>                : /**
+<span class="lineNum">      47 </span>                :  * Creates a monitor.  For each server listed in link, creates a container
+<span class="lineNum">      48 </span>                :  * pointing to this monitor.  For example, if we have link with servers S1,S2,S3
+<span class="lineNum">      49 </span>                :  * and this creates monitor M, we'd end up with:
+<span class="lineNum">      50 </span>                :  *
+<span class="lineNum">      51 </span>                :  * &quot;rsMonitor:S1&quot; -&gt; M -&gt; (S3-&gt;S2-&gt;S1)
+<span class="lineNum">      52 </span>                :  * &quot;rsMonitor:S2&quot; -&gt; M -&gt; (S3-&gt;S2-&gt;S1)
+<span class="lineNum">      53 </span>                :  * &quot;rsMonitor:S3&quot; -&gt; M -&gt; (S3-&gt;S2-&gt;S1)
+<span class="lineNum">      54 </span>                :  */
+<span class="lineNum">      55 </span>                : static rs_monitor* initialize_new_monitor(mongo_link *link TSRMLS_DC);
+<span class="lineNum">      56 </span>                : 
+<span class="lineNum">      57 </span>                : /**
+<span class="lineNum">      58 </span>                :  * Created a rs_container instance to store a monitor under server's label.
+<span class="lineNum">      59 </span>                :  */
+<span class="lineNum">      60 </span>                : static rs_container* store_monitor(rs_monitor *monitor, mongo_server *server TSRMLS_DC);
+<span class="lineNum">      61 </span>                : 
+<span class="lineNum">      62 </span>                : /**
+<span class="lineNum">      63 </span>                :  * Add hosts, passives, and arbiters to **hosts.
+<span class="lineNum">      64 </span>                :  */
+<span class="lineNum">      65 </span>                : static void mongo_util_rs__populate_hosts(zval *response, char ***hosts, int *len TSRMLS_DC);
+<span class="lineNum">      66 </span>                : 
+<span class="lineNum">      67 </span>                : /**
+<span class="lineNum">      68 </span>                :  * Repopulate the link-&gt;server_set-&gt;servers list with the isMaster response.
+<span class="lineNum">      69 </span>                :  */
+<span class="lineNum">      70 </span>                : static void mongo_util_rs__repopulate(rs_monitor *monitor, zval *response TSRMLS_DC);
+<span class="lineNum">      71 </span>                : 
+<span class="lineNum">      72 </span>                : /**
+<span class="lineNum">      73 </span>                :  * Remove a host from the link-&gt;server_set-&gt;servers list.
+<span class="lineNum">      74 </span>                :  */
+<span class="lineNum">      75 </span>                : static void mongo_util_rs__remove_seed(rs_monitor *monitor, rsm_server *server TSRMLS_DC);
+<span class="lineNum">      76 </span>                : 
+<span class="lineNum">      77 </span>                : /**
+<span class="lineNum">      78 </span>                :  * Clean up a server that is removed from the link-&gt;server_set-&gt;servers list.
+<span class="lineNum">      79 </span>                :  */
+<span class="lineNum">      80 </span>                : static void mongo_util_rs__remove_bookkeeping(rs_monitor *monitor, rsm_server *server TSRMLS_DC);
+<a name="81"><span class="lineNum">      81 </span>                : </a>
+<span class="lineNum">      82 </span>                : 
+<span class="lineNum">      83 </span><span class="lineCov">              2 : int mongo_util_rs_init(mongo_link *link TSRMLS_DC) {</span>
+<span class="lineNum">      84 </span>                :   rs_monitor *monitor;
+<span class="lineNum">      85 </span>                : 
+<span class="lineNum">      86 </span>                :   // getting a new monitor populates the struct with initial pings
+<span class="lineNum">      87 </span><span class="lineCov">              2 :   if ((monitor = mongo_util_rs__get_monitor(link TSRMLS_CC)) == 0) {</span>
+<span class="lineNum">      88 </span><span class="lineNoCov">              0 :     return FAILURE;</span>
+<span class="lineNum">      89 </span>                :   }
+<span class="lineNum">      90 </span>                : 
+<span class="lineNum">      91 </span>                :   // get the primary, if possible, from the monitor
+<span class="lineNum">      92 </span><span class="lineCov">              2 :   if (monitor-&gt;primary) {</span>
+<span class="lineNum">      93 </span>                : 
+<span class="lineNum">      94 </span><span class="lineNoCov">              0 :     link-&gt;server_set-&gt;master = mongo_util_server_copy(monitor-&gt;primary, link-&gt;server_set-&gt;master, NO_PERSIST TSRMLS_CC);</span>
+<span class="lineNum">      95 </span>                : 
+<span class="lineNum">      96 </span>                :     // just to be explicit about it: we won't fetch a slave until one is requested
+<span class="lineNum">      97 </span><span class="lineNoCov">              0 :     link-&gt;slave = 0;</span>
+<span class="lineNum">      98 </span>                :   }
+<span class="lineNum">      99 </span>                : 
+<span class="lineNum">     100 </span><span class="lineCov">              2 :   return SUCCESS;</span>
+<a name="101"><span class="lineNum">     101 </span>                : }</a>
+<span class="lineNum">     102 </span>                : 
+<span class="lineNum">     103 </span><span class="lineCov">             28 : zval* mongo_util_rs__cmd(char *cmd, mongo_server *current TSRMLS_DC) {</span>
+<span class="lineNum">     104 </span><span class="lineCov">             28 :   zval *ismaster = 0, *result = 0;</span>
+<span class="lineNum">     105 </span>                : 
+<span class="lineNum">     106 </span>                :   // query = { ismaster : 1 }
+<span class="lineNum">     107 </span>                :   // we cannot nest this list {query : {ismaster : 1}} because mongos is stupid
+<span class="lineNum">     108 </span><span class="lineCov">             28 :   MAKE_STD_ZVAL(ismaster);</span>
+<span class="lineNum">     109 </span><span class="lineCov">             28 :   array_init(ismaster);</span>
+<span class="lineNum">     110 </span><span class="lineCov">             28 :   add_assoc_long(ismaster, cmd, 1);</span>
+<span class="lineNum">     111 </span>                : 
+<span class="lineNum">     112 </span><span class="lineCov">             28 :   result = mongo_db_cmd(current, ismaster TSRMLS_CC);</span>
+<span class="lineNum">     113 </span>                : 
+<span class="lineNum">     114 </span><span class="lineCov">             28 :   zval_ptr_dtor(&amp;ismaster);</span>
+<span class="lineNum">     115 </span>                : 
+<span class="lineNum">     116 </span><span class="lineCov">             28 :   return result;</span>
+<a name="117"><span class="lineNum">     117 </span>                : }</a>
+<span class="lineNum">     118 </span>                : 
+<span class="lineNum">     119 </span><span class="lineCov">              2 : void mongo_util_rs_refresh(rs_monitor *monitor, time_t now TSRMLS_DC) {</span>
+<span class="lineNum">     120 </span>                :   rsm_server *current;
+<span class="lineNum">     121 </span><span class="lineCov">              2 :   zval *good_response = 0;</span>
+<span class="lineNum">     122 </span>                : 
+<span class="lineNum">     123 </span>                :   // refreshes host list
+<span class="lineNum">     124 </span><span class="lineCov">              2 :   if (now - monitor-&gt;last_ismaster &lt; MONGO_ISMASTER_INTERVAL) {</span>
+<span class="lineNum">     125 </span><span class="lineNoCov">              0 :     return;</span>
+<span class="lineNum">     126 </span>                :   }
+<span class="lineNum">     127 </span>                : 
+<span class="lineNum">     128 </span><span class="lineCov">              2 :   monitor-&gt;last_ismaster = now;</span>
+<span class="lineNum">     129 </span>                : 
+<span class="lineNum">     130 </span><span class="lineCov">              2 :   mongo_log(MONGO_LOG_RS, MONGO_LOG_INFO TSRMLS_CC, &quot;%s: pinging at %d&quot;, monitor-&gt;name, now);</span>
+<span class="lineNum">     131 </span>                : 
+<span class="lineNum">     132 </span>                :   // we are going clear the hosts list and repopulate
+<span class="lineNum">     133 </span><span class="lineCov">              2 :   current = monitor-&gt;servers;</span>
+<span class="lineNum">     134 </span><span class="lineCov">              5 :   while(current &amp;&amp; !good_response) {</span>
+<span class="lineNum">     135 </span><span class="lineCov">              2 :     zval *response = mongo_util_rs__cmd(&quot;ismaster&quot;, current-&gt;server TSRMLS_CC);</span>
+<span class="lineNum">     136 </span>                : 
+<span class="lineNum">     137 </span><span class="lineCov">              2 :     if (response &amp;&amp; Z_TYPE_P(response) == IS_ARRAY) {</span>
+<span class="lineNum">     138 </span><span class="lineCov">              1 :       zval **ok = 0;</span>
+<span class="lineNum">     139 </span><span class="lineCov">              4 :       if (zend_hash_find(HASH_P(response), &quot;ok&quot;, strlen(&quot;ok&quot;)+1, (void**)&amp;ok) == SUCCESS &amp;&amp;</span>
+<span class="lineNum">     140 </span><span class="lineCov">              3 :           Z_NUMVAL_PP(ok, 1)) {</span>
+<span class="lineNum">     141 </span><span class="lineCov">              1 :         zval **name = 0;</span>
+<span class="lineNum">     142 </span>                : 
+<span class="lineNum">     143 </span><span class="lineCov">              1 :         if (zend_hash_find(HASH_P(response), &quot;setName&quot;, strlen(&quot;setName&quot;)+1, (void**)&amp;name) == SUCCESS &amp;&amp;</span>
+<span class="lineNum">     144 </span><span class="lineNoCov">              0 :             Z_TYPE_PP(name) == IS_STRING &amp;&amp; strncmp(monitor-&gt;name, Z_STRVAL_PP(name), strlen(monitor-&gt;name)) != 0) {</span>
+<span class="lineNum">     145 </span><span class="lineNoCov">              0 :           mongo_log(MONGO_LOG_RS, MONGO_LOG_WARNING TSRMLS_CC, &quot;rs: given name %s does not match discovered name %s&quot;,</span>
+<span class="lineNum">     146 </span><span class="lineNoCov">              0 :                     monitor-&gt;name, Z_STRVAL_PP(name));</span>
+<span class="lineNum">     147 </span>                :         }
+<span class="lineNum">     148 </span>                : 
+<span class="lineNum">     149 </span><span class="lineCov">              1 :         good_response = response;</span>
+<span class="lineNum">     150 </span><span class="lineCov">              1 :         break;</span>
+<span class="lineNum">     151 </span>                :       }
+<span class="lineNum">     152 </span>                :       else {
+<span class="lineNum">     153 </span><span class="lineNoCov">              0 :         mongo_log(MONGO_LOG_RS, MONGO_LOG_INFO TSRMLS_CC, &quot;rs: did not get a good isMaster response from %s&quot;,</span>
+<span class="lineNum">     154 </span><span class="lineNoCov">              0 :                   current-&gt;server-&gt;label);</span>
+<span class="lineNum">     155 </span>                : 
+<span class="lineNum">     156 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;response);</span>
+<span class="lineNum">     157 </span>                :       }
+<span class="lineNum">     158 </span>                :     }
+<span class="lineNum">     159 </span><span class="lineCov">              1 :     current = current-&gt;next;</span>
+<span class="lineNum">     160 </span>                :   }
+<span class="lineNum">     161 </span>                : 
+<span class="lineNum">     162 </span><span class="lineCov">              2 :   if (good_response) {</span>
+<span class="lineNum">     163 </span><span class="lineCov">              1 :     mongo_util_rs__repopulate(monitor, good_response TSRMLS_CC);</span>
+<span class="lineNum">     164 </span><span class="lineCov">              1 :     zval_ptr_dtor(&amp;good_response);</span>
+<span class="lineNum">     165 </span>                :   }
+<span class="lineNum">     166 </span>                :   else {
+<span class="lineNum">     167 </span><span class="lineCov">              1 :     mongo_log(MONGO_LOG_RS, MONGO_LOG_INFO TSRMLS_CC, &quot;rs: did not get any isMaster responses, giving up&quot;);</span>
+<span class="lineNum">     168 </span>                :   }
+<a name="169"><span class="lineNum">     169 </span>                : }</a>
+<span class="lineNum">     170 </span>                : 
+<span class="lineNum">     171 </span><span class="lineCov">              1 : static void mongo_util_rs__repopulate(rs_monitor *monitor, zval *response TSRMLS_DC) {</span>
+<span class="lineNum">     172 </span><span class="lineCov">              1 :   char **hosts = 0;</span>
+<span class="lineNum">     173 </span><span class="lineCov">              1 :   int len = 0, i = 0;</span>
+<span class="lineNum">     174 </span>                :   rsm_server *seed, *eo_list;
+<span class="lineNum">     175 </span>                : 
+<span class="lineNum">     176 </span><span class="lineCov">              1 :   mongo_util_rs__populate_hosts(response, &amp;hosts, &amp;len TSRMLS_CC);</span>
+<span class="lineNum">     177 </span>                : 
+<span class="lineNum">     178 </span>                :   // clear primary
+<span class="lineNum">     179 </span><span class="lineCov">              1 :   monitor-&gt;primary = 0;</span>
+<span class="lineNum">     180 </span>                : 
+<span class="lineNum">     181 </span>                :   // seed_list: A, B; hosts: X, Y, Z
+<span class="lineNum">     182 </span><span class="lineCov">              1 :   seed = monitor-&gt;servers;</span>
+<span class="lineNum">     183 </span><span class="lineCov">              3 :   while (seed) {</span>
+<span class="lineNum">     184 </span><span class="lineCov">              1 :     int found = 0;</span>
+<span class="lineNum">     185 </span>                :     rsm_server *next;
+<span class="lineNum">     186 </span>                : 
+<span class="lineNum">     187 </span><span class="lineCov">              1 :     for (i=0; i&lt;len; i++) {</span>
+<span class="lineNum">     188 </span><span class="lineNoCov">              0 :       char *host = hosts[i];</span>
+<span class="lineNum">     189 </span><span class="lineNoCov">              0 :       if (!host) {</span>
+<span class="lineNum">     190 </span><span class="lineNoCov">              0 :         continue;</span>
+<span class="lineNum">     191 </span>                :       }
+<span class="lineNum">     192 </span>                : 
+<span class="lineNum">     193 </span>                :       // if A is equal to or an alias for X:
+<span class="lineNum">     194 </span><span class="lineNoCov">              0 :       if (strncmp(seed-&gt;server-&gt;label, host, strlen(seed-&gt;server-&gt;label)) == 0 ||</span>
+<span class="lineNum">     195 </span><span class="lineNoCov">              0 :           mongo_util_server_cmp(seed-&gt;server-&gt;label, host TSRMLS_CC) == 0) {</span>
+<span class="lineNum">     196 </span>                :         // remove X
+<span class="lineNum">     197 </span>                :         // hosts[i] will be freed when good_response is freed in refresh()
+<span class="lineNum">     198 </span><span class="lineNoCov">              0 :         hosts[i] = 0;</span>
+<span class="lineNum">     199 </span>                : 
+<span class="lineNum">     200 </span>                :         // continue to B
+<span class="lineNum">     201 </span><span class="lineNoCov">              0 :         found = 1;</span>
+<span class="lineNum">     202 </span><span class="lineNoCov">              0 :         break;</span>
+<span class="lineNum">     203 </span>                :       }
+<span class="lineNum">     204 </span>                :     }
+<span class="lineNum">     205 </span>                : 
+<span class="lineNum">     206 </span>                :     // seed is set to null in if(!found) block
+<span class="lineNum">     207 </span><span class="lineCov">              1 :     next = seed-&gt;next;</span>
+<span class="lineNum">     208 </span>                : 
+<span class="lineNum">     209 </span>                :     // if seed does not match any host remove A from final list
+<span class="lineNum">     210 </span><span class="lineCov">              1 :     if (!found) {</span>
+<span class="lineNum">     211 </span><span class="lineCov">              1 :       mongo_log(MONGO_LOG_RS, MONGO_LOG_FINE TSRMLS_CC, &quot;rs: removing %s from host list&quot;, seed-&gt;server-&gt;label);</span>
+<span class="lineNum">     212 </span><span class="lineCov">              1 :       mongo_util_rs__remove_seed(monitor, seed TSRMLS_CC);</span>
+<span class="lineNum">     213 </span>                : 
+<span class="lineNum">     214 </span>                :       // now 'seed' is null
+<span class="lineNum">     215 </span>                :     }
+<span class="lineNum">     216 </span>                : 
+<span class="lineNum">     217 </span><span class="lineCov">              1 :     seed = next;</span>
+<span class="lineNum">     218 </span>                :   }
+<span class="lineNum">     219 </span>                : 
+<span class="lineNum">     220 </span>                :   // get to the end of the list
+<span class="lineNum">     221 </span><span class="lineCov">              1 :   eo_list = monitor-&gt;servers;</span>
+<span class="lineNum">     222 </span><span class="lineCov">              2 :   while (eo_list &amp;&amp; eo_list-&gt;next) {</span>
+<span class="lineNum">     223 </span><span class="lineNoCov">              0 :     eo_list = eo_list-&gt;next;</span>
+<span class="lineNum">     224 </span>                :   }
+<span class="lineNum">     225 </span>                : 
+<span class="lineNum">     226 </span>                :   // iterate through remaining hosts that did not match any seed
+<span class="lineNum">     227 </span><span class="lineCov">              1 :   for (i=0; i&lt;len; i++) {</span>
+<span class="lineNum">     228 </span><span class="lineNoCov">              0 :     char *host = hosts[i];</span>
+<span class="lineNum">     229 </span>                :     rsm_server *rsm;
+<span class="lineNum">     230 </span>                :     mongo_server *server;
+<span class="lineNum">     231 </span>                : 
+<span class="lineNum">     232 </span><span class="lineNoCov">              0 :     if (!host) {</span>
+<span class="lineNum">     233 </span><span class="lineNoCov">              0 :       continue;</span>
+<span class="lineNum">     234 </span>                :     }
+<span class="lineNum">     235 </span>                : 
+<span class="lineNum">     236 </span><span class="lineNoCov">              0 :     if (!(server = create_mongo_server_persist(&amp;host, monitor TSRMLS_CC))) {</span>
+<span class="lineNum">     237 </span><span class="lineNoCov">              0 :       continue;</span>
+<span class="lineNum">     238 </span>                :     }
+<span class="lineNum">     239 </span>                : 
+<span class="lineNum">     240 </span>                :     // we need to call init here in case this is a new server name (without a timeout set)
+<span class="lineNum">     241 </span><span class="lineNoCov">              0 :     mongo_util_pool_refresh(server, MONGO_RS_TIMEOUT TSRMLS_CC);</span>
+<span class="lineNum">     242 </span>                : 
+<span class="lineNum">     243 </span><span class="lineNoCov">              0 :     rsm = (rsm_server*)pemalloc(sizeof(rsm_server), 1);</span>
+<span class="lineNum">     244 </span><span class="lineNoCov">              0 :     rsm-&gt;server = server;</span>
+<span class="lineNum">     245 </span><span class="lineNoCov">              0 :     rsm-&gt;next = 0;</span>
+<span class="lineNum">     246 </span>                : 
+<span class="lineNum">     247 </span><span class="lineNoCov">              0 :     mongo_log(MONGO_LOG_RS, MONGO_LOG_FINE TSRMLS_CC, &quot;appending new host to list: %s&quot;, server-&gt;label);</span>
+<span class="lineNum">     248 </span>                : 
+<span class="lineNum">     249 </span><span class="lineNoCov">              0 :     if (!eo_list) {</span>
+<span class="lineNum">     250 </span><span class="lineNoCov">              0 :       monitor-&gt;servers = eo_list = rsm;</span>
+<span class="lineNum">     251 </span>                :     }
+<span class="lineNum">     252 </span>                :     else {
+<span class="lineNum">     253 </span><span class="lineNoCov">              0 :       eo_list-&gt;next = rsm;</span>
+<span class="lineNum">     254 </span><span class="lineNoCov">              0 :       eo_list = eo_list-&gt;next;</span>
+<span class="lineNum">     255 </span>                :     }
+<span class="lineNum">     256 </span>                :   }
+<span class="lineNum">     257 </span>                : 
+<span class="lineNum">     258 </span>                :   // this array points to good_response elements, so we don't need to free its guts directly
+<span class="lineNum">     259 </span><span class="lineCov">              1 :   efree(hosts);</span>
+<a name="260"><span class="lineNum">     260 </span><span class="lineCov">              1 : }</span></a>
+<span class="lineNum">     261 </span>                : 
+<span class="lineNum">     262 </span><span class="lineCov">              1 : static void mongo_util_rs__remove_seed(rs_monitor *monitor, rsm_server *rsm TSRMLS_DC) {</span>
+<span class="lineNum">     263 </span><span class="lineCov">              1 :   rsm_server *current = monitor-&gt;servers, *prev = 0;</span>
+<span class="lineNum">     264 </span>                : 
+<span class="lineNum">     265 </span><span class="lineCov">              1 :   if (!rsm) {</span>
+<span class="lineNum">     266 </span><span class="lineNoCov">              0 :     mongo_log(MONGO_LOG_RS, MONGO_LOG_WARNING TSRMLS_CC, &quot;rs: trying to remove null seed&quot;);</span>
+<span class="lineNum">     267 </span><span class="lineNoCov">              0 :     return;</span>
+<span class="lineNum">     268 </span>                :   }
+<span class="lineNum">     269 </span>                : 
+<span class="lineNum">     270 </span><span class="lineCov">              1 :   if (!current) {</span>
+<span class="lineNum">     271 </span><span class="lineNoCov">              0 :     mongo_log(MONGO_LOG_RS, MONGO_LOG_WARNING TSRMLS_CC, &quot;rs: trying to remove %s from empty list&quot;,</span>
+<span class="lineNum">     272 </span><span class="lineNoCov">              0 :               rsm-&gt;server-&gt;label);</span>
+<span class="lineNum">     273 </span><span class="lineNoCov">              0 :     return;</span>
+<span class="lineNum">     274 </span>                :   }
+<span class="lineNum">     275 </span>                : 
+<span class="lineNum">     276 </span><span class="lineCov">              1 :   if (current == rsm) {</span>
+<span class="lineNum">     277 </span><span class="lineCov">              1 :     monitor-&gt;servers = current-&gt;next;</span>
+<span class="lineNum">     278 </span><span class="lineCov">              1 :     mongo_util_rs__remove_bookkeeping(monitor, current TSRMLS_CC);</span>
+<span class="lineNum">     279 </span><span class="lineCov">              1 :     return;</span>
+<span class="lineNum">     280 </span>                :   }
+<span class="lineNum">     281 </span>                : 
+<span class="lineNum">     282 </span>                :   do {
+<span class="lineNum">     283 </span><span class="lineNoCov">              0 :     prev = current;</span>
+<span class="lineNum">     284 </span><span class="lineNoCov">              0 :     current = current-&gt;next;</span>
+<span class="lineNum">     285 </span>                : 
+<span class="lineNum">     286 </span><span class="lineNoCov">              0 :     if (current == rsm) {</span>
+<span class="lineNum">     287 </span>                :       // if we have 1-&gt;2-&gt;3, this does 1-&gt;3 and then cleans up 2
+<span class="lineNum">     288 </span><span class="lineNoCov">              0 :       prev-&gt;next = current-&gt;next;</span>
+<span class="lineNum">     289 </span><span class="lineNoCov">              0 :       mongo_util_rs__remove_bookkeeping(monitor, current TSRMLS_CC);</span>
+<span class="lineNum">     290 </span><span class="lineNoCov">              0 :       return;</span>
+<span class="lineNum">     291 </span>                :     }
+<span class="lineNum">     292 </span><span class="lineNoCov">              0 :   } while (current);</span>
+<span class="lineNum">     293 </span>                : 
+<span class="lineNum">     294 </span><span class="lineNoCov">              0 :   mongo_log(MONGO_LOG_RS, MONGO_LOG_WARNING TSRMLS_CC, &quot;rs: trying to remove %s from list, but could not find it&quot;,</span>
+<span class="lineNum">     295 </span><span class="lineNoCov">              0 :             rsm-&gt;server-&gt;label);</span>
+<span class="lineNum">     296 </span>                : 
+<span class="lineNum">     297 </span><span class="lineNoCov">              0 :   return;</span>
+<a name="298"><span class="lineNum">     298 </span>                : }</a>
+<span class="lineNum">     299 </span>                : 
+<span class="lineNum">     300 </span><span class="lineCov">              1 : static void mongo_util_rs__remove_bookkeeping(rs_monitor *monitor, rsm_server *server TSRMLS_DC) {</span>
+<span class="lineNum">     301 </span>                :   // make sure primary isn't pointing to invalid mem
+<span class="lineNum">     302 </span><span class="lineCov">              1 :   if (monitor-&gt;primary == server-&gt;server) {</span>
+<span class="lineNum">     303 </span><span class="lineNoCov">              0 :     monitor-&gt;primary = 0;</span>
+<span class="lineNum">     304 </span>                :   }
+<span class="lineNum">     305 </span>                : 
+<span class="lineNum">     306 </span>                :   // this closes the connection and frees the memory
+<span class="lineNum">     307 </span><span class="lineCov">              1 :   php_mongo_server_free(server-&gt;server, PERSIST TSRMLS_CC);</span>
+<span class="lineNum">     308 </span>                :   // free the container
+<span class="lineNum">     309 </span><span class="lineCov">              1 :   pefree(server, 1);</span>
+<a name="310"><span class="lineNum">     310 </span><span class="lineCov">              1 : }</span></a>
+<span class="lineNum">     311 </span>                : 
+<span class="lineNum">     312 </span><span class="lineCov">              1 : static void mongo_util_rs__populate_hosts(zval *response, char ***hosts, int *len TSRMLS_DC) {</span>
+<span class="lineNum">     313 </span><span class="lineCov">              1 :   int total = 0, pos = 0;</span>
+<span class="lineNum">     314 </span><span class="lineCov">              1 :   zval **hosts_z = 0, **passives = 0, **arbiters = 0;</span>
+<span class="lineNum">     315 </span>                : 
+<span class="lineNum">     316 </span><span class="lineCov">              1 :   if (zend_hash_find(HASH_P(response), &quot;hosts&quot;, strlen(&quot;hosts&quot;)+1, (void**)&amp;hosts_z) == SUCCESS) {</span>
+<span class="lineNum">     317 </span><span class="lineNoCov">              0 :     total += zend_hash_num_elements(HASH_PP(hosts_z));</span>
+<span class="lineNum">     318 </span>                :   }
+<span class="lineNum">     319 </span><span class="lineCov">              1 :   if (zend_hash_find(HASH_P(response), &quot;passives&quot;, strlen(&quot;passives&quot;)+1, (void**)&amp;passives) == SUCCESS) {</span>
+<span class="lineNum">     320 </span><span class="lineNoCov">              0 :     total += zend_hash_num_elements(HASH_PP(passives));</span>
+<span class="lineNum">     321 </span>                :   }
+<span class="lineNum">     322 </span><span class="lineCov">              1 :   if (zend_hash_find(HASH_P(response), &quot;arbiters&quot;, strlen(&quot;arbiters&quot;)+1, (void**)&amp;arbiters) == SUCCESS) {</span>
+<span class="lineNum">     323 </span><span class="lineNoCov">              0 :     total += zend_hash_num_elements(HASH_PP(arbiters));</span>
+<span class="lineNum">     324 </span>                :   }
+<span class="lineNum">     325 </span>                : 
+<span class="lineNum">     326 </span><span class="lineCov">              1 :   (*len) = total;</span>
+<span class="lineNum">     327 </span><span class="lineCov">              1 :   (*hosts) = (char**)emalloc(sizeof(char*)*(*len));</span>
+<span class="lineNum">     328 </span>                : 
+<span class="lineNum">     329 </span><span class="lineCov">              1 :   add_hosts(*hosts, &amp;pos, hosts_z);</span>
+<span class="lineNum">     330 </span><span class="lineCov">              1 :   add_hosts(*hosts, &amp;pos, passives);</span>
+<span class="lineNum">     331 </span><span class="lineCov">              1 :   add_hosts(*hosts, &amp;pos, arbiters);</span>
+<span class="lineNum">     332 </span>                : 
+<span class="lineNum">     333 </span><span class="lineCov">              1 :   if (pos != *len) {</span>
+<span class="lineNum">     334 </span><span class="lineNoCov">              0 :     mongo_log(MONGO_LOG_RS, MONGO_LOG_WARNING TSRMLS_CC, &quot;rs: got two different lengths for isMaster hosts: %d vs. %d&quot;,</span>
+<span class="lineNum">     335 </span>                :               pos, *len);
+<span class="lineNum">     336 </span>                :   }
+<span class="lineNum">     337 </span><span class="lineCov">              1 : }</span>
+<a name="338"><span class="lineNum">     338 </span>                : </a>
+<span class="lineNum">     339 </span>                : 
+<span class="lineNum">     340 </span><span class="lineCov">              3 : static void add_hosts(char **hosts, int *pos, zval **list) {</span>
+<span class="lineNum">     341 </span>                :   zval **data;
+<span class="lineNum">     342 </span>                :   HashPosition pointer;
+<span class="lineNum">     343 </span>                :   HashTable *ht;
+<span class="lineNum">     344 </span>                : 
+<span class="lineNum">     345 </span><span class="lineCov">              3 :   if (!list || !*list) {</span>
+<span class="lineNum">     346 </span><span class="lineCov">              3 :     return;</span>
+<span class="lineNum">     347 </span>                :   }
+<span class="lineNum">     348 </span>                : 
+<span class="lineNum">     349 </span><span class="lineNoCov">              0 :   ht = Z_ARRVAL_PP(list);</span>
+<span class="lineNum">     350 </span>                : 
+<span class="lineNum">     351 </span><span class="lineNoCov">              0 :   for (zend_hash_internal_pointer_reset_ex(ht, &amp;pointer);</span>
+<span class="lineNum">     352 </span><span class="lineNoCov">              0 :        zend_hash_get_current_data_ex(ht, (void**) &amp;data, &amp;pointer) == SUCCESS;</span>
+<span class="lineNum">     353 </span><span class="lineNoCov">              0 :        zend_hash_move_forward_ex(ht, &amp;pointer)) {</span>
+<span class="lineNum">     354 </span><span class="lineNoCov">              0 :     hosts[*pos] = Z_STRVAL_PP(data);</span>
+<span class="lineNum">     355 </span><span class="lineNoCov">              0 :     (*pos)++;</span>
+<span class="lineNum">     356 </span>                :   }
+<span class="lineNum">     357 </span>                : }
+<a name="358"><span class="lineNum">     358 </span>                : </a>
+<span class="lineNum">     359 </span>                : 
+<span class="lineNum">     360 </span><span class="lineCov">              1 : mongo_server* mongo_util_rs_get_master(mongo_link *link TSRMLS_DC) {</span>
+<span class="lineNum">     361 </span>                :   rs_monitor *monitor;
+<span class="lineNum">     362 </span>                : 
+<span class="lineNum">     363 </span>                :   // if we're still connected to master, return it
+<span class="lineNum">     364 </span><span class="lineCov">              1 :   if (link-&gt;server_set-&gt;master &amp;&amp; link-&gt;server_set-&gt;master-&gt;connected) {</span>
+<span class="lineNum">     365 </span><span class="lineNoCov">              0 :     return link-&gt;server_set-&gt;master;</span>
+<span class="lineNum">     366 </span>                :   }
+<span class="lineNum">     367 </span>                : 
+<span class="lineNum">     368 </span><span class="lineCov">              1 :   mongo_log(MONGO_LOG_RS, MONGO_LOG_FINE TSRMLS_CC, &quot;%s: getting master&quot;, link-&gt;rs);</span>
+<span class="lineNum">     369 </span>                : 
+<span class="lineNum">     370 </span><span class="lineCov">              2 :   if ((monitor = mongo_util_rs__get_monitor(link TSRMLS_CC)) == 0 ||</span>
+<span class="lineNum">     371 </span><span class="lineCov">              1 :       monitor-&gt;primary == 0) {</span>
+<span class="lineNum">     372 </span><span class="lineCov">              1 :     return 0;</span>
+<span class="lineNum">     373 </span>                :   }
+<span class="lineNum">     374 </span>                : 
+<span class="lineNum">     375 </span><span class="lineNoCov">              0 :   link-&gt;server_set-&gt;master = mongo_util_server_copy(monitor-&gt;primary, link-&gt;server_set-&gt;master, NO_PERSIST TSRMLS_CC);</span>
+<span class="lineNum">     376 </span><span class="lineNoCov">              0 :   return link-&gt;server_set-&gt;master;</span>
+<a name="377"><span class="lineNum">     377 </span>                : }</a>
+<span class="lineNum">     378 </span>                : 
+<span class="lineNum">     379 </span><span class="lineCov">              4 : rs_monitor* mongo_util_rs__get_monitor(mongo_link *link TSRMLS_DC) {</span>
+<span class="lineNum">     380 </span><span class="lineCov">              4 :   mongo_server *current = link-&gt;server_set-&gt;server;</span>
+<span class="lineNum">     381 </span>                : 
+<span class="lineNum">     382 </span>                :   // generate all possible ids
+<span class="lineNum">     383 </span><span class="lineCov">             10 :   while (current) {</span>
+<span class="lineNum">     384 </span><span class="lineCov">              4 :     zend_rsrc_list_entry *le = 0;</span>
+<span class="lineNum">     385 </span>                :     char id[256];
+<span class="lineNum">     386 </span>                : 
+<span class="lineNum">     387 </span><span class="lineCov">              4 :     mongo_buf_init(id);</span>
+<span class="lineNum">     388 </span><span class="lineCov">              4 :     mongo_buf_append(id, MONGO_RS);</span>
+<span class="lineNum">     389 </span><span class="lineCov">              4 :     mongo_buf_append(id, current-&gt;label);</span>
+<span class="lineNum">     390 </span>                : 
+<span class="lineNum">     391 </span>                :     // see if any of them correspond to existing replica set monitors
+<span class="lineNum">     392 </span><span class="lineCov">              4 :     if (zend_hash_find(&amp;EG(persistent_list), id, strlen(id)+1, (void**)&amp;le) == SUCCESS) {</span>
+<span class="lineNum">     393 </span><span class="lineCov">              2 :       return ((rs_container*)le-&gt;ptr)-&gt;monitor;</span>
+<span class="lineNum">     394 </span>                :     }
+<span class="lineNum">     395 </span>                : 
+<span class="lineNum">     396 </span><span class="lineCov">              2 :     current = current-&gt;next;</span>
+<span class="lineNum">     397 </span>                :   }
+<span class="lineNum">     398 </span>                : 
+<span class="lineNum">     399 </span>                :   // if not, initialize a new monitor
+<span class="lineNum">     400 </span><span class="lineCov">              2 :   return initialize_new_monitor(link TSRMLS_CC);</span>
+<a name="401"><span class="lineNum">     401 </span>                : }</a>
+<span class="lineNum">     402 </span>                : 
+<span class="lineNum">     403 </span><span class="lineCov">              2 : static rs_container* store_monitor(rs_monitor *monitor, mongo_server *server TSRMLS_DC) {</span>
+<span class="lineNum">     404 </span>                :   zend_rsrc_list_entry nle;
+<span class="lineNum">     405 </span>                :   char id[256];
+<span class="lineNum">     406 </span>                :   rs_container *container;
+<span class="lineNum">     407 </span>                : 
+<span class="lineNum">     408 </span><span class="lineCov">              2 :   mongo_buf_init(id);</span>
+<span class="lineNum">     409 </span><span class="lineCov">              2 :   mongo_buf_append(id, MONGO_RS);</span>
+<span class="lineNum">     410 </span><span class="lineCov">              2 :   mongo_buf_append(id, server-&gt;label);</span>
+<span class="lineNum">     411 </span><span class="lineCov">              2 :   mongo_log(MONGO_LOG_RS, MONGO_LOG_INFO TSRMLS_CC, &quot;rs: adding a new monitor labeled %s\n&quot;, id);</span>
+<span class="lineNum">     412 </span>                : 
+<span class="lineNum">     413 </span><span class="lineCov">              2 :   container = (rs_container*)pemalloc(sizeof(rs_container), 1);</span>
+<span class="lineNum">     414 </span><span class="lineCov">              2 :   container-&gt;owner = 0;</span>
+<span class="lineNum">     415 </span><span class="lineCov">              2 :   container-&gt;monitor = monitor;</span>
+<span class="lineNum">     416 </span>                : 
+<span class="lineNum">     417 </span><span class="lineCov">              2 :   nle.ptr = container;</span>
+<span class="lineNum">     418 </span><span class="lineCov">              2 :   nle.type = le_prs;</span>
+<span class="lineNum">     419 </span><span class="lineCov">              2 :   nle.refcount = 1;</span>
+<span class="lineNum">     420 </span><span class="lineCov">              2 :   zend_hash_add(&amp;EG(persistent_list), id, strlen(id)+1, &amp;nle, sizeof(zend_rsrc_list_entry), NULL);</span>
+<span class="lineNum">     421 </span>                : 
+<span class="lineNum">     422 </span><span class="lineCov">              2 :   return container;</span>
+<a name="423"><span class="lineNum">     423 </span>                : }</a>
+<span class="lineNum">     424 </span>                : 
+<span class="lineNum">     425 </span><span class="lineCov">              2 : static rs_monitor* initialize_new_monitor(mongo_link *link TSRMLS_DC) {</span>
+<span class="lineNum">     426 </span>                :   rs_container *container;
+<span class="lineNum">     427 </span>                :   rs_monitor *monitor;
+<span class="lineNum">     428 </span>                :   mongo_server *current;
+<span class="lineNum">     429 </span>                : 
+<span class="lineNum">     430 </span><span class="lineCov">              2 :   monitor = (rs_monitor*)pemalloc(sizeof(rs_monitor), 1);</span>
+<span class="lineNum">     431 </span><span class="lineCov">              2 :   memset(monitor, 0, sizeof(rs_monitor));</span>
+<span class="lineNum">     432 </span>                : 
+<span class="lineNum">     433 </span><span class="lineCov">              2 :   monitor-&gt;name = pestrdup(link-&gt;rs, 1);</span>
+<span class="lineNum">     434 </span>                : 
+<span class="lineNum">     435 </span><span class="lineCov">              2 :   if (link-&gt;username &amp;&amp; link-&gt;password &amp;&amp; link-&gt;db) {</span>
+<span class="lineNum">     436 </span><span class="lineCov">              1 :     monitor-&gt;username = pestrdup(link-&gt;username, 1);</span>
+<span class="lineNum">     437 </span><span class="lineCov">              1 :     monitor-&gt;password = pestrdup(link-&gt;password, 1);</span>
+<span class="lineNum">     438 </span><span class="lineCov">              1 :     monitor-&gt;db = pestrdup(link-&gt;db, 1);</span>
+<span class="lineNum">     439 </span>                :   }
+<span class="lineNum">     440 </span>                : 
+<span class="lineNum">     441 </span><span class="lineCov">              2 :   current = link-&gt;server_set-&gt;server;</span>
+<span class="lineNum">     442 </span><span class="lineCov">              6 :   while (current) {</span>
+<span class="lineNum">     443 </span>                :     rsm_server *r_server;
+<span class="lineNum">     444 </span>                : 
+<span class="lineNum">     445 </span>                :     // add current to the rsm list
+<span class="lineNum">     446 </span><span class="lineCov">              2 :     r_server = (rsm_server*)pemalloc(sizeof(rsm_server), 1);</span>
+<span class="lineNum">     447 </span><span class="lineCov">              2 :     r_server-&gt;next = 0;</span>
+<span class="lineNum">     448 </span><span class="lineCov">              2 :     r_server-&gt;server = mongo_util_server_copy(current, 0, PERSIST TSRMLS_CC);</span>
+<span class="lineNum">     449 </span>                : 
+<span class="lineNum">     450 </span><span class="lineCov">              2 :     if (monitor-&gt;servers) {</span>
+<span class="lineNum">     451 </span><span class="lineNoCov">              0 :       r_server-&gt;next = monitor-&gt;servers;</span>
+<span class="lineNum">     452 </span>                :     }
+<span class="lineNum">     453 </span><span class="lineCov">              2 :     monitor-&gt;servers = r_server;</span>
+<span class="lineNum">     454 </span>                : 
+<span class="lineNum">     455 </span>                :     // create a container for current
+<span class="lineNum">     456 </span><span class="lineCov">              2 :     container = store_monitor(monitor, current TSRMLS_CC);</span>
+<span class="lineNum">     457 </span>                : 
+<span class="lineNum">     458 </span><span class="lineCov">              2 :     current = current-&gt;next;</span>
+<span class="lineNum">     459 </span>                :   }
+<span class="lineNum">     460 </span>                : 
+<span class="lineNum">     461 </span><span class="lineCov">              2 :   if (container) {</span>
+<span class="lineNum">     462 </span><span class="lineCov">              2 :     container-&gt;owner = 1;</span>
+<span class="lineNum">     463 </span>                :   }
+<span class="lineNum">     464 </span>                : 
+<span class="lineNum">     465 </span><span class="lineCov">              2 :   mongo_util_rs__ping(monitor TSRMLS_CC);</span>
+<span class="lineNum">     466 </span>                : 
+<span class="lineNum">     467 </span><span class="lineCov">              2 :   return monitor;</span>
+<a name="468"><span class="lineNum">     468 </span>                : }</a>
+<span class="lineNum">     469 </span>                : 
+<span class="lineNum">     470 </span><span class="lineCov">              2 : void mongo_util_rs_shutdown(zend_rsrc_list_entry *rsrc TSRMLS_DC) {</span>
+<span class="lineNum">     471 </span>                :   rs_container *container;
+<span class="lineNum">     472 </span>                :   rs_monitor *monitor;
+<span class="lineNum">     473 </span>                :   rsm_server *current;
+<span class="lineNum">     474 </span><span class="lineCov">              2 :   int owns_monitor = 0;</span>
+<span class="lineNum">     475 </span>                : 
+<span class="lineNum">     476 </span><span class="lineCov">              2 :   if (!rsrc || !rsrc-&gt;ptr) {</span>
+<span class="lineNum">     477 </span><span class="lineNoCov">              0 :     return;</span>
+<span class="lineNum">     478 </span>                :   }
+<span class="lineNum">     479 </span>                : 
+<span class="lineNum">     480 </span><span class="lineCov">              2 :   container = rsrc-&gt;ptr;</span>
+<span class="lineNum">     481 </span><span class="lineCov">              2 :   monitor = container-&gt;monitor;</span>
+<span class="lineNum">     482 </span>                : 
+<span class="lineNum">     483 </span><span class="lineCov">              2 :   owns_monitor = container-&gt;owner;</span>
+<span class="lineNum">     484 </span>                : 
+<span class="lineNum">     485 </span><span class="lineCov">              2 :   pefree(container, 1);</span>
+<span class="lineNum">     486 </span><span class="lineCov">              2 :   rsrc-&gt;ptr = 0;</span>
+<span class="lineNum">     487 </span>                : 
+<span class="lineNum">     488 </span>                :   // if we aren't responsible for freeing the monitor, we're done
+<span class="lineNum">     489 </span><span class="lineCov">              2 :   if (!owns_monitor) {</span>
+<span class="lineNum">     490 </span><span class="lineNoCov">              0 :     return;</span>
+<span class="lineNum">     491 </span>                :   }
+<span class="lineNum">     492 </span>                : 
+<span class="lineNum">     493 </span><span class="lineCov">              2 :   current = monitor-&gt;servers;</span>
+<span class="lineNum">     494 </span><span class="lineCov">              5 :   while (current) {</span>
+<span class="lineNum">     495 </span><span class="lineCov">              1 :     rsm_server *prev = current;</span>
+<span class="lineNum">     496 </span><span class="lineCov">              1 :     current = current-&gt;next;</span>
+<span class="lineNum">     497 </span>                : 
+<span class="lineNum">     498 </span><span class="lineCov">              1 :     php_mongo_server_free(prev-&gt;server, PERSIST TSRMLS_CC);</span>
+<span class="lineNum">     499 </span><span class="lineCov">              1 :     pefree(prev, 1);</span>
+<span class="lineNum">     500 </span>                :   }
+<span class="lineNum">     501 </span>                : 
+<span class="lineNum">     502 </span><span class="lineCov">              2 :   pefree(monitor-&gt;name, 1);</span>
+<span class="lineNum">     503 </span><span class="lineCov">              2 :   pefree(monitor-&gt;username, 1);</span>
+<span class="lineNum">     504 </span><span class="lineCov">              2 :   pefree(monitor-&gt;password, 1);</span>
+<span class="lineNum">     505 </span><span class="lineCov">              2 :   pefree(monitor-&gt;db, 1);</span>
+<span class="lineNum">     506 </span><span class="lineCov">              2 :   pefree(monitor, 1);</span>
+<a name="507"><span class="lineNum">     507 </span>                : }</a>
+<span class="lineNum">     508 </span>                : 
+<span class="lineNum">     509 </span><span class="lineCov">              1 : void mongo_util_rs_ping(mongo_link *link TSRMLS_DC) {</span>
+<span class="lineNum">     510 </span>                :   rs_monitor *monitor;
+<span class="lineNum">     511 </span>                : 
+<span class="lineNum">     512 </span><span class="lineCov">              1 :   if (!link-&gt;rs) {</span>
+<span class="lineNum">     513 </span><span class="lineNoCov">              0 :     return;</span>
+<span class="lineNum">     514 </span>                :   }
+<span class="lineNum">     515 </span>                : 
+<span class="lineNum">     516 </span>                :   // getting a new monitor populates the struct with initial pings
+<span class="lineNum">     517 </span><span class="lineCov">              1 :   if ((monitor = mongo_util_rs__get_monitor(link TSRMLS_CC)) == 0) {</span>
+<span class="lineNum">     518 </span><span class="lineNoCov">              0 :     return;</span>
+<span class="lineNum">     519 </span>                :   }
+<span class="lineNum">     520 </span>                : 
+<span class="lineNum">     521 </span><span class="lineCov">              1 :   if (time(0) - monitor-&gt;last_ismaster &lt; MONGO_PING_INTERVAL) {</span>
+<span class="lineNum">     522 </span><span class="lineCov">              1 :     return;</span>
+<span class="lineNum">     523 </span>                :   }
+<span class="lineNum">     524 </span>                : 
+<span class="lineNum">     525 </span><span class="lineNoCov">              0 :   mongo_util_rs__ping(monitor TSRMLS_CC);</span>
+<a name="526"><span class="lineNum">     526 </span>                : }</a>
+<span class="lineNum">     527 </span>                : 
+<span class="lineNum">     528 </span><span class="lineCov">              2 : void mongo_util_rs__ping(rs_monitor *monitor TSRMLS_DC) {</span>
+<span class="lineNum">     529 </span>                :   int now;
+<span class="lineNum">     530 </span>                :   rsm_server *current;
+<span class="lineNum">     531 </span>                : 
+<span class="lineNum">     532 </span><span class="lineCov">              2 :   now = time(0);</span>
+<span class="lineNum">     533 </span>                : 
+<span class="lineNum">     534 </span><span class="lineCov">              2 :   mongo_util_rs_refresh(monitor, now TSRMLS_CC);</span>
+<span class="lineNum">     535 </span>                : 
+<span class="lineNum">     536 </span><span class="lineCov">              2 :   current = monitor-&gt;servers;</span>
+<span class="lineNum">     537 </span><span class="lineCov">              5 :   while (current) {</span>
+<span class="lineNum">     538 </span>                :     // this pings the server and, if up, checks if it's primary
+<span class="lineNum">     539 </span><span class="lineCov">              1 :     if (mongo_util_server_ping(current-&gt;server, now TSRMLS_CC) == SUCCESS) {</span>
+<span class="lineNum">     540 </span><span class="lineNoCov">              0 :       if (mongo_util_server_get_state(current-&gt;server TSRMLS_CC) == 1) {</span>
+<span class="lineNum">     541 </span><span class="lineNoCov">              0 :         monitor-&gt;primary = current-&gt;server;</span>
+<span class="lineNum">     542 </span>                :       }
+<span class="lineNum">     543 </span>                :     }
+<span class="lineNum">     544 </span><span class="lineCov">              1 :     else if (monitor-&gt;primary == current-&gt;server) {</span>
+<span class="lineNum">     545 </span><span class="lineNoCov">              0 :       monitor-&gt;primary = 0;</span>
+<span class="lineNum">     546 </span>                :     }
+<span class="lineNum">     547 </span>                : 
+<span class="lineNum">     548 </span><span class="lineCov">              1 :     current = current-&gt;next;</span>
+<span class="lineNum">     549 </span>                :   }
+<a name="550"><span class="lineNum">     550 </span><span class="lineCov">              2 : }</span></a>
+<span class="lineNum">     551 </span>                : 
+<span class="lineNum">     552 </span><span class="lineCov">             13 : int mongo_util_rs__get_ismaster(zval *response TSRMLS_DC) {</span>
+<span class="lineNum">     553 </span>                :   zval **ans;
+<span class="lineNum">     554 </span>                : 
+<span class="lineNum">     555 </span><span class="lineCov">             13 :   if (zend_hash_find(HASH_P(response), &quot;ismaster&quot;, 9, (void**)&amp;ans) == SUCCESS) {</span>
+<span class="lineNum">     556 </span>                :     // in 1.6.*, this was a float
+<span class="lineNum">     557 </span><span class="lineCov">             13 :     if (Z_TYPE_PP(ans) == IS_DOUBLE) {</span>
+<span class="lineNum">     558 </span><span class="lineNoCov">              0 :       return (Z_DVAL_PP(ans) == 1.0);</span>
+<span class="lineNum">     559 </span>                :     }
+<span class="lineNum">     560 </span>                :     // in 1.7, it became a boolean
+<span class="lineNum">     561 </span>                :     else {
+<span class="lineNum">     562 </span><span class="lineCov">             13 :       return Z_BVAL_PP(ans);</span>
+<span class="lineNum">     563 </span>                :     }
+<span class="lineNum">     564 </span>                :   }
+<span class="lineNum">     565 </span>                : 
+<span class="lineNum">     566 </span><span class="lineNoCov">              0 :   return 0;</span>
+<a name="567"><span class="lineNum">     567 </span>                : }</a>
+<span class="lineNum">     568 </span>                : 
+<span class="lineNum">     569 </span><span class="lineNoCov">              0 : int mongo_util_rs__set_slave(mongo_link *link, char **errmsg TSRMLS_DC) {</span>
+<span class="lineNum">     570 </span>                :   rs_monitor *monitor;
+<span class="lineNum">     571 </span>                :   rsm_server *possible_slave;
+<span class="lineNum">     572 </span><span class="lineNoCov">              0 :   int min_bucket = INT_MAX, slave_count = 0, random_num;</span>
+<span class="lineNum">     573 </span>                : 
+<span class="lineNum">     574 </span><span class="lineNoCov">              0 :   if (!link-&gt;rs || !link-&gt;server_set) {</span>
+<span class="lineNum">     575 </span><span class="lineNoCov">              0 :     *(errmsg) = estrdup(&quot;Connection is not initialized or not a replica set&quot;);</span>
+<span class="lineNum">     576 </span><span class="lineNoCov">              0 :     return FAILURE;</span>
+<span class="lineNum">     577 </span>                :   }
+<span class="lineNum">     578 </span>                : 
+<span class="lineNum">     579 </span>                :   // getting a new monitor populates the struct with initial pings
+<span class="lineNum">     580 </span><span class="lineNoCov">              0 :   if ((monitor = mongo_util_rs__get_monitor(link TSRMLS_CC)) == 0) {</span>
+<span class="lineNum">     581 </span><span class="lineNoCov">              0 :     return FAILURE;</span>
+<span class="lineNum">     582 </span>                :   }
+<span class="lineNum">     583 </span>                : 
+<span class="lineNum">     584 </span>                :   // If we have M members total with N members in bucket B0, we want a 1/N
+<span class="lineNum">     585 </span>                :   // chance of choosing any given member of B0.
+<span class="lineNum">     586 </span><span class="lineNoCov">              0 :   random_num = rand();</span>
+<span class="lineNum">     587 </span>                : 
+<span class="lineNum">     588 </span><span class="lineNoCov">              0 :   possible_slave = monitor-&gt;servers;</span>
+<span class="lineNum">     589 </span>                : 
+<span class="lineNum">     590 </span><span class="lineNoCov">              0 :   link-&gt;slave = 0;</span>
+<span class="lineNum">     591 </span><span class="lineNoCov">              0 :   while (possible_slave) {</span>
+<span class="lineNum">     592 </span>                :     int bucket;
+<span class="lineNum">     593 </span>                : 
+<span class="lineNum">     594 </span><span class="lineNoCov">              0 :     if (!mongo_util_server_get_readable(possible_slave-&gt;server TSRMLS_CC)) {</span>
+<span class="lineNum">     595 </span><span class="lineNoCov">              0 :       possible_slave = possible_slave-&gt;next;</span>
+<span class="lineNum">     596 </span><span class="lineNoCov">              0 :       continue;</span>
+<span class="lineNum">     597 </span>                :     }
+<span class="lineNum">     598 </span>                : 
+<span class="lineNum">     599 </span><span class="lineNoCov">              0 :     bucket = mongo_util_server_get_bucket(possible_slave-&gt;server TSRMLS_CC);</span>
+<span class="lineNum">     600 </span>                : 
+<span class="lineNum">     601 </span>                :     // first, handle if this member is in the same bucket as the currently chosen slave
+<span class="lineNum">     602 </span><span class="lineNoCov">              0 :     if (bucket == min_bucket &amp;&amp; possible_slave-&gt;server != monitor-&gt;primary) {</span>
+<span class="lineNum">     603 </span><span class="lineNoCov">              0 :       slave_count++;</span>
+<span class="lineNum">     604 </span>                : 
+<span class="lineNum">     605 </span>                :       // 1/N chance of this slave being the chosen one
+<span class="lineNum">     606 </span><span class="lineNoCov">              0 :       if (random_num % slave_count == 0) {</span>
+<span class="lineNum">     607 </span><span class="lineNoCov">              0 :         link-&gt;slave = mongo_util_server_copy(possible_slave-&gt;server, link-&gt;slave, NO_PERSIST TSRMLS_CC);</span>
+<span class="lineNum">     608 </span>                :       }
+<span class="lineNum">     609 </span>                :     }
+<span class="lineNum">     610 </span>                : 
+<span class="lineNum">     611 </span>                :     // if this server is in a smaller bucket than the current min, use it
+<span class="lineNum">     612 </span><span class="lineNoCov">              0 :     if (bucket &lt; min_bucket &amp;&amp; possible_slave-&gt;server != monitor-&gt;primary) {</span>
+<span class="lineNum">     613 </span><span class="lineNoCov">              0 :       link-&gt;slave = mongo_util_server_copy(possible_slave-&gt;server, link-&gt;slave, NO_PERSIST TSRMLS_CC);</span>
+<span class="lineNum">     614 </span><span class="lineNoCov">              0 :       min_bucket = bucket;</span>
+<span class="lineNum">     615 </span>                : 
+<span class="lineNum">     616 </span>                :       // reset slave count - there's only one slave we've seen so far in this bucket
+<span class="lineNum">     617 </span><span class="lineNoCov">              0 :       slave_count = 1;</span>
+<span class="lineNum">     618 </span>                :     }
+<span class="lineNum">     619 </span>                : 
+<span class="lineNum">     620 </span><span class="lineNoCov">              0 :     possible_slave = possible_slave-&gt;next;</span>
+<span class="lineNum">     621 </span>                :   }
+<span class="lineNum">     622 </span>                : 
+<span class="lineNum">     623 </span><span class="lineNoCov">              0 :   if (link-&gt;slave) {</span>
+<span class="lineNum">     624 </span><span class="lineNoCov">              0 :     return RS_SECONDARY;</span>
+<span class="lineNum">     625 </span>                :   }
+<span class="lineNum">     626 </span>                :   // if we've run out of possibilities, use the master
+<span class="lineNum">     627 </span><span class="lineNoCov">              0 :   else if (!link-&gt;slave &amp;&amp; monitor-&gt;primary) {</span>
+<span class="lineNum">     628 </span><span class="lineNoCov">              0 :     link-&gt;slave = mongo_util_server_copy(monitor-&gt;primary, link-&gt;slave, NO_PERSIST TSRMLS_CC);</span>
+<span class="lineNum">     629 </span><span class="lineNoCov">              0 :     return RS_PRIMARY;</span>
+<span class="lineNum">     630 </span>                :   }
+<span class="lineNum">     631 </span>                : 
+<span class="lineNum">     632 </span><span class="lineNoCov">              0 :   *errmsg = estrdup(&quot;No secondary found&quot;);</span>
+<span class="lineNum">     633 </span><span class="lineNoCov">              0 :   return FAILURE;</span>
+<span class="lineNum">     634 </span>                : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

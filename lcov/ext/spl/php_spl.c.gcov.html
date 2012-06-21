@@ -1,0 +1,1083 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - ext/spl/php_spl.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../index.html">directory</a> - <a href="index.html">ext/spl</a> - php_spl.c (source / <a href="php_spl.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">416</td>
+          <td class="headerCovTableEntry">27</td>
+          <td class="headerCovTableEntryLo">6.5 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">21</td>
+          <td class="headerCovTableEntry">4</td>
+          <td class="headerCovTableEntryLo">19.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Authors: Marcus Boerger &lt;helly@php.net&gt;                              |
+<span class="lineNum">      16 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      17 </span>                :  */
+<span class="lineNum">      18 </span>                : 
+<span class="lineNum">      19 </span>                : /* $Id$ */
+<span class="lineNum">      20 </span>                : 
+<span class="lineNum">      21 </span>                : #ifdef HAVE_CONFIG_H
+<span class="lineNum">      22 </span>                : #include &quot;config.h&quot;
+<span class="lineNum">      23 </span>                : #endif
+<span class="lineNum">      24 </span>                : 
+<span class="lineNum">      25 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">      26 </span>                : #include &quot;php_ini.h&quot;
+<span class="lineNum">      27 </span>                : #include &quot;php_main.h&quot;
+<span class="lineNum">      28 </span>                : #include &quot;ext/standard/info.h&quot;
+<span class="lineNum">      29 </span>                : #include &quot;php_spl.h&quot;
+<span class="lineNum">      30 </span>                : #include &quot;spl_functions.h&quot;
+<span class="lineNum">      31 </span>                : #include &quot;spl_engine.h&quot;
+<span class="lineNum">      32 </span>                : #include &quot;spl_array.h&quot;
+<span class="lineNum">      33 </span>                : #include &quot;spl_directory.h&quot;
+<span class="lineNum">      34 </span>                : #include &quot;spl_iterators.h&quot;
+<span class="lineNum">      35 </span>                : #include &quot;spl_exceptions.h&quot;
+<span class="lineNum">      36 </span>                : #include &quot;spl_observer.h&quot;
+<span class="lineNum">      37 </span>                : #include &quot;spl_dllist.h&quot;
+<span class="lineNum">      38 </span>                : #include &quot;spl_fixedarray.h&quot;
+<span class="lineNum">      39 </span>                : #include &quot;spl_heap.h&quot;
+<span class="lineNum">      40 </span>                : #include &quot;zend_exceptions.h&quot;
+<span class="lineNum">      41 </span>                : #include &quot;zend_interfaces.h&quot;
+<span class="lineNum">      42 </span>                : #include &quot;ext/standard/php_rand.h&quot;
+<span class="lineNum">      43 </span>                : #include &quot;ext/standard/php_lcg.h&quot;
+<span class="lineNum">      44 </span>                : #include &quot;main/snprintf.h&quot;
+<span class="lineNum">      45 </span>                : 
+<span class="lineNum">      46 </span>                : #ifdef COMPILE_DL_SPL
+<span class="lineNum">      47 </span>                : ZEND_GET_MODULE(spl)
+<span class="lineNum">      48 </span>                : #endif
+<span class="lineNum">      49 </span>                : 
+<span class="lineNum">      50 </span>                : ZEND_DECLARE_MODULE_GLOBALS(spl)
+<span class="lineNum">      51 </span>                : 
+<span class="lineNum">      52 </span>                : #define SPL_DEFAULT_FILE_EXTENSIONS &quot;.inc,.php&quot;
+<span class="lineNum">      53 </span>                : 
+<a name="54"><span class="lineNum">      54 </span>                : /* {{{ PHP_GINIT_FUNCTION</a>
+<span class="lineNum">      55 </span>                :  */
+<span class="lineNum">      56 </span><span class="lineCov">             48 : static PHP_GINIT_FUNCTION(spl)</span>
+<span class="lineNum">      57 </span>                : {
+<span class="lineNum">      58 </span><span class="lineCov">             48 :         spl_globals-&gt;autoload_extensions     = NULL;</span>
+<span class="lineNum">      59 </span><span class="lineCov">             48 :         spl_globals-&gt;autoload_extensions_len = 0;</span>
+<span class="lineNum">      60 </span><span class="lineCov">             48 :         spl_globals-&gt;autoload_functions      = NULL;</span>
+<span class="lineNum">      61 </span><span class="lineCov">             48 :         spl_globals-&gt;autoload_running        = 0;</span>
+<span class="lineNum">      62 </span><span class="lineCov">             48 : }</span>
+<a name="63"><span class="lineNum">      63 </span>                : /* }}} */</a>
+<span class="lineNum">      64 </span>                : 
+<span class="lineNum">      65 </span><span class="lineNoCov">              0 : static zend_class_entry * spl_find_ce_by_name(char *name, int len, zend_bool autoload TSRMLS_DC)</span>
+<span class="lineNum">      66 </span>                : {
+<span class="lineNum">      67 </span>                :         zend_class_entry **ce;
+<span class="lineNum">      68 </span>                :         int found;
+<span class="lineNum">      69 </span>                : 
+<span class="lineNum">      70 </span><span class="lineNoCov">              0 :         if (!autoload) {</span>
+<span class="lineNum">      71 </span>                :                 char *lc_name;
+<span class="lineNum">      72 </span>                :                 ALLOCA_FLAG(use_heap)
+<span class="lineNum">      73 </span>                : 
+<span class="lineNum">      74 </span><span class="lineNoCov">              0 :                 lc_name = do_alloca(len + 1, use_heap);</span>
+<span class="lineNum">      75 </span><span class="lineNoCov">              0 :                 zend_str_tolower_copy(lc_name, name, len);</span>
+<span class="lineNum">      76 </span>                : 
+<span class="lineNum">      77 </span><span class="lineNoCov">              0 :                 found = zend_hash_find(EG(class_table), lc_name, len +1, (void **) &amp;ce);</span>
+<span class="lineNum">      78 </span><span class="lineNoCov">              0 :                 free_alloca(lc_name, use_heap);</span>
+<span class="lineNum">      79 </span>                :         } else {
+<span class="lineNum">      80 </span><span class="lineNoCov">              0 :                 found = zend_lookup_class(name, len, &amp;ce TSRMLS_CC);</span>
+<span class="lineNum">      81 </span>                :         }
+<span class="lineNum">      82 </span><span class="lineNoCov">              0 :         if (found != SUCCESS) {</span>
+<span class="lineNum">      83 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Class %s does not exist%s&quot;, name, autoload ? &quot; and could not be loaded&quot; : &quot;&quot;);</span>
+<span class="lineNum">      84 </span><span class="lineNoCov">              0 :                 return NULL;</span>
+<span class="lineNum">      85 </span>                :         }
+<span class="lineNum">      86 </span>                :         
+<span class="lineNum">      87 </span><span class="lineNoCov">              0 :         return *ce;</span>
+<span class="lineNum">      88 </span>                : }
+<span class="lineNum">      89 </span>                : 
+<a name="90"><span class="lineNum">      90 </span>                : /* {{{ proto array class_parents(object instance [, boolean autoload = true])</a>
+<span class="lineNum">      91 </span>                :  Return an array containing the names of all parent classes */
+<span class="lineNum">      92 </span><span class="lineNoCov">              0 : PHP_FUNCTION(class_parents)</span>
+<span class="lineNum">      93 </span>                : {
+<span class="lineNum">      94 </span>                :         zval *obj;
+<span class="lineNum">      95 </span>                :         zend_class_entry *parent_class, *ce;
+<span class="lineNum">      96 </span><span class="lineNoCov">              0 :         zend_bool autoload = 1;</span>
+<span class="lineNum">      97 </span>                : 
+<span class="lineNum">      98 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;z|b&quot;, &amp;obj, &amp;autoload) == FAILURE) {</span>
+<span class="lineNum">      99 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     100 </span>                :         }
+<span class="lineNum">     101 </span>                :         
+<span class="lineNum">     102 </span><span class="lineNoCov">              0 :         if (Z_TYPE_P(obj) != IS_OBJECT &amp;&amp; Z_TYPE_P(obj) != IS_STRING) {</span>
+<span class="lineNum">     103 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;object or string expected&quot;);</span>
+<span class="lineNum">     104 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     105 </span>                :         }
+<span class="lineNum">     106 </span>                :         
+<span class="lineNum">     107 </span><span class="lineNoCov">              0 :         if (Z_TYPE_P(obj) == IS_STRING) {</span>
+<span class="lineNum">     108 </span><span class="lineNoCov">              0 :                 if (NULL == (ce = spl_find_ce_by_name(Z_STRVAL_P(obj), Z_STRLEN_P(obj), autoload TSRMLS_CC))) {</span>
+<span class="lineNum">     109 </span><span class="lineNoCov">              0 :                         RETURN_FALSE;</span>
+<span class="lineNum">     110 </span>                :                 }
+<span class="lineNum">     111 </span>                :         } else {
+<span class="lineNum">     112 </span><span class="lineNoCov">              0 :                 ce = Z_OBJCE_P(obj);</span>
+<span class="lineNum">     113 </span>                :         }
+<span class="lineNum">     114 </span>                :         
+<span class="lineNum">     115 </span><span class="lineNoCov">              0 :         array_init(return_value);</span>
+<span class="lineNum">     116 </span><span class="lineNoCov">              0 :         parent_class = ce-&gt;parent;</span>
+<span class="lineNum">     117 </span><span class="lineNoCov">              0 :         while (parent_class) {</span>
+<span class="lineNum">     118 </span><span class="lineNoCov">              0 :                 spl_add_class_name(return_value, parent_class, 0, 0 TSRMLS_CC);</span>
+<span class="lineNum">     119 </span><span class="lineNoCov">              0 :                 parent_class = parent_class-&gt;parent;</span>
+<span class="lineNum">     120 </span>                :         }
+<span class="lineNum">     121 </span>                : }
+<span class="lineNum">     122 </span>                : /* }}} */
+<span class="lineNum">     123 </span>                : 
+<a name="124"><span class="lineNum">     124 </span>                : /* {{{ proto array class_implements(mixed what [, bool autoload ])</a>
+<span class="lineNum">     125 </span>                :  Return all classes and interfaces implemented by SPL */
+<span class="lineNum">     126 </span><span class="lineNoCov">              0 : PHP_FUNCTION(class_implements)</span>
+<span class="lineNum">     127 </span>                : {
+<span class="lineNum">     128 </span>                :         zval *obj;
+<span class="lineNum">     129 </span><span class="lineNoCov">              0 :         zend_bool autoload = 1;</span>
+<span class="lineNum">     130 </span>                :         zend_class_entry *ce;
+<span class="lineNum">     131 </span>                :         
+<span class="lineNum">     132 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;z|b&quot;, &amp;obj, &amp;autoload) == FAILURE) {</span>
+<span class="lineNum">     133 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     134 </span>                :         }
+<span class="lineNum">     135 </span><span class="lineNoCov">              0 :         if (Z_TYPE_P(obj) != IS_OBJECT &amp;&amp; Z_TYPE_P(obj) != IS_STRING) {</span>
+<span class="lineNum">     136 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;object or string expected&quot;);</span>
+<span class="lineNum">     137 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     138 </span>                :         }
+<span class="lineNum">     139 </span>                :         
+<span class="lineNum">     140 </span><span class="lineNoCov">              0 :         if (Z_TYPE_P(obj) == IS_STRING) {</span>
+<span class="lineNum">     141 </span><span class="lineNoCov">              0 :                 if (NULL == (ce = spl_find_ce_by_name(Z_STRVAL_P(obj), Z_STRLEN_P(obj), autoload TSRMLS_CC))) {</span>
+<span class="lineNum">     142 </span><span class="lineNoCov">              0 :                         RETURN_FALSE;</span>
+<span class="lineNum">     143 </span>                :                 }
+<span class="lineNum">     144 </span>                :         } else {
+<span class="lineNum">     145 </span><span class="lineNoCov">              0 :                 ce = Z_OBJCE_P(obj);</span>
+<span class="lineNum">     146 </span>                :         }
+<span class="lineNum">     147 </span>                :         
+<span class="lineNum">     148 </span><span class="lineNoCov">              0 :         array_init(return_value);</span>
+<span class="lineNum">     149 </span><span class="lineNoCov">              0 :         spl_add_interfaces(return_value, ce, 1, ZEND_ACC_INTERFACE TSRMLS_CC);</span>
+<span class="lineNum">     150 </span>                : }
+<span class="lineNum">     151 </span>                : /* }}} */
+<span class="lineNum">     152 </span>                : 
+<a name="153"><span class="lineNum">     153 </span>                : /* {{{ proto array class_uses(mixed what [, bool autoload ])</a>
+<span class="lineNum">     154 </span>                :  Return all traits used by a class. */
+<span class="lineNum">     155 </span><span class="lineNoCov">              0 : PHP_FUNCTION(class_uses)</span>
+<span class="lineNum">     156 </span>                : {
+<span class="lineNum">     157 </span>                :         zval *obj;
+<span class="lineNum">     158 </span><span class="lineNoCov">              0 :         zend_bool autoload = 1;</span>
+<span class="lineNum">     159 </span>                :         zend_class_entry *ce;
+<span class="lineNum">     160 </span>                :         
+<span class="lineNum">     161 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;z|b&quot;, &amp;obj, &amp;autoload) == FAILURE) {</span>
+<span class="lineNum">     162 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     163 </span>                :         }
+<span class="lineNum">     164 </span><span class="lineNoCov">              0 :         if (Z_TYPE_P(obj) != IS_OBJECT &amp;&amp; Z_TYPE_P(obj) != IS_STRING) {</span>
+<span class="lineNum">     165 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;object or string expected&quot;);</span>
+<span class="lineNum">     166 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     167 </span>                :         }
+<span class="lineNum">     168 </span>                :         
+<span class="lineNum">     169 </span><span class="lineNoCov">              0 :         if (Z_TYPE_P(obj) == IS_STRING) {</span>
+<span class="lineNum">     170 </span><span class="lineNoCov">              0 :                 if (NULL == (ce = spl_find_ce_by_name(Z_STRVAL_P(obj), Z_STRLEN_P(obj), autoload TSRMLS_CC))) {</span>
+<span class="lineNum">     171 </span><span class="lineNoCov">              0 :                         RETURN_FALSE;</span>
+<span class="lineNum">     172 </span>                :                 }
+<span class="lineNum">     173 </span>                :         } else {
+<span class="lineNum">     174 </span><span class="lineNoCov">              0 :                 ce = Z_OBJCE_P(obj);</span>
+<span class="lineNum">     175 </span>                :         }
+<span class="lineNum">     176 </span>                :         
+<span class="lineNum">     177 </span><span class="lineNoCov">              0 :         array_init(return_value);</span>
+<span class="lineNum">     178 </span><span class="lineNoCov">              0 :         spl_add_traits(return_value, ce, 1, ZEND_ACC_TRAIT TSRMLS_CC);</span>
+<span class="lineNum">     179 </span>                : }
+<span class="lineNum">     180 </span>                : /* }}} */
+<span class="lineNum">     181 </span>                : 
+<span class="lineNum">     182 </span>                : #define SPL_ADD_CLASS(class_name, z_list, sub, allow, ce_flags) \
+<span class="lineNum">     183 </span>                :         spl_add_classes(spl_ce_ ## class_name, z_list, sub, allow, ce_flags TSRMLS_CC)
+<span class="lineNum">     184 </span>                : 
+<span class="lineNum">     185 </span>                : #define SPL_LIST_CLASSES(z_list, sub, allow, ce_flags) \
+<span class="lineNum">     186 </span>                :         SPL_ADD_CLASS(AppendIterator, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     187 </span>                :         SPL_ADD_CLASS(ArrayIterator, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     188 </span>                :         SPL_ADD_CLASS(ArrayObject, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     189 </span>                :         SPL_ADD_CLASS(BadFunctionCallException, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     190 </span>                :         SPL_ADD_CLASS(BadMethodCallException, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     191 </span>                :         SPL_ADD_CLASS(CachingIterator, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     192 </span>                :         SPL_ADD_CLASS(CallbackFilterIterator, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     193 </span>                :         SPL_ADD_CLASS(Countable, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     194 </span>                :         SPL_ADD_CLASS(DirectoryIterator, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     195 </span>                :         SPL_ADD_CLASS(DomainException, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     196 </span>                :         SPL_ADD_CLASS(EmptyIterator, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     197 </span>                :         SPL_ADD_CLASS(FilesystemIterator, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     198 </span>                :         SPL_ADD_CLASS(FilterIterator, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     199 </span>                :         SPL_ADD_CLASS(GlobIterator, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     200 </span>                :         SPL_ADD_CLASS(InfiniteIterator, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     201 </span>                :         SPL_ADD_CLASS(InvalidArgumentException, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     202 </span>                :         SPL_ADD_CLASS(IteratorIterator, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     203 </span>                :         SPL_ADD_CLASS(LengthException, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     204 </span>                :         SPL_ADD_CLASS(LimitIterator, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     205 </span>                :         SPL_ADD_CLASS(LogicException, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     206 </span>                :         SPL_ADD_CLASS(MultipleIterator, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     207 </span>                :         SPL_ADD_CLASS(NoRewindIterator, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     208 </span>                :         SPL_ADD_CLASS(OuterIterator, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     209 </span>                :         SPL_ADD_CLASS(OutOfBoundsException, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     210 </span>                :         SPL_ADD_CLASS(OutOfRangeException, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     211 </span>                :         SPL_ADD_CLASS(OverflowException, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     212 </span>                :         SPL_ADD_CLASS(ParentIterator, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     213 </span>                :         SPL_ADD_CLASS(RangeException, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     214 </span>                :         SPL_ADD_CLASS(RecursiveArrayIterator, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     215 </span>                :         SPL_ADD_CLASS(RecursiveCachingIterator, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     216 </span>                :         SPL_ADD_CLASS(RecursiveCallbackFilterIterator, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     217 </span>                :         SPL_ADD_CLASS(RecursiveDirectoryIterator, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     218 </span>                :         SPL_ADD_CLASS(RecursiveFilterIterator, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     219 </span>                :         SPL_ADD_CLASS(RecursiveIterator, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     220 </span>                :         SPL_ADD_CLASS(RecursiveIteratorIterator, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     221 </span>                :         SPL_ADD_CLASS(RecursiveRegexIterator, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     222 </span>                :         SPL_ADD_CLASS(RecursiveTreeIterator, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     223 </span>                :         SPL_ADD_CLASS(RegexIterator, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     224 </span>                :         SPL_ADD_CLASS(RuntimeException, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     225 </span>                :         SPL_ADD_CLASS(SeekableIterator, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     226 </span>                :         SPL_ADD_CLASS(SplDoublyLinkedList, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     227 </span>                :         SPL_ADD_CLASS(SplFileInfo, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     228 </span>                :         SPL_ADD_CLASS(SplFileObject, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     229 </span>                :         SPL_ADD_CLASS(SplFixedArray, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     230 </span>                :         SPL_ADD_CLASS(SplHeap, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     231 </span>                :         SPL_ADD_CLASS(SplMinHeap, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     232 </span>                :         SPL_ADD_CLASS(SplMaxHeap, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     233 </span>                :         SPL_ADD_CLASS(SplObjectStorage, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     234 </span>                :         SPL_ADD_CLASS(SplObserver, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     235 </span>                :         SPL_ADD_CLASS(SplPriorityQueue, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     236 </span>                :         SPL_ADD_CLASS(SplQueue, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     237 </span>                :         SPL_ADD_CLASS(SplStack, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     238 </span>                :         SPL_ADD_CLASS(SplSubject, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     239 </span>                :         SPL_ADD_CLASS(SplTempFileObject, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     240 </span>                :         SPL_ADD_CLASS(UnderflowException, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     241 </span>                :         SPL_ADD_CLASS(UnexpectedValueException, z_list, sub, allow, ce_flags); \
+<span class="lineNum">     242 </span>                : 
+<a name="243"><span class="lineNum">     243 </span>                : /* {{{ proto array spl_classes()</a>
+<span class="lineNum">     244 </span>                :  Return an array containing the names of all clsses and interfaces defined in SPL */
+<span class="lineNum">     245 </span><span class="lineNoCov">              0 : PHP_FUNCTION(spl_classes)</span>
+<span class="lineNum">     246 </span>                : {
+<span class="lineNum">     247 </span><span class="lineNoCov">              0 :         array_init(return_value);</span>
+<span class="lineNum">     248 </span>                :         
+<span class="lineNum">     249 </span><span class="lineNoCov">              0 :         SPL_LIST_CLASSES(return_value, 0, 0, 0)</span>
+<span class="lineNum">     250 </span><span class="lineNoCov">              0 : }</span>
+<a name="251"><span class="lineNum">     251 </span>                : /* }}} */</a>
+<span class="lineNum">     252 </span>                : 
+<span class="lineNum">     253 </span><span class="lineNoCov">              0 : static int spl_autoload(const char *class_name, const char * lc_name, int class_name_len, const char * file_extension TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     254 </span>                : {
+<span class="lineNum">     255 </span>                :         char *class_file;
+<span class="lineNum">     256 </span>                :         int class_file_len;
+<span class="lineNum">     257 </span><span class="lineNoCov">              0 :         int dummy = 1;</span>
+<span class="lineNum">     258 </span>                :         zend_file_handle file_handle;
+<span class="lineNum">     259 </span>                :         zend_op_array *new_op_array;
+<span class="lineNum">     260 </span><span class="lineNoCov">              0 :         zval *result = NULL;</span>
+<span class="lineNum">     261 </span>                :         int ret;
+<span class="lineNum">     262 </span>                : 
+<span class="lineNum">     263 </span><span class="lineNoCov">              0 :         class_file_len = spprintf(&amp;class_file, 0, &quot;%s%s&quot;, lc_name, file_extension);</span>
+<span class="lineNum">     264 </span>                : 
+<span class="lineNum">     265 </span>                : #if DEFAULT_SLASH != '\\'
+<span class="lineNum">     266 </span>                :         {
+<span class="lineNum">     267 </span><span class="lineNoCov">              0 :                 char *ptr = class_file;</span>
+<span class="lineNum">     268 </span><span class="lineNoCov">              0 :                 char *end = ptr + class_file_len;</span>
+<span class="lineNum">     269 </span>                :                 
+<span class="lineNum">     270 </span><span class="lineNoCov">              0 :                 while ((ptr = memchr(ptr, '\\', (end - ptr))) != NULL) {</span>
+<span class="lineNum">     271 </span><span class="lineNoCov">              0 :                         *ptr = DEFAULT_SLASH;</span>
+<span class="lineNum">     272 </span>                :                 }
+<span class="lineNum">     273 </span>                :         }
+<span class="lineNum">     274 </span>                : #endif
+<span class="lineNum">     275 </span>                : 
+<span class="lineNum">     276 </span><span class="lineNoCov">              0 :         ret = php_stream_open_for_zend_ex(class_file, &amp;file_handle, USE_PATH|STREAM_OPEN_FOR_INCLUDE TSRMLS_CC);</span>
+<span class="lineNum">     277 </span>                : 
+<span class="lineNum">     278 </span><span class="lineNoCov">              0 :         if (ret == SUCCESS) {</span>
+<span class="lineNum">     279 </span><span class="lineNoCov">              0 :                 if (!file_handle.opened_path) {</span>
+<span class="lineNum">     280 </span><span class="lineNoCov">              0 :                         file_handle.opened_path = estrndup(class_file, class_file_len);</span>
+<span class="lineNum">     281 </span>                :                 }
+<span class="lineNum">     282 </span><span class="lineNoCov">              0 :                 if (zend_hash_add(&amp;EG(included_files), file_handle.opened_path, strlen(file_handle.opened_path)+1, (void *)&amp;dummy, sizeof(int), NULL)==SUCCESS) {</span>
+<span class="lineNum">     283 </span><span class="lineNoCov">              0 :                         new_op_array = zend_compile_file(&amp;file_handle, ZEND_REQUIRE TSRMLS_CC);</span>
+<span class="lineNum">     284 </span><span class="lineNoCov">              0 :                         zend_destroy_file_handle(&amp;file_handle TSRMLS_CC);</span>
+<span class="lineNum">     285 </span>                :                 } else {
+<span class="lineNum">     286 </span><span class="lineNoCov">              0 :                         new_op_array = NULL;</span>
+<span class="lineNum">     287 </span><span class="lineNoCov">              0 :                         zend_file_handle_dtor(&amp;file_handle TSRMLS_CC);</span>
+<span class="lineNum">     288 </span>                :                 }
+<span class="lineNum">     289 </span><span class="lineNoCov">              0 :                 if (new_op_array) {</span>
+<span class="lineNum">     290 </span><span class="lineNoCov">              0 :                         EG(return_value_ptr_ptr) = &amp;result;</span>
+<span class="lineNum">     291 </span><span class="lineNoCov">              0 :                         EG(active_op_array) = new_op_array;</span>
+<span class="lineNum">     292 </span><span class="lineNoCov">              0 :                         if (!EG(active_symbol_table)) {</span>
+<span class="lineNum">     293 </span><span class="lineNoCov">              0 :                                 zend_rebuild_symbol_table(TSRMLS_C);</span>
+<span class="lineNum">     294 </span>                :                         }
+<span class="lineNum">     295 </span>                : 
+<span class="lineNum">     296 </span><span class="lineNoCov">              0 :                         zend_execute(new_op_array TSRMLS_CC);</span>
+<span class="lineNum">     297 </span>                :         
+<span class="lineNum">     298 </span><span class="lineNoCov">              0 :                         destroy_op_array(new_op_array TSRMLS_CC);</span>
+<span class="lineNum">     299 </span><span class="lineNoCov">              0 :                         efree(new_op_array);</span>
+<span class="lineNum">     300 </span><span class="lineNoCov">              0 :                         if (!EG(exception)) {</span>
+<span class="lineNum">     301 </span><span class="lineNoCov">              0 :                                 if (EG(return_value_ptr_ptr)) {</span>
+<span class="lineNum">     302 </span><span class="lineNoCov">              0 :                                         zval_ptr_dtor(EG(return_value_ptr_ptr));</span>
+<span class="lineNum">     303 </span>                :                                 }
+<span class="lineNum">     304 </span>                :                         }
+<span class="lineNum">     305 </span>                : 
+<span class="lineNum">     306 </span><span class="lineNoCov">              0 :                         efree(class_file);</span>
+<span class="lineNum">     307 </span><span class="lineNoCov">              0 :                         return zend_hash_exists(EG(class_table), (char*)lc_name, class_name_len+1);</span>
+<span class="lineNum">     308 </span>                :                 }
+<span class="lineNum">     309 </span>                :         }
+<span class="lineNum">     310 </span><span class="lineNoCov">              0 :         efree(class_file);</span>
+<span class="lineNum">     311 </span><span class="lineNoCov">              0 :         return 0;</span>
+<span class="lineNum">     312 </span>                : } /* }}} */
+<span class="lineNum">     313 </span>                : 
+<a name="314"><span class="lineNum">     314 </span>                : /* {{{ proto void spl_autoload(string class_name [, string file_extensions])</a>
+<span class="lineNum">     315 </span>                :  Default implementation for __autoload() */
+<span class="lineNum">     316 </span><span class="lineNoCov">              0 : PHP_FUNCTION(spl_autoload)</span>
+<span class="lineNum">     317 </span>                : {
+<span class="lineNum">     318 </span><span class="lineNoCov">              0 :         char *class_name, *lc_name, *file_exts = SPL_G(autoload_extensions);</span>
+<span class="lineNum">     319 </span><span class="lineNoCov">              0 :         int class_name_len, file_exts_len = SPL_G(autoload_extensions_len), found = 0;</span>
+<span class="lineNum">     320 </span>                :         char *copy, *pos1, *pos2;
+<span class="lineNum">     321 </span><span class="lineNoCov">              0 :         zval **original_return_value = EG(return_value_ptr_ptr);</span>
+<span class="lineNum">     322 </span><span class="lineNoCov">              0 :         zend_op **original_opline_ptr = EG(opline_ptr);</span>
+<span class="lineNum">     323 </span><span class="lineNoCov">              0 :         zend_op_array *original_active_op_array = EG(active_op_array);</span>
+<span class="lineNum">     324 </span>                :         
+<span class="lineNum">     325 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;s|s&quot;, &amp;class_name, &amp;class_name_len, &amp;file_exts, &amp;file_exts_len) == FAILURE) {</span>
+<span class="lineNum">     326 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     327 </span>                :         }
+<span class="lineNum">     328 </span>                : 
+<span class="lineNum">     329 </span><span class="lineNoCov">              0 :         if (file_exts == NULL) { /* autoload_extensions is not intialzed, set to defaults */</span>
+<span class="lineNum">     330 </span><span class="lineNoCov">              0 :                 copy = pos1 = estrndup(SPL_DEFAULT_FILE_EXTENSIONS, sizeof(SPL_DEFAULT_FILE_EXTENSIONS)-1);</span>
+<span class="lineNum">     331 </span>                :         } else {
+<span class="lineNum">     332 </span><span class="lineNoCov">              0 :                 copy = pos1 = estrndup(file_exts, file_exts_len);</span>
+<span class="lineNum">     333 </span>                :         }
+<span class="lineNum">     334 </span><span class="lineNoCov">              0 :         lc_name = zend_str_tolower_dup(class_name, class_name_len);</span>
+<span class="lineNum">     335 </span><span class="lineNoCov">              0 :         while(pos1 &amp;&amp; *pos1 &amp;&amp; !EG(exception)) {</span>
+<span class="lineNum">     336 </span><span class="lineNoCov">              0 :                 EG(return_value_ptr_ptr) = original_return_value;</span>
+<span class="lineNum">     337 </span><span class="lineNoCov">              0 :                 EG(opline_ptr) = original_opline_ptr;</span>
+<span class="lineNum">     338 </span><span class="lineNoCov">              0 :                 EG(active_op_array) = original_active_op_array;</span>
+<span class="lineNum">     339 </span><span class="lineNoCov">              0 :                 pos2 = strchr(pos1, ',');</span>
+<span class="lineNum">     340 </span><span class="lineNoCov">              0 :                 if (pos2) *pos2 = '\0';</span>
+<span class="lineNum">     341 </span><span class="lineNoCov">              0 :                 if (spl_autoload(class_name, lc_name, class_name_len, pos1 TSRMLS_CC)) {</span>
+<span class="lineNum">     342 </span><span class="lineNoCov">              0 :                         found = 1;</span>
+<span class="lineNum">     343 </span><span class="lineNoCov">              0 :                         break; /* loaded */</span>
+<span class="lineNum">     344 </span>                :                 }
+<span class="lineNum">     345 </span><span class="lineNoCov">              0 :                 pos1 = pos2 ? pos2 + 1 : NULL;</span>
+<span class="lineNum">     346 </span>                :         }
+<span class="lineNum">     347 </span><span class="lineNoCov">              0 :         efree(lc_name);</span>
+<span class="lineNum">     348 </span><span class="lineNoCov">              0 :         if (copy) {</span>
+<span class="lineNum">     349 </span><span class="lineNoCov">              0 :                 efree(copy);</span>
+<span class="lineNum">     350 </span>                :         }
+<span class="lineNum">     351 </span>                : 
+<span class="lineNum">     352 </span><span class="lineNoCov">              0 :         EG(return_value_ptr_ptr) = original_return_value;</span>
+<span class="lineNum">     353 </span><span class="lineNoCov">              0 :         EG(opline_ptr) = original_opline_ptr;</span>
+<span class="lineNum">     354 </span><span class="lineNoCov">              0 :         EG(active_op_array) = original_active_op_array;</span>
+<span class="lineNum">     355 </span>                : 
+<span class="lineNum">     356 </span><span class="lineNoCov">              0 :         if (!found &amp;&amp; !SPL_G(autoload_running)) {</span>
+<span class="lineNum">     357 </span>                :                 /* For internal errors, we generate E_ERROR, for direct calls an exception is thrown.
+<span class="lineNum">     358 </span>                :                  * The &quot;scope&quot; is determined by an opcode, if it is ZEND_FETCH_CLASS we know function was called indirectly by
+<span class="lineNum">     359 </span>                :                  * the Zend engine.
+<span class="lineNum">     360 </span>                :                  */
+<span class="lineNum">     361 </span><span class="lineNoCov">              0 :                 if (active_opline-&gt;opcode != ZEND_FETCH_CLASS) {</span>
+<span class="lineNum">     362 </span><span class="lineNoCov">              0 :                         zend_throw_exception_ex(spl_ce_LogicException, 0 TSRMLS_CC, &quot;Class %s could not be loaded&quot;, class_name);</span>
+<span class="lineNum">     363 </span>                :                 } else {
+<span class="lineNum">     364 </span><span class="lineNoCov">              0 :                         php_error_docref(NULL TSRMLS_CC, E_ERROR, &quot;Class %s could not be loaded&quot;, class_name);</span>
+<span class="lineNum">     365 </span>                :                 }
+<span class="lineNum">     366 </span>                :         }
+<span class="lineNum">     367 </span>                : } /* }}} */
+<span class="lineNum">     368 </span>                : 
+<a name="369"><span class="lineNum">     369 </span>                : /* {{{ proto string spl_autoload_extensions([string file_extensions])</a>
+<span class="lineNum">     370 </span>                :  Register and return default file extensions for spl_autoload */
+<span class="lineNum">     371 </span><span class="lineNoCov">              0 : PHP_FUNCTION(spl_autoload_extensions)</span>
+<span class="lineNum">     372 </span>                : {
+<span class="lineNum">     373 </span><span class="lineNoCov">              0 :         char *file_exts = NULL;</span>
+<span class="lineNum">     374 </span>                :         int file_exts_len;
+<span class="lineNum">     375 </span>                : 
+<span class="lineNum">     376 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;|s&quot;, &amp;file_exts, &amp;file_exts_len) == FAILURE) {</span>
+<span class="lineNum">     377 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     378 </span>                :         }
+<span class="lineNum">     379 </span><span class="lineNoCov">              0 :         if (file_exts) {</span>
+<span class="lineNum">     380 </span><span class="lineNoCov">              0 :                 if (SPL_G(autoload_extensions)) {</span>
+<span class="lineNum">     381 </span><span class="lineNoCov">              0 :                         efree(SPL_G(autoload_extensions));</span>
+<span class="lineNum">     382 </span>                :                 }
+<span class="lineNum">     383 </span><span class="lineNoCov">              0 :                 SPL_G(autoload_extensions) = estrndup(file_exts, file_exts_len);</span>
+<span class="lineNum">     384 </span><span class="lineNoCov">              0 :                 SPL_G(autoload_extensions_len) = file_exts_len;</span>
+<span class="lineNum">     385 </span>                :         }
+<span class="lineNum">     386 </span>                : 
+<span class="lineNum">     387 </span><span class="lineNoCov">              0 :         if (SPL_G(autoload_extensions) == NULL) {</span>
+<span class="lineNum">     388 </span><span class="lineNoCov">              0 :                 RETURN_STRINGL(SPL_DEFAULT_FILE_EXTENSIONS, sizeof(SPL_DEFAULT_FILE_EXTENSIONS) - 1, 1);</span>
+<span class="lineNum">     389 </span>                :         } else {
+<span class="lineNum">     390 </span><span class="lineNoCov">              0 :                 RETURN_STRINGL(SPL_G(autoload_extensions), SPL_G(autoload_extensions_len), 1);</span>
+<span class="lineNum">     391 </span>                :         }
+<span class="lineNum">     392 </span>                : } /* }}} */
+<span class="lineNum">     393 </span>                : 
+<span class="lineNum">     394 </span>                : typedef struct {
+<span class="lineNum">     395 </span>                :         zend_function *func_ptr;
+<span class="lineNum">     396 </span>                :         zval *obj;
+<span class="lineNum">     397 </span>                :         zval *closure;
+<span class="lineNum">     398 </span>                :         zend_class_entry *ce;
+<a name="399"><span class="lineNum">     399 </span>                : } autoload_func_info;</a>
+<span class="lineNum">     400 </span>                : 
+<span class="lineNum">     401 </span><span class="lineNoCov">              0 : static void autoload_func_info_dtor(autoload_func_info *alfi)</span>
+<span class="lineNum">     402 </span>                : {
+<span class="lineNum">     403 </span><span class="lineNoCov">              0 :         if (alfi-&gt;obj) {</span>
+<span class="lineNum">     404 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;alfi-&gt;obj);</span>
+<span class="lineNum">     405 </span>                :         }
+<span class="lineNum">     406 </span><span class="lineNoCov">              0 :         if (alfi-&gt;closure) {</span>
+<span class="lineNum">     407 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;alfi-&gt;closure);</span>
+<span class="lineNum">     408 </span>                :         }
+<span class="lineNum">     409 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     410 </span>                : 
+<a name="411"><span class="lineNum">     411 </span>                : /* {{{ proto void spl_autoload_call(string class_name)</a>
+<span class="lineNum">     412 </span>                :  Try all registerd autoload function to load the requested class */
+<span class="lineNum">     413 </span><span class="lineNoCov">              0 : PHP_FUNCTION(spl_autoload_call)</span>
+<span class="lineNum">     414 </span>                : {
+<span class="lineNum">     415 </span><span class="lineNoCov">              0 :         zval *class_name, *retval = NULL;</span>
+<span class="lineNum">     416 </span>                :         int class_name_len;
+<span class="lineNum">     417 </span>                :         char *func_name, *lc_name;
+<span class="lineNum">     418 </span>                :         uint func_name_len;
+<span class="lineNum">     419 </span>                :         ulong dummy;
+<span class="lineNum">     420 </span>                :         HashPosition function_pos;
+<span class="lineNum">     421 </span>                :         autoload_func_info *alfi;
+<span class="lineNum">     422 </span>                : 
+<span class="lineNum">     423 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;z&quot;, &amp;class_name) == FAILURE || Z_TYPE_P(class_name) != IS_STRING) {</span>
+<span class="lineNum">     424 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     425 </span>                :         }
+<span class="lineNum">     426 </span>                : 
+<span class="lineNum">     427 </span><span class="lineNoCov">              0 :         if (SPL_G(autoload_functions)) {</span>
+<span class="lineNum">     428 </span><span class="lineNoCov">              0 :                 int l_autoload_running = SPL_G(autoload_running);</span>
+<span class="lineNum">     429 </span><span class="lineNoCov">              0 :                 SPL_G(autoload_running) = 1;</span>
+<span class="lineNum">     430 </span><span class="lineNoCov">              0 :                 class_name_len = Z_STRLEN_P(class_name);</span>
+<span class="lineNum">     431 </span><span class="lineNoCov">              0 :                 lc_name = zend_str_tolower_dup(Z_STRVAL_P(class_name), class_name_len);</span>
+<span class="lineNum">     432 </span><span class="lineNoCov">              0 :                 zend_hash_internal_pointer_reset_ex(SPL_G(autoload_functions), &amp;function_pos);</span>
+<span class="lineNum">     433 </span><span class="lineNoCov">              0 :                 while(zend_hash_has_more_elements_ex(SPL_G(autoload_functions), &amp;function_pos) == SUCCESS) {</span>
+<span class="lineNum">     434 </span><span class="lineNoCov">              0 :                         zend_hash_get_current_key_ex(SPL_G(autoload_functions), &amp;func_name, &amp;func_name_len, &amp;dummy, 0, &amp;function_pos);</span>
+<span class="lineNum">     435 </span><span class="lineNoCov">              0 :                         zend_hash_get_current_data_ex(SPL_G(autoload_functions), (void **) &amp;alfi, &amp;function_pos);</span>
+<span class="lineNum">     436 </span><span class="lineNoCov">              0 :                         zend_call_method(alfi-&gt;obj ? &amp;alfi-&gt;obj : NULL, alfi-&gt;ce, &amp;alfi-&gt;func_ptr, func_name, func_name_len, &amp;retval, 1, class_name, NULL TSRMLS_CC);</span>
+<span class="lineNum">     437 </span><span class="lineNoCov">              0 :                         zend_exception_save(TSRMLS_C);</span>
+<span class="lineNum">     438 </span><span class="lineNoCov">              0 :                         if (retval) {</span>
+<span class="lineNum">     439 </span><span class="lineNoCov">              0 :                                 zval_ptr_dtor(&amp;retval);</span>
+<span class="lineNum">     440 </span><span class="lineNoCov">              0 :                                 retval = NULL;</span>
+<span class="lineNum">     441 </span>                :                         }
+<span class="lineNum">     442 </span><span class="lineNoCov">              0 :                         if (zend_hash_exists(EG(class_table), lc_name, class_name_len + 1)) {</span>
+<span class="lineNum">     443 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     444 </span>                :                         }
+<span class="lineNum">     445 </span><span class="lineNoCov">              0 :                         zend_hash_move_forward_ex(SPL_G(autoload_functions), &amp;function_pos);</span>
+<span class="lineNum">     446 </span>                :                 }
+<span class="lineNum">     447 </span><span class="lineNoCov">              0 :                 zend_exception_restore(TSRMLS_C);</span>
+<span class="lineNum">     448 </span><span class="lineNoCov">              0 :                 efree(lc_name);</span>
+<span class="lineNum">     449 </span><span class="lineNoCov">              0 :                 SPL_G(autoload_running) = l_autoload_running;</span>
+<span class="lineNum">     450 </span>                :         } else {
+<span class="lineNum">     451 </span>                :                 /* do not use or overwrite &amp;EG(autoload_func) here */
+<span class="lineNum">     452 </span><span class="lineNoCov">              0 :                 zend_call_method_with_1_params(NULL, NULL, NULL, &quot;spl_autoload&quot;, NULL, class_name);</span>
+<span class="lineNum">     453 </span>                :         }
+<span class="lineNum">     454 </span>                : } /* }}} */
+<span class="lineNum">     455 </span>                : 
+<span class="lineNum">     456 </span>                : #define HT_MOVE_TAIL_TO_HEAD(ht)                                                        \
+<span class="lineNum">     457 </span>                :         (ht)-&gt;pListTail-&gt;pListNext = (ht)-&gt;pListHead;                  \
+<span class="lineNum">     458 </span>                :         (ht)-&gt;pListHead = (ht)-&gt;pListTail;                                                \
+<span class="lineNum">     459 </span>                :         (ht)-&gt;pListTail = (ht)-&gt;pListHead-&gt;pListLast;                  \
+<span class="lineNum">     460 </span>                :         (ht)-&gt;pListHead-&gt;pListNext-&gt;pListLast = (ht)-&gt;pListHead;\
+<span class="lineNum">     461 </span>                :         (ht)-&gt;pListTail-&gt;pListNext = NULL;                                                \
+<span class="lineNum">     462 </span>                :         (ht)-&gt;pListHead-&gt;pListLast = NULL;
+<span class="lineNum">     463 </span>                : 
+<a name="464"><span class="lineNum">     464 </span>                : /* {{{ proto bool spl_autoload_register([mixed autoload_function = &quot;spl_autoload&quot; [, throw = true [, prepend]]])</a>
+<span class="lineNum">     465 </span>                :  Register given function as __autoload() implementation */
+<span class="lineNum">     466 </span><span class="lineNoCov">              0 : PHP_FUNCTION(spl_autoload_register)</span>
+<span class="lineNum">     467 </span>                : {
+<span class="lineNum">     468 </span><span class="lineNoCov">              0 :         char *func_name, *error = NULL;</span>
+<span class="lineNum">     469 </span>                :         int  func_name_len;
+<span class="lineNum">     470 </span><span class="lineNoCov">              0 :         char *lc_name = NULL;</span>
+<span class="lineNum">     471 </span><span class="lineNoCov">              0 :         zval *zcallable = NULL;</span>
+<span class="lineNum">     472 </span><span class="lineNoCov">              0 :         zend_bool do_throw = 1;</span>
+<span class="lineNum">     473 </span><span class="lineNoCov">              0 :         zend_bool prepend  = 0;</span>
+<span class="lineNum">     474 </span>                :         zend_function *spl_func_ptr;
+<span class="lineNum">     475 </span>                :         autoload_func_info alfi;
+<span class="lineNum">     476 </span>                :         zval *obj_ptr;
+<span class="lineNum">     477 </span>                :         zend_fcall_info_cache fcc;
+<span class="lineNum">     478 </span>                : 
+<span class="lineNum">     479 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, &quot;|zbb&quot;, &amp;zcallable, &amp;do_throw, &amp;prepend) == FAILURE) {</span>
+<span class="lineNum">     480 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     481 </span>                :         }
+<span class="lineNum">     482 </span>                : 
+<span class="lineNum">     483 </span><span class="lineNoCov">              0 :         if (ZEND_NUM_ARGS()) {</span>
+<span class="lineNum">     484 </span><span class="lineNoCov">              0 :                 if (Z_TYPE_P(zcallable) == IS_STRING) {</span>
+<span class="lineNum">     485 </span><span class="lineNoCov">              0 :                         if (Z_STRLEN_P(zcallable) == sizeof(&quot;spl_autoload_call&quot;) - 1) {</span>
+<span class="lineNum">     486 </span><span class="lineNoCov">              0 :                                 if (!zend_binary_strcasecmp(Z_STRVAL_P(zcallable), sizeof(&quot;spl_autoload_call&quot;), &quot;spl_autoload_call&quot;, sizeof(&quot;spl_autoload_call&quot;))) {</span>
+<span class="lineNum">     487 </span><span class="lineNoCov">              0 :                                         if (do_throw) {</span>
+<span class="lineNum">     488 </span><span class="lineNoCov">              0 :                                                 zend_throw_exception_ex(spl_ce_LogicException, 0 TSRMLS_CC, &quot;Function spl_autoload_call() cannot be registered&quot;);</span>
+<span class="lineNum">     489 </span>                :                                         }
+<span class="lineNum">     490 </span><span class="lineNoCov">              0 :                                         RETURN_FALSE;</span>
+<span class="lineNum">     491 </span>                :                                 }
+<span class="lineNum">     492 </span>                :                         }
+<span class="lineNum">     493 </span>                :                 }
+<span class="lineNum">     494 </span>                :         
+<span class="lineNum">     495 </span><span class="lineNoCov">              0 :                 if (!zend_is_callable_ex(zcallable, NULL, IS_CALLABLE_STRICT, &amp;func_name, &amp;func_name_len, &amp;fcc, &amp;error TSRMLS_CC)) {</span>
+<span class="lineNum">     496 </span><span class="lineNoCov">              0 :                         alfi.ce = fcc.calling_scope;</span>
+<span class="lineNum">     497 </span><span class="lineNoCov">              0 :                         alfi.func_ptr = fcc.function_handler;</span>
+<span class="lineNum">     498 </span><span class="lineNoCov">              0 :                         obj_ptr = fcc.object_ptr;</span>
+<span class="lineNum">     499 </span><span class="lineNoCov">              0 :                         if (Z_TYPE_P(zcallable) == IS_ARRAY) {</span>
+<span class="lineNum">     500 </span><span class="lineNoCov">              0 :                                 if (!obj_ptr &amp;&amp; alfi.func_ptr &amp;&amp; !(alfi.func_ptr-&gt;common.fn_flags &amp; ZEND_ACC_STATIC)) {</span>
+<span class="lineNum">     501 </span><span class="lineNoCov">              0 :                                         if (do_throw) {</span>
+<span class="lineNum">     502 </span><span class="lineNoCov">              0 :                                                 zend_throw_exception_ex(spl_ce_LogicException, 0 TSRMLS_CC, &quot;Passed array specifies a non static method but no object (%s)&quot;, error);</span>
+<span class="lineNum">     503 </span>                :                                         }
+<span class="lineNum">     504 </span><span class="lineNoCov">              0 :                                         if (error) {</span>
+<span class="lineNum">     505 </span><span class="lineNoCov">              0 :                                                 efree(error);</span>
+<span class="lineNum">     506 </span>                :                                         }
+<span class="lineNum">     507 </span><span class="lineNoCov">              0 :                                         efree(func_name);</span>
+<span class="lineNum">     508 </span><span class="lineNoCov">              0 :                                         RETURN_FALSE;</span>
+<span class="lineNum">     509 </span>                :                                 }
+<span class="lineNum">     510 </span><span class="lineNoCov">              0 :                                 else if (do_throw) {</span>
+<span class="lineNum">     511 </span><span class="lineNoCov">              0 :                                         zend_throw_exception_ex(spl_ce_LogicException, 0 TSRMLS_CC, &quot;Passed array does not specify %s %smethod (%s)&quot;, alfi.func_ptr ? &quot;a callable&quot; : &quot;an existing&quot;, !obj_ptr ? &quot;static &quot; : &quot;&quot;, error);</span>
+<span class="lineNum">     512 </span>                :                                 }
+<span class="lineNum">     513 </span><span class="lineNoCov">              0 :                                 if (error) {</span>
+<span class="lineNum">     514 </span><span class="lineNoCov">              0 :                                         efree(error);</span>
+<span class="lineNum">     515 </span>                :                                 }
+<span class="lineNum">     516 </span><span class="lineNoCov">              0 :                                 efree(func_name);</span>
+<span class="lineNum">     517 </span><span class="lineNoCov">              0 :                                 RETURN_FALSE;</span>
+<span class="lineNum">     518 </span><span class="lineNoCov">              0 :                         } else if (Z_TYPE_P(zcallable) == IS_STRING) {</span>
+<span class="lineNum">     519 </span><span class="lineNoCov">              0 :                                 if (do_throw) {</span>
+<span class="lineNum">     520 </span><span class="lineNoCov">              0 :                                         zend_throw_exception_ex(spl_ce_LogicException, 0 TSRMLS_CC, &quot;Function '%s' not %s (%s)&quot;, func_name, alfi.func_ptr ? &quot;callable&quot; : &quot;found&quot;, error);</span>
+<span class="lineNum">     521 </span>                :                                 }
+<span class="lineNum">     522 </span><span class="lineNoCov">              0 :                                 if (error) {</span>
+<span class="lineNum">     523 </span><span class="lineNoCov">              0 :                                         efree(error);</span>
+<span class="lineNum">     524 </span>                :                                 }
+<span class="lineNum">     525 </span><span class="lineNoCov">              0 :                                 efree(func_name);</span>
+<span class="lineNum">     526 </span><span class="lineNoCov">              0 :                                 RETURN_FALSE;</span>
+<span class="lineNum">     527 </span>                :                         } else {
+<span class="lineNum">     528 </span><span class="lineNoCov">              0 :                                 if (do_throw) {</span>
+<span class="lineNum">     529 </span><span class="lineNoCov">              0 :                                         zend_throw_exception_ex(spl_ce_LogicException, 0 TSRMLS_CC, &quot;Illegal value passed (%s)&quot;, error);</span>
+<span class="lineNum">     530 </span>                :                                 }
+<span class="lineNum">     531 </span><span class="lineNoCov">              0 :                                 if (error) {</span>
+<span class="lineNum">     532 </span><span class="lineNoCov">              0 :                                         efree(error);</span>
+<span class="lineNum">     533 </span>                :                                 }
+<span class="lineNum">     534 </span><span class="lineNoCov">              0 :                                 efree(func_name);</span>
+<span class="lineNum">     535 </span><span class="lineNoCov">              0 :                                 RETURN_FALSE;</span>
+<span class="lineNum">     536 </span>                :                         }
+<span class="lineNum">     537 </span>                :                 }
+<span class="lineNum">     538 </span><span class="lineNoCov">              0 :                 alfi.closure = NULL;</span>
+<span class="lineNum">     539 </span><span class="lineNoCov">              0 :                 alfi.ce = fcc.calling_scope;</span>
+<span class="lineNum">     540 </span><span class="lineNoCov">              0 :                 alfi.func_ptr = fcc.function_handler;</span>
+<span class="lineNum">     541 </span><span class="lineNoCov">              0 :                 obj_ptr = fcc.object_ptr;</span>
+<span class="lineNum">     542 </span><span class="lineNoCov">              0 :                 if (error) {</span>
+<span class="lineNum">     543 </span><span class="lineNoCov">              0 :                         efree(error);</span>
+<span class="lineNum">     544 </span>                :                 }
+<span class="lineNum">     545 </span>                :         
+<span class="lineNum">     546 </span><span class="lineNoCov">              0 :                 lc_name = safe_emalloc(func_name_len, 1, sizeof(long) + 1);</span>
+<span class="lineNum">     547 </span><span class="lineNoCov">              0 :                 zend_str_tolower_copy(lc_name, func_name, func_name_len);</span>
+<span class="lineNum">     548 </span><span class="lineNoCov">              0 :                 efree(func_name);</span>
+<span class="lineNum">     549 </span>                : 
+<span class="lineNum">     550 </span><span class="lineNoCov">              0 :                 if (Z_TYPE_P(zcallable) == IS_OBJECT) {</span>
+<span class="lineNum">     551 </span><span class="lineNoCov">              0 :                         alfi.closure = zcallable;</span>
+<span class="lineNum">     552 </span><span class="lineNoCov">              0 :                         Z_ADDREF_P(zcallable);</span>
+<span class="lineNum">     553 </span>                : 
+<span class="lineNum">     554 </span><span class="lineNoCov">              0 :                         lc_name = erealloc(lc_name, func_name_len + 2 + sizeof(zend_object_handle));</span>
+<span class="lineNum">     555 </span><span class="lineNoCov">              0 :                         memcpy(lc_name + func_name_len, &amp;Z_OBJ_HANDLE_P(zcallable),</span>
+<span class="lineNum">     556 </span>                :                                 sizeof(zend_object_handle));
+<span class="lineNum">     557 </span><span class="lineNoCov">              0 :                         func_name_len += sizeof(zend_object_handle);</span>
+<span class="lineNum">     558 </span><span class="lineNoCov">              0 :                         lc_name[func_name_len] = '\0';</span>
+<span class="lineNum">     559 </span>                :                 }
+<span class="lineNum">     560 </span>                : 
+<span class="lineNum">     561 </span><span class="lineNoCov">              0 :                 if (SPL_G(autoload_functions) &amp;&amp; zend_hash_exists(SPL_G(autoload_functions), (char*)lc_name, func_name_len+1)) {</span>
+<span class="lineNum">     562 </span><span class="lineNoCov">              0 :                         if (alfi.closure) {</span>
+<span class="lineNum">     563 </span><span class="lineNoCov">              0 :                                 Z_DELREF_P(zcallable);</span>
+<span class="lineNum">     564 </span>                :                         }
+<span class="lineNum">     565 </span><span class="lineNoCov">              0 :                         goto skip;</span>
+<span class="lineNum">     566 </span>                :                 }
+<span class="lineNum">     567 </span>                : 
+<span class="lineNum">     568 </span><span class="lineNoCov">              0 :                 if (obj_ptr &amp;&amp; !(alfi.func_ptr-&gt;common.fn_flags &amp; ZEND_ACC_STATIC)) {</span>
+<span class="lineNum">     569 </span>                :                         /* add object id to the hash to ensure uniqueness, for more reference look at bug #40091 */
+<span class="lineNum">     570 </span><span class="lineNoCov">              0 :                         lc_name = erealloc(lc_name, func_name_len + 2 + sizeof(zend_object_handle));</span>
+<span class="lineNum">     571 </span><span class="lineNoCov">              0 :                         memcpy(lc_name + func_name_len, &amp;Z_OBJ_HANDLE_P(obj_ptr), sizeof(zend_object_handle));</span>
+<span class="lineNum">     572 </span><span class="lineNoCov">              0 :                         func_name_len += sizeof(zend_object_handle);</span>
+<span class="lineNum">     573 </span><span class="lineNoCov">              0 :                         lc_name[func_name_len] = '\0';</span>
+<span class="lineNum">     574 </span><span class="lineNoCov">              0 :                         alfi.obj = obj_ptr;</span>
+<span class="lineNum">     575 </span><span class="lineNoCov">              0 :                         Z_ADDREF_P(alfi.obj);</span>
+<span class="lineNum">     576 </span>                :                 } else {
+<span class="lineNum">     577 </span><span class="lineNoCov">              0 :                         alfi.obj = NULL;</span>
+<span class="lineNum">     578 </span>                :                 }
+<span class="lineNum">     579 </span>                : 
+<span class="lineNum">     580 </span><span class="lineNoCov">              0 :                 if (!SPL_G(autoload_functions)) {</span>
+<span class="lineNum">     581 </span><span class="lineNoCov">              0 :                         ALLOC_HASHTABLE(SPL_G(autoload_functions));</span>
+<span class="lineNum">     582 </span><span class="lineNoCov">              0 :                         zend_hash_init(SPL_G(autoload_functions), 1, NULL, (dtor_func_t) autoload_func_info_dtor, 0);</span>
+<span class="lineNum">     583 </span>                :                 }
+<span class="lineNum">     584 </span>                : 
+<span class="lineNum">     585 </span><span class="lineNoCov">              0 :                 zend_hash_find(EG(function_table), &quot;spl_autoload&quot;, sizeof(&quot;spl_autoload&quot;), (void **) &amp;spl_func_ptr);</span>
+<span class="lineNum">     586 </span>                : 
+<span class="lineNum">     587 </span><span class="lineNoCov">              0 :                 if (EG(autoload_func) == spl_func_ptr) { /* registered already, so we insert that first */</span>
+<span class="lineNum">     588 </span>                :                         autoload_func_info spl_alfi;
+<span class="lineNum">     589 </span>                : 
+<span class="lineNum">     590 </span><span class="lineNoCov">              0 :                         spl_alfi.func_ptr = spl_func_ptr;</span>
+<span class="lineNum">     591 </span><span class="lineNoCov">              0 :                         spl_alfi.obj = NULL;</span>
+<span class="lineNum">     592 </span><span class="lineNoCov">              0 :                         spl_alfi.ce = NULL;</span>
+<span class="lineNum">     593 </span><span class="lineNoCov">              0 :                         spl_alfi.closure = NULL;</span>
+<span class="lineNum">     594 </span><span class="lineNoCov">              0 :                         zend_hash_add(SPL_G(autoload_functions), &quot;spl_autoload&quot;, sizeof(&quot;spl_autoload&quot;), &amp;spl_alfi, sizeof(autoload_func_info), NULL);</span>
+<span class="lineNum">     595 </span><span class="lineNoCov">              0 :                         if (prepend &amp;&amp; SPL_G(autoload_functions)-&gt;nNumOfElements &gt; 1) {</span>
+<span class="lineNum">     596 </span>                :                                 /* Move the newly created element to the head of the hashtable */
+<span class="lineNum">     597 </span><span class="lineNoCov">              0 :                                 HT_MOVE_TAIL_TO_HEAD(SPL_G(autoload_functions));</span>
+<span class="lineNum">     598 </span>                :                         }
+<span class="lineNum">     599 </span>                :                 }
+<span class="lineNum">     600 </span>                : 
+<span class="lineNum">     601 </span><span class="lineNoCov">              0 :                 if (zend_hash_add(SPL_G(autoload_functions), lc_name, func_name_len+1, &amp;alfi.func_ptr, sizeof(autoload_func_info), NULL) == FAILURE) {</span>
+<span class="lineNum">     602 </span><span class="lineNoCov">              0 :                         if (obj_ptr &amp;&amp; !(alfi.func_ptr-&gt;common.fn_flags &amp; ZEND_ACC_STATIC)) {</span>
+<span class="lineNum">     603 </span><span class="lineNoCov">              0 :                                 Z_DELREF_P(alfi.obj);</span>
+<span class="lineNum">     604 </span>                :                         }                               
+<span class="lineNum">     605 </span><span class="lineNoCov">              0 :                         if (alfi.closure) {</span>
+<span class="lineNum">     606 </span><span class="lineNoCov">              0 :                                 Z_DELREF_P(alfi.closure);</span>
+<span class="lineNum">     607 </span>                :                         }
+<span class="lineNum">     608 </span>                :                 }
+<span class="lineNum">     609 </span><span class="lineNoCov">              0 :                 if (prepend &amp;&amp; SPL_G(autoload_functions)-&gt;nNumOfElements &gt; 1) {</span>
+<span class="lineNum">     610 </span>                :                         /* Move the newly created element to the head of the hashtable */
+<span class="lineNum">     611 </span><span class="lineNoCov">              0 :                         HT_MOVE_TAIL_TO_HEAD(SPL_G(autoload_functions));</span>
+<span class="lineNum">     612 </span>                :                 }
+<span class="lineNum">     613 </span>                : skip:
+<span class="lineNum">     614 </span><span class="lineNoCov">              0 :                 efree(lc_name);</span>
+<span class="lineNum">     615 </span>                :         }
+<span class="lineNum">     616 </span>                : 
+<span class="lineNum">     617 </span><span class="lineNoCov">              0 :         if (SPL_G(autoload_functions)) {</span>
+<span class="lineNum">     618 </span><span class="lineNoCov">              0 :                 zend_hash_find(EG(function_table), &quot;spl_autoload_call&quot;, sizeof(&quot;spl_autoload_call&quot;), (void **) &amp;EG(autoload_func));</span>
+<span class="lineNum">     619 </span>                :         } else {
+<span class="lineNum">     620 </span><span class="lineNoCov">              0 :                 zend_hash_find(EG(function_table), &quot;spl_autoload&quot;, sizeof(&quot;spl_autoload&quot;), (void **) &amp;EG(autoload_func));</span>
+<span class="lineNum">     621 </span>                :         }
+<span class="lineNum">     622 </span><span class="lineNoCov">              0 :         RETURN_TRUE;</span>
+<span class="lineNum">     623 </span>                : } /* }}} */
+<span class="lineNum">     624 </span>                : 
+<a name="625"><span class="lineNum">     625 </span>                : /* {{{ proto bool spl_autoload_unregister(mixed autoload_function)</a>
+<span class="lineNum">     626 </span>                :  Unregister given function as __autoload() implementation */
+<span class="lineNum">     627 </span><span class="lineNoCov">              0 : PHP_FUNCTION(spl_autoload_unregister)</span>
+<span class="lineNum">     628 </span>                : {
+<span class="lineNum">     629 </span><span class="lineNoCov">              0 :         char *func_name, *error = NULL;</span>
+<span class="lineNum">     630 </span>                :         int func_name_len;
+<span class="lineNum">     631 </span><span class="lineNoCov">              0 :         char *lc_name = NULL;</span>
+<span class="lineNum">     632 </span>                :         zval *zcallable;
+<span class="lineNum">     633 </span><span class="lineNoCov">              0 :         int success = FAILURE;</span>
+<span class="lineNum">     634 </span>                :         zend_function *spl_func_ptr;
+<span class="lineNum">     635 </span>                :         zval *obj_ptr;
+<span class="lineNum">     636 </span>                :         zend_fcall_info_cache fcc;
+<span class="lineNum">     637 </span>                : 
+<span class="lineNum">     638 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;z&quot;, &amp;zcallable) == FAILURE) {</span>
+<span class="lineNum">     639 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     640 </span>                :         }
+<span class="lineNum">     641 </span>                : 
+<span class="lineNum">     642 </span><span class="lineNoCov">              0 :         if (!zend_is_callable_ex(zcallable, NULL, IS_CALLABLE_CHECK_SYNTAX_ONLY, &amp;func_name, &amp;func_name_len, &amp;fcc, &amp;error TSRMLS_CC)) {</span>
+<span class="lineNum">     643 </span><span class="lineNoCov">              0 :                 zend_throw_exception_ex(spl_ce_LogicException, 0 TSRMLS_CC, &quot;Unable to unregister invalid function (%s)&quot;, error);</span>
+<span class="lineNum">     644 </span><span class="lineNoCov">              0 :                 if (error) {</span>
+<span class="lineNum">     645 </span><span class="lineNoCov">              0 :                         efree(error);</span>
+<span class="lineNum">     646 </span>                :                 }
+<span class="lineNum">     647 </span><span class="lineNoCov">              0 :                 if (func_name) {</span>
+<span class="lineNum">     648 </span><span class="lineNoCov">              0 :                         efree(func_name);</span>
+<span class="lineNum">     649 </span>                :                 }
+<span class="lineNum">     650 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     651 </span>                :         }
+<span class="lineNum">     652 </span><span class="lineNoCov">              0 :         obj_ptr = fcc.object_ptr;</span>
+<span class="lineNum">     653 </span><span class="lineNoCov">              0 :         if (error) {</span>
+<span class="lineNum">     654 </span><span class="lineNoCov">              0 :                 efree(error);</span>
+<span class="lineNum">     655 </span>                :         }
+<span class="lineNum">     656 </span>                : 
+<span class="lineNum">     657 </span><span class="lineNoCov">              0 :         lc_name = safe_emalloc(func_name_len, 1, sizeof(long) + 1);</span>
+<span class="lineNum">     658 </span><span class="lineNoCov">              0 :         zend_str_tolower_copy(lc_name, func_name, func_name_len);</span>
+<span class="lineNum">     659 </span><span class="lineNoCov">              0 :         efree(func_name);</span>
+<span class="lineNum">     660 </span>                : 
+<span class="lineNum">     661 </span><span class="lineNoCov">              0 :         if (Z_TYPE_P(zcallable) == IS_OBJECT) {</span>
+<span class="lineNum">     662 </span><span class="lineNoCov">              0 :                 lc_name = erealloc(lc_name, func_name_len + 2 + sizeof(zend_object_handle));</span>
+<span class="lineNum">     663 </span><span class="lineNoCov">              0 :                 memcpy(lc_name + func_name_len, &amp;Z_OBJ_HANDLE_P(zcallable),</span>
+<span class="lineNum">     664 </span>                :                         sizeof(zend_object_handle));
+<span class="lineNum">     665 </span><span class="lineNoCov">              0 :                 func_name_len += sizeof(zend_object_handle);</span>
+<span class="lineNum">     666 </span><span class="lineNoCov">              0 :                 lc_name[func_name_len] = '\0';</span>
+<span class="lineNum">     667 </span>                :         }
+<span class="lineNum">     668 </span>                : 
+<span class="lineNum">     669 </span><span class="lineNoCov">              0 :         if (SPL_G(autoload_functions)) {</span>
+<span class="lineNum">     670 </span><span class="lineNoCov">              0 :                 if (func_name_len == sizeof(&quot;spl_autoload_call&quot;)-1 &amp;&amp; !strcmp(lc_name, &quot;spl_autoload_call&quot;)) {</span>
+<span class="lineNum">     671 </span>                :                         /* remove all */
+<span class="lineNum">     672 </span><span class="lineNoCov">              0 :                         zend_hash_destroy(SPL_G(autoload_functions));</span>
+<span class="lineNum">     673 </span><span class="lineNoCov">              0 :                         FREE_HASHTABLE(SPL_G(autoload_functions));</span>
+<span class="lineNum">     674 </span><span class="lineNoCov">              0 :                         SPL_G(autoload_functions) = NULL;</span>
+<span class="lineNum">     675 </span><span class="lineNoCov">              0 :                         EG(autoload_func) = NULL;</span>
+<span class="lineNum">     676 </span><span class="lineNoCov">              0 :                         success = SUCCESS;</span>
+<span class="lineNum">     677 </span>                :                 } else {
+<span class="lineNum">     678 </span>                :                         /* remove specific */
+<span class="lineNum">     679 </span><span class="lineNoCov">              0 :                         success = zend_hash_del(SPL_G(autoload_functions), lc_name, func_name_len+1);</span>
+<span class="lineNum">     680 </span><span class="lineNoCov">              0 :                         if (success != SUCCESS &amp;&amp; obj_ptr) {</span>
+<span class="lineNum">     681 </span><span class="lineNoCov">              0 :                                 lc_name = erealloc(lc_name, func_name_len + 2 + sizeof(zend_object_handle));</span>
+<span class="lineNum">     682 </span><span class="lineNoCov">              0 :                                 memcpy(lc_name + func_name_len, &amp;Z_OBJ_HANDLE_P(obj_ptr), sizeof(zend_object_handle));</span>
+<span class="lineNum">     683 </span><span class="lineNoCov">              0 :                                 func_name_len += sizeof(zend_object_handle);</span>
+<span class="lineNum">     684 </span><span class="lineNoCov">              0 :                                 lc_name[func_name_len] = '\0';</span>
+<span class="lineNum">     685 </span><span class="lineNoCov">              0 :                                 success = zend_hash_del(SPL_G(autoload_functions), lc_name, func_name_len+1);</span>
+<span class="lineNum">     686 </span>                :                         }
+<span class="lineNum">     687 </span>                :                 }
+<span class="lineNum">     688 </span><span class="lineNoCov">              0 :         } else if (func_name_len == sizeof(&quot;spl_autoload&quot;)-1 &amp;&amp; !strcmp(lc_name, &quot;spl_autoload&quot;)) {</span>
+<span class="lineNum">     689 </span>                :                 /* register single spl_autoload() */
+<span class="lineNum">     690 </span><span class="lineNoCov">              0 :                 zend_hash_find(EG(function_table), &quot;spl_autoload&quot;, sizeof(&quot;spl_autoload&quot;), (void **) &amp;spl_func_ptr);</span>
+<span class="lineNum">     691 </span>                : 
+<span class="lineNum">     692 </span><span class="lineNoCov">              0 :                 if (EG(autoload_func) == spl_func_ptr) {</span>
+<span class="lineNum">     693 </span><span class="lineNoCov">              0 :                         success = SUCCESS;</span>
+<span class="lineNum">     694 </span><span class="lineNoCov">              0 :                         EG(autoload_func) = NULL;</span>
+<span class="lineNum">     695 </span>                :                 }
+<span class="lineNum">     696 </span>                :         }
+<span class="lineNum">     697 </span>                : 
+<span class="lineNum">     698 </span><span class="lineNoCov">              0 :         efree(lc_name);</span>
+<span class="lineNum">     699 </span><span class="lineNoCov">              0 :         RETURN_BOOL(success == SUCCESS);</span>
+<span class="lineNum">     700 </span>                : } /* }}} */
+<span class="lineNum">     701 </span>                : 
+<a name="702"><span class="lineNum">     702 </span>                : /* {{{ proto false|array spl_autoload_functions()</a>
+<span class="lineNum">     703 </span>                :  Return all registered __autoload() functionns */
+<span class="lineNum">     704 </span><span class="lineNoCov">              0 : PHP_FUNCTION(spl_autoload_functions)</span>
+<span class="lineNum">     705 </span>                : {
+<span class="lineNum">     706 </span>                :         zend_function *fptr;
+<span class="lineNum">     707 </span>                :         HashPosition function_pos;
+<span class="lineNum">     708 </span>                :         autoload_func_info *alfi;
+<span class="lineNum">     709 </span>                : 
+<span class="lineNum">     710 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters_none() == FAILURE) {</span>
+<span class="lineNum">     711 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     712 </span>                :         }
+<span class="lineNum">     713 </span>                :         
+<span class="lineNum">     714 </span><span class="lineNoCov">              0 :         if (!EG(autoload_func)) {</span>
+<span class="lineNum">     715 </span><span class="lineNoCov">              0 :                 if (zend_hash_find(EG(function_table), ZEND_AUTOLOAD_FUNC_NAME, sizeof(ZEND_AUTOLOAD_FUNC_NAME), (void **) &amp;fptr) == SUCCESS) {</span>
+<span class="lineNum">     716 </span><span class="lineNoCov">              0 :                         array_init(return_value);</span>
+<span class="lineNum">     717 </span><span class="lineNoCov">              0 :                         add_next_index_stringl(return_value, ZEND_AUTOLOAD_FUNC_NAME, sizeof(ZEND_AUTOLOAD_FUNC_NAME)-1, 1);</span>
+<span class="lineNum">     718 </span><span class="lineNoCov">              0 :                         return;</span>
+<span class="lineNum">     719 </span>                :                 }
+<span class="lineNum">     720 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     721 </span>                :         }
+<span class="lineNum">     722 </span>                : 
+<span class="lineNum">     723 </span><span class="lineNoCov">              0 :         zend_hash_find(EG(function_table), &quot;spl_autoload_call&quot;, sizeof(&quot;spl_autoload_call&quot;), (void **) &amp;fptr);</span>
+<span class="lineNum">     724 </span>                : 
+<span class="lineNum">     725 </span><span class="lineNoCov">              0 :         if (EG(autoload_func) == fptr) {</span>
+<span class="lineNum">     726 </span><span class="lineNoCov">              0 :                 array_init(return_value);</span>
+<span class="lineNum">     727 </span><span class="lineNoCov">              0 :                 zend_hash_internal_pointer_reset_ex(SPL_G(autoload_functions), &amp;function_pos);</span>
+<span class="lineNum">     728 </span><span class="lineNoCov">              0 :                 while(zend_hash_has_more_elements_ex(SPL_G(autoload_functions), &amp;function_pos) == SUCCESS) {</span>
+<span class="lineNum">     729 </span><span class="lineNoCov">              0 :                         zend_hash_get_current_data_ex(SPL_G(autoload_functions), (void **) &amp;alfi, &amp;function_pos);</span>
+<span class="lineNum">     730 </span><span class="lineNoCov">              0 :                         if (alfi-&gt;closure) {</span>
+<span class="lineNum">     731 </span><span class="lineNoCov">              0 :                                 Z_ADDREF_P(alfi-&gt;closure);</span>
+<span class="lineNum">     732 </span><span class="lineNoCov">              0 :                                 add_next_index_zval(return_value, alfi-&gt;closure);</span>
+<span class="lineNum">     733 </span><span class="lineNoCov">              0 :                         } else if (alfi-&gt;func_ptr-&gt;common.scope) {</span>
+<span class="lineNum">     734 </span>                :                                 zval *tmp;
+<span class="lineNum">     735 </span><span class="lineNoCov">              0 :                                 MAKE_STD_ZVAL(tmp);</span>
+<span class="lineNum">     736 </span><span class="lineNoCov">              0 :                                 array_init(tmp);</span>
+<span class="lineNum">     737 </span>                : 
+<span class="lineNum">     738 </span><span class="lineNoCov">              0 :                                 if (alfi-&gt;obj) {</span>
+<span class="lineNum">     739 </span><span class="lineNoCov">              0 :                                         Z_ADDREF_P(alfi-&gt;obj);</span>
+<span class="lineNum">     740 </span><span class="lineNoCov">              0 :                                         add_next_index_zval(tmp, alfi-&gt;obj);</span>
+<span class="lineNum">     741 </span>                :                                 } else {
+<span class="lineNum">     742 </span><span class="lineNoCov">              0 :                                         add_next_index_string(tmp, alfi-&gt;ce-&gt;name, 1);</span>
+<span class="lineNum">     743 </span>                :                                 }
+<span class="lineNum">     744 </span><span class="lineNoCov">              0 :                                 add_next_index_string(tmp, alfi-&gt;func_ptr-&gt;common.function_name, 1);</span>
+<span class="lineNum">     745 </span><span class="lineNoCov">              0 :                                 add_next_index_zval(return_value, tmp);</span>
+<span class="lineNum">     746 </span>                :                         } else
+<span class="lineNum">     747 </span><span class="lineNoCov">              0 :                                 add_next_index_string(return_value, alfi-&gt;func_ptr-&gt;common.function_name, 1);</span>
+<span class="lineNum">     748 </span>                : 
+<span class="lineNum">     749 </span><span class="lineNoCov">              0 :                         zend_hash_move_forward_ex(SPL_G(autoload_functions), &amp;function_pos);</span>
+<span class="lineNum">     750 </span>                :                 }
+<span class="lineNum">     751 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     752 </span>                :         }
+<span class="lineNum">     753 </span>                : 
+<span class="lineNum">     754 </span><span class="lineNoCov">              0 :         array_init(return_value);</span>
+<span class="lineNum">     755 </span><span class="lineNoCov">              0 :         add_next_index_string(return_value, EG(autoload_func)-&gt;common.function_name, 1);</span>
+<span class="lineNum">     756 </span>                : } /* }}} */
+<span class="lineNum">     757 </span>                : 
+<a name="758"><span class="lineNum">     758 </span>                : /* {{{ proto string spl_object_hash(object obj)</a>
+<span class="lineNum">     759 </span>                :  Return hash id for given object */
+<span class="lineNum">     760 </span><span class="lineNoCov">              0 : PHP_FUNCTION(spl_object_hash)</span>
+<span class="lineNum">     761 </span>                : {
+<span class="lineNum">     762 </span>                :         zval *obj;
+<span class="lineNum">     763 </span>                :         char* hash;
+<span class="lineNum">     764 </span>                : 
+<span class="lineNum">     765 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;o&quot;, &amp;obj) == FAILURE) {</span>
+<span class="lineNum">     766 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     767 </span>                :         }
+<span class="lineNum">     768 </span>                :         
+<span class="lineNum">     769 </span><span class="lineNoCov">              0 :         hash = emalloc(33);</span>
+<span class="lineNum">     770 </span><span class="lineNoCov">              0 :         php_spl_object_hash(obj, hash TSRMLS_CC);</span>
+<span class="lineNum">     771 </span>                :         
+<span class="lineNum">     772 </span><span class="lineNoCov">              0 :         RETVAL_STRING(hash, 0);</span>
+<span class="lineNum">     773 </span>                : }
+<a name="774"><span class="lineNum">     774 </span>                : /* }}} */</a>
+<span class="lineNum">     775 </span>                : 
+<span class="lineNum">     776 </span><span class="lineNoCov">              0 : PHPAPI void php_spl_object_hash(zval *obj, char *result TSRMLS_DC) /* {{{*/</span>
+<span class="lineNum">     777 </span>                : {
+<span class="lineNum">     778 </span>                :         intptr_t hash_handle, hash_handlers;
+<span class="lineNum">     779 </span>                :         char *hex;
+<span class="lineNum">     780 </span>                : 
+<span class="lineNum">     781 </span><span class="lineNoCov">              0 :         if (!SPL_G(hash_mask_init)) {</span>
+<span class="lineNum">     782 </span><span class="lineNoCov">              0 :                 if (!BG(mt_rand_is_seeded)) {</span>
+<span class="lineNum">     783 </span><span class="lineNoCov">              0 :                         php_mt_srand(GENERATE_SEED() TSRMLS_CC);</span>
+<span class="lineNum">     784 </span>                :                 }
+<span class="lineNum">     785 </span>                : 
+<span class="lineNum">     786 </span><span class="lineNoCov">              0 :                 SPL_G(hash_mask_handle)   = (intptr_t)(php_mt_rand(TSRMLS_C) &gt;&gt; 1);</span>
+<span class="lineNum">     787 </span><span class="lineNoCov">              0 :                 SPL_G(hash_mask_handlers) = (intptr_t)(php_mt_rand(TSRMLS_C) &gt;&gt; 1);</span>
+<span class="lineNum">     788 </span><span class="lineNoCov">              0 :                 SPL_G(hash_mask_init) = 1;</span>
+<span class="lineNum">     789 </span>                :         }
+<span class="lineNum">     790 </span>                : 
+<span class="lineNum">     791 </span><span class="lineNoCov">              0 :         hash_handle   = SPL_G(hash_mask_handle)^(intptr_t)Z_OBJ_HANDLE_P(obj);</span>
+<span class="lineNum">     792 </span><span class="lineNoCov">              0 :         hash_handlers = SPL_G(hash_mask_handlers)^(intptr_t)Z_OBJ_HT_P(obj);</span>
+<span class="lineNum">     793 </span>                : 
+<span class="lineNum">     794 </span><span class="lineNoCov">              0 :         spprintf(&amp;hex, 32, &quot;%016x%016x&quot;, hash_handle, hash_handlers);</span>
+<span class="lineNum">     795 </span>                : 
+<span class="lineNum">     796 </span><span class="lineNoCov">              0 :         strlcpy(result, hex, 33);</span>
+<span class="lineNum">     797 </span><span class="lineNoCov">              0 :         efree(hex);</span>
+<span class="lineNum">     798 </span><span class="lineNoCov">              0 : }</span>
+<a name="799"><span class="lineNum">     799 </span>                : /* }}} */</a>
+<span class="lineNum">     800 </span>                : 
+<span class="lineNum">     801 </span><span class="lineNoCov">              0 : int spl_build_class_list_string(zval **entry, char **list TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     802 </span>                : {
+<span class="lineNum">     803 </span>                :         char *res;
+<span class="lineNum">     804 </span>                :         
+<span class="lineNum">     805 </span><span class="lineNoCov">              0 :         spprintf(&amp;res, 0, &quot;%s, %s&quot;, *list, Z_STRVAL_PP(entry));</span>
+<span class="lineNum">     806 </span><span class="lineNoCov">              0 :         efree(*list);</span>
+<span class="lineNum">     807 </span><span class="lineNoCov">              0 :         *list = res;</span>
+<span class="lineNum">     808 </span><span class="lineNoCov">              0 :         return ZEND_HASH_APPLY_KEEP;</span>
+<span class="lineNum">     809 </span>                : } /* }}} */
+<span class="lineNum">     810 </span>                : 
+<a name="811"><span class="lineNum">     811 </span>                : /* {{{ PHP_MINFO(spl)</a>
+<span class="lineNum">     812 </span>                :  */
+<span class="lineNum">     813 </span><span class="lineNoCov">              0 : PHP_MINFO_FUNCTION(spl)</span>
+<span class="lineNum">     814 </span>                : {
+<span class="lineNum">     815 </span>                :         zval list;
+<span class="lineNum">     816 </span>                :         char *strg;
+<span class="lineNum">     817 </span>                : 
+<span class="lineNum">     818 </span><span class="lineNoCov">              0 :         php_info_print_table_start();</span>
+<span class="lineNum">     819 </span><span class="lineNoCov">              0 :         php_info_print_table_header(2, &quot;SPL support&quot;,        &quot;enabled&quot;);</span>
+<span class="lineNum">     820 </span>                : 
+<span class="lineNum">     821 </span><span class="lineNoCov">              0 :         INIT_PZVAL(&amp;list);</span>
+<span class="lineNum">     822 </span><span class="lineNoCov">              0 :         array_init(&amp;list);</span>
+<span class="lineNum">     823 </span><span class="lineNoCov">              0 :         SPL_LIST_CLASSES(&amp;list, 0, 1, ZEND_ACC_INTERFACE)</span>
+<span class="lineNum">     824 </span><span class="lineNoCov">              0 :         strg = estrdup(&quot;&quot;);</span>
+<span class="lineNum">     825 </span><span class="lineNoCov">              0 :         zend_hash_apply_with_argument(Z_ARRVAL_P(&amp;list), (apply_func_arg_t)spl_build_class_list_string, &amp;strg TSRMLS_CC);</span>
+<span class="lineNum">     826 </span>                :         zval_dtor(&amp;list);
+<span class="lineNum">     827 </span><span class="lineNoCov">              0 :         php_info_print_table_row(2, &quot;Interfaces&quot;, strg + 2);</span>
+<span class="lineNum">     828 </span><span class="lineNoCov">              0 :         efree(strg);</span>
+<span class="lineNum">     829 </span>                : 
+<span class="lineNum">     830 </span><span class="lineNoCov">              0 :         INIT_PZVAL(&amp;list);</span>
+<span class="lineNum">     831 </span><span class="lineNoCov">              0 :         array_init(&amp;list);</span>
+<span class="lineNum">     832 </span><span class="lineNoCov">              0 :         SPL_LIST_CLASSES(&amp;list, 0, -1, ZEND_ACC_INTERFACE)</span>
+<span class="lineNum">     833 </span><span class="lineNoCov">              0 :         strg = estrdup(&quot;&quot;);</span>
+<span class="lineNum">     834 </span><span class="lineNoCov">              0 :         zend_hash_apply_with_argument(Z_ARRVAL_P(&amp;list), (apply_func_arg_t)spl_build_class_list_string, &amp;strg TSRMLS_CC);</span>
+<span class="lineNum">     835 </span>                :         zval_dtor(&amp;list);
+<span class="lineNum">     836 </span><span class="lineNoCov">              0 :         php_info_print_table_row(2, &quot;Classes&quot;, strg + 2);</span>
+<span class="lineNum">     837 </span><span class="lineNoCov">              0 :         efree(strg);</span>
+<span class="lineNum">     838 </span>                : 
+<span class="lineNum">     839 </span><span class="lineNoCov">              0 :         php_info_print_table_end();</span>
+<span class="lineNum">     840 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     841 </span>                : /* }}} */
+<span class="lineNum">     842 </span>                : 
+<span class="lineNum">     843 </span>                : /* {{{ arginfo */
+<span class="lineNum">     844 </span>                : ZEND_BEGIN_ARG_INFO_EX(arginfo_iterator_to_array, 0, 0, 1)
+<span class="lineNum">     845 </span>                :         ZEND_ARG_OBJ_INFO(0, iterator, Traversable, 0)
+<span class="lineNum">     846 </span>                :         ZEND_ARG_INFO(0, use_keys)
+<span class="lineNum">     847 </span>                : ZEND_END_ARG_INFO();
+<span class="lineNum">     848 </span>                : 
+<span class="lineNum">     849 </span>                : ZEND_BEGIN_ARG_INFO(arginfo_iterator, 0)
+<span class="lineNum">     850 </span>                :         ZEND_ARG_OBJ_INFO(0, iterator, Traversable, 0)
+<span class="lineNum">     851 </span>                : ZEND_END_ARG_INFO();
+<span class="lineNum">     852 </span>                : 
+<span class="lineNum">     853 </span>                : ZEND_BEGIN_ARG_INFO_EX(arginfo_iterator_apply, 0, 0, 2)
+<span class="lineNum">     854 </span>                :         ZEND_ARG_OBJ_INFO(0, iterator, Traversable, 0)
+<span class="lineNum">     855 </span>                :         ZEND_ARG_INFO(0, function)
+<span class="lineNum">     856 </span>                :         ZEND_ARG_ARRAY_INFO(0, args, 1)
+<span class="lineNum">     857 </span>                : ZEND_END_ARG_INFO();
+<span class="lineNum">     858 </span>                : 
+<span class="lineNum">     859 </span>                : ZEND_BEGIN_ARG_INFO_EX(arginfo_class_parents, 0, 0, 1)
+<span class="lineNum">     860 </span>                :         ZEND_ARG_INFO(0, instance)
+<span class="lineNum">     861 </span>                :         ZEND_ARG_INFO(0, autoload)
+<span class="lineNum">     862 </span>                : ZEND_END_ARG_INFO()
+<span class="lineNum">     863 </span>                : 
+<span class="lineNum">     864 </span>                : ZEND_BEGIN_ARG_INFO_EX(arginfo_class_implements, 0, 0, 1)
+<span class="lineNum">     865 </span>                :         ZEND_ARG_INFO(0, what)
+<span class="lineNum">     866 </span>                :         ZEND_ARG_INFO(0, autoload)
+<span class="lineNum">     867 </span>                : ZEND_END_ARG_INFO()
+<span class="lineNum">     868 </span>                : 
+<span class="lineNum">     869 </span>                : ZEND_BEGIN_ARG_INFO_EX(arginfo_class_uses, 0, 0, 1)
+<span class="lineNum">     870 </span>                :         ZEND_ARG_INFO(0, what)
+<span class="lineNum">     871 </span>                :         ZEND_ARG_INFO(0, autoload)
+<span class="lineNum">     872 </span>                : ZEND_END_ARG_INFO()
+<span class="lineNum">     873 </span>                : 
+<span class="lineNum">     874 </span>                : 
+<span class="lineNum">     875 </span>                : ZEND_BEGIN_ARG_INFO(arginfo_spl_classes, 0)
+<span class="lineNum">     876 </span>                : ZEND_END_ARG_INFO()
+<span class="lineNum">     877 </span>                : 
+<span class="lineNum">     878 </span>                : ZEND_BEGIN_ARG_INFO(arginfo_spl_autoload_functions, 0)
+<span class="lineNum">     879 </span>                : ZEND_END_ARG_INFO()
+<span class="lineNum">     880 </span>                : 
+<span class="lineNum">     881 </span>                : ZEND_BEGIN_ARG_INFO_EX(arginfo_spl_autoload, 0, 0, 1)
+<span class="lineNum">     882 </span>                :         ZEND_ARG_INFO(0, class_name)
+<span class="lineNum">     883 </span>                :         ZEND_ARG_INFO(0, file_extensions)
+<span class="lineNum">     884 </span>                : ZEND_END_ARG_INFO()
+<span class="lineNum">     885 </span>                : 
+<span class="lineNum">     886 </span>                : ZEND_BEGIN_ARG_INFO_EX(arginfo_spl_autoload_extensions, 0, 0, 0)
+<span class="lineNum">     887 </span>                :         ZEND_ARG_INFO(0, file_extensions)
+<span class="lineNum">     888 </span>                : ZEND_END_ARG_INFO()
+<span class="lineNum">     889 </span>                : 
+<span class="lineNum">     890 </span>                : ZEND_BEGIN_ARG_INFO_EX(arginfo_spl_autoload_call, 0, 0, 1)
+<span class="lineNum">     891 </span>                :         ZEND_ARG_INFO(0, class_name)
+<span class="lineNum">     892 </span>                : ZEND_END_ARG_INFO()
+<span class="lineNum">     893 </span>                : 
+<span class="lineNum">     894 </span>                : ZEND_BEGIN_ARG_INFO_EX(arginfo_spl_autoload_register, 0, 0, 0)
+<span class="lineNum">     895 </span>                :         ZEND_ARG_INFO(0, autoload_function)
+<span class="lineNum">     896 </span>                : ZEND_END_ARG_INFO()
+<span class="lineNum">     897 </span>                : 
+<span class="lineNum">     898 </span>                : ZEND_BEGIN_ARG_INFO_EX(arginfo_spl_autoload_unregister, 0, 0, 1)
+<span class="lineNum">     899 </span>                :         ZEND_ARG_INFO(0, autoload_function)
+<span class="lineNum">     900 </span>                : ZEND_END_ARG_INFO()
+<span class="lineNum">     901 </span>                : 
+<span class="lineNum">     902 </span>                : ZEND_BEGIN_ARG_INFO_EX(arginfo_spl_object_hash, 0, 0, 1)
+<span class="lineNum">     903 </span>                :         ZEND_ARG_INFO(0, obj)
+<span class="lineNum">     904 </span>                : ZEND_END_ARG_INFO()
+<span class="lineNum">     905 </span>                : /* }}} */
+<span class="lineNum">     906 </span>                : 
+<span class="lineNum">     907 </span>                : /* {{{ spl_functions
+<span class="lineNum">     908 </span>                :  */
+<span class="lineNum">     909 </span>                : const zend_function_entry spl_functions[] = {
+<span class="lineNum">     910 </span>                :         PHP_FE(spl_classes,             arginfo_spl_classes)
+<span class="lineNum">     911 </span>                :         PHP_FE(spl_autoload,            arginfo_spl_autoload)
+<span class="lineNum">     912 </span>                :         PHP_FE(spl_autoload_extensions, arginfo_spl_autoload_extensions)
+<span class="lineNum">     913 </span>                :         PHP_FE(spl_autoload_register,   arginfo_spl_autoload_register)
+<span class="lineNum">     914 </span>                :         PHP_FE(spl_autoload_unregister, arginfo_spl_autoload_unregister)
+<span class="lineNum">     915 </span>                :         PHP_FE(spl_autoload_functions,  arginfo_spl_autoload_functions)
+<span class="lineNum">     916 </span>                :         PHP_FE(spl_autoload_call,       arginfo_spl_autoload_call)
+<span class="lineNum">     917 </span>                :         PHP_FE(class_parents,           arginfo_class_parents)
+<span class="lineNum">     918 </span>                :         PHP_FE(class_implements,        arginfo_class_implements)
+<span class="lineNum">     919 </span>                :         PHP_FE(class_uses,              arginfo_class_uses)
+<span class="lineNum">     920 </span>                :         PHP_FE(spl_object_hash,         arginfo_spl_object_hash)
+<span class="lineNum">     921 </span>                : #ifdef SPL_ITERATORS_H
+<span class="lineNum">     922 </span>                :         PHP_FE(iterator_to_array,       arginfo_iterator_to_array)
+<span class="lineNum">     923 </span>                :         PHP_FE(iterator_count,          arginfo_iterator)
+<span class="lineNum">     924 </span>                :         PHP_FE(iterator_apply,          arginfo_iterator_apply)
+<span class="lineNum">     925 </span>                : #endif /* SPL_ITERATORS_H */
+<span class="lineNum">     926 </span>                :         PHP_FE_END
+<span class="lineNum">     927 </span>                : };
+<span class="lineNum">     928 </span>                : /* }}} */
+<span class="lineNum">     929 </span>                : 
+<a name="930"><span class="lineNum">     930 </span>                : /* {{{ PHP_MINIT_FUNCTION(spl)</a>
+<span class="lineNum">     931 </span>                :  */
+<span class="lineNum">     932 </span><span class="lineCov">             48 : PHP_MINIT_FUNCTION(spl)</span>
+<span class="lineNum">     933 </span>                : {
+<span class="lineNum">     934 </span><span class="lineCov">             48 :         PHP_MINIT(spl_exceptions)(INIT_FUNC_ARGS_PASSTHRU);</span>
+<span class="lineNum">     935 </span><span class="lineCov">             48 :         PHP_MINIT(spl_iterators)(INIT_FUNC_ARGS_PASSTHRU);</span>
+<span class="lineNum">     936 </span><span class="lineCov">             48 :         PHP_MINIT(spl_array)(INIT_FUNC_ARGS_PASSTHRU);</span>
+<span class="lineNum">     937 </span><span class="lineCov">             48 :         PHP_MINIT(spl_directory)(INIT_FUNC_ARGS_PASSTHRU);</span>
+<span class="lineNum">     938 </span><span class="lineCov">             48 :         PHP_MINIT(spl_dllist)(INIT_FUNC_ARGS_PASSTHRU);</span>
+<span class="lineNum">     939 </span><span class="lineCov">             48 :         PHP_MINIT(spl_heap)(INIT_FUNC_ARGS_PASSTHRU);</span>
+<span class="lineNum">     940 </span><span class="lineCov">             48 :         PHP_MINIT(spl_fixedarray)(INIT_FUNC_ARGS_PASSTHRU);</span>
+<span class="lineNum">     941 </span><span class="lineCov">             48 :         PHP_MINIT(spl_observer)(INIT_FUNC_ARGS_PASSTHRU);</span>
+<span class="lineNum">     942 </span>                : 
+<span class="lineNum">     943 </span><span class="lineCov">             48 :         return SUCCESS;</span>
+<span class="lineNum">     944 </span>                : }
+<a name="945"><span class="lineNum">     945 </span>                : /* }}} */</a>
+<span class="lineNum">     946 </span>                : 
+<span class="lineNum">     947 </span><span class="lineCov">             48 : PHP_RINIT_FUNCTION(spl) /* {{{ */</span>
+<span class="lineNum">     948 </span>                : {
+<span class="lineNum">     949 </span><span class="lineCov">             48 :         SPL_G(autoload_extensions) = NULL;</span>
+<span class="lineNum">     950 </span><span class="lineCov">             48 :         SPL_G(autoload_extensions_len) = 0;</span>
+<span class="lineNum">     951 </span><span class="lineCov">             48 :         SPL_G(autoload_functions) = NULL;</span>
+<span class="lineNum">     952 </span><span class="lineCov">             48 :         SPL_G(hash_mask_init) = 0;</span>
+<span class="lineNum">     953 </span><span class="lineCov">             48 :         return SUCCESS;</span>
+<a name="954"><span class="lineNum">     954 </span>                : } /* }}} */</a>
+<span class="lineNum">     955 </span>                : 
+<span class="lineNum">     956 </span><span class="lineCov">             48 : PHP_RSHUTDOWN_FUNCTION(spl) /* {{{ */</span>
+<span class="lineNum">     957 </span>                : {
+<span class="lineNum">     958 </span><span class="lineCov">             48 :         if (SPL_G(autoload_extensions)) {</span>
+<span class="lineNum">     959 </span><span class="lineNoCov">              0 :                 efree(SPL_G(autoload_extensions));</span>
+<span class="lineNum">     960 </span><span class="lineNoCov">              0 :                 SPL_G(autoload_extensions) = NULL;</span>
+<span class="lineNum">     961 </span><span class="lineNoCov">              0 :                 SPL_G(autoload_extensions_len) = 0;</span>
+<span class="lineNum">     962 </span>                :         }
+<span class="lineNum">     963 </span><span class="lineCov">             48 :         if (SPL_G(autoload_functions)) {</span>
+<span class="lineNum">     964 </span><span class="lineNoCov">              0 :                 zend_hash_destroy(SPL_G(autoload_functions));</span>
+<span class="lineNum">     965 </span><span class="lineNoCov">              0 :                 FREE_HASHTABLE(SPL_G(autoload_functions));</span>
+<span class="lineNum">     966 </span><span class="lineNoCov">              0 :                 SPL_G(autoload_functions) = NULL;</span>
+<span class="lineNum">     967 </span>                :         }
+<span class="lineNum">     968 </span><span class="lineCov">             48 :         if (SPL_G(hash_mask_init)) {</span>
+<span class="lineNum">     969 </span><span class="lineNoCov">              0 :                 SPL_G(hash_mask_init) = 0;</span>
+<span class="lineNum">     970 </span>                :         }
+<span class="lineNum">     971 </span><span class="lineCov">             48 :         return SUCCESS;</span>
+<span class="lineNum">     972 </span>                : } /* }}} */
+<span class="lineNum">     973 </span>                : 
+<span class="lineNum">     974 </span>                : /* {{{ spl_module_entry
+<span class="lineNum">     975 </span>                :  */
+<span class="lineNum">     976 </span>                : zend_module_entry spl_module_entry = {
+<span class="lineNum">     977 </span>                :         STANDARD_MODULE_HEADER,
+<span class="lineNum">     978 </span>                :         &quot;SPL&quot;,
+<span class="lineNum">     979 </span>                :         spl_functions,
+<span class="lineNum">     980 </span>                :         PHP_MINIT(spl),
+<span class="lineNum">     981 </span>                :         NULL,
+<span class="lineNum">     982 </span>                :         PHP_RINIT(spl),
+<span class="lineNum">     983 </span>                :         PHP_RSHUTDOWN(spl),
+<span class="lineNum">     984 </span>                :         PHP_MINFO(spl),
+<span class="lineNum">     985 </span>                :         &quot;0.2&quot;,
+<span class="lineNum">     986 </span>                :         PHP_MODULE_GLOBALS(spl),
+<span class="lineNum">     987 </span>                :         PHP_GINIT(spl),
+<span class="lineNum">     988 </span>                :         NULL,
+<span class="lineNum">     989 </span>                :         NULL,
+<span class="lineNum">     990 </span>                :         STANDARD_MODULE_PROPERTIES_EX
+<span class="lineNum">     991 </span>                : };
+<span class="lineNum">     992 </span>                : /* }}} */
+<span class="lineNum">     993 </span>                : 
+<span class="lineNum">     994 </span>                : /*
+<span class="lineNum">     995 </span>                :  * Local variables:
+<span class="lineNum">     996 </span>                :  * tab-width: 4
+<span class="lineNum">     997 </span>                :  * c-basic-offset: 4
+<span class="lineNum">     998 </span>                :  * End:
+<span class="lineNum">     999 </span>                :  * vim600: fdm=marker
+<span class="lineNum">    1000 </span>                :  * vim: noet sw=4 ts=4
+<span class="lineNum">    1001 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

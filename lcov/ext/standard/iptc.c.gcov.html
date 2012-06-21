@@ -1,0 +1,457 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - ext/standard/iptc.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../index.html">directory</a> - <a href="index.html">ext/standard</a> - iptc.c (source / <a href="iptc.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">132</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">7</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Author: Thies C. Arntzen &lt;thies@thieso.net&gt;                          |
+<span class="lineNum">      16 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      17 </span>                :  */
+<span class="lineNum">      18 </span>                : 
+<span class="lineNum">      19 </span>                : /* $Id$ */
+<span class="lineNum">      20 </span>                : 
+<span class="lineNum">      21 </span>                : /*
+<span class="lineNum">      22 </span>                :  * Functions to parse &amp; compse IPTC data.
+<span class="lineNum">      23 </span>                :  * PhotoShop &gt;= 3.0 can read and write textual data to JPEG files.
+<span class="lineNum">      24 </span>                :  * ... more to come .....
+<span class="lineNum">      25 </span>                :  * 
+<span class="lineNum">      26 </span>                :  * i know, parts of this is now duplicated in image.c 
+<span class="lineNum">      27 </span>                :  * but in this case i think it's okay!
+<span class="lineNum">      28 </span>                :  */
+<span class="lineNum">      29 </span>                : 
+<span class="lineNum">      30 </span>                : /*
+<span class="lineNum">      31 </span>                :  * TODO:
+<span class="lineNum">      32 </span>                :  *  - add IPTC translation table
+<span class="lineNum">      33 </span>                :  */
+<span class="lineNum">      34 </span>                :  
+<span class="lineNum">      35 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">      36 </span>                : #include &quot;php_iptc.h&quot;
+<span class="lineNum">      37 </span>                : #include &quot;ext/standard/head.h&quot;
+<span class="lineNum">      38 </span>                : 
+<span class="lineNum">      39 </span>                : #include &lt;sys/stat.h&gt;
+<span class="lineNum">      40 </span>                : 
+<span class="lineNum">      41 </span>                : 
+<span class="lineNum">      42 </span>                : /* some defines for the different JPEG block types */
+<span class="lineNum">      43 </span>                : #define M_SOF0  0xC0            /* Start Of Frame N */
+<span class="lineNum">      44 </span>                : #define M_SOF1  0xC1            /* N indicates which compression process */
+<span class="lineNum">      45 </span>                : #define M_SOF2  0xC2            /* Only SOF0-SOF2 are now in common use */
+<span class="lineNum">      46 </span>                : #define M_SOF3  0xC3
+<span class="lineNum">      47 </span>                : #define M_SOF5  0xC5            /* NB: codes C4 and CC are NOT SOF markers */
+<span class="lineNum">      48 </span>                : #define M_SOF6  0xC6
+<span class="lineNum">      49 </span>                : #define M_SOF7  0xC7
+<span class="lineNum">      50 </span>                : #define M_SOF9  0xC9
+<span class="lineNum">      51 </span>                : #define M_SOF10 0xCA
+<span class="lineNum">      52 </span>                : #define M_SOF11 0xCB
+<span class="lineNum">      53 </span>                : #define M_SOF13 0xCD
+<span class="lineNum">      54 </span>                : #define M_SOF14 0xCE
+<span class="lineNum">      55 </span>                : #define M_SOF15 0xCF
+<span class="lineNum">      56 </span>                : #define M_SOI   0xD8
+<span class="lineNum">      57 </span>                : #define M_EOI   0xD9            /* End Of Image (end of datastream) */
+<span class="lineNum">      58 </span>                : #define M_SOS   0xDA            /* Start Of Scan (begins compressed data) */
+<span class="lineNum">      59 </span>                : #define M_APP0  0xe0
+<span class="lineNum">      60 </span>                : #define M_APP1  0xe1
+<span class="lineNum">      61 </span>                : #define M_APP2  0xe2
+<span class="lineNum">      62 </span>                : #define M_APP3  0xe3
+<span class="lineNum">      63 </span>                : #define M_APP4  0xe4
+<span class="lineNum">      64 </span>                : #define M_APP5  0xe5
+<span class="lineNum">      65 </span>                : #define M_APP6  0xe6
+<span class="lineNum">      66 </span>                : #define M_APP7  0xe7
+<span class="lineNum">      67 </span>                : #define M_APP8  0xe8
+<span class="lineNum">      68 </span>                : #define M_APP9  0xe9
+<span class="lineNum">      69 </span>                : #define M_APP10 0xea
+<span class="lineNum">      70 </span>                : #define M_APP11 0xeb
+<span class="lineNum">      71 </span>                : #define M_APP12 0xec
+<span class="lineNum">      72 </span>                : #define M_APP13 0xed
+<span class="lineNum">      73 </span>                : #define M_APP14 0xee
+<span class="lineNum">      74 </span>                : #define M_APP15 0xef
+<span class="lineNum">      75 </span>                : 
+<a name="76"><span class="lineNum">      76 </span>                : /* {{{ php_iptc_put1</a>
+<span class="lineNum">      77 </span>                :  */
+<span class="lineNum">      78 </span><span class="lineNoCov">              0 : static int php_iptc_put1(FILE *fp, int spool, unsigned char c, unsigned char **spoolbuf TSRMLS_DC)</span>
+<span class="lineNum">      79 </span>                : { 
+<span class="lineNum">      80 </span><span class="lineNoCov">              0 :         if (spool &gt; 0)</span>
+<span class="lineNum">      81 </span><span class="lineNoCov">              0 :                 PUTC(c);</span>
+<span class="lineNum">      82 </span>                : 
+<span class="lineNum">      83 </span><span class="lineNoCov">              0 :         if (spoolbuf) *(*spoolbuf)++ = c;</span>
+<span class="lineNum">      84 </span>                : 
+<span class="lineNum">      85 </span><span class="lineNoCov">              0 :         return c;</span>
+<span class="lineNum">      86 </span>                : }
+<span class="lineNum">      87 </span>                : /* }}} */
+<span class="lineNum">      88 </span>                : 
+<a name="89"><span class="lineNum">      89 </span>                : /* {{{ php_iptc_get1</a>
+<span class="lineNum">      90 </span>                :  */
+<span class="lineNum">      91 </span><span class="lineNoCov">              0 : static int php_iptc_get1(FILE *fp, int spool, unsigned char **spoolbuf TSRMLS_DC)</span>
+<span class="lineNum">      92 </span>                : {       
+<span class="lineNum">      93 </span>                :         int c;
+<span class="lineNum">      94 </span>                :         char cc;
+<span class="lineNum">      95 </span>                : 
+<span class="lineNum">      96 </span><span class="lineNoCov">              0 :         c = getc(fp);</span>
+<span class="lineNum">      97 </span>                : 
+<span class="lineNum">      98 </span><span class="lineNoCov">              0 :         if (c == EOF) return EOF;</span>
+<span class="lineNum">      99 </span>                : 
+<span class="lineNum">     100 </span><span class="lineNoCov">              0 :         if (spool &gt; 0) {</span>
+<span class="lineNum">     101 </span><span class="lineNoCov">              0 :                 cc = c;</span>
+<span class="lineNum">     102 </span><span class="lineNoCov">              0 :                 PUTC(cc);</span>
+<span class="lineNum">     103 </span>                :         }
+<span class="lineNum">     104 </span>                : 
+<span class="lineNum">     105 </span><span class="lineNoCov">              0 :         if (spoolbuf) *(*spoolbuf)++ = c;</span>
+<span class="lineNum">     106 </span>                : 
+<span class="lineNum">     107 </span><span class="lineNoCov">              0 :         return c;</span>
+<span class="lineNum">     108 </span>                : }
+<span class="lineNum">     109 </span>                : /* }}} */
+<span class="lineNum">     110 </span>                : 
+<a name="111"><span class="lineNum">     111 </span>                : /* {{{ php_iptc_read_remaining</a>
+<span class="lineNum">     112 </span>                :  */
+<span class="lineNum">     113 </span><span class="lineNoCov">              0 : static int php_iptc_read_remaining(FILE *fp, int spool, unsigned char **spoolbuf TSRMLS_DC)</span>
+<span class="lineNum">     114 </span>                : {
+<span class="lineNum">     115 </span><span class="lineNoCov">              0 :         while (php_iptc_get1(fp, spool, spoolbuf TSRMLS_CC) != EOF) continue;</span>
+<span class="lineNum">     116 </span>                : 
+<span class="lineNum">     117 </span><span class="lineNoCov">              0 :         return M_EOI;</span>
+<span class="lineNum">     118 </span>                : }
+<span class="lineNum">     119 </span>                : /* }}} */
+<span class="lineNum">     120 </span>                : 
+<a name="121"><span class="lineNum">     121 </span>                : /* {{{ php_iptc_skip_variable</a>
+<span class="lineNum">     122 </span>                :  */
+<span class="lineNum">     123 </span><span class="lineNoCov">              0 : static int php_iptc_skip_variable(FILE *fp, int spool, unsigned char **spoolbuf TSRMLS_DC)</span>
+<span class="lineNum">     124 </span>                : { 
+<span class="lineNum">     125 </span>                :         unsigned int  length;
+<span class="lineNum">     126 </span>                :         int c1, c2;
+<span class="lineNum">     127 </span>                : 
+<span class="lineNum">     128 </span><span class="lineNoCov">              0 :     if ((c1 = php_iptc_get1(fp, spool, spoolbuf TSRMLS_CC)) == EOF) return M_EOI;</span>
+<span class="lineNum">     129 </span>                : 
+<span class="lineNum">     130 </span><span class="lineNoCov">              0 :     if ((c2 = php_iptc_get1(fp, spool, spoolbuf TSRMLS_CC)) == EOF) return M_EOI;</span>
+<span class="lineNum">     131 </span>                : 
+<span class="lineNum">     132 </span><span class="lineNoCov">              0 :         length = (((unsigned char) c1) &lt;&lt; 8) + ((unsigned char) c2);</span>
+<span class="lineNum">     133 </span>                : 
+<span class="lineNum">     134 </span><span class="lineNoCov">              0 :         length -= 2;</span>
+<span class="lineNum">     135 </span>                : 
+<span class="lineNum">     136 </span><span class="lineNoCov">              0 :         while (length--)</span>
+<span class="lineNum">     137 </span><span class="lineNoCov">              0 :                 if (php_iptc_get1(fp, spool, spoolbuf TSRMLS_CC) == EOF) return M_EOI;</span>
+<span class="lineNum">     138 </span>                : 
+<span class="lineNum">     139 </span><span class="lineNoCov">              0 :         return 0;</span>
+<span class="lineNum">     140 </span>                : }
+<span class="lineNum">     141 </span>                : /* }}} */
+<span class="lineNum">     142 </span>                : 
+<a name="143"><span class="lineNum">     143 </span>                : /* {{{ php_iptc_next_marker</a>
+<span class="lineNum">     144 </span>                :  */
+<span class="lineNum">     145 </span><span class="lineNoCov">              0 : static int php_iptc_next_marker(FILE *fp, int spool, unsigned char **spoolbuf TSRMLS_DC)</span>
+<span class="lineNum">     146 </span>                : {
+<span class="lineNum">     147 </span>                :     int c;
+<span class="lineNum">     148 </span>                : 
+<span class="lineNum">     149 </span>                :     /* skip unimportant stuff */
+<span class="lineNum">     150 </span>                : 
+<span class="lineNum">     151 </span><span class="lineNoCov">              0 :     c = php_iptc_get1(fp, spool, spoolbuf TSRMLS_CC);</span>
+<span class="lineNum">     152 </span>                : 
+<span class="lineNum">     153 </span><span class="lineNoCov">              0 :         if (c == EOF) return M_EOI;</span>
+<span class="lineNum">     154 </span>                : 
+<span class="lineNum">     155 </span><span class="lineNoCov">              0 :     while (c != 0xff) {</span>
+<span class="lineNum">     156 </span><span class="lineNoCov">              0 :         if ((c = php_iptc_get1(fp, spool, spoolbuf TSRMLS_CC)) == EOF)</span>
+<span class="lineNum">     157 </span><span class="lineNoCov">              0 :             return M_EOI; /* we hit EOF */</span>
+<span class="lineNum">     158 </span>                :     }
+<span class="lineNum">     159 </span>                : 
+<span class="lineNum">     160 </span>                :     /* get marker byte, swallowing possible padding */
+<span class="lineNum">     161 </span>                :     do {
+<span class="lineNum">     162 </span><span class="lineNoCov">              0 :         c = php_iptc_get1(fp, 0, 0 TSRMLS_CC);</span>
+<span class="lineNum">     163 </span><span class="lineNoCov">              0 :                 if (c == EOF)</span>
+<span class="lineNum">     164 </span><span class="lineNoCov">              0 :             return M_EOI;       /* we hit EOF */</span>
+<span class="lineNum">     165 </span>                :                 else
+<span class="lineNum">     166 </span><span class="lineNoCov">              0 :                 if (c == 0xff)</span>
+<span class="lineNum">     167 </span><span class="lineNoCov">              0 :                         php_iptc_put1(fp, spool, (unsigned char)c, spoolbuf TSRMLS_CC);</span>
+<span class="lineNum">     168 </span><span class="lineNoCov">              0 :     } while (c == 0xff);</span>
+<span class="lineNum">     169 </span>                : 
+<span class="lineNum">     170 </span><span class="lineNoCov">              0 :     return (unsigned int) c;</span>
+<span class="lineNum">     171 </span>                : }
+<span class="lineNum">     172 </span>                : /* }}} */
+<span class="lineNum">     173 </span>                : 
+<span class="lineNum">     174 </span>                : static char psheader[] = &quot;\xFF\xED\0\0Photoshop 3.0\08BIM\x04\x04\0\0\0\0&quot;;
+<span class="lineNum">     175 </span>                : 
+<a name="176"><span class="lineNum">     176 </span>                : /* {{{ proto array iptcembed(string iptcdata, string jpeg_file_name [, int spool])</a>
+<span class="lineNum">     177 </span>                :    Embed binary IPTC data into a JPEG image. */
+<span class="lineNum">     178 </span><span class="lineNoCov">              0 : PHP_FUNCTION(iptcembed)</span>
+<span class="lineNum">     179 </span>                : {
+<span class="lineNum">     180 </span>                :         char *iptcdata, *jpeg_file;
+<span class="lineNum">     181 </span>                :         int iptcdata_len, jpeg_file_len;
+<span class="lineNum">     182 </span><span class="lineNoCov">              0 :         long spool = 0;</span>
+<span class="lineNum">     183 </span>                :         FILE *fp;
+<span class="lineNum">     184 </span><span class="lineNoCov">              0 :         unsigned int marker, done = 0;</span>
+<span class="lineNum">     185 </span>                :         int inx;
+<span class="lineNum">     186 </span><span class="lineNoCov">              0 :         unsigned char *spoolbuf = NULL, *poi = NULL;</span>
+<span class="lineNum">     187 </span>                :         struct stat sb;
+<span class="lineNum">     188 </span><span class="lineNoCov">              0 :         zend_bool written = 0;</span>
+<span class="lineNum">     189 </span>                : 
+<span class="lineNum">     190 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;sp|l&quot;, &amp;iptcdata, &amp;iptcdata_len, &amp;jpeg_file, &amp;jpeg_file_len, &amp;spool) != SUCCESS) {</span>
+<span class="lineNum">     191 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     192 </span>                :         }
+<span class="lineNum">     193 </span>                : 
+<span class="lineNum">     194 </span><span class="lineNoCov">              0 :         if (php_check_open_basedir(jpeg_file TSRMLS_CC)) {</span>
+<span class="lineNum">     195 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     196 </span>                :         }
+<span class="lineNum">     197 </span>                : 
+<span class="lineNum">     198 </span><span class="lineNoCov">              0 :         if ((fp = VCWD_FOPEN(jpeg_file, &quot;rb&quot;)) == 0) {</span>
+<span class="lineNum">     199 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Unable to open %s&quot;, jpeg_file);</span>
+<span class="lineNum">     200 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     201 </span>                :         }
+<span class="lineNum">     202 </span>                : 
+<span class="lineNum">     203 </span><span class="lineNoCov">              0 :         if (spool &lt; 2) {</span>
+<span class="lineNum">     204 </span><span class="lineNoCov">              0 :                 fstat(fileno(fp), &amp;sb);</span>
+<span class="lineNum">     205 </span>                : 
+<span class="lineNum">     206 </span><span class="lineNoCov">              0 :                 poi = spoolbuf = safe_emalloc(1, iptcdata_len + sizeof(psheader) + sb.st_size + 1024, 1);</span>
+<span class="lineNum">     207 </span><span class="lineNoCov">              0 :                 memset(poi, 0, iptcdata_len + sizeof(psheader) + sb.st_size + 1024 + 1);</span>
+<span class="lineNum">     208 </span>                :         } 
+<span class="lineNum">     209 </span>                : 
+<span class="lineNum">     210 </span><span class="lineNoCov">              0 :         if (php_iptc_get1(fp, spool, poi?&amp;poi:0 TSRMLS_CC) != 0xFF) {</span>
+<span class="lineNum">     211 </span><span class="lineNoCov">              0 :                 fclose(fp);</span>
+<span class="lineNum">     212 </span><span class="lineNoCov">              0 :                 if (spoolbuf) {</span>
+<span class="lineNum">     213 </span><span class="lineNoCov">              0 :                         efree(spoolbuf);</span>
+<span class="lineNum">     214 </span>                :                 }
+<span class="lineNum">     215 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     216 </span>                :         }
+<span class="lineNum">     217 </span>                : 
+<span class="lineNum">     218 </span><span class="lineNoCov">              0 :         if (php_iptc_get1(fp, spool, poi?&amp;poi:0 TSRMLS_CC) != 0xD8) {</span>
+<span class="lineNum">     219 </span><span class="lineNoCov">              0 :                 fclose(fp);</span>
+<span class="lineNum">     220 </span><span class="lineNoCov">              0 :                 if (spoolbuf) {</span>
+<span class="lineNum">     221 </span><span class="lineNoCov">              0 :                         efree(spoolbuf);</span>
+<span class="lineNum">     222 </span>                :                 }
+<span class="lineNum">     223 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     224 </span>                :         }
+<span class="lineNum">     225 </span>                : 
+<span class="lineNum">     226 </span><span class="lineNoCov">              0 :         while (!done) {</span>
+<span class="lineNum">     227 </span><span class="lineNoCov">              0 :                 marker = php_iptc_next_marker(fp, spool, poi?&amp;poi:0 TSRMLS_CC);</span>
+<span class="lineNum">     228 </span>                : 
+<span class="lineNum">     229 </span><span class="lineNoCov">              0 :                 if (marker == M_EOI) { /* EOF */</span>
+<span class="lineNum">     230 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     231 </span><span class="lineNoCov">              0 :                 } else if (marker != M_APP13) { </span>
+<span class="lineNum">     232 </span><span class="lineNoCov">              0 :                         php_iptc_put1(fp, spool, (unsigned char)marker, poi?&amp;poi:0 TSRMLS_CC);</span>
+<span class="lineNum">     233 </span>                :                 }
+<span class="lineNum">     234 </span>                : 
+<span class="lineNum">     235 </span><span class="lineNoCov">              0 :                 switch (marker) {</span>
+<span class="lineNum">     236 </span>                :                         case M_APP13:
+<span class="lineNum">     237 </span>                :                                 /* we are going to write a new APP13 marker, so don't output the old one */
+<span class="lineNum">     238 </span><span class="lineNoCov">              0 :                                 php_iptc_skip_variable(fp, 0, 0 TSRMLS_CC);    </span>
+<span class="lineNum">     239 </span><span class="lineNoCov">              0 :                                 php_iptc_read_remaining(fp, spool, poi?&amp;poi:0 TSRMLS_CC);</span>
+<span class="lineNum">     240 </span><span class="lineNoCov">              0 :                                 done = 1;</span>
+<span class="lineNum">     241 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     242 </span>                : 
+<span class="lineNum">     243 </span>                :                         case M_APP0:
+<span class="lineNum">     244 </span>                :                                 /* APP0 is in each and every JPEG, so when we hit APP0 we insert our new APP13! */
+<span class="lineNum">     245 </span>                :                         case M_APP1:
+<span class="lineNum">     246 </span><span class="lineNoCov">              0 :                                 if (written) {</span>
+<span class="lineNum">     247 </span>                :                                         /* don't try to write the data twice */
+<span class="lineNum">     248 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">     249 </span>                :                                 }
+<span class="lineNum">     250 </span><span class="lineNoCov">              0 :                                 written = 1;</span>
+<span class="lineNum">     251 </span>                : 
+<span class="lineNum">     252 </span><span class="lineNoCov">              0 :                                 php_iptc_skip_variable(fp, spool, poi?&amp;poi:0 TSRMLS_CC);</span>
+<span class="lineNum">     253 </span>                : 
+<span class="lineNum">     254 </span><span class="lineNoCov">              0 :                                 if (iptcdata_len &amp; 1) {</span>
+<span class="lineNum">     255 </span><span class="lineNoCov">              0 :                                         iptcdata_len++; /* make the length even */</span>
+<span class="lineNum">     256 </span>                :                                 }
+<span class="lineNum">     257 </span>                : 
+<span class="lineNum">     258 </span><span class="lineNoCov">              0 :                                 psheader[ 2 ] = (iptcdata_len+28)&gt;&gt;8;</span>
+<span class="lineNum">     259 </span><span class="lineNoCov">              0 :                                 psheader[ 3 ] = (iptcdata_len+28)&amp;0xff;</span>
+<span class="lineNum">     260 </span>                : 
+<span class="lineNum">     261 </span><span class="lineNoCov">              0 :                                 for (inx = 0; inx &lt; 28; inx++) {</span>
+<span class="lineNum">     262 </span><span class="lineNoCov">              0 :                                         php_iptc_put1(fp, spool, psheader[inx], poi?&amp;poi:0 TSRMLS_CC);</span>
+<span class="lineNum">     263 </span>                :                                 }
+<span class="lineNum">     264 </span>                : 
+<span class="lineNum">     265 </span><span class="lineNoCov">              0 :                                 php_iptc_put1(fp, spool, (unsigned char)(iptcdata_len&gt;&gt;8), poi?&amp;poi:0 TSRMLS_CC);</span>
+<span class="lineNum">     266 </span><span class="lineNoCov">              0 :                                 php_iptc_put1(fp, spool, (unsigned char)(iptcdata_len&amp;0xff), poi?&amp;poi:0 TSRMLS_CC);</span>
+<span class="lineNum">     267 </span>                : 
+<span class="lineNum">     268 </span><span class="lineNoCov">              0 :                                 for (inx = 0; inx &lt; iptcdata_len; inx++) {</span>
+<span class="lineNum">     269 </span><span class="lineNoCov">              0 :                                         php_iptc_put1(fp, spool, iptcdata[inx], poi?&amp;poi:0 TSRMLS_CC);</span>
+<span class="lineNum">     270 </span>                :                                 }
+<span class="lineNum">     271 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     272 </span>                : 
+<span class="lineNum">     273 </span>                :                         case M_SOS:                                                             
+<span class="lineNum">     274 </span>                :                                 /* we hit data, no more marker-inserting can be done! */
+<span class="lineNum">     275 </span><span class="lineNoCov">              0 :                                 php_iptc_read_remaining(fp, spool, poi?&amp;poi:0 TSRMLS_CC);</span>
+<span class="lineNum">     276 </span><span class="lineNoCov">              0 :                                 done = 1;</span>
+<span class="lineNum">     277 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     278 </span>                : 
+<span class="lineNum">     279 </span>                :                         default:
+<span class="lineNum">     280 </span><span class="lineNoCov">              0 :                                 php_iptc_skip_variable(fp, spool, poi?&amp;poi:0 TSRMLS_CC);</span>
+<span class="lineNum">     281 </span>                :                                 break;
+<span class="lineNum">     282 </span>                :                 }
+<span class="lineNum">     283 </span>                :         }
+<span class="lineNum">     284 </span>                : 
+<span class="lineNum">     285 </span><span class="lineNoCov">              0 :         fclose(fp);</span>
+<span class="lineNum">     286 </span>                : 
+<span class="lineNum">     287 </span><span class="lineNoCov">              0 :         if (spool &lt; 2) {</span>
+<span class="lineNum">     288 </span><span class="lineNoCov">              0 :                 RETVAL_STRINGL(spoolbuf, poi - spoolbuf, 0);</span>
+<span class="lineNum">     289 </span>                :         } else {
+<span class="lineNum">     290 </span><span class="lineNoCov">              0 :                 RETURN_TRUE;</span>
+<span class="lineNum">     291 </span>                :         }
+<span class="lineNum">     292 </span>                : }
+<span class="lineNum">     293 </span>                : /* }}} */
+<span class="lineNum">     294 </span>                : 
+<a name="295"><span class="lineNum">     295 </span>                : /* {{{ proto array iptcparse(string iptcdata)</a>
+<span class="lineNum">     296 </span>                :    Parse binary IPTC-data into associative array */
+<span class="lineNum">     297 </span><span class="lineNoCov">              0 : PHP_FUNCTION(iptcparse)</span>
+<span class="lineNum">     298 </span>                : {
+<span class="lineNum">     299 </span><span class="lineNoCov">              0 :         int inx = 0, len;</span>
+<span class="lineNum">     300 </span><span class="lineNoCov">              0 :         unsigned int tagsfound = 0;</span>
+<span class="lineNum">     301 </span>                :         unsigned char *buffer, recnum, dataset, key[ 16 ];
+<span class="lineNum">     302 </span>                :         char *str;
+<span class="lineNum">     303 </span>                :         int str_len;
+<span class="lineNum">     304 </span>                :         zval *values, **element;
+<span class="lineNum">     305 </span>                : 
+<span class="lineNum">     306 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;s&quot;, &amp;str, &amp;str_len) != SUCCESS) {</span>
+<span class="lineNum">     307 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     308 </span>                :         }
+<span class="lineNum">     309 </span>                : 
+<span class="lineNum">     310 </span><span class="lineNoCov">              0 :         buffer = (unsigned char *)str;</span>
+<span class="lineNum">     311 </span>                : 
+<span class="lineNum">     312 </span><span class="lineNoCov">              0 :         while (inx &lt; str_len) { /* find 1st tag */</span>
+<span class="lineNum">     313 </span><span class="lineNoCov">              0 :                 if ((buffer[inx] == 0x1c) &amp;&amp; ((buffer[inx+1] == 0x01) || (buffer[inx+1] == 0x02))){ </span>
+<span class="lineNum">     314 </span>                :                         break;
+<span class="lineNum">     315 </span>                :                 } else {
+<span class="lineNum">     316 </span><span class="lineNoCov">              0 :                         inx++;</span>
+<span class="lineNum">     317 </span>                :                 }
+<span class="lineNum">     318 </span>                :         }
+<span class="lineNum">     319 </span>                : 
+<span class="lineNum">     320 </span><span class="lineNoCov">              0 :         while (inx &lt; str_len) {</span>
+<span class="lineNum">     321 </span><span class="lineNoCov">              0 :                 if (buffer[ inx++ ] != 0x1c) {</span>
+<span class="lineNum">     322 </span><span class="lineNoCov">              0 :                         break;   /* we ran against some data which does not conform to IPTC - stop parsing! */</span>
+<span class="lineNum">     323 </span>                :                 } 
+<span class="lineNum">     324 </span>                :                 
+<span class="lineNum">     325 </span><span class="lineNoCov">              0 :                 if ((inx + 4) &gt;= str_len)</span>
+<span class="lineNum">     326 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     327 </span>                : 
+<span class="lineNum">     328 </span><span class="lineNoCov">              0 :                 dataset = buffer[ inx++ ];</span>
+<span class="lineNum">     329 </span><span class="lineNoCov">              0 :                 recnum = buffer[ inx++ ];</span>
+<span class="lineNum">     330 </span>                : 
+<span class="lineNum">     331 </span><span class="lineNoCov">              0 :                 if (buffer[ inx ] &amp; (unsigned char) 0x80) { /* long tag */</span>
+<span class="lineNum">     332 </span><span class="lineNoCov">              0 :                         len = (((long) buffer[ inx + 2 ]) &lt;&lt; 24) + (((long) buffer[ inx + 3 ]) &lt;&lt; 16) + </span>
+<span class="lineNum">     333 </span><span class="lineNoCov">              0 :                                   (((long) buffer[ inx + 4 ]) &lt;&lt;  8) + (((long) buffer[ inx + 5 ]));</span>
+<span class="lineNum">     334 </span><span class="lineNoCov">              0 :                         inx += 6;</span>
+<span class="lineNum">     335 </span>                :                 } else { /* short tag */
+<span class="lineNum">     336 </span><span class="lineNoCov">              0 :                         len = (((unsigned short) buffer[ inx ])&lt;&lt;8) | (unsigned short)buffer[ inx+1 ];</span>
+<span class="lineNum">     337 </span><span class="lineNoCov">              0 :                         inx += 2;</span>
+<span class="lineNum">     338 </span>                :                 }
+<span class="lineNum">     339 </span>                :                 
+<span class="lineNum">     340 </span><span class="lineNoCov">              0 :                 if ((len &lt; 0) || (len &gt; str_len) || (inx + len) &gt; str_len) {</span>
+<span class="lineNum">     341 </span>                :                         break;
+<span class="lineNum">     342 </span>                :                 }
+<span class="lineNum">     343 </span>                : 
+<span class="lineNum">     344 </span><span class="lineNoCov">              0 :                 snprintf(key, sizeof(key), &quot;%d#%03d&quot;, (unsigned int) dataset, (unsigned int) recnum);</span>
+<span class="lineNum">     345 </span>                : 
+<span class="lineNum">     346 </span><span class="lineNoCov">              0 :                 if (tagsfound == 0) { /* found the 1st tag - initialize the return array */</span>
+<span class="lineNum">     347 </span><span class="lineNoCov">              0 :                         array_init(return_value);</span>
+<span class="lineNum">     348 </span>                :                 }
+<span class="lineNum">     349 </span>                : 
+<span class="lineNum">     350 </span><span class="lineNoCov">              0 :                 if (zend_hash_find(Z_ARRVAL_P(return_value), key, strlen(key) + 1, (void **) &amp;element) == FAILURE) {</span>
+<span class="lineNum">     351 </span><span class="lineNoCov">              0 :                         MAKE_STD_ZVAL(values);</span>
+<span class="lineNum">     352 </span><span class="lineNoCov">              0 :                         array_init(values);</span>
+<span class="lineNum">     353 </span>                :                         
+<span class="lineNum">     354 </span><span class="lineNoCov">              0 :                         zend_hash_update(Z_ARRVAL_P(return_value), key, strlen(key) + 1, (void *) &amp;values, sizeof(zval*), (void **) &amp;element);</span>
+<span class="lineNum">     355 </span>                :                 } 
+<span class="lineNum">     356 </span>                :                         
+<span class="lineNum">     357 </span><span class="lineNoCov">              0 :                 add_next_index_stringl(*element, buffer+inx, len, 1);</span>
+<span class="lineNum">     358 </span><span class="lineNoCov">              0 :                 inx += len;</span>
+<span class="lineNum">     359 </span><span class="lineNoCov">              0 :                 tagsfound++;</span>
+<span class="lineNum">     360 </span>                :         }
+<span class="lineNum">     361 </span>                : 
+<span class="lineNum">     362 </span><span class="lineNoCov">              0 :         if (! tagsfound) {</span>
+<span class="lineNum">     363 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     364 </span>                :         }
+<span class="lineNum">     365 </span>                : }
+<span class="lineNum">     366 </span>                : /* }}} */
+<span class="lineNum">     367 </span>                : 
+<span class="lineNum">     368 </span>                : /*
+<span class="lineNum">     369 </span>                :  * Local variables:
+<span class="lineNum">     370 </span>                :  * tab-width: 4
+<span class="lineNum">     371 </span>                :  * c-basic-offset: 4
+<span class="lineNum">     372 </span>                :  * End:
+<span class="lineNum">     373 </span>                :  * vim600: sw=4 ts=4 fdm=marker
+<span class="lineNum">     374 </span>                :  * vim&lt;600: sw=4 ts=4
+<span class="lineNum">     375 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

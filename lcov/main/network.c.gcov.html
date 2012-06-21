@@ -1,0 +1,1289 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - main/network.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../index.html">directory</a> - <a href="index.html">main</a> - network.c (source / <a href="network.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">358</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">18</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Author: Stig Venaas &lt;venaas@uninett.no&gt;                              |
+<span class="lineNum">      16 </span>                :    | Streams work by Wez Furlong &lt;wez@thebrainroom.com&gt;                   |
+<span class="lineNum">      17 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      18 </span>                :  */
+<span class="lineNum">      19 </span>                : 
+<span class="lineNum">      20 </span>                : /* $Id$ */
+<span class="lineNum">      21 </span>                : 
+<span class="lineNum">      22 </span>                : /*#define DEBUG_MAIN_NETWORK 1*/
+<span class="lineNum">      23 </span>                : 
+<span class="lineNum">      24 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">      25 </span>                : 
+<span class="lineNum">      26 </span>                : #include &lt;stddef.h&gt;
+<span class="lineNum">      27 </span>                : 
+<span class="lineNum">      28 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">      29 </span>                : # include &quot;win32/inet.h&quot;
+<span class="lineNum">      30 </span>                : # define O_RDONLY _O_RDONLY
+<span class="lineNum">      31 </span>                : # include &quot;win32/param.h&quot;
+<span class="lineNum">      32 </span>                : #elif defined(NETWARE)
+<span class="lineNum">      33 </span>                : #include &lt;sys/timeval.h&gt;
+<span class="lineNum">      34 </span>                : #include &lt;sys/param.h&gt;
+<span class="lineNum">      35 </span>                : #else
+<span class="lineNum">      36 </span>                : #include &lt;sys/param.h&gt;
+<span class="lineNum">      37 </span>                : #endif
+<span class="lineNum">      38 </span>                : 
+<span class="lineNum">      39 </span>                : #include &lt;sys/types.h&gt;
+<span class="lineNum">      40 </span>                : #if HAVE_SYS_SOCKET_H
+<span class="lineNum">      41 </span>                : #include &lt;sys/socket.h&gt;
+<span class="lineNum">      42 </span>                : #endif
+<span class="lineNum">      43 </span>                : 
+<span class="lineNum">      44 </span>                : #ifndef _FCNTL_H
+<span class="lineNum">      45 </span>                : #include &lt;fcntl.h&gt;
+<span class="lineNum">      46 </span>                : #endif
+<span class="lineNum">      47 </span>                : 
+<span class="lineNum">      48 </span>                : #ifdef HAVE_SYS_SELECT_H
+<span class="lineNum">      49 </span>                : #include &lt;sys/select.h&gt;
+<span class="lineNum">      50 </span>                : #endif
+<span class="lineNum">      51 </span>                : #if HAVE_SYS_POLL_H
+<span class="lineNum">      52 </span>                : #include &lt;sys/poll.h&gt;
+<span class="lineNum">      53 </span>                : #endif
+<span class="lineNum">      54 </span>                : 
+<span class="lineNum">      55 </span>                : #if defined(NETWARE)
+<span class="lineNum">      56 </span>                : #ifdef USE_WINSOCK
+<span class="lineNum">      57 </span>                : #include &lt;novsock2.h&gt;
+<span class="lineNum">      58 </span>                : #else
+<span class="lineNum">      59 </span>                : #include &lt;arpa/inet.h&gt;
+<span class="lineNum">      60 </span>                : #include &lt;netinet/in.h&gt;
+<span class="lineNum">      61 </span>                : #include &lt;netdb.h&gt;
+<span class="lineNum">      62 </span>                : #include &lt;sys/select.h&gt;
+<span class="lineNum">      63 </span>                : #include &lt;sys/socket.h&gt;
+<span class="lineNum">      64 </span>                : #endif
+<span class="lineNum">      65 </span>                : #elif !defined(PHP_WIN32)
+<span class="lineNum">      66 </span>                : #include &lt;netinet/in.h&gt;
+<span class="lineNum">      67 </span>                : #include &lt;netdb.h&gt;
+<span class="lineNum">      68 </span>                : #if HAVE_ARPA_INET_H
+<span class="lineNum">      69 </span>                : #include &lt;arpa/inet.h&gt;
+<span class="lineNum">      70 </span>                : #endif
+<span class="lineNum">      71 </span>                : #endif
+<span class="lineNum">      72 </span>                : 
+<span class="lineNum">      73 </span>                : #ifndef HAVE_INET_ATON
+<span class="lineNum">      74 </span>                : int inet_aton(const char *, struct in_addr *);
+<span class="lineNum">      75 </span>                : #endif
+<span class="lineNum">      76 </span>                : 
+<span class="lineNum">      77 </span>                : #include &quot;php_network.h&quot;
+<span class="lineNum">      78 </span>                : 
+<span class="lineNum">      79 </span>                : #if defined(PHP_WIN32) || defined(__riscos__) || defined(NETWARE)
+<span class="lineNum">      80 </span>                : #undef AF_UNIX
+<span class="lineNum">      81 </span>                : #endif
+<span class="lineNum">      82 </span>                : 
+<span class="lineNum">      83 </span>                : #if defined(AF_UNIX)
+<span class="lineNum">      84 </span>                : #include &lt;sys/un.h&gt;
+<span class="lineNum">      85 </span>                : #endif
+<span class="lineNum">      86 </span>                : 
+<span class="lineNum">      87 </span>                : #include &quot;ext/standard/file.h&quot;
+<span class="lineNum">      88 </span>                : 
+<span class="lineNum">      89 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">      90 </span>                : # include &quot;win32/time.h&quot;
+<span class="lineNum">      91 </span>                : # define SOCK_ERR INVALID_SOCKET
+<span class="lineNum">      92 </span>                : # define SOCK_CONN_ERR SOCKET_ERROR
+<span class="lineNum">      93 </span>                : # define PHP_TIMEOUT_ERROR_VALUE                WSAETIMEDOUT
+<span class="lineNum">      94 </span>                : 
+<span class="lineNum">      95 </span>                : #if HAVE_IPV6
+<span class="lineNum">      96 </span>                : const struct in6_addr in6addr_any = {0}; /* IN6ADDR_ANY_INIT; */
+<span class="lineNum">      97 </span>                : #endif
+<span class="lineNum">      98 </span>                : 
+<span class="lineNum">      99 </span>                : #else
+<span class="lineNum">     100 </span>                : # define SOCK_ERR -1
+<span class="lineNum">     101 </span>                : # define SOCK_CONN_ERR -1
+<span class="lineNum">     102 </span>                : # define PHP_TIMEOUT_ERROR_VALUE                ETIMEDOUT
+<span class="lineNum">     103 </span>                : #endif
+<span class="lineNum">     104 </span>                : 
+<span class="lineNum">     105 </span>                : #if HAVE_GETADDRINFO
+<span class="lineNum">     106 </span>                : #ifdef HAVE_GAI_STRERROR
+<span class="lineNum">     107 </span>                : #  define PHP_GAI_STRERROR(x) (gai_strerror(x))
+<span class="lineNum">     108 </span>                : #else
+<span class="lineNum">     109 </span>                : #  define PHP_GAI_STRERROR(x) (php_gai_strerror(x))
+<span class="lineNum">     110 </span>                : /* {{{ php_gai_strerror
+<span class="lineNum">     111 </span>                :  */
+<span class="lineNum">     112 </span>                : static const char *php_gai_strerror(int code)
+<span class="lineNum">     113 </span>                : {
+<span class="lineNum">     114 </span>                :         static struct {
+<span class="lineNum">     115 </span>                :                 int code;
+<span class="lineNum">     116 </span>                :                 const char *msg;
+<span class="lineNum">     117 </span>                :         } values[] = {
+<span class="lineNum">     118 </span>                : #  ifdef EAI_ADDRFAMILY
+<span class="lineNum">     119 </span>                :                 {EAI_ADDRFAMILY, &quot;Address family for hostname not supported&quot;},
+<span class="lineNum">     120 </span>                : #  endif
+<span class="lineNum">     121 </span>                :                 {EAI_AGAIN, &quot;Temporary failure in name resolution&quot;},
+<span class="lineNum">     122 </span>                :                 {EAI_BADFLAGS, &quot;Bad value for ai_flags&quot;},
+<span class="lineNum">     123 </span>                :                 {EAI_FAIL, &quot;Non-recoverable failure in name resolution&quot;},
+<span class="lineNum">     124 </span>                :                 {EAI_FAMILY, &quot;ai_family not supported&quot;},
+<span class="lineNum">     125 </span>                :                 {EAI_MEMORY, &quot;Memory allocation failure&quot;},
+<span class="lineNum">     126 </span>                : #  ifdef EAI_NODATA
+<span class="lineNum">     127 </span>                :                 {EAI_NODATA, &quot;No address associated with hostname&quot;},
+<span class="lineNum">     128 </span>                : #  endif
+<span class="lineNum">     129 </span>                :                 {EAI_NONAME, &quot;Name or service not known&quot;},
+<span class="lineNum">     130 </span>                :                 {EAI_SERVICE, &quot;Servname not supported for ai_socktype&quot;},
+<span class="lineNum">     131 </span>                :                 {EAI_SOCKTYPE, &quot;ai_socktype not supported&quot;},
+<span class="lineNum">     132 </span>                :                 {EAI_SYSTEM, &quot;System error&quot;},
+<span class="lineNum">     133 </span>                :                 {0, NULL}
+<span class="lineNum">     134 </span>                :         };
+<span class="lineNum">     135 </span>                :         int i;
+<span class="lineNum">     136 </span>                : 
+<span class="lineNum">     137 </span>                :         for (i = 0; values[i].msg != NULL; i++) {
+<span class="lineNum">     138 </span>                :                 if (values[i].code == code) {
+<span class="lineNum">     139 </span>                :                         return (char *)values[i].msg;
+<span class="lineNum">     140 </span>                :                 }
+<span class="lineNum">     141 </span>                :         }
+<span class="lineNum">     142 </span>                : 
+<span class="lineNum">     143 </span>                :         return &quot;Unknown error&quot;;
+<span class="lineNum">     144 </span>                : }
+<span class="lineNum">     145 </span>                : /* }}} */
+<span class="lineNum">     146 </span>                : #endif
+<span class="lineNum">     147 </span>                : #endif
+<span class="lineNum">     148 </span>                : 
+<a name="149"><span class="lineNum">     149 </span>                : /* {{{ php_network_freeaddresses</a>
+<span class="lineNum">     150 </span>                :  */
+<span class="lineNum">     151 </span><span class="lineNoCov">              0 : PHPAPI void php_network_freeaddresses(struct sockaddr **sal)</span>
+<span class="lineNum">     152 </span>                : {
+<span class="lineNum">     153 </span>                :         struct sockaddr **sap;
+<span class="lineNum">     154 </span>                : 
+<span class="lineNum">     155 </span><span class="lineNoCov">              0 :         if (sal == NULL)</span>
+<span class="lineNum">     156 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     157 </span><span class="lineNoCov">              0 :         for (sap = sal; *sap != NULL; sap++)</span>
+<span class="lineNum">     158 </span><span class="lineNoCov">              0 :                 efree(*sap);</span>
+<span class="lineNum">     159 </span><span class="lineNoCov">              0 :         efree(sal);</span>
+<span class="lineNum">     160 </span>                : }
+<span class="lineNum">     161 </span>                : /* }}} */
+<span class="lineNum">     162 </span>                : 
+<span class="lineNum">     163 </span>                : /* {{{ php_network_getaddresses
+<a name="164"><span class="lineNum">     164 </span>                :  * Returns number of addresses, 0 for none/error</a>
+<span class="lineNum">     165 </span>                :  */
+<span class="lineNum">     166 </span><span class="lineNoCov">              0 : PHPAPI int php_network_getaddresses(const char *host, int socktype, struct sockaddr ***sal, char **error_string TSRMLS_DC)</span>
+<span class="lineNum">     167 </span>                : {
+<span class="lineNum">     168 </span>                :         struct sockaddr **sap;
+<span class="lineNum">     169 </span>                :         int n;
+<span class="lineNum">     170 </span>                : #if HAVE_GETADDRINFO
+<span class="lineNum">     171 </span>                : # if HAVE_IPV6
+<span class="lineNum">     172 </span>                :         static int ipv6_borked = -1; /* the way this is used *is* thread safe */
+<span class="lineNum">     173 </span>                : # endif
+<span class="lineNum">     174 </span>                :         struct addrinfo hints, *res, *sai;
+<span class="lineNum">     175 </span>                : #else
+<span class="lineNum">     176 </span>                :         struct hostent *host_info;
+<span class="lineNum">     177 </span>                :         struct in_addr in;
+<span class="lineNum">     178 </span>                : #endif
+<span class="lineNum">     179 </span>                : 
+<span class="lineNum">     180 </span><span class="lineNoCov">              0 :         if (host == NULL) {</span>
+<span class="lineNum">     181 </span><span class="lineNoCov">              0 :                 return 0;</span>
+<span class="lineNum">     182 </span>                :         }
+<span class="lineNum">     183 </span>                : #if HAVE_GETADDRINFO
+<span class="lineNum">     184 </span><span class="lineNoCov">              0 :         memset(&amp;hints, '\0', sizeof(hints));</span>
+<span class="lineNum">     185 </span>                : 
+<span class="lineNum">     186 </span><span class="lineNoCov">              0 :         hints.ai_family = AF_INET; /* default to regular inet (see below) */</span>
+<span class="lineNum">     187 </span><span class="lineNoCov">              0 :         hints.ai_socktype = socktype;</span>
+<span class="lineNum">     188 </span>                : 
+<span class="lineNum">     189 </span>                : # if HAVE_IPV6
+<span class="lineNum">     190 </span>                :         /* probe for a working IPv6 stack; even if detected as having v6 at compile
+<span class="lineNum">     191 </span>                :          * time, at runtime some stacks are slow to resolve or have other issues
+<span class="lineNum">     192 </span>                :          * if they are not correctly configured.
+<span class="lineNum">     193 </span>                :          * static variable use is safe here since simple store or fetch operations
+<span class="lineNum">     194 </span>                :          * are atomic and because the actual probe process is not in danger of
+<span class="lineNum">     195 </span>                :          * collisions or race conditions. */
+<span class="lineNum">     196 </span><span class="lineNoCov">              0 :         if (ipv6_borked == -1) {</span>
+<span class="lineNum">     197 </span>                :                 int s;
+<span class="lineNum">     198 </span>                : 
+<span class="lineNum">     199 </span><span class="lineNoCov">              0 :                 s = socket(PF_INET6, SOCK_DGRAM, 0);</span>
+<span class="lineNum">     200 </span><span class="lineNoCov">              0 :                 if (s == SOCK_ERR) {</span>
+<span class="lineNum">     201 </span><span class="lineNoCov">              0 :                         ipv6_borked = 1;</span>
+<span class="lineNum">     202 </span>                :                 } else {
+<span class="lineNum">     203 </span><span class="lineNoCov">              0 :                         ipv6_borked = 0;</span>
+<span class="lineNum">     204 </span><span class="lineNoCov">              0 :                         closesocket(s);</span>
+<span class="lineNum">     205 </span>                :                 }
+<span class="lineNum">     206 </span>                :         }
+<span class="lineNum">     207 </span><span class="lineNoCov">              0 :         hints.ai_family = ipv6_borked ? AF_INET : AF_UNSPEC;</span>
+<span class="lineNum">     208 </span>                : # endif
+<span class="lineNum">     209 </span>                : 
+<span class="lineNum">     210 </span><span class="lineNoCov">              0 :         if ((n = getaddrinfo(host, NULL, &amp;hints, &amp;res))) {</span>
+<span class="lineNum">     211 </span><span class="lineNoCov">              0 :                 if (error_string) {</span>
+<span class="lineNum">     212 </span><span class="lineNoCov">              0 :                         spprintf(error_string, 0, &quot;php_network_getaddresses: getaddrinfo failed: %s&quot;, PHP_GAI_STRERROR(n));</span>
+<span class="lineNum">     213 </span><span class="lineNoCov">              0 :                         php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;%s&quot;, *error_string);</span>
+<span class="lineNum">     214 </span>                :                 } else {
+<span class="lineNum">     215 </span><span class="lineNoCov">              0 :                         php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;php_network_getaddresses: getaddrinfo failed: %s&quot;, PHP_GAI_STRERROR(n));</span>
+<span class="lineNum">     216 </span>                :                 }
+<span class="lineNum">     217 </span><span class="lineNoCov">              0 :                 return 0;</span>
+<span class="lineNum">     218 </span><span class="lineNoCov">              0 :         } else if (res == NULL) {</span>
+<span class="lineNum">     219 </span><span class="lineNoCov">              0 :                 if (error_string) {</span>
+<span class="lineNum">     220 </span><span class="lineNoCov">              0 :                         spprintf(error_string, 0, &quot;php_network_getaddresses: getaddrinfo failed (null result pointer) errno=%d&quot;, errno);</span>
+<span class="lineNum">     221 </span><span class="lineNoCov">              0 :                         php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;%s&quot;, *error_string);</span>
+<span class="lineNum">     222 </span>                :                 } else {
+<span class="lineNum">     223 </span><span class="lineNoCov">              0 :                         php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;php_network_getaddresses: getaddrinfo failed (null result pointer)&quot;);</span>
+<span class="lineNum">     224 </span>                :                 }
+<span class="lineNum">     225 </span><span class="lineNoCov">              0 :                 return 0;</span>
+<span class="lineNum">     226 </span>                :         }
+<span class="lineNum">     227 </span>                : 
+<span class="lineNum">     228 </span><span class="lineNoCov">              0 :         sai = res;</span>
+<span class="lineNum">     229 </span><span class="lineNoCov">              0 :         for (n = 1; (sai = sai-&gt;ai_next) != NULL; n++)</span>
+<span class="lineNum">     230 </span>                :                 ;
+<span class="lineNum">     231 </span>                : 
+<span class="lineNum">     232 </span><span class="lineNoCov">              0 :         *sal = safe_emalloc((n + 1), sizeof(*sal), 0);</span>
+<span class="lineNum">     233 </span><span class="lineNoCov">              0 :         sai = res;</span>
+<span class="lineNum">     234 </span><span class="lineNoCov">              0 :         sap = *sal;</span>
+<span class="lineNum">     235 </span>                : 
+<span class="lineNum">     236 </span>                :         do {
+<span class="lineNum">     237 </span><span class="lineNoCov">              0 :                 *sap = emalloc(sai-&gt;ai_addrlen);</span>
+<span class="lineNum">     238 </span><span class="lineNoCov">              0 :                 memcpy(*sap, sai-&gt;ai_addr, sai-&gt;ai_addrlen);</span>
+<span class="lineNum">     239 </span><span class="lineNoCov">              0 :                 sap++;</span>
+<span class="lineNum">     240 </span><span class="lineNoCov">              0 :         } while ((sai = sai-&gt;ai_next) != NULL);</span>
+<span class="lineNum">     241 </span>                : 
+<span class="lineNum">     242 </span><span class="lineNoCov">              0 :         freeaddrinfo(res);</span>
+<span class="lineNum">     243 </span>                : #else
+<span class="lineNum">     244 </span>                :         if (!inet_aton(host, &amp;in)) {
+<span class="lineNum">     245 </span>                :                 /* XXX NOT THREAD SAFE (is safe under win32) */
+<span class="lineNum">     246 </span>                :                 host_info = gethostbyname(host);
+<span class="lineNum">     247 </span>                :                 if (host_info == NULL) {
+<span class="lineNum">     248 </span>                :                         if (error_string) {
+<span class="lineNum">     249 </span>                :                                 spprintf(error_string, 0, &quot;php_network_getaddresses: gethostbyname failed. errno=%d&quot;, errno);
+<span class="lineNum">     250 </span>                :                                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;%s&quot;, *error_string);
+<span class="lineNum">     251 </span>                :                         } else {
+<span class="lineNum">     252 </span>                :                                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;php_network_getaddresses: gethostbyname failed&quot;);
+<span class="lineNum">     253 </span>                :                         }
+<span class="lineNum">     254 </span>                :                         return 0;
+<span class="lineNum">     255 </span>                :                 }
+<span class="lineNum">     256 </span>                :                 in = *((struct in_addr *) host_info-&gt;h_addr);
+<span class="lineNum">     257 </span>                :         }
+<span class="lineNum">     258 </span>                : 
+<span class="lineNum">     259 </span>                :         *sal = safe_emalloc(2, sizeof(*sal), 0);
+<span class="lineNum">     260 </span>                :         sap = *sal;
+<span class="lineNum">     261 </span>                :         *sap = emalloc(sizeof(struct sockaddr_in));
+<span class="lineNum">     262 </span>                :         (*sap)-&gt;sa_family = AF_INET;
+<span class="lineNum">     263 </span>                :         ((struct sockaddr_in *)*sap)-&gt;sin_addr = in;
+<span class="lineNum">     264 </span>                :         sap++;
+<span class="lineNum">     265 </span>                :         n = 1;
+<span class="lineNum">     266 </span>                : #endif
+<span class="lineNum">     267 </span>                : 
+<span class="lineNum">     268 </span><span class="lineNoCov">              0 :         *sap = NULL;</span>
+<span class="lineNum">     269 </span><span class="lineNoCov">              0 :         return n;</span>
+<span class="lineNum">     270 </span>                : }
+<span class="lineNum">     271 </span>                : /* }}} */
+<span class="lineNum">     272 </span>                : 
+<span class="lineNum">     273 </span>                : #ifndef O_NONBLOCK
+<span class="lineNum">     274 </span>                : #define O_NONBLOCK O_NDELAY
+<span class="lineNum">     275 </span>                : #endif
+<span class="lineNum">     276 </span>                : 
+<span class="lineNum">     277 </span>                : #if !defined(__BEOS__)
+<span class="lineNum">     278 </span>                : # define HAVE_NON_BLOCKING_CONNECT 1
+<span class="lineNum">     279 </span>                : # ifdef PHP_WIN32
+<span class="lineNum">     280 </span>                : typedef u_long php_non_blocking_flags_t;
+<span class="lineNum">     281 </span>                : #  define SET_SOCKET_BLOCKING_MODE(sock, save) \
+<span class="lineNum">     282 </span>                :      save = TRUE; ioctlsocket(sock, FIONBIO, &amp;save)
+<span class="lineNum">     283 </span>                : #  define RESTORE_SOCKET_BLOCKING_MODE(sock, save) \
+<span class="lineNum">     284 </span>                :          ioctlsocket(sock, FIONBIO, &amp;save)
+<span class="lineNum">     285 </span>                : # else
+<span class="lineNum">     286 </span>                : typedef int php_non_blocking_flags_t;
+<span class="lineNum">     287 </span>                : #  define SET_SOCKET_BLOCKING_MODE(sock, save) \
+<span class="lineNum">     288 </span>                :          save = fcntl(sock, F_GETFL, 0); \
+<span class="lineNum">     289 </span>                :          fcntl(sock, F_SETFL, save | O_NONBLOCK)
+<span class="lineNum">     290 </span>                : #  define RESTORE_SOCKET_BLOCKING_MODE(sock, save) \
+<span class="lineNum">     291 </span>                :          fcntl(sock, F_SETFL, save)
+<span class="lineNum">     292 </span>                : # endif
+<span class="lineNum">     293 </span>                : #endif
+<span class="lineNum">     294 </span>                : 
+<span class="lineNum">     295 </span>                : /* Connect to a socket using an interruptible connect with optional timeout.
+<span class="lineNum">     296 </span>                :  * Optionally, the connect can be made asynchronously, which will implicitly
+<span class="lineNum">     297 </span>                :  * enable non-blocking mode on the socket.
+<a name="298"><span class="lineNum">     298 </span>                :  * */</a>
+<span class="lineNum">     299 </span>                : /* {{{ php_network_connect_socket */
+<span class="lineNum">     300 </span><span class="lineNoCov">              0 : PHPAPI int php_network_connect_socket(php_socket_t sockfd,</span>
+<span class="lineNum">     301 </span>                :                 const struct sockaddr *addr,
+<span class="lineNum">     302 </span>                :                 socklen_t addrlen,
+<span class="lineNum">     303 </span>                :                 int asynchronous,
+<span class="lineNum">     304 </span>                :                 struct timeval *timeout,
+<span class="lineNum">     305 </span>                :                 char **error_string,
+<span class="lineNum">     306 </span>                :                 int *error_code)
+<span class="lineNum">     307 </span>                : {
+<span class="lineNum">     308 </span>                : #if HAVE_NON_BLOCKING_CONNECT
+<span class="lineNum">     309 </span>                :         php_non_blocking_flags_t orig_flags;
+<span class="lineNum">     310 </span>                :         int n;
+<span class="lineNum">     311 </span><span class="lineNoCov">              0 :         int error = 0;</span>
+<span class="lineNum">     312 </span>                :         socklen_t len;
+<span class="lineNum">     313 </span><span class="lineNoCov">              0 :         int ret = 0;</span>
+<span class="lineNum">     314 </span>                : 
+<span class="lineNum">     315 </span><span class="lineNoCov">              0 :         SET_SOCKET_BLOCKING_MODE(sockfd, orig_flags);</span>
+<span class="lineNum">     316 </span>                : 
+<span class="lineNum">     317 </span><span class="lineNoCov">              0 :         if ((n = connect(sockfd, addr, addrlen)) != 0) {</span>
+<span class="lineNum">     318 </span><span class="lineNoCov">              0 :                 error = php_socket_errno();</span>
+<span class="lineNum">     319 </span>                : 
+<span class="lineNum">     320 </span><span class="lineNoCov">              0 :                 if (error_code) {</span>
+<span class="lineNum">     321 </span><span class="lineNoCov">              0 :                         *error_code = error;</span>
+<span class="lineNum">     322 </span>                :                 }
+<span class="lineNum">     323 </span>                : 
+<span class="lineNum">     324 </span><span class="lineNoCov">              0 :                 if (error != EINPROGRESS) {</span>
+<span class="lineNum">     325 </span><span class="lineNoCov">              0 :                         if (error_string) {</span>
+<span class="lineNum">     326 </span><span class="lineNoCov">              0 :                                 *error_string = php_socket_strerror(error, NULL, 0);</span>
+<span class="lineNum">     327 </span>                :                         }
+<span class="lineNum">     328 </span>                : 
+<span class="lineNum">     329 </span><span class="lineNoCov">              0 :                         return -1;</span>
+<span class="lineNum">     330 </span>                :                 }
+<span class="lineNum">     331 </span><span class="lineNoCov">              0 :                 if (asynchronous &amp;&amp; error == EINPROGRESS) {</span>
+<span class="lineNum">     332 </span>                :                         /* this is fine by us */
+<span class="lineNum">     333 </span><span class="lineNoCov">              0 :                         return 0;</span>
+<span class="lineNum">     334 </span>                :                 }
+<span class="lineNum">     335 </span>                :         }
+<span class="lineNum">     336 </span>                : 
+<span class="lineNum">     337 </span><span class="lineNoCov">              0 :         if (n == 0) {</span>
+<span class="lineNum">     338 </span><span class="lineNoCov">              0 :                 goto ok;</span>
+<span class="lineNum">     339 </span>                :         }
+<span class="lineNum">     340 </span>                : # ifdef PHP_WIN32
+<span class="lineNum">     341 </span>                :         /* The documentation for connect() says in case of non-blocking connections
+<span class="lineNum">     342 </span>                :          * the select function reports success in the writefds set and failure in
+<span class="lineNum">     343 </span>                :          * the exceptfds set. Indeed, using PHP_POLLREADABLE results in select
+<span class="lineNum">     344 </span>                :          * failing only due to the timeout and not immediately as would be
+<span class="lineNum">     345 </span>                :          * expected when a connection is actively refused. This way,
+<span class="lineNum">     346 </span>                :          * php_pollfd_for will return a mask with POLLOUT if the connection
+<span class="lineNum">     347 </span>                :          * is successful and with POLLPRI otherwise. */
+<span class="lineNum">     348 </span>                :         if ((n = php_pollfd_for(sockfd, POLLOUT|POLLPRI, timeout)) == 0) {
+<span class="lineNum">     349 </span>                : #else
+<span class="lineNum">     350 </span><span class="lineNoCov">              0 :         if ((n = php_pollfd_for(sockfd, PHP_POLLREADABLE|POLLOUT, timeout)) == 0) {</span>
+<span class="lineNum">     351 </span>                : #endif
+<span class="lineNum">     352 </span><span class="lineNoCov">              0 :                 error = PHP_TIMEOUT_ERROR_VALUE;</span>
+<span class="lineNum">     353 </span>                :         }
+<span class="lineNum">     354 </span>                : 
+<span class="lineNum">     355 </span><span class="lineNoCov">              0 :         if (n &gt; 0) {</span>
+<span class="lineNum">     356 </span><span class="lineNoCov">              0 :                 len = sizeof(error);</span>
+<span class="lineNum">     357 </span>                :                 /*
+<span class="lineNum">     358 </span>                :                    BSD-derived systems set errno correctly
+<span class="lineNum">     359 </span>                :                    Solaris returns -1 from getsockopt in case of error
+<span class="lineNum">     360 </span>                :                    */
+<span class="lineNum">     361 </span><span class="lineNoCov">              0 :                 if (getsockopt(sockfd, SOL_SOCKET, SO_ERROR, (char*)&amp;error, &amp;len) != 0) {</span>
+<span class="lineNum">     362 </span><span class="lineNoCov">              0 :                         ret = -1;</span>
+<span class="lineNum">     363 </span>                :                 }
+<span class="lineNum">     364 </span>                :         } else {
+<span class="lineNum">     365 </span>                :                 /* whoops: sockfd has disappeared */
+<span class="lineNum">     366 </span><span class="lineNoCov">              0 :                 ret = -1;</span>
+<span class="lineNum">     367 </span>                :         }
+<span class="lineNum">     368 </span>                : 
+<span class="lineNum">     369 </span>                : ok:
+<span class="lineNum">     370 </span><span class="lineNoCov">              0 :         if (!asynchronous) {</span>
+<span class="lineNum">     371 </span>                :                 /* back to blocking mode */
+<span class="lineNum">     372 </span><span class="lineNoCov">              0 :                 RESTORE_SOCKET_BLOCKING_MODE(sockfd, orig_flags);</span>
+<span class="lineNum">     373 </span>                :         }
+<span class="lineNum">     374 </span>                : 
+<span class="lineNum">     375 </span><span class="lineNoCov">              0 :         if (error_code) {</span>
+<span class="lineNum">     376 </span><span class="lineNoCov">              0 :                 *error_code = error;</span>
+<span class="lineNum">     377 </span>                :         }
+<span class="lineNum">     378 </span>                : 
+<span class="lineNum">     379 </span><span class="lineNoCov">              0 :         if (error) {</span>
+<span class="lineNum">     380 </span><span class="lineNoCov">              0 :                 ret = -1;</span>
+<span class="lineNum">     381 </span><span class="lineNoCov">              0 :                 if (error_string) {</span>
+<span class="lineNum">     382 </span><span class="lineNoCov">              0 :                         *error_string = php_socket_strerror(error, NULL, 0);</span>
+<span class="lineNum">     383 </span>                :                 }
+<span class="lineNum">     384 </span>                :         }
+<span class="lineNum">     385 </span><span class="lineNoCov">              0 :         return ret;</span>
+<span class="lineNum">     386 </span>                : #else
+<span class="lineNum">     387 </span>                :         if (asynchronous) {
+<span class="lineNum">     388 </span>                :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Asynchronous connect() not supported on this platform&quot;);
+<span class="lineNum">     389 </span>                :         }
+<span class="lineNum">     390 </span>                :         return (connect(sockfd, addr, addrlen) == 0) ? 0 : -1;
+<span class="lineNum">     391 </span>                : #endif
+<span class="lineNum">     392 </span>                : }
+<span class="lineNum">     393 </span>                : /* }}} */
+<a name="394"><span class="lineNum">     394 </span>                : </a>
+<span class="lineNum">     395 </span>                : /* {{{ sub_times */
+<span class="lineNum">     396 </span><span class="lineNoCov">              0 : static inline void sub_times(struct timeval a, struct timeval b, struct timeval *result)</span>
+<span class="lineNum">     397 </span>                : {
+<span class="lineNum">     398 </span><span class="lineNoCov">              0 :         result-&gt;tv_usec = a.tv_usec - b.tv_usec;</span>
+<span class="lineNum">     399 </span><span class="lineNoCov">              0 :         if (result-&gt;tv_usec &lt; 0L) {</span>
+<span class="lineNum">     400 </span><span class="lineNoCov">              0 :                 a.tv_sec--;</span>
+<span class="lineNum">     401 </span><span class="lineNoCov">              0 :                 result-&gt;tv_usec += 1000000L;</span>
+<span class="lineNum">     402 </span>                :         }
+<span class="lineNum">     403 </span><span class="lineNoCov">              0 :         result-&gt;tv_sec = a.tv_sec - b.tv_sec;</span>
+<span class="lineNum">     404 </span><span class="lineNoCov">              0 :         if (result-&gt;tv_sec &lt; 0L) {</span>
+<span class="lineNum">     405 </span><span class="lineNoCov">              0 :                 result-&gt;tv_sec++;</span>
+<span class="lineNum">     406 </span><span class="lineNoCov">              0 :                 result-&gt;tv_usec -= 1000000L;</span>
+<span class="lineNum">     407 </span>                :         }
+<span class="lineNum">     408 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     409 </span>                : /* }}} */
+<span class="lineNum">     410 </span>                : 
+<span class="lineNum">     411 </span>                : /* Bind to a local IP address.
+<span class="lineNum">     412 </span>                :  * Returns the bound socket, or -1 on failure.
+<a name="413"><span class="lineNum">     413 </span>                :  * */</a>
+<span class="lineNum">     414 </span>                : /* {{{ php_network_bind_socket_to_local_addr */
+<span class="lineNum">     415 </span><span class="lineNoCov">              0 : php_socket_t php_network_bind_socket_to_local_addr(const char *host, unsigned port,</span>
+<span class="lineNum">     416 </span>                :                 int socktype, char **error_string, int *error_code
+<span class="lineNum">     417 </span>                :                 TSRMLS_DC)
+<span class="lineNum">     418 </span>                : {
+<span class="lineNum">     419 </span><span class="lineNoCov">              0 :         int num_addrs, n, err = 0;</span>
+<span class="lineNum">     420 </span>                :         php_socket_t sock;
+<span class="lineNum">     421 </span>                :         struct sockaddr **sal, **psal, *sa;
+<span class="lineNum">     422 </span>                :         socklen_t socklen;
+<span class="lineNum">     423 </span>                : 
+<span class="lineNum">     424 </span><span class="lineNoCov">              0 :         num_addrs = php_network_getaddresses(host, socktype, &amp;psal, error_string TSRMLS_CC);</span>
+<span class="lineNum">     425 </span>                : 
+<span class="lineNum">     426 </span><span class="lineNoCov">              0 :         if (num_addrs == 0) {</span>
+<span class="lineNum">     427 </span>                :                 /* could not resolve address(es) */
+<span class="lineNum">     428 </span><span class="lineNoCov">              0 :                 return -1;</span>
+<span class="lineNum">     429 </span>                :         }
+<span class="lineNum">     430 </span>                : 
+<span class="lineNum">     431 </span><span class="lineNoCov">              0 :         for (sal = psal; *sal != NULL; sal++) {</span>
+<span class="lineNum">     432 </span><span class="lineNoCov">              0 :                 sa = *sal;</span>
+<span class="lineNum">     433 </span>                : 
+<span class="lineNum">     434 </span>                :                 /* create a socket for this address */
+<span class="lineNum">     435 </span><span class="lineNoCov">              0 :                 sock = socket(sa-&gt;sa_family, socktype, 0);</span>
+<span class="lineNum">     436 </span>                : 
+<span class="lineNum">     437 </span><span class="lineNoCov">              0 :                 if (sock == SOCK_ERR) {</span>
+<span class="lineNum">     438 </span><span class="lineNoCov">              0 :                         continue;</span>
+<span class="lineNum">     439 </span>                :                 }
+<span class="lineNum">     440 </span>                : 
+<span class="lineNum">     441 </span><span class="lineNoCov">              0 :                 switch (sa-&gt;sa_family) {</span>
+<span class="lineNum">     442 </span>                : #if HAVE_GETADDRINFO &amp;&amp; HAVE_IPV6
+<span class="lineNum">     443 </span>                :                         case AF_INET6:
+<span class="lineNum">     444 </span><span class="lineNoCov">              0 :                                 ((struct sockaddr_in6 *)sa)-&gt;sin6_family = sa-&gt;sa_family;</span>
+<span class="lineNum">     445 </span><span class="lineNoCov">              0 :                                 ((struct sockaddr_in6 *)sa)-&gt;sin6_port = htons(port);</span>
+<span class="lineNum">     446 </span><span class="lineNoCov">              0 :                                 socklen = sizeof(struct sockaddr_in6);</span>
+<span class="lineNum">     447 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     448 </span>                : #endif
+<span class="lineNum">     449 </span>                :                         case AF_INET:
+<span class="lineNum">     450 </span><span class="lineNoCov">              0 :                                 ((struct sockaddr_in *)sa)-&gt;sin_family = sa-&gt;sa_family;</span>
+<span class="lineNum">     451 </span><span class="lineNoCov">              0 :                                 ((struct sockaddr_in *)sa)-&gt;sin_port = htons(port);</span>
+<span class="lineNum">     452 </span><span class="lineNoCov">              0 :                                 socklen = sizeof(struct sockaddr_in);</span>
+<span class="lineNum">     453 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     454 </span>                :                         default:
+<span class="lineNum">     455 </span>                :                                 /* Unknown family */
+<span class="lineNum">     456 </span><span class="lineNoCov">              0 :                                 socklen = 0;</span>
+<span class="lineNum">     457 </span><span class="lineNoCov">              0 :                                 sa = NULL;</span>
+<span class="lineNum">     458 </span>                :                 }
+<span class="lineNum">     459 </span>                : 
+<span class="lineNum">     460 </span><span class="lineNoCov">              0 :                 if (sa) {</span>
+<span class="lineNum">     461 </span>                :                         /* attempt to bind */
+<span class="lineNum">     462 </span>                : 
+<span class="lineNum">     463 </span>                : #ifdef SO_REUSEADDR
+<span class="lineNum">     464 </span>                :                         {
+<span class="lineNum">     465 </span><span class="lineNoCov">              0 :                                 int val = 1;</span>
+<span class="lineNum">     466 </span><span class="lineNoCov">              0 :                                 setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char*)&amp;val, sizeof(val));</span>
+<span class="lineNum">     467 </span>                :                         }
+<span class="lineNum">     468 </span>                : #endif
+<span class="lineNum">     469 </span>                : 
+<span class="lineNum">     470 </span><span class="lineNoCov">              0 :                         n = bind(sock, sa, socklen);</span>
+<span class="lineNum">     471 </span>                : 
+<span class="lineNum">     472 </span><span class="lineNoCov">              0 :                         if (n != SOCK_CONN_ERR) {</span>
+<span class="lineNum">     473 </span><span class="lineNoCov">              0 :                                 goto bound;</span>
+<span class="lineNum">     474 </span>                :                         }
+<span class="lineNum">     475 </span>                : 
+<span class="lineNum">     476 </span><span class="lineNoCov">              0 :                         err = php_socket_errno();</span>
+<span class="lineNum">     477 </span>                :                 }
+<span class="lineNum">     478 </span>                : 
+<span class="lineNum">     479 </span><span class="lineNoCov">              0 :                 closesocket(sock);</span>
+<span class="lineNum">     480 </span>                :         }
+<span class="lineNum">     481 </span><span class="lineNoCov">              0 :         sock = -1;</span>
+<span class="lineNum">     482 </span>                : 
+<span class="lineNum">     483 </span><span class="lineNoCov">              0 :         if (error_code) {</span>
+<span class="lineNum">     484 </span><span class="lineNoCov">              0 :                 *error_code = err;</span>
+<span class="lineNum">     485 </span>                :         }
+<span class="lineNum">     486 </span><span class="lineNoCov">              0 :         if (error_string) {</span>
+<span class="lineNum">     487 </span><span class="lineNoCov">              0 :                 *error_string = php_socket_strerror(err, NULL, 0);</span>
+<span class="lineNum">     488 </span>                :         }
+<span class="lineNum">     489 </span>                : 
+<span class="lineNum">     490 </span>                : bound:
+<span class="lineNum">     491 </span>                : 
+<span class="lineNum">     492 </span><span class="lineNoCov">              0 :         php_network_freeaddresses(psal);</span>
+<span class="lineNum">     493 </span>                : 
+<span class="lineNum">     494 </span><span class="lineNoCov">              0 :         return sock;</span>
+<span class="lineNum">     495 </span>                : 
+<span class="lineNum">     496 </span>                : }
+<a name="497"><span class="lineNum">     497 </span>                : /* }}} */</a>
+<span class="lineNum">     498 </span>                : 
+<span class="lineNum">     499 </span><span class="lineNoCov">              0 : PHPAPI int php_network_parse_network_address_with_port(const char *addr, long addrlen, struct sockaddr *sa, socklen_t *sl TSRMLS_DC)</span>
+<span class="lineNum">     500 </span>                : {
+<span class="lineNum">     501 </span>                :         char *colon;
+<span class="lineNum">     502 </span>                :         char *tmp;
+<span class="lineNum">     503 </span><span class="lineNoCov">              0 :         int ret = FAILURE;</span>
+<span class="lineNum">     504 </span>                :         short port;
+<span class="lineNum">     505 </span><span class="lineNoCov">              0 :         struct sockaddr_in *in4 = (struct sockaddr_in*)sa;</span>
+<span class="lineNum">     506 </span>                :         struct sockaddr **psal;
+<span class="lineNum">     507 </span>                :         int n;
+<span class="lineNum">     508 </span><span class="lineNoCov">              0 :         char *errstr = NULL;</span>
+<span class="lineNum">     509 </span>                : #if HAVE_IPV6
+<span class="lineNum">     510 </span><span class="lineNoCov">              0 :         struct sockaddr_in6 *in6 = (struct sockaddr_in6*)sa;</span>
+<span class="lineNum">     511 </span>                : #endif
+<span class="lineNum">     512 </span>                : 
+<span class="lineNum">     513 </span><span class="lineNoCov">              0 :         if (*addr == '[') {</span>
+<span class="lineNum">     514 </span><span class="lineNoCov">              0 :                 colon = memchr(addr + 1, ']', addrlen-1);</span>
+<span class="lineNum">     515 </span><span class="lineNoCov">              0 :                 if (!colon || colon[1] != ':') {</span>
+<span class="lineNum">     516 </span><span class="lineNoCov">              0 :                         return FAILURE;</span>
+<span class="lineNum">     517 </span>                :                 }
+<span class="lineNum">     518 </span><span class="lineNoCov">              0 :                 port = atoi(colon + 2);</span>
+<span class="lineNum">     519 </span><span class="lineNoCov">              0 :                 addr++;</span>
+<span class="lineNum">     520 </span>                :         } else {
+<span class="lineNum">     521 </span><span class="lineNoCov">              0 :                 colon = memchr(addr, ':', addrlen);</span>
+<span class="lineNum">     522 </span><span class="lineNoCov">              0 :                 if (!colon) {</span>
+<span class="lineNum">     523 </span><span class="lineNoCov">              0 :                         return FAILURE;</span>
+<span class="lineNum">     524 </span>                :                 }
+<span class="lineNum">     525 </span><span class="lineNoCov">              0 :                 port = atoi(colon + 1);</span>
+<span class="lineNum">     526 </span>                :         }
+<span class="lineNum">     527 </span>                : 
+<span class="lineNum">     528 </span><span class="lineNoCov">              0 :         tmp = estrndup(addr, colon - addr);</span>
+<span class="lineNum">     529 </span>                : 
+<span class="lineNum">     530 </span>                :         /* first, try interpreting the address as a numeric address */
+<span class="lineNum">     531 </span>                : 
+<span class="lineNum">     532 </span>                : #if HAVE_IPV6 &amp;&amp; HAVE_INET_PTON
+<span class="lineNum">     533 </span><span class="lineNoCov">              0 :         if (inet_pton(AF_INET6, tmp, &amp;in6-&gt;sin6_addr) &gt; 0) {</span>
+<span class="lineNum">     534 </span><span class="lineNoCov">              0 :                 in6-&gt;sin6_port = htons(port);</span>
+<span class="lineNum">     535 </span><span class="lineNoCov">              0 :                 in6-&gt;sin6_family = AF_INET6;</span>
+<span class="lineNum">     536 </span><span class="lineNoCov">              0 :                 *sl = sizeof(struct sockaddr_in6);</span>
+<span class="lineNum">     537 </span><span class="lineNoCov">              0 :                 ret = SUCCESS;</span>
+<span class="lineNum">     538 </span><span class="lineNoCov">              0 :                 goto out;</span>
+<span class="lineNum">     539 </span>                :         }
+<span class="lineNum">     540 </span>                : #endif
+<span class="lineNum">     541 </span><span class="lineNoCov">              0 :         if (inet_aton(tmp, &amp;in4-&gt;sin_addr) &gt; 0) {</span>
+<span class="lineNum">     542 </span><span class="lineNoCov">              0 :                 in4-&gt;sin_port = htons(port);</span>
+<span class="lineNum">     543 </span><span class="lineNoCov">              0 :                 in4-&gt;sin_family = AF_INET;</span>
+<span class="lineNum">     544 </span><span class="lineNoCov">              0 :                 *sl = sizeof(struct sockaddr_in);</span>
+<span class="lineNum">     545 </span><span class="lineNoCov">              0 :                 ret = SUCCESS;</span>
+<span class="lineNum">     546 </span><span class="lineNoCov">              0 :                 goto out;</span>
+<span class="lineNum">     547 </span>                :         }
+<span class="lineNum">     548 </span>                : 
+<span class="lineNum">     549 </span>                :         /* looks like we'll need to resolve it */
+<span class="lineNum">     550 </span><span class="lineNoCov">              0 :         n = php_network_getaddresses(tmp, SOCK_DGRAM, &amp;psal, &amp;errstr TSRMLS_CC);</span>
+<span class="lineNum">     551 </span>                : 
+<span class="lineNum">     552 </span><span class="lineNoCov">              0 :         if (n == 0) {</span>
+<span class="lineNum">     553 </span><span class="lineNoCov">              0 :                 if (errstr) {</span>
+<span class="lineNum">     554 </span><span class="lineNoCov">              0 :                         php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Failed to resolve `%s': %s&quot;, tmp, errstr);</span>
+<span class="lineNum">     555 </span><span class="lineNoCov">              0 :                         STR_FREE(errstr);</span>
+<span class="lineNum">     556 </span>                :                 }
+<span class="lineNum">     557 </span><span class="lineNoCov">              0 :                 goto out;</span>
+<span class="lineNum">     558 </span>                :         }
+<span class="lineNum">     559 </span>                : 
+<span class="lineNum">     560 </span>                :         /* copy the details from the first item */
+<span class="lineNum">     561 </span><span class="lineNoCov">              0 :         switch ((*psal)-&gt;sa_family) {</span>
+<span class="lineNum">     562 </span>                : #if HAVE_GETADDRINFO &amp;&amp; HAVE_IPV6
+<span class="lineNum">     563 </span>                :                 case AF_INET6:
+<span class="lineNum">     564 </span><span class="lineNoCov">              0 :                         *in6 = **(struct sockaddr_in6**)psal;</span>
+<span class="lineNum">     565 </span><span class="lineNoCov">              0 :                         in6-&gt;sin6_port = htons(port);</span>
+<span class="lineNum">     566 </span><span class="lineNoCov">              0 :                         *sl = sizeof(struct sockaddr_in6);</span>
+<span class="lineNum">     567 </span><span class="lineNoCov">              0 :                         ret = SUCCESS;</span>
+<span class="lineNum">     568 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     569 </span>                : #endif
+<span class="lineNum">     570 </span>                :                 case AF_INET:
+<span class="lineNum">     571 </span><span class="lineNoCov">              0 :                         *in4 = **(struct sockaddr_in**)psal;</span>
+<span class="lineNum">     572 </span><span class="lineNoCov">              0 :                         in4-&gt;sin_port = htons(port);</span>
+<span class="lineNum">     573 </span><span class="lineNoCov">              0 :                         *sl = sizeof(struct sockaddr_in);</span>
+<span class="lineNum">     574 </span><span class="lineNoCov">              0 :                         ret = SUCCESS;</span>
+<span class="lineNum">     575 </span>                :                         break;
+<span class="lineNum">     576 </span>                :         }
+<span class="lineNum">     577 </span>                : 
+<span class="lineNum">     578 </span><span class="lineNoCov">              0 :         php_network_freeaddresses(psal);</span>
+<span class="lineNum">     579 </span>                : 
+<span class="lineNum">     580 </span>                : out:
+<span class="lineNum">     581 </span><span class="lineNoCov">              0 :         STR_FREE(tmp);</span>
+<span class="lineNum">     582 </span><span class="lineNoCov">              0 :         return ret;</span>
+<span class="lineNum">     583 </span>                : }
+<a name="584"><span class="lineNum">     584 </span>                : </a>
+<span class="lineNum">     585 </span>                : 
+<span class="lineNum">     586 </span><span class="lineNoCov">              0 : PHPAPI void php_network_populate_name_from_sockaddr(</span>
+<span class="lineNum">     587 </span>                :                 /* input address */
+<span class="lineNum">     588 </span>                :                 struct sockaddr *sa, socklen_t sl,
+<span class="lineNum">     589 </span>                :                 /* output readable address */
+<span class="lineNum">     590 </span>                :                 char **textaddr, long *textaddrlen,
+<span class="lineNum">     591 </span>                :                 /* output address */
+<span class="lineNum">     592 </span>                :                 struct sockaddr **addr,
+<span class="lineNum">     593 </span>                :                 socklen_t *addrlen
+<span class="lineNum">     594 </span>                :                 TSRMLS_DC)
+<span class="lineNum">     595 </span>                : {
+<span class="lineNum">     596 </span><span class="lineNoCov">              0 :         if (addr) {</span>
+<span class="lineNum">     597 </span><span class="lineNoCov">              0 :                 *addr = emalloc(sl);</span>
+<span class="lineNum">     598 </span><span class="lineNoCov">              0 :                 memcpy(*addr, sa, sl);</span>
+<span class="lineNum">     599 </span><span class="lineNoCov">              0 :                 *addrlen = sl;</span>
+<span class="lineNum">     600 </span>                :         }
+<span class="lineNum">     601 </span>                : 
+<span class="lineNum">     602 </span><span class="lineNoCov">              0 :         if (textaddr) {</span>
+<span class="lineNum">     603 </span>                : #if HAVE_IPV6 &amp;&amp; HAVE_INET_NTOP
+<span class="lineNum">     604 </span>                :                 char abuf[256];
+<span class="lineNum">     605 </span>                : #endif
+<span class="lineNum">     606 </span><span class="lineNoCov">              0 :                 char *buf = NULL;</span>
+<span class="lineNum">     607 </span>                : 
+<span class="lineNum">     608 </span><span class="lineNoCov">              0 :                 switch (sa-&gt;sa_family) {</span>
+<span class="lineNum">     609 </span>                :                         case AF_INET:
+<span class="lineNum">     610 </span>                :                                 /* generally not thread safe, but it *is* thread safe under win32 */
+<span class="lineNum">     611 </span><span class="lineNoCov">              0 :                                 buf = inet_ntoa(((struct sockaddr_in*)sa)-&gt;sin_addr);</span>
+<span class="lineNum">     612 </span><span class="lineNoCov">              0 :                                 if (buf) {</span>
+<span class="lineNum">     613 </span><span class="lineNoCov">              0 :                                         *textaddrlen = spprintf(textaddr, 0, &quot;%s:%d&quot;,</span>
+<span class="lineNum">     614 </span><span class="lineNoCov">              0 :                                                 buf, ntohs(((struct sockaddr_in*)sa)-&gt;sin_port));</span>
+<span class="lineNum">     615 </span>                :                                 }
+<span class="lineNum">     616 </span>                : 
+<span class="lineNum">     617 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     618 </span>                : 
+<span class="lineNum">     619 </span>                : #if HAVE_IPV6 &amp;&amp; HAVE_INET_NTOP
+<span class="lineNum">     620 </span>                :                         case AF_INET6:
+<span class="lineNum">     621 </span><span class="lineNoCov">              0 :                                 buf = (char*)inet_ntop(sa-&gt;sa_family, &amp;((struct sockaddr_in6*)sa)-&gt;sin6_addr, (char *)&amp;abuf, sizeof(abuf));</span>
+<span class="lineNum">     622 </span><span class="lineNoCov">              0 :                                 if (buf) {</span>
+<span class="lineNum">     623 </span><span class="lineNoCov">              0 :                                         *textaddrlen = spprintf(textaddr, 0, &quot;%s:%d&quot;,</span>
+<span class="lineNum">     624 </span><span class="lineNoCov">              0 :                                                 buf, ntohs(((struct sockaddr_in6*)sa)-&gt;sin6_port));</span>
+<span class="lineNum">     625 </span>                :                                 }
+<span class="lineNum">     626 </span>                : 
+<span class="lineNum">     627 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     628 </span>                : #endif
+<span class="lineNum">     629 </span>                : #ifdef AF_UNIX
+<span class="lineNum">     630 </span>                :                         case AF_UNIX:
+<span class="lineNum">     631 </span>                :                                 {
+<span class="lineNum">     632 </span><span class="lineNoCov">              0 :                                         struct sockaddr_un *ua = (struct sockaddr_un*)sa;</span>
+<span class="lineNum">     633 </span>                : 
+<span class="lineNum">     634 </span><span class="lineNoCov">              0 :                                         if (ua-&gt;sun_path[0] == '\0') {</span>
+<span class="lineNum">     635 </span>                :                                                 /* abstract name */
+<span class="lineNum">     636 </span><span class="lineNoCov">              0 :                                                 int len = strlen(ua-&gt;sun_path + 1) + 1;</span>
+<span class="lineNum">     637 </span><span class="lineNoCov">              0 :                                                 *textaddrlen = len;</span>
+<span class="lineNum">     638 </span><span class="lineNoCov">              0 :                                                 *textaddr = emalloc(len + 1);</span>
+<span class="lineNum">     639 </span><span class="lineNoCov">              0 :                                                 memcpy(*textaddr, ua-&gt;sun_path, len);</span>
+<span class="lineNum">     640 </span><span class="lineNoCov">              0 :                                                 (*textaddr)[len] = '\0';</span>
+<span class="lineNum">     641 </span>                :                                         } else {
+<span class="lineNum">     642 </span><span class="lineNoCov">              0 :                                                 *textaddrlen = strlen(ua-&gt;sun_path);</span>
+<span class="lineNum">     643 </span><span class="lineNoCov">              0 :                                                 *textaddr = estrndup(ua-&gt;sun_path, *textaddrlen);</span>
+<span class="lineNum">     644 </span>                :                                         }
+<span class="lineNum">     645 </span>                :                                 }
+<span class="lineNum">     646 </span>                :                                 break;
+<span class="lineNum">     647 </span>                : #endif
+<span class="lineNum">     648 </span>                : 
+<span class="lineNum">     649 </span>                :                 }
+<span class="lineNum">     650 </span>                : 
+<span class="lineNum">     651 </span>                :         }
+<a name="652"><span class="lineNum">     652 </span><span class="lineNoCov">              0 : }</span></a>
+<span class="lineNum">     653 </span>                : 
+<span class="lineNum">     654 </span><span class="lineNoCov">              0 : PHPAPI int php_network_get_peer_name(php_socket_t sock,</span>
+<span class="lineNum">     655 </span>                :                 char **textaddr, long *textaddrlen,
+<span class="lineNum">     656 </span>                :                 struct sockaddr **addr,
+<span class="lineNum">     657 </span>                :                 socklen_t *addrlen
+<span class="lineNum">     658 </span>                :                 TSRMLS_DC)
+<span class="lineNum">     659 </span>                : {
+<span class="lineNum">     660 </span>                :         php_sockaddr_storage sa;
+<span class="lineNum">     661 </span><span class="lineNoCov">              0 :         socklen_t sl = sizeof(sa);</span>
+<span class="lineNum">     662 </span><span class="lineNoCov">              0 :         memset(&amp;sa, 0, sizeof(sa));</span>
+<span class="lineNum">     663 </span>                : 
+<span class="lineNum">     664 </span><span class="lineNoCov">              0 :         if (getpeername(sock, (struct sockaddr*)&amp;sa, &amp;sl) == 0) {</span>
+<span class="lineNum">     665 </span><span class="lineNoCov">              0 :                 php_network_populate_name_from_sockaddr((struct sockaddr*)&amp;sa, sl,</span>
+<span class="lineNum">     666 </span>                :                                 textaddr, textaddrlen,
+<span class="lineNum">     667 </span>                :                                 addr, addrlen
+<span class="lineNum">     668 </span>                :                                 TSRMLS_CC);
+<span class="lineNum">     669 </span><span class="lineNoCov">              0 :                 return 0;</span>
+<span class="lineNum">     670 </span>                :         }
+<span class="lineNum">     671 </span><span class="lineNoCov">              0 :         return -1;</span>
+<a name="672"><span class="lineNum">     672 </span>                : }</a>
+<span class="lineNum">     673 </span>                : 
+<span class="lineNum">     674 </span><span class="lineNoCov">              0 : PHPAPI int php_network_get_sock_name(php_socket_t sock,</span>
+<span class="lineNum">     675 </span>                :                 char **textaddr, long *textaddrlen,
+<span class="lineNum">     676 </span>                :                 struct sockaddr **addr,
+<span class="lineNum">     677 </span>                :                 socklen_t *addrlen
+<span class="lineNum">     678 </span>                :                 TSRMLS_DC)
+<span class="lineNum">     679 </span>                : {
+<span class="lineNum">     680 </span>                :         php_sockaddr_storage sa;
+<span class="lineNum">     681 </span><span class="lineNoCov">              0 :         socklen_t sl = sizeof(sa);</span>
+<span class="lineNum">     682 </span><span class="lineNoCov">              0 :         memset(&amp;sa, 0, sizeof(sa));</span>
+<span class="lineNum">     683 </span>                : 
+<span class="lineNum">     684 </span><span class="lineNoCov">              0 :         if (getsockname(sock, (struct sockaddr*)&amp;sa, &amp;sl) == 0) {</span>
+<span class="lineNum">     685 </span><span class="lineNoCov">              0 :                 php_network_populate_name_from_sockaddr((struct sockaddr*)&amp;sa, sl,</span>
+<span class="lineNum">     686 </span>                :                                 textaddr, textaddrlen,
+<span class="lineNum">     687 </span>                :                                 addr, addrlen
+<span class="lineNum">     688 </span>                :                                 TSRMLS_CC);
+<span class="lineNum">     689 </span><span class="lineNoCov">              0 :                 return 0;</span>
+<span class="lineNum">     690 </span>                :         }
+<span class="lineNum">     691 </span><span class="lineNoCov">              0 :         return -1;</span>
+<span class="lineNum">     692 </span>                : 
+<span class="lineNum">     693 </span>                : }
+<span class="lineNum">     694 </span>                : 
+<span class="lineNum">     695 </span>                : 
+<span class="lineNum">     696 </span>                : /* Accept a client connection from a server socket,
+<span class="lineNum">     697 </span>                :  * using an optional timeout.
+<span class="lineNum">     698 </span>                :  * Returns the peer address in addr/addrlen (it will emalloc
+<span class="lineNum">     699 </span>                :  * these, so be sure to efree the result).
+<span class="lineNum">     700 </span>                :  * If you specify textaddr/textaddrlen, a text-printable
+<span class="lineNum">     701 </span>                :  * version of the address will be emalloc'd and returned.
+<span class="lineNum">     702 </span>                :  * */
+<a name="703"><span class="lineNum">     703 </span>                : </a>
+<span class="lineNum">     704 </span>                : /* {{{ php_network_accept_incoming */
+<span class="lineNum">     705 </span><span class="lineNoCov">              0 : PHPAPI php_socket_t php_network_accept_incoming(php_socket_t srvsock,</span>
+<span class="lineNum">     706 </span>                :                 char **textaddr, long *textaddrlen,
+<span class="lineNum">     707 </span>                :                 struct sockaddr **addr,
+<span class="lineNum">     708 </span>                :                 socklen_t *addrlen,
+<span class="lineNum">     709 </span>                :                 struct timeval *timeout,
+<span class="lineNum">     710 </span>                :                 char **error_string,
+<span class="lineNum">     711 </span>                :                 int *error_code
+<span class="lineNum">     712 </span>                :                 TSRMLS_DC)
+<span class="lineNum">     713 </span>                : {
+<span class="lineNum">     714 </span><span class="lineNoCov">              0 :         php_socket_t clisock = -1;</span>
+<span class="lineNum">     715 </span><span class="lineNoCov">              0 :         int error = 0, n;</span>
+<span class="lineNum">     716 </span>                :         php_sockaddr_storage sa;
+<span class="lineNum">     717 </span>                :         socklen_t sl;
+<span class="lineNum">     718 </span>                : 
+<span class="lineNum">     719 </span><span class="lineNoCov">              0 :         n = php_pollfd_for(srvsock, PHP_POLLREADABLE, timeout);</span>
+<span class="lineNum">     720 </span>                : 
+<span class="lineNum">     721 </span><span class="lineNoCov">              0 :         if (n == 0) {</span>
+<span class="lineNum">     722 </span><span class="lineNoCov">              0 :                 error = PHP_TIMEOUT_ERROR_VALUE;</span>
+<span class="lineNum">     723 </span><span class="lineNoCov">              0 :         } else if (n == -1) {</span>
+<span class="lineNum">     724 </span><span class="lineNoCov">              0 :                 error = php_socket_errno();</span>
+<span class="lineNum">     725 </span>                :         } else {
+<span class="lineNum">     726 </span><span class="lineNoCov">              0 :                 sl = sizeof(sa);</span>
+<span class="lineNum">     727 </span>                : 
+<span class="lineNum">     728 </span><span class="lineNoCov">              0 :                 clisock = accept(srvsock, (struct sockaddr*)&amp;sa, &amp;sl);</span>
+<span class="lineNum">     729 </span>                : 
+<span class="lineNum">     730 </span><span class="lineNoCov">              0 :                 if (clisock != SOCK_ERR) {</span>
+<span class="lineNum">     731 </span><span class="lineNoCov">              0 :                         php_network_populate_name_from_sockaddr((struct sockaddr*)&amp;sa, sl,</span>
+<span class="lineNum">     732 </span>                :                                         textaddr, textaddrlen,
+<span class="lineNum">     733 </span>                :                                         addr, addrlen
+<span class="lineNum">     734 </span>                :                                         TSRMLS_CC);
+<span class="lineNum">     735 </span>                :                 } else {
+<span class="lineNum">     736 </span><span class="lineNoCov">              0 :                         error = php_socket_errno();</span>
+<span class="lineNum">     737 </span>                :                 }
+<span class="lineNum">     738 </span>                :         }
+<span class="lineNum">     739 </span>                : 
+<span class="lineNum">     740 </span><span class="lineNoCov">              0 :         if (error_code) {</span>
+<span class="lineNum">     741 </span><span class="lineNoCov">              0 :                 *error_code = error;</span>
+<span class="lineNum">     742 </span>                :         }
+<span class="lineNum">     743 </span><span class="lineNoCov">              0 :         if (error_string) {</span>
+<span class="lineNum">     744 </span><span class="lineNoCov">              0 :                 *error_string = php_socket_strerror(error, NULL, 0);</span>
+<span class="lineNum">     745 </span>                :         }
+<span class="lineNum">     746 </span>                : 
+<span class="lineNum">     747 </span><span class="lineNoCov">              0 :         return clisock;</span>
+<span class="lineNum">     748 </span>                : }
+<span class="lineNum">     749 </span>                : /* }}} */
+<span class="lineNum">     750 </span>                : 
+<span class="lineNum">     751 </span>                : 
+<span class="lineNum">     752 </span>                : 
+<span class="lineNum">     753 </span>                : /* Connect to a remote host using an interruptible connect with optional timeout.
+<span class="lineNum">     754 </span>                :  * Optionally, the connect can be made asynchronously, which will implicitly
+<span class="lineNum">     755 </span>                :  * enable non-blocking mode on the socket.
+<span class="lineNum">     756 </span>                :  * Returns the connected (or connecting) socket, or -1 on failure.
+<span class="lineNum">     757 </span>                :  * */
+<a name="758"><span class="lineNum">     758 </span>                : </a>
+<span class="lineNum">     759 </span>                : /* {{{ php_network_connect_socket_to_host */
+<span class="lineNum">     760 </span><span class="lineNoCov">              0 : php_socket_t php_network_connect_socket_to_host(const char *host, unsigned short port,</span>
+<span class="lineNum">     761 </span>                :                 int socktype, int asynchronous, struct timeval *timeout, char **error_string,
+<span class="lineNum">     762 </span>                :                 int *error_code, char *bindto, unsigned short bindport
+<span class="lineNum">     763 </span>                :                 TSRMLS_DC)
+<span class="lineNum">     764 </span>                : {
+<span class="lineNum">     765 </span><span class="lineNoCov">              0 :         int num_addrs, n, fatal = 0;</span>
+<span class="lineNum">     766 </span>                :         php_socket_t sock;
+<span class="lineNum">     767 </span>                :         struct sockaddr **sal, **psal, *sa;
+<span class="lineNum">     768 </span>                :         struct timeval working_timeout;
+<span class="lineNum">     769 </span>                :         socklen_t socklen;
+<span class="lineNum">     770 </span>                : #if HAVE_GETTIMEOFDAY
+<span class="lineNum">     771 </span>                :         struct timeval limit_time, time_now;
+<span class="lineNum">     772 </span>                : #endif
+<span class="lineNum">     773 </span>                : 
+<span class="lineNum">     774 </span><span class="lineNoCov">              0 :         num_addrs = php_network_getaddresses(host, socktype, &amp;psal, error_string TSRMLS_CC);</span>
+<span class="lineNum">     775 </span>                : 
+<span class="lineNum">     776 </span><span class="lineNoCov">              0 :         if (num_addrs == 0) {</span>
+<span class="lineNum">     777 </span>                :                 /* could not resolve address(es) */
+<span class="lineNum">     778 </span><span class="lineNoCov">              0 :                 return -1;</span>
+<span class="lineNum">     779 </span>                :         }
+<span class="lineNum">     780 </span>                : 
+<span class="lineNum">     781 </span><span class="lineNoCov">              0 :         if (timeout) {</span>
+<span class="lineNum">     782 </span><span class="lineNoCov">              0 :                 memcpy(&amp;working_timeout, timeout, sizeof(working_timeout));</span>
+<span class="lineNum">     783 </span>                : #if HAVE_GETTIMEOFDAY
+<span class="lineNum">     784 </span><span class="lineNoCov">              0 :                 gettimeofday(&amp;limit_time, NULL);</span>
+<span class="lineNum">     785 </span><span class="lineNoCov">              0 :                 limit_time.tv_sec += working_timeout.tv_sec;</span>
+<span class="lineNum">     786 </span><span class="lineNoCov">              0 :                 limit_time.tv_usec += working_timeout.tv_usec;</span>
+<span class="lineNum">     787 </span><span class="lineNoCov">              0 :                 if (limit_time.tv_usec &gt;= 1000000) {</span>
+<span class="lineNum">     788 </span><span class="lineNoCov">              0 :                         limit_time.tv_usec -= 1000000;</span>
+<span class="lineNum">     789 </span><span class="lineNoCov">              0 :                         limit_time.tv_sec++;</span>
+<span class="lineNum">     790 </span>                :                 }
+<span class="lineNum">     791 </span>                : #endif
+<span class="lineNum">     792 </span>                :         }
+<span class="lineNum">     793 </span>                : 
+<span class="lineNum">     794 </span><span class="lineNoCov">              0 :         for (sal = psal; !fatal &amp;&amp; *sal != NULL; sal++) {</span>
+<span class="lineNum">     795 </span><span class="lineNoCov">              0 :                 sa = *sal;</span>
+<span class="lineNum">     796 </span>                : 
+<span class="lineNum">     797 </span>                :                 /* create a socket for this address */
+<span class="lineNum">     798 </span><span class="lineNoCov">              0 :                 sock = socket(sa-&gt;sa_family, socktype, 0);</span>
+<span class="lineNum">     799 </span>                : 
+<span class="lineNum">     800 </span><span class="lineNoCov">              0 :                 if (sock == SOCK_ERR) {</span>
+<span class="lineNum">     801 </span><span class="lineNoCov">              0 :                         continue;</span>
+<span class="lineNum">     802 </span>                :                 }
+<span class="lineNum">     803 </span>                : 
+<span class="lineNum">     804 </span><span class="lineNoCov">              0 :                 switch (sa-&gt;sa_family) {</span>
+<span class="lineNum">     805 </span>                : #if HAVE_GETADDRINFO &amp;&amp; HAVE_IPV6
+<span class="lineNum">     806 </span>                :                         case AF_INET6:
+<span class="lineNum">     807 </span><span class="lineNoCov">              0 :                                 if (!bindto || strchr(bindto, ':')) {</span>
+<span class="lineNum">     808 </span><span class="lineNoCov">              0 :                                         ((struct sockaddr_in6 *)sa)-&gt;sin6_family = sa-&gt;sa_family;</span>
+<span class="lineNum">     809 </span><span class="lineNoCov">              0 :                                         ((struct sockaddr_in6 *)sa)-&gt;sin6_port = htons(port);</span>
+<span class="lineNum">     810 </span><span class="lineNoCov">              0 :                                         socklen = sizeof(struct sockaddr_in6);</span>
+<span class="lineNum">     811 </span>                :                                 } else {
+<span class="lineNum">     812 </span><span class="lineNoCov">              0 :                                         socklen = 0;</span>
+<span class="lineNum">     813 </span><span class="lineNoCov">              0 :                                         sa = NULL;</span>
+<span class="lineNum">     814 </span>                :                                 }
+<span class="lineNum">     815 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     816 </span>                : #endif
+<span class="lineNum">     817 </span>                :                         case AF_INET:
+<span class="lineNum">     818 </span><span class="lineNoCov">              0 :                                 ((struct sockaddr_in *)sa)-&gt;sin_family = sa-&gt;sa_family;</span>
+<span class="lineNum">     819 </span><span class="lineNoCov">              0 :                                 ((struct sockaddr_in *)sa)-&gt;sin_port = htons(port);</span>
+<span class="lineNum">     820 </span><span class="lineNoCov">              0 :                                 socklen = sizeof(struct sockaddr_in);</span>
+<span class="lineNum">     821 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     822 </span>                :                         default:
+<span class="lineNum">     823 </span>                :                                 /* Unknown family */
+<span class="lineNum">     824 </span><span class="lineNoCov">              0 :                                 socklen = 0;</span>
+<span class="lineNum">     825 </span><span class="lineNoCov">              0 :                                 sa = NULL;</span>
+<span class="lineNum">     826 </span>                :                 }
+<span class="lineNum">     827 </span>                : 
+<span class="lineNum">     828 </span><span class="lineNoCov">              0 :                 if (sa) {</span>
+<span class="lineNum">     829 </span>                :                         /* make a connection attempt */
+<span class="lineNum">     830 </span>                : 
+<span class="lineNum">     831 </span><span class="lineNoCov">              0 :                         if (bindto) {</span>
+<span class="lineNum">     832 </span><span class="lineNoCov">              0 :                                 struct sockaddr *local_address = NULL;</span>
+<span class="lineNum">     833 </span><span class="lineNoCov">              0 :                                 int local_address_len = 0;</span>
+<span class="lineNum">     834 </span>                : 
+<span class="lineNum">     835 </span><span class="lineNoCov">              0 :                                 if (sa-&gt;sa_family == AF_INET) {</span>
+<span class="lineNum">     836 </span><span class="lineNoCov">              0 :                                         struct sockaddr_in *in4 = emalloc(sizeof(struct sockaddr_in));</span>
+<span class="lineNum">     837 </span>                : 
+<span class="lineNum">     838 </span><span class="lineNoCov">              0 :                                         local_address = (struct sockaddr*)in4;</span>
+<span class="lineNum">     839 </span><span class="lineNoCov">              0 :                                         local_address_len = sizeof(struct sockaddr_in);</span>
+<span class="lineNum">     840 </span>                : 
+<span class="lineNum">     841 </span><span class="lineNoCov">              0 :                                         in4-&gt;sin_family = sa-&gt;sa_family;</span>
+<span class="lineNum">     842 </span><span class="lineNoCov">              0 :                                         in4-&gt;sin_port = htons(bindport);</span>
+<span class="lineNum">     843 </span><span class="lineNoCov">              0 :                                         if (!inet_aton(bindto, &amp;in4-&gt;sin_addr)) {</span>
+<span class="lineNum">     844 </span><span class="lineNoCov">              0 :                                                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Invalid IP Address: %s&quot;, bindto);</span>
+<span class="lineNum">     845 </span><span class="lineNoCov">              0 :                                                 goto skip_bind;</span>
+<span class="lineNum">     846 </span>                :                                         }
+<span class="lineNum">     847 </span><span class="lineNoCov">              0 :                                         memset(&amp;(in4-&gt;sin_zero), 0, sizeof(in4-&gt;sin_zero));</span>
+<span class="lineNum">     848 </span>                :                                 }
+<span class="lineNum">     849 </span>                : #if HAVE_IPV6 &amp;&amp; HAVE_INET_PTON
+<span class="lineNum">     850 </span>                :                                  else { /* IPV6 */
+<span class="lineNum">     851 </span><span class="lineNoCov">              0 :                                         struct sockaddr_in6 *in6 = emalloc(sizeof(struct sockaddr_in6));</span>
+<span class="lineNum">     852 </span>                : 
+<span class="lineNum">     853 </span><span class="lineNoCov">              0 :                                         local_address = (struct sockaddr*)in6;</span>
+<span class="lineNum">     854 </span><span class="lineNoCov">              0 :                                         local_address_len = sizeof(struct sockaddr_in6);</span>
+<span class="lineNum">     855 </span>                : 
+<span class="lineNum">     856 </span><span class="lineNoCov">              0 :                                         in6-&gt;sin6_family = sa-&gt;sa_family;</span>
+<span class="lineNum">     857 </span><span class="lineNoCov">              0 :                                         in6-&gt;sin6_port = htons(bindport);</span>
+<span class="lineNum">     858 </span><span class="lineNoCov">              0 :                                         if (inet_pton(AF_INET6, bindto, &amp;in6-&gt;sin6_addr) &lt; 1) {</span>
+<span class="lineNum">     859 </span><span class="lineNoCov">              0 :                                                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Invalid IP Address: %s&quot;, bindto);</span>
+<span class="lineNum">     860 </span><span class="lineNoCov">              0 :                                                 goto skip_bind;</span>
+<span class="lineNum">     861 </span>                :                                         }
+<span class="lineNum">     862 </span>                :                                 }
+<span class="lineNum">     863 </span>                : #endif
+<span class="lineNum">     864 </span><span class="lineNoCov">              0 :                                 if (!local_address || bind(sock, local_address, local_address_len)) {</span>
+<span class="lineNum">     865 </span><span class="lineNoCov">              0 :                                         php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;failed to bind to '%s:%d', system said: %s&quot;, bindto, bindport, strerror(errno));</span>
+<span class="lineNum">     866 </span>                :                                 }
+<span class="lineNum">     867 </span>                : skip_bind:
+<span class="lineNum">     868 </span><span class="lineNoCov">              0 :                                 if (local_address) {</span>
+<span class="lineNum">     869 </span><span class="lineNoCov">              0 :                                         efree(local_address);</span>
+<span class="lineNum">     870 </span>                :                                 }
+<span class="lineNum">     871 </span>                :                         }
+<span class="lineNum">     872 </span>                :                         /* free error string recieved during previous iteration (if any) */
+<span class="lineNum">     873 </span><span class="lineNoCov">              0 :                         if (error_string &amp;&amp; *error_string) {</span>
+<span class="lineNum">     874 </span><span class="lineNoCov">              0 :                                 efree(*error_string);</span>
+<span class="lineNum">     875 </span><span class="lineNoCov">              0 :                                 *error_string = NULL;</span>
+<span class="lineNum">     876 </span>                :                         }
+<span class="lineNum">     877 </span>                : 
+<span class="lineNum">     878 </span><span class="lineNoCov">              0 :                         n = php_network_connect_socket(sock, sa, socklen, asynchronous,</span>
+<span class="lineNum">     879 </span>                :                                         timeout ? &amp;working_timeout : NULL,
+<span class="lineNum">     880 </span>                :                                         error_string, error_code);
+<span class="lineNum">     881 </span>                : 
+<span class="lineNum">     882 </span><span class="lineNoCov">              0 :                         if (n != -1) {</span>
+<span class="lineNum">     883 </span><span class="lineNoCov">              0 :                                 goto connected;</span>
+<span class="lineNum">     884 </span>                :                         }
+<span class="lineNum">     885 </span>                : 
+<span class="lineNum">     886 </span>                :                         /* adjust timeout for next attempt */
+<span class="lineNum">     887 </span>                : #if HAVE_GETTIMEOFDAY
+<span class="lineNum">     888 </span><span class="lineNoCov">              0 :                         if (timeout) {</span>
+<span class="lineNum">     889 </span><span class="lineNoCov">              0 :                                 gettimeofday(&amp;time_now, NULL);</span>
+<span class="lineNum">     890 </span>                : 
+<span class="lineNum">     891 </span><span class="lineNoCov">              0 :                                 if (timercmp(&amp;time_now, &amp;limit_time, &gt;=)) {</span>
+<span class="lineNum">     892 </span>                :                                         /* time limit expired; don't attempt any further connections */
+<span class="lineNum">     893 </span><span class="lineNoCov">              0 :                                         fatal = 1;</span>
+<span class="lineNum">     894 </span>                :                                 } else {
+<span class="lineNum">     895 </span>                :                                         /* work out remaining time */
+<span class="lineNum">     896 </span><span class="lineNoCov">              0 :                                         sub_times(limit_time, time_now, &amp;working_timeout);</span>
+<span class="lineNum">     897 </span>                :                                 }
+<span class="lineNum">     898 </span>                :                         }
+<span class="lineNum">     899 </span>                : #else
+<span class="lineNum">     900 </span>                :                         if (error_code &amp;&amp; *error_code == PHP_TIMEOUT_ERROR_VALUE) {
+<span class="lineNum">     901 </span>                :                                 /* Don't even bother trying to connect to the next alternative;
+<span class="lineNum">     902 </span>                :                                  * we have no way to determine how long we have already taken
+<span class="lineNum">     903 </span>                :                                  * and it is quite likely that the next attempt will fail too. */
+<span class="lineNum">     904 </span>                :                                 fatal = 1;
+<span class="lineNum">     905 </span>                :                         } else {
+<span class="lineNum">     906 </span>                :                                 /* re-use the same initial timeout.
+<span class="lineNum">     907 </span>                :                                  * Not the best thing, but in practice it should be good-enough */
+<span class="lineNum">     908 </span>                :                                 if (timeout) {
+<span class="lineNum">     909 </span>                :                                         memcpy(&amp;working_timeout, timeout, sizeof(working_timeout));
+<span class="lineNum">     910 </span>                :                                 }
+<span class="lineNum">     911 </span>                :                         }
+<span class="lineNum">     912 </span>                : #endif
+<span class="lineNum">     913 </span>                :                 }
+<span class="lineNum">     914 </span>                : 
+<span class="lineNum">     915 </span><span class="lineNoCov">              0 :                 closesocket(sock);</span>
+<span class="lineNum">     916 </span>                :         }
+<span class="lineNum">     917 </span><span class="lineNoCov">              0 :         sock = -1;</span>
+<span class="lineNum">     918 </span>                : 
+<span class="lineNum">     919 </span>                : connected:
+<span class="lineNum">     920 </span>                : 
+<span class="lineNum">     921 </span><span class="lineNoCov">              0 :         php_network_freeaddresses(psal);</span>
+<span class="lineNum">     922 </span>                : 
+<span class="lineNum">     923 </span><span class="lineNoCov">              0 :         return sock;</span>
+<span class="lineNum">     924 </span>                : }
+<span class="lineNum">     925 </span>                : /* }}} */
+<span class="lineNum">     926 </span>                : 
+<span class="lineNum">     927 </span>                : /* {{{ php_any_addr
+<a name="928"><span class="lineNum">     928 </span>                :  * Fills the any (wildcard) address into php_sockaddr_storage</a>
+<span class="lineNum">     929 </span>                :  */
+<span class="lineNum">     930 </span><span class="lineNoCov">              0 : PHPAPI void php_any_addr(int family, php_sockaddr_storage *addr, unsigned short port)</span>
+<span class="lineNum">     931 </span>                : {
+<span class="lineNum">     932 </span><span class="lineNoCov">              0 :         memset(addr, 0, sizeof(php_sockaddr_storage));</span>
+<span class="lineNum">     933 </span><span class="lineNoCov">              0 :         switch (family) {</span>
+<span class="lineNum">     934 </span>                : #if HAVE_IPV6
+<span class="lineNum">     935 </span>                :         case AF_INET6: {
+<span class="lineNum">     936 </span><span class="lineNoCov">              0 :                 struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *) addr;</span>
+<span class="lineNum">     937 </span><span class="lineNoCov">              0 :                 sin6-&gt;sin6_family = AF_INET6;</span>
+<span class="lineNum">     938 </span><span class="lineNoCov">              0 :                 sin6-&gt;sin6_port = htons(port);</span>
+<span class="lineNum">     939 </span><span class="lineNoCov">              0 :                 sin6-&gt;sin6_addr = in6addr_any;</span>
+<span class="lineNum">     940 </span><span class="lineNoCov">              0 :                 break;</span>
+<span class="lineNum">     941 </span>                :         }
+<span class="lineNum">     942 </span>                : #endif
+<span class="lineNum">     943 </span>                :         case AF_INET: {
+<span class="lineNum">     944 </span><span class="lineNoCov">              0 :                 struct sockaddr_in *sin = (struct sockaddr_in *) addr;</span>
+<span class="lineNum">     945 </span><span class="lineNoCov">              0 :                 sin-&gt;sin_family = AF_INET;</span>
+<span class="lineNum">     946 </span><span class="lineNoCov">              0 :                 sin-&gt;sin_port = htons(port);</span>
+<span class="lineNum">     947 </span><span class="lineNoCov">              0 :                 sin-&gt;sin_addr.s_addr = htonl(INADDR_ANY);</span>
+<span class="lineNum">     948 </span>                :                 break;
+<span class="lineNum">     949 </span>                :         }
+<span class="lineNum">     950 </span>                :         }
+<span class="lineNum">     951 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     952 </span>                : /* }}} */
+<span class="lineNum">     953 </span>                : 
+<span class="lineNum">     954 </span>                : /* {{{ php_sockaddr_size
+<a name="955"><span class="lineNum">     955 </span>                :  * Returns the size of struct sockaddr_xx for the family</a>
+<span class="lineNum">     956 </span>                :  */
+<span class="lineNum">     957 </span><span class="lineNoCov">              0 : PHPAPI int php_sockaddr_size(php_sockaddr_storage *addr)</span>
+<span class="lineNum">     958 </span>                : {
+<span class="lineNum">     959 </span><span class="lineNoCov">              0 :         switch (((struct sockaddr *)addr)-&gt;sa_family) {</span>
+<span class="lineNum">     960 </span>                :         case AF_INET:
+<span class="lineNum">     961 </span><span class="lineNoCov">              0 :                 return sizeof(struct sockaddr_in);</span>
+<span class="lineNum">     962 </span>                : #if HAVE_IPV6
+<span class="lineNum">     963 </span>                :         case AF_INET6:
+<span class="lineNum">     964 </span><span class="lineNoCov">              0 :                 return sizeof(struct sockaddr_in6);</span>
+<span class="lineNum">     965 </span>                : #endif
+<span class="lineNum">     966 </span>                : #ifdef AF_UNIX
+<span class="lineNum">     967 </span>                :         case AF_UNIX:
+<span class="lineNum">     968 </span><span class="lineNoCov">              0 :                 return sizeof(struct sockaddr_un);</span>
+<span class="lineNum">     969 </span>                : #endif
+<span class="lineNum">     970 </span>                :         default:
+<span class="lineNum">     971 </span><span class="lineNoCov">              0 :                 return 0;</span>
+<span class="lineNum">     972 </span>                :         }
+<span class="lineNum">     973 </span>                : }
+<span class="lineNum">     974 </span>                : /* }}} */
+<span class="lineNum">     975 </span>                : 
+<span class="lineNum">     976 </span>                : /* Given a socket error code, if buf == NULL:
+<span class="lineNum">     977 </span>                :  *   emallocs storage for the error message and returns
+<span class="lineNum">     978 </span>                :  * else
+<span class="lineNum">     979 </span>                :  *   sprintf message into provided buffer and returns buf
+<a name="980"><span class="lineNum">     980 </span>                :  */</a>
+<span class="lineNum">     981 </span>                : /* {{{ php_socket_strerror */
+<span class="lineNum">     982 </span><span class="lineNoCov">              0 : PHPAPI char *php_socket_strerror(long err, char *buf, size_t bufsize)</span>
+<span class="lineNum">     983 </span>                : {
+<span class="lineNum">     984 </span>                : #ifndef PHP_WIN32
+<span class="lineNum">     985 </span>                :         char *errstr;
+<span class="lineNum">     986 </span>                : 
+<span class="lineNum">     987 </span><span class="lineNoCov">              0 :         errstr = strerror(err);</span>
+<span class="lineNum">     988 </span><span class="lineNoCov">              0 :         if (buf == NULL) {</span>
+<span class="lineNum">     989 </span><span class="lineNoCov">              0 :                 buf = estrdup(errstr);</span>
+<span class="lineNum">     990 </span>                :         } else {
+<span class="lineNum">     991 </span><span class="lineNoCov">              0 :                 strncpy(buf, errstr, bufsize);</span>
+<span class="lineNum">     992 </span>                :         }
+<span class="lineNum">     993 </span><span class="lineNoCov">              0 :         return buf;</span>
+<span class="lineNum">     994 </span>                : #else
+<span class="lineNum">     995 </span>                :         char *sysbuf;
+<span class="lineNum">     996 </span>                :         int free_it = 1;
+<span class="lineNum">     997 </span>                : 
+<span class="lineNum">     998 </span>                :         if (!FormatMessage(
+<span class="lineNum">     999 </span>                :                                 FORMAT_MESSAGE_ALLOCATE_BUFFER |
+<span class="lineNum">    1000 </span>                :                                 FORMAT_MESSAGE_FROM_SYSTEM |
+<span class="lineNum">    1001 </span>                :                                 FORMAT_MESSAGE_IGNORE_INSERTS,
+<span class="lineNum">    1002 </span>                :                                 NULL,
+<span class="lineNum">    1003 </span>                :                                 err,
+<span class="lineNum">    1004 </span>                :                                 MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+<span class="lineNum">    1005 </span>                :                                 (LPTSTR)&amp;sysbuf,
+<span class="lineNum">    1006 </span>                :                                 0,
+<span class="lineNum">    1007 </span>                :                                 NULL)) {
+<span class="lineNum">    1008 </span>                :                 free_it = 0;
+<span class="lineNum">    1009 </span>                :                 sysbuf = &quot;Unknown Error&quot;;
+<span class="lineNum">    1010 </span>                :         }
+<span class="lineNum">    1011 </span>                : 
+<span class="lineNum">    1012 </span>                :         if (buf == NULL) {
+<span class="lineNum">    1013 </span>                :                 buf = estrdup(sysbuf);
+<span class="lineNum">    1014 </span>                :         } else {
+<span class="lineNum">    1015 </span>                :                 strncpy(buf, sysbuf, bufsize);
+<span class="lineNum">    1016 </span>                :         }
+<span class="lineNum">    1017 </span>                : 
+<span class="lineNum">    1018 </span>                :         if (free_it) {
+<span class="lineNum">    1019 </span>                :                 LocalFree(sysbuf);
+<span class="lineNum">    1020 </span>                :         }
+<span class="lineNum">    1021 </span>                : 
+<span class="lineNum">    1022 </span>                :         return buf;
+<span class="lineNum">    1023 </span>                : #endif
+<span class="lineNum">    1024 </span>                : }
+<span class="lineNum">    1025 </span>                : /* }}} */
+<a name="1026"><span class="lineNum">    1026 </span>                : </a>
+<span class="lineNum">    1027 </span>                : /* deprecated */
+<span class="lineNum">    1028 </span><span class="lineNoCov">              0 : PHPAPI php_stream *_php_stream_sock_open_from_socket(php_socket_t socket, const char *persistent_id STREAMS_DC TSRMLS_DC)</span>
+<span class="lineNum">    1029 </span>                : {
+<span class="lineNum">    1030 </span>                :         php_stream *stream;
+<span class="lineNum">    1031 </span>                :         php_netstream_data_t *sock;
+<span class="lineNum">    1032 </span>                : 
+<span class="lineNum">    1033 </span><span class="lineNoCov">              0 :         sock = pemalloc(sizeof(php_netstream_data_t), persistent_id ? 1 : 0);</span>
+<span class="lineNum">    1034 </span><span class="lineNoCov">              0 :         memset(sock, 0, sizeof(php_netstream_data_t));</span>
+<span class="lineNum">    1035 </span>                : 
+<span class="lineNum">    1036 </span><span class="lineNoCov">              0 :         sock-&gt;is_blocked = 1;</span>
+<span class="lineNum">    1037 </span><span class="lineNoCov">              0 :         sock-&gt;timeout.tv_sec = FG(default_socket_timeout);</span>
+<span class="lineNum">    1038 </span><span class="lineNoCov">              0 :         sock-&gt;timeout.tv_usec = 0;</span>
+<span class="lineNum">    1039 </span><span class="lineNoCov">              0 :         sock-&gt;socket = socket;</span>
+<span class="lineNum">    1040 </span>                : 
+<span class="lineNum">    1041 </span><span class="lineNoCov">              0 :         stream = php_stream_alloc_rel(&amp;php_stream_generic_socket_ops, sock, persistent_id, &quot;r+&quot;);</span>
+<span class="lineNum">    1042 </span>                : 
+<span class="lineNum">    1043 </span><span class="lineNoCov">              0 :         if (stream == NULL) {</span>
+<span class="lineNum">    1044 </span><span class="lineNoCov">              0 :                 pefree(sock, persistent_id ? 1 : 0);</span>
+<span class="lineNum">    1045 </span>                :         } else {
+<span class="lineNum">    1046 </span><span class="lineNoCov">              0 :                 stream-&gt;flags |= PHP_STREAM_FLAG_AVOID_BLOCKING;</span>
+<span class="lineNum">    1047 </span>                :         }
+<span class="lineNum">    1048 </span>                : 
+<span class="lineNum">    1049 </span><span class="lineNoCov">              0 :         return stream;</span>
+<a name="1050"><span class="lineNum">    1050 </span>                : }</a>
+<span class="lineNum">    1051 </span>                : 
+<span class="lineNum">    1052 </span><span class="lineNoCov">              0 : PHPAPI php_stream *_php_stream_sock_open_host(const char *host, unsigned short port,</span>
+<span class="lineNum">    1053 </span>                :                 int socktype, struct timeval *timeout, const char *persistent_id STREAMS_DC TSRMLS_DC)
+<span class="lineNum">    1054 </span>                : {
+<span class="lineNum">    1055 </span>                :         char *res;
+<span class="lineNum">    1056 </span>                :         long reslen;
+<span class="lineNum">    1057 </span>                :         php_stream *stream;
+<span class="lineNum">    1058 </span>                : 
+<span class="lineNum">    1059 </span><span class="lineNoCov">              0 :         reslen = spprintf(&amp;res, 0, &quot;tcp://%s:%d&quot;, host, port);</span>
+<span class="lineNum">    1060 </span>                : 
+<span class="lineNum">    1061 </span><span class="lineNoCov">              0 :         stream = php_stream_xport_create(res, reslen, REPORT_ERRORS,</span>
+<span class="lineNum">    1062 </span>                :                         STREAM_XPORT_CLIENT | STREAM_XPORT_CONNECT, persistent_id, timeout, NULL, NULL, NULL);
+<span class="lineNum">    1063 </span>                : 
+<span class="lineNum">    1064 </span><span class="lineNoCov">              0 :         efree(res);</span>
+<span class="lineNum">    1065 </span>                : 
+<span class="lineNum">    1066 </span><span class="lineNoCov">              0 :         return stream;</span>
+<a name="1067"><span class="lineNum">    1067 </span>                : }</a>
+<span class="lineNum">    1068 </span>                : 
+<span class="lineNum">    1069 </span><span class="lineNoCov">              0 : PHPAPI int php_set_sock_blocking(int socketd, int block TSRMLS_DC)</span>
+<span class="lineNum">    1070 </span>                : {
+<span class="lineNum">    1071 </span><span class="lineNoCov">              0 :         int ret = SUCCESS;</span>
+<span class="lineNum">    1072 </span>                :         int flags;
+<span class="lineNum">    1073 </span><span class="lineNoCov">              0 :         int myflag = 0;</span>
+<span class="lineNum">    1074 </span>                : 
+<span class="lineNum">    1075 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">    1076 </span>                :         /* with ioctlsocket, a non-zero sets nonblocking, a zero sets blocking */
+<span class="lineNum">    1077 </span>                :         flags = !block;
+<span class="lineNum">    1078 </span>                :         if (ioctlsocket(socketd, FIONBIO, &amp;flags) == SOCKET_ERROR) {
+<span class="lineNum">    1079 </span>                :                 char *error_string;
+<span class="lineNum">    1080 </span>                : 
+<span class="lineNum">    1081 </span>                :                 error_string = php_socket_strerror(WSAGetLastError(), NULL, 0);
+<span class="lineNum">    1082 </span>                :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;%s&quot;, error_string);
+<span class="lineNum">    1083 </span>                :                 efree(error_string);
+<span class="lineNum">    1084 </span>                :                 ret = FAILURE;
+<span class="lineNum">    1085 </span>                :         }
+<span class="lineNum">    1086 </span>                : #else
+<span class="lineNum">    1087 </span><span class="lineNoCov">              0 :         flags = fcntl(socketd, F_GETFL);</span>
+<span class="lineNum">    1088 </span>                : #ifdef O_NONBLOCK
+<span class="lineNum">    1089 </span><span class="lineNoCov">              0 :         myflag = O_NONBLOCK; /* POSIX version */</span>
+<span class="lineNum">    1090 </span>                : #elif defined(O_NDELAY)
+<span class="lineNum">    1091 </span>                :         myflag = O_NDELAY;   /* old non-POSIX version */
+<span class="lineNum">    1092 </span>                : #endif
+<span class="lineNum">    1093 </span><span class="lineNoCov">              0 :         if (!block) {</span>
+<span class="lineNum">    1094 </span><span class="lineNoCov">              0 :                 flags |= myflag;</span>
+<span class="lineNum">    1095 </span>                :         } else {
+<span class="lineNum">    1096 </span><span class="lineNoCov">              0 :                 flags &amp;= ~myflag;</span>
+<span class="lineNum">    1097 </span>                :         }
+<span class="lineNum">    1098 </span><span class="lineNoCov">              0 :         if (fcntl(socketd, F_SETFL, flags) == -1) {</span>
+<span class="lineNum">    1099 </span><span class="lineNoCov">              0 :                 ret = FAILURE;</span>
+<span class="lineNum">    1100 </span>                :         }
+<span class="lineNum">    1101 </span>                : #endif
+<span class="lineNum">    1102 </span><span class="lineNoCov">              0 :         return ret;</span>
+<a name="1103"><span class="lineNum">    1103 </span>                : }</a>
+<span class="lineNum">    1104 </span>                : 
+<span class="lineNum">    1105 </span><span class="lineNoCov">              0 : PHPAPI void _php_emit_fd_setsize_warning(int max_fd)</span>
+<span class="lineNum">    1106 </span>                : {
+<span class="lineNum">    1107 </span>                :         TSRMLS_FETCH();
+<span class="lineNum">    1108 </span>                : 
+<span class="lineNum">    1109 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">    1110 </span>                :         php_error_docref(NULL TSRMLS_CC, E_WARNING,
+<span class="lineNum">    1111 </span>                :                 &quot;PHP needs to be recompiled with a larger value of FD_SETSIZE.\n&quot;
+<span class="lineNum">    1112 </span>                :                 &quot;If this binary is from an official www.php.net package, file a bug report\n&quot;
+<span class="lineNum">    1113 </span>                :                 &quot;at http://bugs.php.net, including the following information:\n&quot;
+<span class="lineNum">    1114 </span>                :                 &quot;FD_SETSIZE=%d, but you are using %d.\n&quot;
+<span class="lineNum">    1115 </span>                :                 &quot; --enable-fd-setsize=%d is recommended, but you may want to set it\n&quot;
+<span class="lineNum">    1116 </span>                :                 &quot;to match to maximum number of sockets each script will work with at\n&quot;
+<span class="lineNum">    1117 </span>                :                 &quot;one time, in order to avoid seeing this error again at a later date.&quot;,
+<span class="lineNum">    1118 </span>                :                 FD_SETSIZE, max_fd, (max_fd + 128) &amp; ~127);
+<span class="lineNum">    1119 </span>                : #else
+<span class="lineNum">    1120 </span><span class="lineNoCov">              0 :         php_error_docref(NULL TSRMLS_CC, E_WARNING,</span>
+<span class="lineNum">    1121 </span>                :                 &quot;You MUST recompile PHP with a larger value of FD_SETSIZE.\n&quot;
+<span class="lineNum">    1122 </span>                :                 &quot;It is set to %d, but you have descriptors numbered at least as high as %d.\n&quot;
+<span class="lineNum">    1123 </span>                :                 &quot; --enable-fd-setsize=%d is recommended, but you may want to set it\n&quot;
+<span class="lineNum">    1124 </span>                :                 &quot;to equal the maximum number of open files supported by your system,\n&quot;
+<span class="lineNum">    1125 </span>                :                 &quot;in order to avoid seeing this error again at a later date.&quot;,
+<span class="lineNum">    1126 </span><span class="lineNoCov">              0 :                 FD_SETSIZE, max_fd, (max_fd + 1024) &amp; ~1023);</span>
+<span class="lineNum">    1127 </span>                : #endif
+<span class="lineNum">    1128 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">    1129 </span>                : 
+<span class="lineNum">    1130 </span>                : #if defined(PHP_USE_POLL_2_EMULATION)
+<span class="lineNum">    1131 </span>                : 
+<span class="lineNum">    1132 </span>                : /* emulate poll(2) using select(2), safely. */
+<span class="lineNum">    1133 </span>                : 
+<span class="lineNum">    1134 </span>                : PHPAPI int php_poll2(php_pollfd *ufds, unsigned int nfds, int timeout)
+<span class="lineNum">    1135 </span>                : {
+<span class="lineNum">    1136 </span>                :         fd_set rset, wset, eset;
+<span class="lineNum">    1137 </span>                :         php_socket_t max_fd = SOCK_ERR;
+<span class="lineNum">    1138 </span>                :         unsigned int i;
+<span class="lineNum">    1139 </span>                :         int n;
+<span class="lineNum">    1140 </span>                :         struct timeval tv;
+<span class="lineNum">    1141 </span>                : 
+<span class="lineNum">    1142 </span>                :         /* check the highest numbered descriptor */
+<span class="lineNum">    1143 </span>                :         for (i = 0; i &lt; nfds; i++) {
+<span class="lineNum">    1144 </span>                :                 if (ufds[i].fd &gt; max_fd)
+<span class="lineNum">    1145 </span>                :                         max_fd = ufds[i].fd;
+<span class="lineNum">    1146 </span>                :         }
+<span class="lineNum">    1147 </span>                : 
+<span class="lineNum">    1148 </span>                :         PHP_SAFE_MAX_FD(max_fd, nfds + 1);
+<span class="lineNum">    1149 </span>                : 
+<span class="lineNum">    1150 </span>                :         FD_ZERO(&amp;rset);
+<span class="lineNum">    1151 </span>                :         FD_ZERO(&amp;wset);
+<span class="lineNum">    1152 </span>                :         FD_ZERO(&amp;eset);
+<span class="lineNum">    1153 </span>                : 
+<span class="lineNum">    1154 </span>                :         for (i = 0; i &lt; nfds; i++) {
+<span class="lineNum">    1155 </span>                :                 if (ufds[i].events &amp; PHP_POLLREADABLE) {
+<span class="lineNum">    1156 </span>                :                         PHP_SAFE_FD_SET(ufds[i].fd, &amp;rset);
+<span class="lineNum">    1157 </span>                :                 }
+<span class="lineNum">    1158 </span>                :                 if (ufds[i].events &amp; POLLOUT) {
+<span class="lineNum">    1159 </span>                :                         PHP_SAFE_FD_SET(ufds[i].fd, &amp;wset);
+<span class="lineNum">    1160 </span>                :                 }
+<span class="lineNum">    1161 </span>                :                 if (ufds[i].events &amp; POLLPRI) {
+<span class="lineNum">    1162 </span>                :                         PHP_SAFE_FD_SET(ufds[i].fd, &amp;eset);
+<span class="lineNum">    1163 </span>                :                 }
+<span class="lineNum">    1164 </span>                :         }
+<span class="lineNum">    1165 </span>                : 
+<span class="lineNum">    1166 </span>                :         if (timeout &gt;= 0) {
+<span class="lineNum">    1167 </span>                :                 tv.tv_sec = timeout / 1000;
+<span class="lineNum">    1168 </span>                :                 tv.tv_usec = (timeout - (tv.tv_sec * 1000)) * 1000;
+<span class="lineNum">    1169 </span>                :         }
+<span class="lineNum">    1170 </span>                : /* Reseting/initializing */
+<span class="lineNum">    1171 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">    1172 </span>                :         WSASetLastError(0);
+<span class="lineNum">    1173 </span>                : #else
+<span class="lineNum">    1174 </span>                :         errno = 0;
+<span class="lineNum">    1175 </span>                : #endif
+<span class="lineNum">    1176 </span>                :         n = select(max_fd + 1, &amp;rset, &amp;wset, &amp;eset, timeout &gt;= 0 ? &amp;tv : NULL);
+<span class="lineNum">    1177 </span>                : 
+<span class="lineNum">    1178 </span>                :         if (n &gt;= 0) {
+<span class="lineNum">    1179 </span>                :                 for (i = 0; i &lt; nfds; i++) {
+<span class="lineNum">    1180 </span>                :                         ufds[i].revents = 0;
+<span class="lineNum">    1181 </span>                : 
+<span class="lineNum">    1182 </span>                :                         if (PHP_SAFE_FD_ISSET(ufds[i].fd, &amp;rset)) {
+<span class="lineNum">    1183 </span>                :                                 /* could be POLLERR or POLLHUP but can't tell without probing */
+<span class="lineNum">    1184 </span>                :                                 ufds[i].revents |= POLLIN;
+<span class="lineNum">    1185 </span>                :                         }
+<span class="lineNum">    1186 </span>                :                         if (PHP_SAFE_FD_ISSET(ufds[i].fd, &amp;wset)) {
+<span class="lineNum">    1187 </span>                :                                 ufds[i].revents |= POLLOUT;
+<span class="lineNum">    1188 </span>                :                         }
+<span class="lineNum">    1189 </span>                :                         if (PHP_SAFE_FD_ISSET(ufds[i].fd, &amp;eset)) {
+<span class="lineNum">    1190 </span>                :                                 ufds[i].revents |= POLLPRI;
+<span class="lineNum">    1191 </span>                :                         }
+<span class="lineNum">    1192 </span>                :                 }
+<span class="lineNum">    1193 </span>                :         }
+<span class="lineNum">    1194 </span>                :         return n;
+<span class="lineNum">    1195 </span>                : }
+<span class="lineNum">    1196 </span>                : 
+<span class="lineNum">    1197 </span>                : #endif
+<span class="lineNum">    1198 </span>                : 
+<span class="lineNum">    1199 </span>                : 
+<span class="lineNum">    1200 </span>                : /*
+<span class="lineNum">    1201 </span>                :  * Local variables:
+<span class="lineNum">    1202 </span>                :  * tab-width: 8
+<span class="lineNum">    1203 </span>                :  * c-basic-offset: 8
+<span class="lineNum">    1204 </span>                :  * End:
+<span class="lineNum">    1205 </span>                :  * vim600: sw=4 ts=4 fdm=marker
+<span class="lineNum">    1206 </span>                :  * vim&lt;600: sw=4 ts=4
+<span class="lineNum">    1207 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

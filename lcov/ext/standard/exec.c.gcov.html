@@ -1,0 +1,580 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - ext/standard/exec.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../index.html">directory</a> - <a href="index.html">ext/standard</a> - exec.c (source / <a href="exec.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">170</td>
+          <td class="headerCovTableEntry">35</td>
+          <td class="headerCovTableEntryMed">20.6 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">11</td>
+          <td class="headerCovTableEntry">4</td>
+          <td class="headerCovTableEntryLo">36.4 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Author: Rasmus Lerdorf &lt;rasmus@php.net&gt;                              |
+<span class="lineNum">      16 </span>                :    |         Ilia Alshanetsky &lt;iliaa@php.net&gt;                             |
+<span class="lineNum">      17 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      18 </span>                :  */
+<span class="lineNum">      19 </span>                : /* $Id$ */
+<span class="lineNum">      20 </span>                : 
+<span class="lineNum">      21 </span>                : #include &lt;stdio.h&gt;
+<span class="lineNum">      22 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">      23 </span>                : #include &lt;ctype.h&gt;
+<span class="lineNum">      24 </span>                : #include &quot;php_string.h&quot;
+<span class="lineNum">      25 </span>                : #include &quot;ext/standard/head.h&quot;
+<span class="lineNum">      26 </span>                : #include &quot;ext/standard/file.h&quot;
+<span class="lineNum">      27 </span>                : #include &quot;basic_functions.h&quot;
+<span class="lineNum">      28 </span>                : #include &quot;exec.h&quot;
+<span class="lineNum">      29 </span>                : #include &quot;php_globals.h&quot;
+<span class="lineNum">      30 </span>                : #include &quot;SAPI.h&quot;
+<span class="lineNum">      31 </span>                : 
+<span class="lineNum">      32 </span>                : #if HAVE_SYS_WAIT_H
+<span class="lineNum">      33 </span>                : #include &lt;sys/wait.h&gt;
+<span class="lineNum">      34 </span>                : #endif
+<span class="lineNum">      35 </span>                : #if HAVE_SIGNAL_H
+<span class="lineNum">      36 </span>                : #include &lt;signal.h&gt;
+<span class="lineNum">      37 </span>                : #endif
+<span class="lineNum">      38 </span>                : 
+<span class="lineNum">      39 </span>                : #if HAVE_SYS_TYPES_H
+<span class="lineNum">      40 </span>                : #include &lt;sys/types.h&gt;
+<span class="lineNum">      41 </span>                : #endif
+<span class="lineNum">      42 </span>                : #if HAVE_SYS_STAT_H
+<span class="lineNum">      43 </span>                : #include &lt;sys/stat.h&gt;
+<span class="lineNum">      44 </span>                : #endif
+<span class="lineNum">      45 </span>                : #if HAVE_FCNTL_H
+<span class="lineNum">      46 </span>                : #include &lt;fcntl.h&gt;
+<span class="lineNum">      47 </span>                : #endif
+<span class="lineNum">      48 </span>                : 
+<span class="lineNum">      49 </span>                : #if HAVE_NICE &amp;&amp; HAVE_UNISTD_H
+<span class="lineNum">      50 </span>                : #include &lt;unistd.h&gt;
+<span class="lineNum">      51 </span>                : #endif
+<span class="lineNum">      52 </span>                : 
+<span class="lineNum">      53 </span>                : /* {{{ php_exec
+<span class="lineNum">      54 </span>                :  * If type==0, only last line of output is returned (exec)
+<span class="lineNum">      55 </span>                :  * If type==1, all lines will be printed and last lined returned (system)
+<span class="lineNum">      56 </span>                :  * If type==2, all lines will be saved to given array (exec with &amp;$array)
+<span class="lineNum">      57 </span>                :  * If type==3, output will be printed binary, no lines will be saved or returned (passthru)
+<a name="58"><span class="lineNum">      58 </span>                :  *</a>
+<span class="lineNum">      59 </span>                :  */
+<span class="lineNum">      60 </span><span class="lineCov">              2 : PHPAPI int php_exec(int type, char *cmd, zval *array, zval *return_value TSRMLS_DC)</span>
+<span class="lineNum">      61 </span>                : {
+<span class="lineNum">      62 </span>                :         FILE *fp;
+<span class="lineNum">      63 </span>                :         char *buf;
+<span class="lineNum">      64 </span><span class="lineCov">              2 :         int l = 0, pclose_return;</span>
+<span class="lineNum">      65 </span><span class="lineCov">              2 :         char *b, *d=NULL;</span>
+<span class="lineNum">      66 </span>                :         php_stream *stream;
+<span class="lineNum">      67 </span><span class="lineCov">              2 :         size_t buflen, bufl = 0;</span>
+<span class="lineNum">      68 </span>                : #if PHP_SIGCHILD
+<span class="lineNum">      69 </span>                :         void (*sig_handler)() = NULL;
+<span class="lineNum">      70 </span>                : #endif
+<span class="lineNum">      71 </span>                : 
+<span class="lineNum">      72 </span>                : #if PHP_SIGCHILD
+<span class="lineNum">      73 </span>                :         sig_handler = signal (SIGCHLD, SIG_DFL);
+<span class="lineNum">      74 </span>                : #endif
+<span class="lineNum">      75 </span>                : 
+<span class="lineNum">      76 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">      77 </span>                :         fp = VCWD_POPEN(cmd, &quot;rb&quot;);
+<span class="lineNum">      78 </span>                : #else
+<span class="lineNum">      79 </span><span class="lineCov">              2 :         fp = VCWD_POPEN(cmd, &quot;r&quot;);</span>
+<span class="lineNum">      80 </span>                : #endif
+<span class="lineNum">      81 </span><span class="lineCov">              2 :         if (!fp) {</span>
+<span class="lineNum">      82 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Unable to fork [%s]&quot;, cmd);</span>
+<span class="lineNum">      83 </span><span class="lineNoCov">              0 :                 goto err;</span>
+<span class="lineNum">      84 </span>                :         }
+<span class="lineNum">      85 </span>                : 
+<span class="lineNum">      86 </span><span class="lineCov">              2 :         stream = php_stream_fopen_from_pipe(fp, &quot;rb&quot;);</span>
+<span class="lineNum">      87 </span>                : 
+<span class="lineNum">      88 </span><span class="lineCov">              2 :         buf = (char *) emalloc(EXEC_INPUT_BUF);</span>
+<span class="lineNum">      89 </span><span class="lineCov">              2 :         buflen = EXEC_INPUT_BUF;</span>
+<span class="lineNum">      90 </span>                : 
+<span class="lineNum">      91 </span><span class="lineCov">              2 :         if (type != 3) {</span>
+<span class="lineNum">      92 </span><span class="lineNoCov">              0 :                 b = buf;</span>
+<span class="lineNum">      93 </span>                :                 
+<span class="lineNum">      94 </span><span class="lineNoCov">              0 :                 while (php_stream_get_line(stream, b, EXEC_INPUT_BUF, &amp;bufl)) {</span>
+<span class="lineNum">      95 </span>                :                         /* no new line found, let's read some more */
+<span class="lineNum">      96 </span><span class="lineNoCov">              0 :                         if (b[bufl - 1] != '\n' &amp;&amp; !php_stream_eof(stream)) {</span>
+<span class="lineNum">      97 </span><span class="lineNoCov">              0 :                                 if (buflen &lt; (bufl + (b - buf) + EXEC_INPUT_BUF)) {</span>
+<span class="lineNum">      98 </span><span class="lineNoCov">              0 :                                         bufl += b - buf;</span>
+<span class="lineNum">      99 </span><span class="lineNoCov">              0 :                                         buflen = bufl + EXEC_INPUT_BUF;</span>
+<span class="lineNum">     100 </span><span class="lineNoCov">              0 :                                         buf = erealloc(buf, buflen);</span>
+<span class="lineNum">     101 </span><span class="lineNoCov">              0 :                                         b = buf + bufl;</span>
+<span class="lineNum">     102 </span>                :                                 } else {
+<span class="lineNum">     103 </span><span class="lineNoCov">              0 :                                         b += bufl;</span>
+<span class="lineNum">     104 </span>                :                                 }
+<span class="lineNum">     105 </span><span class="lineNoCov">              0 :                                 continue;</span>
+<span class="lineNum">     106 </span><span class="lineNoCov">              0 :                         } else if (b != buf) {</span>
+<span class="lineNum">     107 </span><span class="lineNoCov">              0 :                                 bufl += b - buf;</span>
+<span class="lineNum">     108 </span>                :                         }
+<span class="lineNum">     109 </span>                : 
+<span class="lineNum">     110 </span><span class="lineNoCov">              0 :                         if (type == 1) {</span>
+<span class="lineNum">     111 </span><span class="lineNoCov">              0 :                                 PHPWRITE(buf, bufl);</span>
+<span class="lineNum">     112 </span><span class="lineNoCov">              0 :                                 if (php_output_get_level(TSRMLS_C) &lt; 1) {</span>
+<span class="lineNum">     113 </span><span class="lineNoCov">              0 :                                         sapi_flush(TSRMLS_C);</span>
+<span class="lineNum">     114 </span>                :                                 }
+<span class="lineNum">     115 </span><span class="lineNoCov">              0 :                         } else if (type == 2) {</span>
+<span class="lineNum">     116 </span>                :                                 /* strip trailing whitespaces */
+<span class="lineNum">     117 </span><span class="lineNoCov">              0 :                                 l = bufl;</span>
+<span class="lineNum">     118 </span><span class="lineNoCov">              0 :                                 while (l-- &amp;&amp; isspace(((unsigned char *)buf)[l]));</span>
+<span class="lineNum">     119 </span><span class="lineNoCov">              0 :                                 if (l != (int)(bufl - 1)) {</span>
+<span class="lineNum">     120 </span><span class="lineNoCov">              0 :                                         bufl = l + 1;</span>
+<span class="lineNum">     121 </span><span class="lineNoCov">              0 :                                         buf[bufl] = '\0';</span>
+<span class="lineNum">     122 </span>                :                                 }
+<span class="lineNum">     123 </span><span class="lineNoCov">              0 :                                 add_next_index_stringl(array, buf, bufl, 1);</span>
+<span class="lineNum">     124 </span>                :                         }
+<span class="lineNum">     125 </span><span class="lineNoCov">              0 :                         b = buf;</span>
+<span class="lineNum">     126 </span>                :                 }
+<span class="lineNum">     127 </span><span class="lineNoCov">              0 :                 if (bufl) {</span>
+<span class="lineNum">     128 </span>                :                         /* strip trailing whitespaces if we have not done so already */
+<span class="lineNum">     129 </span><span class="lineNoCov">              0 :                         if ((type == 2 &amp;&amp; buf != b) || type != 2) {</span>
+<span class="lineNum">     130 </span><span class="lineNoCov">              0 :                                 l = bufl;</span>
+<span class="lineNum">     131 </span><span class="lineNoCov">              0 :                                 while (l-- &amp;&amp; isspace(((unsigned char *)buf)[l]));</span>
+<span class="lineNum">     132 </span><span class="lineNoCov">              0 :                                 if (l != (int)(bufl - 1)) {</span>
+<span class="lineNum">     133 </span><span class="lineNoCov">              0 :                                         bufl = l + 1;</span>
+<span class="lineNum">     134 </span><span class="lineNoCov">              0 :                                         buf[bufl] = '\0';</span>
+<span class="lineNum">     135 </span>                :                                 }
+<span class="lineNum">     136 </span><span class="lineNoCov">              0 :                                 if (type == 2) {</span>
+<span class="lineNum">     137 </span><span class="lineNoCov">              0 :                                         add_next_index_stringl(array, buf, bufl, 1);</span>
+<span class="lineNum">     138 </span>                :                                 }
+<span class="lineNum">     139 </span>                :                         }
+<span class="lineNum">     140 </span>                : 
+<span class="lineNum">     141 </span>                :                         /* Return last line from the shell command */
+<span class="lineNum">     142 </span><span class="lineNoCov">              0 :                         RETVAL_STRINGL(buf, bufl, 1);</span>
+<span class="lineNum">     143 </span>                :                 } else { /* should return NULL, but for BC we return &quot;&quot; */
+<span class="lineNum">     144 </span><span class="lineNoCov">              0 :                         RETVAL_EMPTY_STRING();</span>
+<span class="lineNum">     145 </span>                :                 }
+<span class="lineNum">     146 </span>                :         } else {
+<span class="lineNum">     147 </span><span class="lineCov">             10 :                 while((bufl = php_stream_read(stream, buf, EXEC_INPUT_BUF)) &gt; 0) {</span>
+<span class="lineNum">     148 </span><span class="lineCov">              6 :                         PHPWRITE(buf, bufl);</span>
+<span class="lineNum">     149 </span>                :                 }
+<span class="lineNum">     150 </span>                :         }
+<span class="lineNum">     151 </span>                : 
+<span class="lineNum">     152 </span><span class="lineCov">              2 :         pclose_return = php_stream_close(stream);</span>
+<span class="lineNum">     153 </span><span class="lineCov">              2 :         efree(buf);</span>
+<span class="lineNum">     154 </span>                : 
+<span class="lineNum">     155 </span>                : done:
+<span class="lineNum">     156 </span>                : #if PHP_SIGCHILD
+<span class="lineNum">     157 </span>                :         if (sig_handler) {
+<span class="lineNum">     158 </span>                :                 signal(SIGCHLD, sig_handler);
+<span class="lineNum">     159 </span>                :         }
+<span class="lineNum">     160 </span>                : #endif
+<span class="lineNum">     161 </span><span class="lineCov">              2 :         if (d) {</span>
+<span class="lineNum">     162 </span><span class="lineNoCov">              0 :                 efree(d);</span>
+<span class="lineNum">     163 </span>                :         }
+<span class="lineNum">     164 </span><span class="lineCov">              2 :         return pclose_return;</span>
+<span class="lineNum">     165 </span>                : err:
+<span class="lineNum">     166 </span><span class="lineNoCov">              0 :         pclose_return = -1;</span>
+<span class="lineNum">     167 </span><span class="lineNoCov">              0 :         goto done;</span>
+<span class="lineNum">     168 </span>                : }
+<a name="169"><span class="lineNum">     169 </span>                : /* }}} */</a>
+<span class="lineNum">     170 </span>                : 
+<span class="lineNum">     171 </span><span class="lineCov">              2 : static void php_exec_ex(INTERNAL_FUNCTION_PARAMETERS, int mode) /* {{{ */</span>
+<span class="lineNum">     172 </span>                : {
+<span class="lineNum">     173 </span>                :         char *cmd;
+<span class="lineNum">     174 </span>                :         int cmd_len;
+<span class="lineNum">     175 </span><span class="lineCov">              2 :         zval *ret_code=NULL, *ret_array=NULL;</span>
+<span class="lineNum">     176 </span>                :         int ret;
+<span class="lineNum">     177 </span>                : 
+<span class="lineNum">     178 </span><span class="lineCov">              2 :         if (mode) {</span>
+<span class="lineNum">     179 </span><span class="lineCov">              2 :                 if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;s|z/&quot;, &amp;cmd, &amp;cmd_len, &amp;ret_code) == FAILURE) {</span>
+<span class="lineNum">     180 </span><span class="lineNoCov">              0 :                         RETURN_FALSE;</span>
+<span class="lineNum">     181 </span>                :                 }
+<span class="lineNum">     182 </span>                :         } else {
+<span class="lineNum">     183 </span><span class="lineNoCov">              0 :                 if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;s|z/z/&quot;, &amp;cmd, &amp;cmd_len, &amp;ret_array, &amp;ret_code) == FAILURE) {</span>
+<span class="lineNum">     184 </span><span class="lineNoCov">              0 :                         RETURN_FALSE;</span>
+<span class="lineNum">     185 </span>                :                 }
+<span class="lineNum">     186 </span>                :         }
+<span class="lineNum">     187 </span><span class="lineCov">              2 :         if (!cmd_len) {</span>
+<span class="lineNum">     188 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Cannot execute a blank command&quot;);</span>
+<span class="lineNum">     189 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     190 </span>                :         }
+<span class="lineNum">     191 </span>                : 
+<span class="lineNum">     192 </span><span class="lineCov">              2 :         if (!ret_array) {</span>
+<span class="lineNum">     193 </span><span class="lineCov">              2 :                 ret = php_exec(mode, cmd, NULL, return_value TSRMLS_CC);</span>
+<span class="lineNum">     194 </span>                :         } else {
+<span class="lineNum">     195 </span><span class="lineNoCov">              0 :                 if (Z_TYPE_P(ret_array) != IS_ARRAY) {</span>
+<span class="lineNum">     196 </span><span class="lineNoCov">              0 :                         zval_dtor(ret_array);</span>
+<span class="lineNum">     197 </span><span class="lineNoCov">              0 :                         array_init(ret_array);</span>
+<span class="lineNum">     198 </span>                :                 }
+<span class="lineNum">     199 </span><span class="lineNoCov">              0 :                 ret = php_exec(2, cmd, ret_array, return_value TSRMLS_CC);</span>
+<span class="lineNum">     200 </span>                :         }
+<span class="lineNum">     201 </span><span class="lineCov">              2 :         if (ret_code) {</span>
+<span class="lineNum">     202 </span><span class="lineNoCov">              0 :                 zval_dtor(ret_code);</span>
+<span class="lineNum">     203 </span><span class="lineNoCov">              0 :                 ZVAL_LONG(ret_code, ret);</span>
+<span class="lineNum">     204 </span>                :         }
+<span class="lineNum">     205 </span>                : }
+<span class="lineNum">     206 </span>                : /* }}} */
+<span class="lineNum">     207 </span>                : 
+<a name="208"><span class="lineNum">     208 </span>                : /* {{{ proto string exec(string command [, array &amp;output [, int &amp;return_value]])</a>
+<span class="lineNum">     209 </span>                :    Execute an external program */
+<span class="lineNum">     210 </span><span class="lineNoCov">              0 : PHP_FUNCTION(exec)</span>
+<span class="lineNum">     211 </span>                : {
+<span class="lineNum">     212 </span><span class="lineNoCov">              0 :         php_exec_ex(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0);</span>
+<span class="lineNum">     213 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     214 </span>                : /* }}} */
+<span class="lineNum">     215 </span>                : 
+<a name="216"><span class="lineNum">     216 </span>                : /* {{{ proto int system(string command [, int &amp;return_value])</a>
+<span class="lineNum">     217 </span>                :    Execute an external program and display output */
+<span class="lineNum">     218 </span><span class="lineNoCov">              0 : PHP_FUNCTION(system)</span>
+<span class="lineNum">     219 </span>                : {
+<span class="lineNum">     220 </span><span class="lineNoCov">              0 :         php_exec_ex(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1);</span>
+<span class="lineNum">     221 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     222 </span>                : /* }}} */
+<span class="lineNum">     223 </span>                : 
+<a name="224"><span class="lineNum">     224 </span>                : /* {{{ proto void passthru(string command [, int &amp;return_value])</a>
+<span class="lineNum">     225 </span>                :    Execute an external program and display raw output */
+<span class="lineNum">     226 </span><span class="lineCov">              2 : PHP_FUNCTION(passthru)</span>
+<span class="lineNum">     227 </span>                : {
+<span class="lineNum">     228 </span><span class="lineCov">              2 :         php_exec_ex(INTERNAL_FUNCTION_PARAM_PASSTHRU, 3);</span>
+<span class="lineNum">     229 </span><span class="lineCov">              2 : }</span>
+<span class="lineNum">     230 </span>                : /* }}} */
+<span class="lineNum">     231 </span>                : 
+<span class="lineNum">     232 </span>                : /* {{{ php_escape_shell_cmd
+<span class="lineNum">     233 </span>                :    Escape all chars that could possibly be used to
+<span class="lineNum">     234 </span>                :    break out of a shell command
+<span class="lineNum">     235 </span>                : 
+<span class="lineNum">     236 </span>                :    This function emalloc's a string and returns the pointer.
+<span class="lineNum">     237 </span>                :    Remember to efree it when done with it.
+<span class="lineNum">     238 </span>                : 
+<a name="239"><span class="lineNum">     239 </span>                :    *NOT* safe for binary strings</a>
+<span class="lineNum">     240 </span>                : */
+<span class="lineNum">     241 </span><span class="lineNoCov">              0 : PHPAPI char *php_escape_shell_cmd(char *str)</span>
+<span class="lineNum">     242 </span>                : {
+<span class="lineNum">     243 </span><span class="lineNoCov">              0 :         register int x, y, l = strlen(str);</span>
+<span class="lineNum">     244 </span>                :         char *cmd;
+<span class="lineNum">     245 </span><span class="lineNoCov">              0 :         char *p = NULL;</span>
+<span class="lineNum">     246 </span><span class="lineNoCov">              0 :         size_t estimate = (2 * l) + 1;</span>
+<span class="lineNum">     247 </span>                : 
+<span class="lineNum">     248 </span>                :         TSRMLS_FETCH();
+<span class="lineNum">     249 </span>                : 
+<span class="lineNum">     250 </span><span class="lineNoCov">              0 :         cmd = safe_emalloc(2, l, 1);</span>
+<span class="lineNum">     251 </span>                : 
+<span class="lineNum">     252 </span><span class="lineNoCov">              0 :         for (x = 0, y = 0; x &lt; l; x++) {</span>
+<span class="lineNum">     253 </span><span class="lineNoCov">              0 :                 int mb_len = php_mblen(str + x, (l - x));</span>
+<span class="lineNum">     254 </span>                : 
+<span class="lineNum">     255 </span>                :                 /* skip non-valid multibyte characters */
+<span class="lineNum">     256 </span><span class="lineNoCov">              0 :                 if (mb_len &lt; 0) {</span>
+<span class="lineNum">     257 </span><span class="lineNoCov">              0 :                         continue;</span>
+<span class="lineNum">     258 </span><span class="lineNoCov">              0 :                 } else if (mb_len &gt; 1) {</span>
+<span class="lineNum">     259 </span><span class="lineNoCov">              0 :                         memcpy(cmd + y, str + x, mb_len);</span>
+<span class="lineNum">     260 </span><span class="lineNoCov">              0 :                         y += mb_len;</span>
+<span class="lineNum">     261 </span><span class="lineNoCov">              0 :                         x += mb_len - 1;</span>
+<span class="lineNum">     262 </span><span class="lineNoCov">              0 :                         continue;</span>
+<span class="lineNum">     263 </span>                :                 }
+<span class="lineNum">     264 </span>                : 
+<span class="lineNum">     265 </span><span class="lineNoCov">              0 :                 switch (str[x]) {</span>
+<span class="lineNum">     266 </span>                : #ifndef PHP_WIN32
+<span class="lineNum">     267 </span>                :                         case '&quot;':
+<span class="lineNum">     268 </span>                :                         case '\'':
+<span class="lineNum">     269 </span><span class="lineNoCov">              0 :                                 if (!p &amp;&amp; (p = memchr(str + x + 1, str[x], l - x - 1))) {</span>
+<span class="lineNum">     270 </span>                :                                         /* noop */
+<span class="lineNum">     271 </span><span class="lineNoCov">              0 :                                 } else if (p &amp;&amp; *p == str[x]) {</span>
+<span class="lineNum">     272 </span><span class="lineNoCov">              0 :                                         p = NULL;</span>
+<span class="lineNum">     273 </span>                :                                 } else {
+<span class="lineNum">     274 </span><span class="lineNoCov">              0 :                                         cmd[y++] = '\\';</span>
+<span class="lineNum">     275 </span>                :                                 }
+<span class="lineNum">     276 </span><span class="lineNoCov">              0 :                                 cmd[y++] = str[x];</span>
+<span class="lineNum">     277 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     278 </span>                : #else
+<span class="lineNum">     279 </span>                :                         /* % is Windows specific for enviromental variables, ^%PATH% will 
+<span class="lineNum">     280 </span>                :                                 output PATH whil ^%PATH^% not. escapeshellcmd will escape all %.
+<span class="lineNum">     281 </span>                :                         */
+<span class="lineNum">     282 </span>                :                         case '%':
+<span class="lineNum">     283 </span>                :                         case '&quot;':
+<span class="lineNum">     284 </span>                :                         case '\'':
+<span class="lineNum">     285 </span>                : #endif
+<span class="lineNum">     286 </span>                :                         case '#': /* This is character-set independent */
+<span class="lineNum">     287 </span>                :                         case '&amp;':
+<span class="lineNum">     288 </span>                :                         case ';':
+<span class="lineNum">     289 </span>                :                         case '`':
+<span class="lineNum">     290 </span>                :                         case '|':
+<span class="lineNum">     291 </span>                :                         case '*':
+<span class="lineNum">     292 </span>                :                         case '?':
+<span class="lineNum">     293 </span>                :                         case '~':
+<span class="lineNum">     294 </span>                :                         case '&lt;':
+<span class="lineNum">     295 </span>                :                         case '&gt;':
+<span class="lineNum">     296 </span>                :                         case '^':
+<span class="lineNum">     297 </span>                :                         case '(':
+<span class="lineNum">     298 </span>                :                         case ')':
+<span class="lineNum">     299 </span>                :                         case '[':
+<span class="lineNum">     300 </span>                :                         case ']':
+<span class="lineNum">     301 </span>                :                         case '{':
+<span class="lineNum">     302 </span>                :                         case '}':
+<span class="lineNum">     303 </span>                :                         case '$':
+<span class="lineNum">     304 </span>                :                         case '\\':
+<span class="lineNum">     305 </span>                :                         case '\x0A': /* excluding these two */
+<span class="lineNum">     306 </span>                :                         case '\xFF':
+<span class="lineNum">     307 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">     308 </span>                :                                 cmd[y++] = '^';
+<span class="lineNum">     309 </span>                : #else
+<span class="lineNum">     310 </span><span class="lineNoCov">              0 :                                 cmd[y++] = '\\';</span>
+<span class="lineNum">     311 </span>                : #endif
+<span class="lineNum">     312 </span>                :                                 /* fall-through */
+<span class="lineNum">     313 </span>                :                         default:
+<span class="lineNum">     314 </span><span class="lineNoCov">              0 :                                 cmd[y++] = str[x];</span>
+<span class="lineNum">     315 </span>                : 
+<span class="lineNum">     316 </span>                :                 }
+<span class="lineNum">     317 </span>                :         }
+<span class="lineNum">     318 </span><span class="lineNoCov">              0 :         cmd[y] = '\0';</span>
+<span class="lineNum">     319 </span>                : 
+<span class="lineNum">     320 </span><span class="lineNoCov">              0 :         if ((estimate - y) &gt; 4096) {</span>
+<span class="lineNum">     321 </span>                :                 /* realloc if the estimate was way overill
+<span class="lineNum">     322 </span>                :                  * Arbitrary cutoff point of 4096 */
+<span class="lineNum">     323 </span><span class="lineNoCov">              0 :                 cmd = erealloc(cmd, y + 1);</span>
+<span class="lineNum">     324 </span>                :         }
+<span class="lineNum">     325 </span>                : 
+<span class="lineNum">     326 </span><span class="lineNoCov">              0 :         return cmd;</span>
+<span class="lineNum">     327 </span>                : }
+<span class="lineNum">     328 </span>                : /* }}} */
+<span class="lineNum">     329 </span>                : 
+<a name="330"><span class="lineNum">     330 </span>                : /* {{{ php_escape_shell_arg</a>
+<span class="lineNum">     331 </span>                :  */
+<span class="lineNum">     332 </span><span class="lineNoCov">              0 : PHPAPI char *php_escape_shell_arg(char *str)</span>
+<span class="lineNum">     333 </span>                : {
+<span class="lineNum">     334 </span><span class="lineNoCov">              0 :         int x, y = 0, l = strlen(str);</span>
+<span class="lineNum">     335 </span>                :         char *cmd;
+<span class="lineNum">     336 </span><span class="lineNoCov">              0 :         size_t estimate = (4 * l) + 3;</span>
+<span class="lineNum">     337 </span>                : 
+<span class="lineNum">     338 </span>                :         TSRMLS_FETCH();
+<span class="lineNum">     339 </span>                : 
+<span class="lineNum">     340 </span><span class="lineNoCov">              0 :         cmd = safe_emalloc(4, l, 3); /* worst case */</span>
+<span class="lineNum">     341 </span>                : 
+<span class="lineNum">     342 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">     343 </span>                :         cmd[y++] = '&quot;';
+<span class="lineNum">     344 </span>                : #else
+<span class="lineNum">     345 </span><span class="lineNoCov">              0 :         cmd[y++] = '\'';</span>
+<span class="lineNum">     346 </span>                : #endif
+<span class="lineNum">     347 </span>                : 
+<span class="lineNum">     348 </span><span class="lineNoCov">              0 :         for (x = 0; x &lt; l; x++) {</span>
+<span class="lineNum">     349 </span><span class="lineNoCov">              0 :                 int mb_len = php_mblen(str + x, (l - x));</span>
+<span class="lineNum">     350 </span>                : 
+<span class="lineNum">     351 </span>                :                 /* skip non-valid multibyte characters */
+<span class="lineNum">     352 </span><span class="lineNoCov">              0 :                 if (mb_len &lt; 0) {</span>
+<span class="lineNum">     353 </span><span class="lineNoCov">              0 :                         continue;</span>
+<span class="lineNum">     354 </span><span class="lineNoCov">              0 :                 } else if (mb_len &gt; 1) {</span>
+<span class="lineNum">     355 </span><span class="lineNoCov">              0 :                         memcpy(cmd + y, str + x, mb_len);</span>
+<span class="lineNum">     356 </span><span class="lineNoCov">              0 :                         y += mb_len;</span>
+<span class="lineNum">     357 </span><span class="lineNoCov">              0 :                         x += mb_len - 1;</span>
+<span class="lineNum">     358 </span><span class="lineNoCov">              0 :                         continue;</span>
+<span class="lineNum">     359 </span>                :                 }
+<span class="lineNum">     360 </span>                : 
+<span class="lineNum">     361 </span><span class="lineNoCov">              0 :                 switch (str[x]) {</span>
+<span class="lineNum">     362 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">     363 </span>                :                 case '&quot;':
+<span class="lineNum">     364 </span>                :                 case '%':
+<span class="lineNum">     365 </span>                :                         cmd[y++] = ' ';
+<span class="lineNum">     366 </span>                :                         break;
+<span class="lineNum">     367 </span>                : #else
+<span class="lineNum">     368 </span>                :                 case '\'':
+<span class="lineNum">     369 </span><span class="lineNoCov">              0 :                         cmd[y++] = '\'';</span>
+<span class="lineNum">     370 </span><span class="lineNoCov">              0 :                         cmd[y++] = '\\';</span>
+<span class="lineNum">     371 </span><span class="lineNoCov">              0 :                         cmd[y++] = '\'';</span>
+<span class="lineNum">     372 </span>                : #endif
+<span class="lineNum">     373 </span>                :                         /* fall-through */
+<span class="lineNum">     374 </span>                :                 default:
+<span class="lineNum">     375 </span><span class="lineNoCov">              0 :                         cmd[y++] = str[x];</span>
+<span class="lineNum">     376 </span>                :                 }
+<span class="lineNum">     377 </span>                :         }
+<span class="lineNum">     378 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">     379 </span>                :         cmd[y++] = '&quot;';
+<span class="lineNum">     380 </span>                : #else
+<span class="lineNum">     381 </span><span class="lineNoCov">              0 :         cmd[y++] = '\'';</span>
+<span class="lineNum">     382 </span>                : #endif
+<span class="lineNum">     383 </span><span class="lineNoCov">              0 :         cmd[y] = '\0';</span>
+<span class="lineNum">     384 </span>                : 
+<span class="lineNum">     385 </span><span class="lineNoCov">              0 :         if ((estimate - y) &gt; 4096) {</span>
+<span class="lineNum">     386 </span>                :                 /* realloc if the estimate was way overill
+<span class="lineNum">     387 </span>                :                  * Arbitrary cutoff point of 4096 */
+<span class="lineNum">     388 </span><span class="lineNoCov">              0 :                 cmd = erealloc(cmd, y + 1);</span>
+<span class="lineNum">     389 </span>                :         }
+<span class="lineNum">     390 </span><span class="lineNoCov">              0 :         return cmd;</span>
+<span class="lineNum">     391 </span>                : }
+<span class="lineNum">     392 </span>                : /* }}} */
+<span class="lineNum">     393 </span>                : 
+<a name="394"><span class="lineNum">     394 </span>                : /* {{{ proto string escapeshellcmd(string command)</a>
+<span class="lineNum">     395 </span>                :    Escape shell metacharacters */
+<span class="lineNum">     396 </span><span class="lineNoCov">              0 : PHP_FUNCTION(escapeshellcmd)</span>
+<span class="lineNum">     397 </span>                : {
+<span class="lineNum">     398 </span>                :         char *command;
+<span class="lineNum">     399 </span>                :         int command_len;
+<span class="lineNum">     400 </span><span class="lineNoCov">              0 :         char *cmd = NULL;</span>
+<span class="lineNum">     401 </span>                : 
+<span class="lineNum">     402 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;s&quot;, &amp;command, &amp;command_len) == FAILURE) {</span>
+<span class="lineNum">     403 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     404 </span>                :         }
+<span class="lineNum">     405 </span>                : 
+<span class="lineNum">     406 </span><span class="lineNoCov">              0 :         if (command_len) {</span>
+<span class="lineNum">     407 </span><span class="lineNoCov">              0 :                 cmd = php_escape_shell_cmd(command);</span>
+<span class="lineNum">     408 </span><span class="lineNoCov">              0 :                 RETVAL_STRING(cmd, 0);</span>
+<span class="lineNum">     409 </span>                :         } else {
+<span class="lineNum">     410 </span><span class="lineNoCov">              0 :                 RETVAL_EMPTY_STRING();</span>
+<span class="lineNum">     411 </span>                :         }
+<span class="lineNum">     412 </span>                : }
+<span class="lineNum">     413 </span>                : /* }}} */
+<span class="lineNum">     414 </span>                : 
+<a name="415"><span class="lineNum">     415 </span>                : /* {{{ proto string escapeshellarg(string arg)</a>
+<span class="lineNum">     416 </span>                :    Quote and escape an argument for use in a shell command */
+<span class="lineNum">     417 </span><span class="lineNoCov">              0 : PHP_FUNCTION(escapeshellarg)</span>
+<span class="lineNum">     418 </span>                : {
+<span class="lineNum">     419 </span>                :         char *argument;
+<span class="lineNum">     420 </span>                :         int argument_len;
+<span class="lineNum">     421 </span><span class="lineNoCov">              0 :         char *cmd = NULL;</span>
+<span class="lineNum">     422 </span>                : 
+<span class="lineNum">     423 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;s&quot;, &amp;argument, &amp;argument_len) == FAILURE) {</span>
+<span class="lineNum">     424 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     425 </span>                :         }
+<span class="lineNum">     426 </span>                : 
+<span class="lineNum">     427 </span><span class="lineNoCov">              0 :         if (argument) {</span>
+<span class="lineNum">     428 </span><span class="lineNoCov">              0 :                 cmd = php_escape_shell_arg(argument);</span>
+<span class="lineNum">     429 </span><span class="lineNoCov">              0 :                 RETVAL_STRING(cmd, 0);</span>
+<span class="lineNum">     430 </span>                :         }
+<span class="lineNum">     431 </span>                : }
+<span class="lineNum">     432 </span>                : /* }}} */
+<span class="lineNum">     433 </span>                : 
+<a name="434"><span class="lineNum">     434 </span>                : /* {{{ proto string shell_exec(string cmd)</a>
+<span class="lineNum">     435 </span>                :    Execute command via shell and return complete output as string */
+<span class="lineNum">     436 </span><span class="lineCov">              3 : PHP_FUNCTION(shell_exec)</span>
+<span class="lineNum">     437 </span>                : {
+<span class="lineNum">     438 </span>                :         FILE *in;
+<span class="lineNum">     439 </span>                :         size_t total_readbytes;
+<span class="lineNum">     440 </span>                :         char *command;
+<span class="lineNum">     441 </span>                :         int command_len;
+<span class="lineNum">     442 </span>                :         char *ret;
+<span class="lineNum">     443 </span>                :         php_stream *stream;
+<span class="lineNum">     444 </span>                : 
+<span class="lineNum">     445 </span><span class="lineCov">              3 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;s&quot;, &amp;command, &amp;command_len) == FAILURE) {</span>
+<span class="lineNum">     446 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     447 </span>                :         }
+<span class="lineNum">     448 </span>                : 
+<span class="lineNum">     449 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">     450 </span>                :         if ((in=VCWD_POPEN(command, &quot;rt&quot;))==NULL) {
+<span class="lineNum">     451 </span>                : #else
+<span class="lineNum">     452 </span><span class="lineCov">              3 :         if ((in=VCWD_POPEN(command, &quot;r&quot;))==NULL) {</span>
+<span class="lineNum">     453 </span>                : #endif
+<span class="lineNum">     454 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Unable to execute '%s'&quot;, command);</span>
+<span class="lineNum">     455 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     456 </span>                :         }
+<span class="lineNum">     457 </span>                : 
+<span class="lineNum">     458 </span><span class="lineCov">              3 :         stream = php_stream_fopen_from_pipe(in, &quot;rb&quot;);</span>
+<span class="lineNum">     459 </span><span class="lineCov">              3 :         total_readbytes = php_stream_copy_to_mem(stream, &amp;ret, PHP_STREAM_COPY_ALL, 0);</span>
+<span class="lineNum">     460 </span><span class="lineCov">              3 :         php_stream_close(stream);</span>
+<span class="lineNum">     461 </span>                : 
+<span class="lineNum">     462 </span><span class="lineCov">              3 :         if (total_readbytes &gt; 0) {</span>
+<span class="lineNum">     463 </span><span class="lineCov">              3 :                 RETVAL_STRINGL(ret, total_readbytes, 0);</span>
+<span class="lineNum">     464 </span>                :         }
+<span class="lineNum">     465 </span>                : }
+<span class="lineNum">     466 </span>                : /* }}} */
+<span class="lineNum">     467 </span>                : 
+<span class="lineNum">     468 </span>                : #ifdef HAVE_NICE
+<a name="469"><span class="lineNum">     469 </span>                : /* {{{ proto bool proc_nice(int priority)</a>
+<span class="lineNum">     470 </span>                :    Change the priority of the current process */
+<span class="lineNum">     471 </span><span class="lineNoCov">              0 : PHP_FUNCTION(proc_nice)</span>
+<span class="lineNum">     472 </span>                : {
+<span class="lineNum">     473 </span>                :         long pri;
+<span class="lineNum">     474 </span>                : 
+<span class="lineNum">     475 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;l&quot;, &amp;pri) == FAILURE) {</span>
+<span class="lineNum">     476 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     477 </span>                :         }
+<span class="lineNum">     478 </span>                : 
+<span class="lineNum">     479 </span><span class="lineNoCov">              0 :         errno = 0;</span>
+<span class="lineNum">     480 </span><span class="lineNoCov">              0 :         php_ignore_value(nice(pri));</span>
+<span class="lineNum">     481 </span><span class="lineNoCov">              0 :         if (errno) {</span>
+<span class="lineNum">     482 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Only a super user may attempt to increase the priority of a process&quot;);</span>
+<span class="lineNum">     483 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     484 </span>                :         }
+<span class="lineNum">     485 </span>                : 
+<span class="lineNum">     486 </span><span class="lineNoCov">              0 :         RETURN_TRUE;</span>
+<span class="lineNum">     487 </span>                : }
+<span class="lineNum">     488 </span>                : /* }}} */
+<span class="lineNum">     489 </span>                : #endif
+<span class="lineNum">     490 </span>                : 
+<span class="lineNum">     491 </span>                : /*
+<span class="lineNum">     492 </span>                :  * Local variables:
+<span class="lineNum">     493 </span>                :  * tab-width: 4
+<span class="lineNum">     494 </span>                :  * c-basic-offset: 4
+<span class="lineNum">     495 </span>                :  * End:
+<span class="lineNum">     496 </span>                :  * vim600: sw=4 ts=4 fdm=marker
+<span class="lineNum">     497 </span>                :  * vim&lt;600: sw=4 ts=4
+<span class="lineNum">     498 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

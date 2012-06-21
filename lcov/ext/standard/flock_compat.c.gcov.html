@@ -1,0 +1,321 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - ext/standard/flock_compat.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../index.html">directory</a> - <a href="index.html">ext/standard</a> - flock_compat.c (source / <a href="flock_compat.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">17</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">1</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Author: Sascha Schumann &lt;sascha@schumann.cx&gt;                         |
+<span class="lineNum">      16 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      17 </span>                : */
+<span class="lineNum">      18 </span>                : 
+<span class="lineNum">      19 </span>                : /* $Id$ */
+<span class="lineNum">      20 </span>                : 
+<span class="lineNum">      21 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">      22 </span>                : #include &lt;errno.h&gt;
+<span class="lineNum">      23 </span>                : #include &quot;ext/standard/flock_compat.h&quot;
+<span class="lineNum">      24 </span>                : 
+<span class="lineNum">      25 </span>                : #if HAVE_STRUCT_FLOCK
+<span class="lineNum">      26 </span>                : #include &lt;unistd.h&gt;
+<span class="lineNum">      27 </span>                : #include &lt;fcntl.h&gt;
+<span class="lineNum">      28 </span>                : #include &lt;sys/file.h&gt;
+<span class="lineNum">      29 </span>                : #endif
+<span class="lineNum">      30 </span>                : 
+<span class="lineNum">      31 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">      32 </span>                : #include &lt;io.h&gt;
+<span class="lineNum">      33 </span>                : #include &quot;config.w32.h&quot;
+<span class="lineNum">      34 </span>                : #endif
+<span class="lineNum">      35 </span>                : 
+<span class="lineNum">      36 </span>                : #ifdef NETWARE
+<span class="lineNum">      37 </span>                : #include &lt;netinet/in.h&gt;
+<span class="lineNum">      38 </span>                : #endif
+<span class="lineNum">      39 </span>                : 
+<span class="lineNum">      40 </span>                : #ifndef HAVE_FLOCK
+<span class="lineNum">      41 </span>                : PHPAPI int flock(int fd, int operation)
+<span class="lineNum">      42 </span>                : {
+<span class="lineNum">      43 </span>                :         return php_flock(fd, operation);
+<span class="lineNum">      44 </span>                : }
+<a name="45"><span class="lineNum">      45 </span>                : #endif /* !defined(HAVE_FLOCK) */</a>
+<span class="lineNum">      46 </span>                : 
+<span class="lineNum">      47 </span><span class="lineNoCov">              0 : PHPAPI int php_flock(int fd, int operation)</span>
+<span class="lineNum">      48 </span>                : #if HAVE_STRUCT_FLOCK /* {{{ */
+<span class="lineNum">      49 </span>                : {
+<span class="lineNum">      50 </span>                :         struct flock flck;
+<span class="lineNum">      51 </span>                :         int ret;
+<span class="lineNum">      52 </span>                : 
+<span class="lineNum">      53 </span><span class="lineNoCov">              0 :         flck.l_start = flck.l_len = 0;</span>
+<span class="lineNum">      54 </span><span class="lineNoCov">              0 :         flck.l_whence = SEEK_SET;</span>
+<span class="lineNum">      55 </span>                :         
+<span class="lineNum">      56 </span><span class="lineNoCov">              0 :         if (operation &amp; LOCK_SH)</span>
+<span class="lineNum">      57 </span><span class="lineNoCov">              0 :                 flck.l_type = F_RDLCK;</span>
+<span class="lineNum">      58 </span><span class="lineNoCov">              0 :         else if (operation &amp; LOCK_EX)</span>
+<span class="lineNum">      59 </span><span class="lineNoCov">              0 :                 flck.l_type = F_WRLCK;</span>
+<span class="lineNum">      60 </span><span class="lineNoCov">              0 :         else if (operation &amp; LOCK_UN)</span>
+<span class="lineNum">      61 </span><span class="lineNoCov">              0 :                 flck.l_type = F_UNLCK;</span>
+<span class="lineNum">      62 </span>                :         else {
+<span class="lineNum">      63 </span><span class="lineNoCov">              0 :                 errno = EINVAL;</span>
+<span class="lineNum">      64 </span><span class="lineNoCov">              0 :                 return -1;</span>
+<span class="lineNum">      65 </span>                :         }
+<span class="lineNum">      66 </span>                : 
+<span class="lineNum">      67 </span><span class="lineNoCov">              0 :         ret = fcntl(fd, operation &amp; LOCK_NB ? F_SETLK : F_SETLKW, &amp;flck);</span>
+<span class="lineNum">      68 </span>                : 
+<span class="lineNum">      69 </span><span class="lineNoCov">              0 :         if (operation &amp; LOCK_NB &amp;&amp; ret == -1 &amp;&amp; </span>
+<span class="lineNum">      70 </span><span class="lineNoCov">              0 :                         (errno == EACCES || errno == EAGAIN))</span>
+<span class="lineNum">      71 </span><span class="lineNoCov">              0 :                 errno = EWOULDBLOCK;</span>
+<span class="lineNum">      72 </span>                : 
+<span class="lineNum">      73 </span><span class="lineNoCov">              0 :         if (ret != -1) ret = 0;</span>
+<span class="lineNum">      74 </span>                : 
+<span class="lineNum">      75 </span><span class="lineNoCov">              0 :         return ret;</span>
+<span class="lineNum">      76 </span>                : }
+<span class="lineNum">      77 </span>                : /* }}} */
+<span class="lineNum">      78 </span>                : #elif defined(PHP_WIN32) /* {{{ */
+<span class="lineNum">      79 </span>                : /*
+<span class="lineNum">      80 </span>                :  * Program:   Unix compatibility routines
+<span class="lineNum">      81 </span>                :  *
+<span class="lineNum">      82 </span>                :  * Author:  Mark Crispin
+<span class="lineNum">      83 </span>                :  *      Networks and Distributed Computing
+<span class="lineNum">      84 </span>                :  *      Computing &amp; Communications
+<span class="lineNum">      85 </span>                :  *      University of Washington
+<span class="lineNum">      86 </span>                :  *      Administration Building, AG-44
+<span class="lineNum">      87 </span>                :  *      Seattle, WA  98195
+<span class="lineNum">      88 </span>                :  *      Internet: MRC@CAC.Washington.EDU
+<span class="lineNum">      89 </span>                :  *
+<span class="lineNum">      90 </span>                :  * Date:    14 September 1996
+<span class="lineNum">      91 </span>                :  * Last Edited: 14 August 1997
+<span class="lineNum">      92 </span>                :  *
+<span class="lineNum">      93 </span>                :  * Copyright 1997 by the University of Washington
+<span class="lineNum">      94 </span>                :  *
+<span class="lineNum">      95 </span>                :  *  Permission to use, copy, modify, and distribute this software and its
+<span class="lineNum">      96 </span>                :  * documentation for any purpose and without fee is hereby granted, provided
+<span class="lineNum">      97 </span>                :  * that the above copyright notice appears in all copies and that both the
+<span class="lineNum">      98 </span>                :  * above copyright notice and this permission notice appear in supporting
+<span class="lineNum">      99 </span>                :  * documentation, and that the name of the University of Washington not be
+<span class="lineNum">     100 </span>                :  * used in advertising or publicity pertaining to distribution of the software
+<span class="lineNum">     101 </span>                :  * without specific, written prior permission.  This software is made available
+<span class="lineNum">     102 </span>                :  * &quot;as is&quot;, and
+<span class="lineNum">     103 </span>                :  * THE UNIVERSITY OF WASHINGTON DISCLAIMS ALL WARRANTIES, EXPRESS OR IMPLIED,
+<span class="lineNum">     104 </span>                :  * WITH REGARD TO THIS SOFTWARE, INCLUDING WITHOUT LIMITATION ALL IMPLIED * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE, AND IN
+<span class="lineNum">     105 </span>                :  * NO EVENT SHALL THE UNIVERSITY OF WASHINGTON BE LIABLE FOR ANY SPECIAL,
+<span class="lineNum">     106 </span>                :  * INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+<span class="lineNum">     107 </span>                :  * LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, TORT
+<span class="lineNum">     108 </span>                :  * (INCLUDING NEGLIGENCE) OR STRICT LIABILITY, ARISING OUT OF OR IN CONNECTION
+<span class="lineNum">     109 </span>                :  * WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+<span class="lineNum">     110 </span>                :  *
+<span class="lineNum">     111 </span>                :  */
+<span class="lineNum">     112 </span>                : /*              DEDICATION
+<span class="lineNum">     113 </span>                : 
+<span class="lineNum">     114 </span>                :  *  This file is dedicated to my dog, Unix, also known as Yun-chan and
+<span class="lineNum">     115 </span>                :  * Unix J. Terwilliker Jehosophat Aloysius Monstrosity Animal Beast.  Unix
+<span class="lineNum">     116 </span>                :  * passed away at the age of 11 1/2 on September 14, 1996, 12:18 PM PDT, after
+<span class="lineNum">     117 </span>                :  * a two-month bout with cirrhosis of the liver.
+<span class="lineNum">     118 </span>                :  *
+<span class="lineNum">     119 </span>                :  *  He was a dear friend, and I miss him terribly.
+<span class="lineNum">     120 </span>                :  *
+<span class="lineNum">     121 </span>                :  *  Lift a leg, Yunie.  Luv ya forever!!!!
+<span class="lineNum">     122 </span>                :  */
+<span class="lineNum">     123 </span>                : {
+<span class="lineNum">     124 </span>                :     HANDLE hdl = (HANDLE) _get_osfhandle(fd);
+<span class="lineNum">     125 </span>                :     DWORD low = 1, high = 0;
+<span class="lineNum">     126 </span>                :     OVERLAPPED offset =
+<span class="lineNum">     127 </span>                :     {0, 0, 0, 0, NULL};
+<span class="lineNum">     128 </span>                :     if (hdl &lt; 0)
+<span class="lineNum">     129 </span>                :         return -1;              /* error in file descriptor */
+<span class="lineNum">     130 </span>                :     /* bug for bug compatible with Unix */
+<span class="lineNum">     131 </span>                :     UnlockFileEx(hdl, 0, low, high, &amp;offset);
+<span class="lineNum">     132 </span>                :     switch (operation &amp; ~LOCK_NB) {    /* translate to LockFileEx() op */
+<span class="lineNum">     133 </span>                :         case LOCK_EX:           /* exclusive */
+<span class="lineNum">     134 </span>                :             if (LockFileEx(hdl, LOCKFILE_EXCLUSIVE_LOCK +
+<span class="lineNum">     135 </span>                :                         ((operation &amp; LOCK_NB) ? LOCKFILE_FAIL_IMMEDIATELY : 0),
+<span class="lineNum">     136 </span>                :                            0, low, high, &amp;offset))
+<span class="lineNum">     137 </span>                :                 return 0;
+<span class="lineNum">     138 </span>                :             break;
+<span class="lineNum">     139 </span>                :         case LOCK_SH:           /* shared */
+<span class="lineNum">     140 </span>                :             if (LockFileEx(hdl, ((operation &amp; LOCK_NB) ? LOCKFILE_FAIL_IMMEDIATELY : 0),
+<span class="lineNum">     141 </span>                :                            0, low, high, &amp;offset))
+<span class="lineNum">     142 </span>                :                 return 0;
+<span class="lineNum">     143 </span>                :             break;
+<span class="lineNum">     144 </span>                :         case LOCK_UN:           /* unlock */
+<span class="lineNum">     145 </span>                :             return 0;           /* always succeeds */
+<span class="lineNum">     146 </span>                :         default:                /* default */
+<span class="lineNum">     147 </span>                :             break;
+<span class="lineNum">     148 </span>                :     }
+<span class="lineNum">     149 </span>                :         /* Under Win32 MT library, errno is not a variable but a function call,
+<span class="lineNum">     150 </span>                :          * which cannot be assigned to.
+<span class="lineNum">     151 </span>                :          */
+<span class="lineNum">     152 </span>                : #if !defined(PHP_WIN32)
+<span class="lineNum">     153 </span>                :     errno = EINVAL;             /* bad call */
+<span class="lineNum">     154 </span>                : #endif
+<span class="lineNum">     155 </span>                :     return -1;
+<span class="lineNum">     156 </span>                : }
+<span class="lineNum">     157 </span>                : /* }}} */
+<span class="lineNum">     158 </span>                : #else
+<span class="lineNum">     159 </span>                : #warning no proper flock support for your site
+<span class="lineNum">     160 </span>                : {
+<span class="lineNum">     161 </span>                :         errno = 0;
+<span class="lineNum">     162 </span>                :         return 0;
+<span class="lineNum">     163 </span>                : }
+<span class="lineNum">     164 </span>                : #endif
+<span class="lineNum">     165 </span>                : 
+<span class="lineNum">     166 </span>                : #ifndef PHP_WIN32
+<span class="lineNum">     167 </span>                : #if !(HAVE_INET_ATON)
+<span class="lineNum">     168 </span>                : /* {{{ inet_aton
+<span class="lineNum">     169 </span>                :  * Check whether &quot;cp&quot; is a valid ascii representation
+<span class="lineNum">     170 </span>                :  * of an Internet address and convert to a binary address.
+<span class="lineNum">     171 </span>                :  * Returns 1 if the address is valid, 0 if not.
+<span class="lineNum">     172 </span>                :  * This replaces inet_addr, the return value from which
+<span class="lineNum">     173 </span>                :  * cannot distinguish between failure and a local broadcast address.
+<span class="lineNum">     174 </span>                :  */
+<span class="lineNum">     175 </span>                : int inet_aton(const char *cp, struct in_addr *ap)
+<span class="lineNum">     176 </span>                : {
+<span class="lineNum">     177 </span>                :     int dots = 0;
+<span class="lineNum">     178 </span>                :     register unsigned long acc = 0, addr = 0;
+<span class="lineNum">     179 </span>                : 
+<span class="lineNum">     180 </span>                :     do {
+<span class="lineNum">     181 </span>                :         register char cc = *cp;
+<span class="lineNum">     182 </span>                : 
+<span class="lineNum">     183 </span>                :         switch (cc) {
+<span class="lineNum">     184 </span>                :         case '0':
+<span class="lineNum">     185 </span>                :         case '1':
+<span class="lineNum">     186 </span>                :         case '2':
+<span class="lineNum">     187 </span>                :         case '3':
+<span class="lineNum">     188 </span>                :         case '4':
+<span class="lineNum">     189 </span>                :         case '5':
+<span class="lineNum">     190 </span>                :         case '6':
+<span class="lineNum">     191 </span>                :         case '7':
+<span class="lineNum">     192 </span>                :         case '8':
+<span class="lineNum">     193 </span>                :         case '9':
+<span class="lineNum">     194 </span>                :             acc = acc * 10 + (cc - '0');
+<span class="lineNum">     195 </span>                :             break;
+<span class="lineNum">     196 </span>                : 
+<span class="lineNum">     197 </span>                :         case '.':
+<span class="lineNum">     198 </span>                :             if (++dots &gt; 3) {
+<span class="lineNum">     199 </span>                :                 return 0;
+<span class="lineNum">     200 </span>                :             }
+<span class="lineNum">     201 </span>                :             /* Fall through */
+<span class="lineNum">     202 </span>                : 
+<span class="lineNum">     203 </span>                :         case '\0':
+<span class="lineNum">     204 </span>                :             if (acc &gt; 255) {
+<span class="lineNum">     205 </span>                :                 return 0;
+<span class="lineNum">     206 </span>                :             }
+<span class="lineNum">     207 </span>                :             addr = addr &lt;&lt; 8 | acc;
+<span class="lineNum">     208 </span>                :             acc = 0;
+<span class="lineNum">     209 </span>                :             break;
+<span class="lineNum">     210 </span>                : 
+<span class="lineNum">     211 </span>                :         default:
+<span class="lineNum">     212 </span>                :             return 0;
+<span class="lineNum">     213 </span>                :         }
+<span class="lineNum">     214 </span>                :     } while (*cp++) ;
+<span class="lineNum">     215 </span>                : 
+<span class="lineNum">     216 </span>                :     /* Normalize the address */
+<span class="lineNum">     217 </span>                :     if (dots &lt; 3) {
+<span class="lineNum">     218 </span>                :         addr &lt;&lt;= 8 * (3 - dots) ;
+<span class="lineNum">     219 </span>                :     }
+<span class="lineNum">     220 </span>                : 
+<span class="lineNum">     221 </span>                :     /* Store it if requested */
+<span class="lineNum">     222 </span>                :     if (ap) {
+<span class="lineNum">     223 </span>                :         ap-&gt;s_addr = htonl(addr);
+<span class="lineNum">     224 </span>                :     }
+<span class="lineNum">     225 </span>                : 
+<span class="lineNum">     226 </span>                :     return 1;    
+<span class="lineNum">     227 </span>                : }
+<span class="lineNum">     228 </span>                : /* }}} */
+<span class="lineNum">     229 </span>                : #endif /* !HAVE_INET_ATON */
+<span class="lineNum">     230 </span>                : #endif
+<span class="lineNum">     231 </span>                : 
+<span class="lineNum">     232 </span>                : /*
+<span class="lineNum">     233 </span>                :  * Local variables:
+<span class="lineNum">     234 </span>                :  * tab-width: 4
+<span class="lineNum">     235 </span>                :  * c-basic-offset: 4
+<span class="lineNum">     236 </span>                :  * End:
+<span class="lineNum">     237 </span>                :  * vim600: sw=4 ts=4 fdm=marker
+<span class="lineNum">     238 </span>                :  * vim&lt;600: sw=4 ts=4
+<span class="lineNum">     239 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

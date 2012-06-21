@@ -1,0 +1,1694 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - Zend/zend_object_handlers.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../index.html">directory</a> - <a href="index.html">Zend</a> - zend_object_handlers.c (source / <a href="zend_object_handlers.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">790</td>
+          <td class="headerCovTableEntry">246</td>
+          <td class="headerCovTableEntryMed">31.1 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">37</td>
+          <td class="headerCovTableEntry">15</td>
+          <td class="headerCovTableEntryLo">40.5 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | Zend Engine                                                          |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1998-2012 Zend Technologies Ltd. (http://www.zend.com) |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 2.00 of the Zend license,     |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.zend.com/license/2_00.txt.                                |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the Zend license and are unable to  |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@zend.com so we can mail you a copy immediately.              |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Authors: Andi Gutmans &lt;andi@zend.com&gt;                                |
+<span class="lineNum">      16 </span>                :    |          Zeev Suraski &lt;zeev@zend.com&gt;                                |
+<span class="lineNum">      17 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      18 </span>                : */
+<span class="lineNum">      19 </span>                : 
+<span class="lineNum">      20 </span>                : /* $Id$ */
+<span class="lineNum">      21 </span>                : 
+<span class="lineNum">      22 </span>                : #include &quot;zend.h&quot;
+<span class="lineNum">      23 </span>                : #include &quot;zend_globals.h&quot;
+<span class="lineNum">      24 </span>                : #include &quot;zend_variables.h&quot;
+<span class="lineNum">      25 </span>                : #include &quot;zend_API.h&quot;
+<span class="lineNum">      26 </span>                : #include &quot;zend_objects.h&quot;
+<span class="lineNum">      27 </span>                : #include &quot;zend_objects_API.h&quot;
+<span class="lineNum">      28 </span>                : #include &quot;zend_object_handlers.h&quot;
+<span class="lineNum">      29 </span>                : #include &quot;zend_interfaces.h&quot;
+<span class="lineNum">      30 </span>                : #include &quot;zend_closures.h&quot;
+<span class="lineNum">      31 </span>                : #include &quot;zend_compile.h&quot;
+<span class="lineNum">      32 </span>                : 
+<span class="lineNum">      33 </span>                : #define DEBUG_OBJECT_HANDLERS 0
+<span class="lineNum">      34 </span>                : 
+<span class="lineNum">      35 </span>                : #define Z_OBJ_P(zval_p) \
+<span class="lineNum">      36 </span>                :         ((zend_object*)(EG(objects_store).object_buckets[Z_OBJ_HANDLE_P(zval_p)].bucket.obj.object))
+<span class="lineNum">      37 </span>                : 
+<span class="lineNum">      38 </span>                : /*
+<span class="lineNum">      39 </span>                :   __X accessors explanation:
+<span class="lineNum">      40 </span>                : 
+<span class="lineNum">      41 </span>                :   if we have __get and property that is not part of the properties array is
+<span class="lineNum">      42 </span>                :   requested, we call __get handler. If it fails, we return uninitialized.
+<span class="lineNum">      43 </span>                : 
+<span class="lineNum">      44 </span>                :   if we have __set and property that is not part of the properties array is
+<span class="lineNum">      45 </span>                :   set, we call __set handler. If it fails, we do not change the array.
+<span class="lineNum">      46 </span>                : 
+<span class="lineNum">      47 </span>                :   for both handlers above, when we are inside __get/__set, no further calls for
+<span class="lineNum">      48 </span>                :   __get/__set for this property of this object will be made, to prevent endless
+<span class="lineNum">      49 </span>                :   recursion and enable accessors to change properties array.
+<span class="lineNum">      50 </span>                : 
+<span class="lineNum">      51 </span>                :   if we have __call and method which is not part of the class function table is
+<span class="lineNum">      52 </span>                :   called, we cal __call handler.
+<a name="53"><span class="lineNum">      53 </span>                : */</a>
+<span class="lineNum">      54 </span>                : 
+<span class="lineNum">      55 </span><span class="lineCov">           2179 : ZEND_API void rebuild_object_properties(zend_object *zobj) /* {{{ */</span>
+<span class="lineNum">      56 </span>                : {
+<span class="lineNum">      57 </span><span class="lineCov">           2179 :         if (!zobj-&gt;properties) {</span>
+<span class="lineNum">      58 </span>                :                 HashPosition pos;
+<span class="lineNum">      59 </span>                :                 zend_property_info *prop_info;
+<span class="lineNum">      60 </span><span class="lineCov">           2179 :                 zend_class_entry *ce = zobj-&gt;ce;</span>
+<span class="lineNum">      61 </span>                : 
+<span class="lineNum">      62 </span><span class="lineCov">           2179 :                 ALLOC_HASHTABLE(zobj-&gt;properties);</span>
+<span class="lineNum">      63 </span><span class="lineCov">           2179 :                 zend_hash_init(zobj-&gt;properties, 0, NULL, ZVAL_PTR_DTOR, 0);</span>
+<span class="lineNum">      64 </span><span class="lineCov">           2179 :                 if (ce-&gt;default_properties_count) {</span>
+<span class="lineNum">      65 </span><span class="lineCov">            125 :                         for (zend_hash_internal_pointer_reset_ex(&amp;ce-&gt;properties_info, &amp;pos);</span>
+<span class="lineNum">      66 </span><span class="lineCov">            105 :                              zend_hash_get_current_data_ex(&amp;ce-&gt;properties_info, (void**)&amp;prop_info, &amp;pos) == SUCCESS;</span>
+<span class="lineNum">      67 </span><span class="lineCov">             85 :                              zend_hash_move_forward_ex(&amp;ce-&gt;properties_info, &amp;pos)) {</span>
+<span class="lineNum">      68 </span><span class="lineCov">            255 :                                 if (/*prop_info-&gt;ce == ce &amp;&amp;*/</span>
+<span class="lineNum">      69 </span><span class="lineCov">             85 :                                     (prop_info-&gt;flags &amp; ZEND_ACC_STATIC) == 0 &amp;&amp;</span>
+<span class="lineNum">      70 </span><span class="lineCov">             85 :                                     prop_info-&gt;offset &gt;= 0 &amp;&amp;</span>
+<span class="lineNum">      71 </span><span class="lineCov">             85 :                                     zobj-&gt;properties_table[prop_info-&gt;offset]) {</span>
+<span class="lineNum">      72 </span><span class="lineCov">             85 :                                         zend_hash_quick_add(zobj-&gt;properties, prop_info-&gt;name, prop_info-&gt;name_length+1, prop_info-&gt;h, (void**)&amp;zobj-&gt;properties_table[prop_info-&gt;offset], sizeof(zval*), (void**)&amp;zobj-&gt;properties_table[prop_info-&gt;offset]);</span>
+<span class="lineNum">      73 </span>                :                                 }
+<span class="lineNum">      74 </span>                :                         }
+<span class="lineNum">      75 </span><span class="lineCov">             56 :                         while (ce-&gt;parent &amp;&amp; ce-&gt;parent-&gt;default_properties_count) {</span>
+<span class="lineNum">      76 </span><span class="lineCov">             16 :                                 ce = ce-&gt;parent;</span>
+<span class="lineNum">      77 </span><span class="lineCov">            141 :                                 for (zend_hash_internal_pointer_reset_ex(&amp;ce-&gt;properties_info, &amp;pos);</span>
+<span class="lineNum">      78 </span><span class="lineCov">            125 :                                      zend_hash_get_current_data_ex(&amp;ce-&gt;properties_info, (void**)&amp;prop_info, &amp;pos) == SUCCESS;</span>
+<span class="lineNum">      79 </span><span class="lineCov">            109 :                                      zend_hash_move_forward_ex(&amp;ce-&gt;properties_info, &amp;pos)) {</span>
+<span class="lineNum">      80 </span><span class="lineCov">            261 :                                         if (prop_info-&gt;ce == ce &amp;&amp;</span>
+<span class="lineNum">      81 </span><span class="lineCov">             53 :                                             (prop_info-&gt;flags &amp; ZEND_ACC_STATIC) == 0 &amp;&amp;</span>
+<span class="lineNum">      82 </span><span class="lineCov">             53 :                                             (prop_info-&gt;flags &amp; ZEND_ACC_PRIVATE) != 0 &amp;&amp;</span>
+<span class="lineNum">      83 </span><span class="lineCov">             23 :                                             prop_info-&gt;offset &gt;= 0 &amp;&amp;</span>
+<span class="lineNum">      84 </span><span class="lineCov">             23 :                                                 zobj-&gt;properties_table[prop_info-&gt;offset]) {</span>
+<span class="lineNum">      85 </span><span class="lineCov">             23 :                                                 zend_hash_quick_add(zobj-&gt;properties, prop_info-&gt;name, prop_info-&gt;name_length+1, prop_info-&gt;h, (void**)&amp;zobj-&gt;properties_table[prop_info-&gt;offset], sizeof(zval*), (void**)&amp;zobj-&gt;properties_table[prop_info-&gt;offset]);</span>
+<span class="lineNum">      86 </span>                :                                         }
+<span class="lineNum">      87 </span>                :                                 }
+<span class="lineNum">      88 </span>                :                         }
+<span class="lineNum">      89 </span>                :                 }
+<span class="lineNum">      90 </span>                :         }
+<span class="lineNum">      91 </span><span class="lineCov">           2179 : }</span>
+<a name="92"><span class="lineNum">      92 </span>                : /* }}} */</a>
+<span class="lineNum">      93 </span>                : 
+<span class="lineNum">      94 </span><span class="lineCov">           2199 : ZEND_API HashTable *zend_std_get_properties(zval *object TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">      95 </span>                : {
+<span class="lineNum">      96 </span>                :         zend_object *zobj;
+<span class="lineNum">      97 </span><span class="lineCov">           2199 :         zobj = Z_OBJ_P(object);</span>
+<span class="lineNum">      98 </span><span class="lineCov">           2199 :         if (!zobj-&gt;properties) {</span>
+<span class="lineNum">      99 </span><span class="lineCov">           2173 :                 rebuild_object_properties(zobj);</span>
+<span class="lineNum">     100 </span>                :         }
+<span class="lineNum">     101 </span><span class="lineCov">           2199 :         return zobj-&gt;properties;</span>
+<span class="lineNum">     102 </span>                : }
+<a name="103"><span class="lineNum">     103 </span>                : /* }}} */</a>
+<span class="lineNum">     104 </span>                : 
+<span class="lineNum">     105 </span><span class="lineNoCov">              0 : ZEND_API HashTable *zend_std_get_gc(zval *object, zval ***table, int *n TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     106 </span>                : {
+<span class="lineNum">     107 </span><span class="lineNoCov">              0 :         if (Z_OBJ_HANDLER_P(object, get_properties) != zend_std_get_properties) {</span>
+<span class="lineNum">     108 </span><span class="lineNoCov">              0 :                 *table = NULL;</span>
+<span class="lineNum">     109 </span><span class="lineNoCov">              0 :                 *n = 0;</span>
+<span class="lineNum">     110 </span><span class="lineNoCov">              0 :                 return Z_OBJ_HANDLER_P(object, get_properties)(object TSRMLS_CC);</span>
+<span class="lineNum">     111 </span>                :         } else {
+<span class="lineNum">     112 </span><span class="lineNoCov">              0 :                 zend_object *zobj = Z_OBJ_P(object);</span>
+<span class="lineNum">     113 </span>                : 
+<span class="lineNum">     114 </span><span class="lineNoCov">              0 :                 if (zobj-&gt;properties) {</span>
+<span class="lineNum">     115 </span><span class="lineNoCov">              0 :                         *table = NULL;</span>
+<span class="lineNum">     116 </span><span class="lineNoCov">              0 :                         *n = 0;</span>
+<span class="lineNum">     117 </span><span class="lineNoCov">              0 :                         return zobj-&gt;properties;</span>
+<span class="lineNum">     118 </span>                :                 } else {
+<span class="lineNum">     119 </span><span class="lineNoCov">              0 :                         *table = zobj-&gt;properties_table;</span>
+<span class="lineNum">     120 </span><span class="lineNoCov">              0 :                         *n = zobj-&gt;ce-&gt;default_properties_count;</span>
+<span class="lineNum">     121 </span><span class="lineNoCov">              0 :                         return NULL;</span>
+<span class="lineNum">     122 </span>                :                 }
+<span class="lineNum">     123 </span>                :         }
+<span class="lineNum">     124 </span>                : }
+<a name="125"><span class="lineNum">     125 </span>                : /* }}} */</a>
+<span class="lineNum">     126 </span>                : 
+<span class="lineNum">     127 </span><span class="lineNoCov">              0 : ZEND_API HashTable *zend_std_get_debug_info(zval *object, int *is_temp TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     128 </span>                : {
+<span class="lineNum">     129 </span><span class="lineNoCov">              0 :         *is_temp = 0;</span>
+<span class="lineNum">     130 </span><span class="lineNoCov">              0 :         return zend_std_get_properties(object TSRMLS_CC);</span>
+<span class="lineNum">     131 </span>                : }
+<a name="132"><span class="lineNum">     132 </span>                : /* }}} */</a>
+<span class="lineNum">     133 </span>                : 
+<span class="lineNum">     134 </span><span class="lineCov">           1014 : static zval *zend_std_call_getter(zval *object, zval *member TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     135 </span>                : {
+<span class="lineNum">     136 </span><span class="lineCov">           1014 :         zval *retval = NULL;</span>
+<span class="lineNum">     137 </span><span class="lineCov">           1014 :         zend_class_entry *ce = Z_OBJCE_P(object);</span>
+<span class="lineNum">     138 </span>                : 
+<span class="lineNum">     139 </span>                :         /* __get handler is called with one argument:
+<span class="lineNum">     140 </span>                :               property name
+<span class="lineNum">     141 </span>                : 
+<span class="lineNum">     142 </span>                :            it should return whether the call was successfull or not
+<span class="lineNum">     143 </span>                :         */
+<span class="lineNum">     144 </span>                : 
+<span class="lineNum">     145 </span><span class="lineCov">           4056 :         SEPARATE_ARG_IF_REF(member);</span>
+<span class="lineNum">     146 </span>                : 
+<span class="lineNum">     147 </span><span class="lineCov">           1014 :         zend_call_method_with_1_params(&amp;object, ce, &amp;ce-&gt;__get, ZEND_GET_FUNC_NAME, &amp;retval, member);</span>
+<span class="lineNum">     148 </span>                : 
+<span class="lineNum">     149 </span><span class="lineCov">           1014 :         zval_ptr_dtor(&amp;member);</span>
+<span class="lineNum">     150 </span>                : 
+<span class="lineNum">     151 </span><span class="lineCov">           1014 :         if (retval) {</span>
+<span class="lineNum">     152 </span><span class="lineCov">           1014 :                 Z_DELREF_P(retval);</span>
+<span class="lineNum">     153 </span>                :         }
+<span class="lineNum">     154 </span>                : 
+<span class="lineNum">     155 </span><span class="lineCov">           1014 :         return retval;</span>
+<span class="lineNum">     156 </span>                : }
+<a name="157"><span class="lineNum">     157 </span>                : /* }}} */</a>
+<span class="lineNum">     158 </span>                : 
+<span class="lineNum">     159 </span><span class="lineNoCov">              0 : static int zend_std_call_setter(zval *object, zval *member, zval *value TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     160 </span>                : {
+<span class="lineNum">     161 </span><span class="lineNoCov">              0 :         zval *retval = NULL;</span>
+<span class="lineNum">     162 </span>                :         int result;
+<span class="lineNum">     163 </span><span class="lineNoCov">              0 :         zend_class_entry *ce = Z_OBJCE_P(object);</span>
+<span class="lineNum">     164 </span>                : 
+<span class="lineNum">     165 </span><span class="lineNoCov">              0 :         SEPARATE_ARG_IF_REF(member);</span>
+<span class="lineNum">     166 </span><span class="lineNoCov">              0 :         Z_ADDREF_P(value);</span>
+<span class="lineNum">     167 </span>                : 
+<span class="lineNum">     168 </span>                :         /* __set handler is called with two arguments:
+<span class="lineNum">     169 </span>                :              property name
+<span class="lineNum">     170 </span>                :              value to be set
+<span class="lineNum">     171 </span>                : 
+<span class="lineNum">     172 </span>                :            it should return whether the call was successfull or not
+<span class="lineNum">     173 </span>                :         */
+<span class="lineNum">     174 </span><span class="lineNoCov">              0 :         zend_call_method_with_2_params(&amp;object, ce, &amp;ce-&gt;__set, ZEND_SET_FUNC_NAME, &amp;retval, member, value);</span>
+<span class="lineNum">     175 </span>                : 
+<span class="lineNum">     176 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;member);</span>
+<span class="lineNum">     177 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;value);</span>
+<span class="lineNum">     178 </span>                : 
+<span class="lineNum">     179 </span><span class="lineNoCov">              0 :         if (retval) {</span>
+<span class="lineNum">     180 </span><span class="lineNoCov">              0 :                 result = i_zend_is_true(retval) ? SUCCESS : FAILURE;</span>
+<span class="lineNum">     181 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;retval);</span>
+<span class="lineNum">     182 </span><span class="lineNoCov">              0 :                 return result;</span>
+<span class="lineNum">     183 </span>                :         } else {
+<span class="lineNum">     184 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">     185 </span>                :         }
+<span class="lineNum">     186 </span>                : }
+<a name="187"><span class="lineNum">     187 </span>                : /* }}} */</a>
+<span class="lineNum">     188 </span>                : 
+<span class="lineNum">     189 </span><span class="lineNoCov">              0 : static void zend_std_call_unsetter(zval *object, zval *member TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     190 </span>                : {
+<span class="lineNum">     191 </span><span class="lineNoCov">              0 :         zend_class_entry *ce = Z_OBJCE_P(object);</span>
+<span class="lineNum">     192 </span>                : 
+<span class="lineNum">     193 </span>                :         /* __unset handler is called with one argument:
+<span class="lineNum">     194 </span>                :               property name
+<span class="lineNum">     195 </span>                :         */
+<span class="lineNum">     196 </span>                : 
+<span class="lineNum">     197 </span><span class="lineNoCov">              0 :         SEPARATE_ARG_IF_REF(member);</span>
+<span class="lineNum">     198 </span>                : 
+<span class="lineNum">     199 </span><span class="lineNoCov">              0 :         zend_call_method_with_1_params(&amp;object, ce, &amp;ce-&gt;__unset, ZEND_UNSET_FUNC_NAME, NULL, member);</span>
+<span class="lineNum">     200 </span>                : 
+<span class="lineNum">     201 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;member);</span>
+<span class="lineNum">     202 </span><span class="lineNoCov">              0 : }</span>
+<a name="203"><span class="lineNum">     203 </span>                : /* }}} */</a>
+<span class="lineNum">     204 </span>                : 
+<span class="lineNum">     205 </span><span class="lineNoCov">              0 : static zval *zend_std_call_issetter(zval *object, zval *member TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     206 </span>                : {
+<span class="lineNum">     207 </span><span class="lineNoCov">              0 :         zval *retval = NULL;</span>
+<span class="lineNum">     208 </span><span class="lineNoCov">              0 :         zend_class_entry *ce = Z_OBJCE_P(object);</span>
+<span class="lineNum">     209 </span>                : 
+<span class="lineNum">     210 </span>                :         /* __isset handler is called with one argument:
+<span class="lineNum">     211 </span>                :               property name
+<span class="lineNum">     212 </span>                : 
+<span class="lineNum">     213 </span>                :            it should return whether the property is set or not
+<span class="lineNum">     214 </span>                :         */
+<span class="lineNum">     215 </span>                : 
+<span class="lineNum">     216 </span><span class="lineNoCov">              0 :         SEPARATE_ARG_IF_REF(member);</span>
+<span class="lineNum">     217 </span>                : 
+<span class="lineNum">     218 </span><span class="lineNoCov">              0 :         zend_call_method_with_1_params(&amp;object, ce, &amp;ce-&gt;__isset, ZEND_ISSET_FUNC_NAME, &amp;retval, member);</span>
+<span class="lineNum">     219 </span>                : 
+<span class="lineNum">     220 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;member);</span>
+<span class="lineNum">     221 </span>                : 
+<span class="lineNum">     222 </span><span class="lineNoCov">              0 :         return retval;</span>
+<span class="lineNum">     223 </span>                : }
+<span class="lineNum">     224 </span>                : /* }}} */
+<span class="lineNum">     225 </span>                : 
+<span class="lineNum">     226 </span>                : static zend_always_inline int zend_verify_property_access(zend_property_info *property_info, zend_class_entry *ce TSRMLS_DC) /* {{{ */
+<span class="lineNum">     227 </span>                : {
+<span class="lineNum">     228 </span><span class="lineCov">           7436 :         switch (property_info-&gt;flags &amp; ZEND_ACC_PPP_MASK) {</span>
+<span class="lineNum">     229 </span>                :                 case ZEND_ACC_PUBLIC:
+<span class="lineNum">     230 </span><span class="lineCov">           7132 :                         return 1;</span>
+<span class="lineNum">     231 </span>                :                 case ZEND_ACC_PROTECTED:
+<span class="lineNum">     232 </span><span class="lineCov">            276 :                         return zend_check_protected(property_info-&gt;ce, EG(scope));</span>
+<span class="lineNum">     233 </span>                :                 case ZEND_ACC_PRIVATE:
+<span class="lineNum">     234 </span><span class="lineCov">             28 :                         if ((ce==EG(scope) || property_info-&gt;ce == EG(scope)) &amp;&amp; EG(scope)) {</span>
+<span class="lineNum">     235 </span><span class="lineCov">             28 :                                 return 1;</span>
+<span class="lineNum">     236 </span>                :                         } else {
+<span class="lineNum">     237 </span><span class="lineNoCov">              0 :                                 return 0;</span>
+<span class="lineNum">     238 </span>                :                         }
+<span class="lineNum">     239 </span>                :                         break;
+<span class="lineNum">     240 </span>                :         }
+<span class="lineNum">     241 </span><span class="lineNoCov">              0 :         return 0;</span>
+<span class="lineNum">     242 </span>                : }
+<span class="lineNum">     243 </span>                : /* }}} */
+<span class="lineNum">     244 </span>                : 
+<span class="lineNum">     245 </span>                : static zend_always_inline zend_bool is_derived_class(zend_class_entry *child_class, zend_class_entry *parent_class) /* {{{ */
+<span class="lineNum">     246 </span>                : {
+<span class="lineNum">     247 </span><span class="lineCov">             33 :         child_class = child_class-&gt;parent;</span>
+<span class="lineNum">     248 </span><span class="lineCov">             64 :         while (child_class) {</span>
+<span class="lineNum">     249 </span><span class="lineCov">             62 :                 if (child_class == parent_class) {</span>
+<span class="lineNum">     250 </span><span class="lineCov">             31 :                         return 1;</span>
+<span class="lineNum">     251 </span>                :                 }
+<span class="lineNum">     252 </span><span class="lineCov">             31 :                 child_class = child_class-&gt;parent;</span>
+<span class="lineNum">     253 </span>                :         }
+<span class="lineNum">     254 </span>                : 
+<span class="lineNum">     255 </span><span class="lineCov">              2 :         return 0;</span>
+<span class="lineNum">     256 </span>                : }
+<span class="lineNum">     257 </span>                : /* }}} */
+<span class="lineNum">     258 </span>                : 
+<span class="lineNum">     259 </span>                : static zend_always_inline struct _zend_property_info *zend_get_property_info_quick(zend_class_entry *ce, zval *member, int silent, const zend_literal *key TSRMLS_DC) /* {{{ */
+<span class="lineNum">     260 </span>                : {
+<span class="lineNum">     261 </span>                :         zend_property_info *property_info;
+<span class="lineNum">     262 </span>                :         zend_property_info *scope_property_info;
+<span class="lineNum">     263 </span><span class="lineCov">           6213 :         zend_bool denied_access = 0;</span>
+<span class="lineNum">     264 </span>                :         ulong h;
+<span class="lineNum">     265 </span>                : 
+<span class="lineNum">     266 </span><span class="lineCov">           6213 :         if (key &amp;&amp; (property_info = CACHED_POLYMORPHIC_PTR(key-&gt;cache_slot, ce)) != NULL) {</span>
+<span class="lineNum">     267 </span><span class="lineCov">              4 :                 return property_info;</span>
+<span class="lineNum">     268 </span>                :         }
+<span class="lineNum">     269 </span>                : 
+<span class="lineNum">     270 </span><span class="lineCov">           6209 :         if (UNEXPECTED(Z_STRVAL_P(member)[0] == '\0')) {</span>
+<span class="lineNum">     271 </span><span class="lineNoCov">              0 :                 if (!silent) {</span>
+<span class="lineNum">     272 </span><span class="lineNoCov">              0 :                         if (Z_STRLEN_P(member) == 0) {</span>
+<span class="lineNum">     273 </span><span class="lineNoCov">              0 :                                 zend_error_noreturn(E_ERROR, &quot;Cannot access empty property&quot;);</span>
+<span class="lineNum">     274 </span>                :                         } else {
+<span class="lineNum">     275 </span><span class="lineNoCov">              0 :                                 zend_error_noreturn(E_ERROR, &quot;Cannot access property started with '\\0'&quot;);</span>
+<span class="lineNum">     276 </span>                :                         }
+<span class="lineNum">     277 </span>                :                 }
+<span class="lineNum">     278 </span><span class="lineNoCov">              0 :                 return NULL;</span>
+<span class="lineNum">     279 </span>                :         }
+<span class="lineNum">     280 </span><span class="lineCov">           6209 :         property_info = NULL;</span>
+<span class="lineNum">     281 </span><span class="lineCov">           6209 :         h = key ? key-&gt;hash_value : zend_get_hash_value(Z_STRVAL_P(member), Z_STRLEN_P(member) + 1);</span>
+<span class="lineNum">     282 </span><span class="lineCov">           6209 :         if (zend_hash_quick_find(&amp;ce-&gt;properties_info, Z_STRVAL_P(member), Z_STRLEN_P(member)+1, h, (void **) &amp;property_info)==SUCCESS) {</span>
+<span class="lineNum">     283 </span><span class="lineCov">           5188 :                 if (UNEXPECTED((property_info-&gt;flags &amp; ZEND_ACC_SHADOW) != 0)) {</span>
+<span class="lineNum">     284 </span>                :                         /* if it's a shadow - go to access it's private */
+<span class="lineNum">     285 </span><span class="lineCov">             30 :                         property_info = NULL;</span>
+<span class="lineNum">     286 </span>                :                 } else {
+<span class="lineNum">     287 </span><span class="lineCov">          10316 :                         if (EXPECTED(zend_verify_property_access(property_info, ce TSRMLS_CC) != 0)) {</span>
+<span class="lineNum">     288 </span><span class="lineCov">          10312 :                                 if (EXPECTED((property_info-&gt;flags &amp; ZEND_ACC_CHANGED) != 0)</span>
+<span class="lineNum">     289 </span><span class="lineCov">           5156 :                                         &amp;&amp; EXPECTED(!(property_info-&gt;flags &amp; ZEND_ACC_PRIVATE))) {</span>
+<span class="lineNum">     290 </span>                :                                         /* We still need to make sure that we're not in a context
+<span class="lineNum">     291 </span>                :                                          * where the right property is a different 'statically linked' private
+<span class="lineNum">     292 </span>                :                                          * continue checking below...
+<span class="lineNum">     293 </span>                :                                          */
+<span class="lineNum">     294 </span>                :                                 } else {
+<span class="lineNum">     295 </span><span class="lineCov">           5156 :                                         if (UNEXPECTED((property_info-&gt;flags &amp; ZEND_ACC_STATIC) != 0) &amp;&amp; !silent) {</span>
+<span class="lineNum">     296 </span><span class="lineNoCov">              0 :                                                 zend_error(E_STRICT, &quot;Accessing static property %s::$%s as non static&quot;, ce-&gt;name, Z_STRVAL_P(member));</span>
+<span class="lineNum">     297 </span>                :                                         }
+<span class="lineNum">     298 </span><span class="lineCov">           5156 :                                         if (key) {</span>
+<span class="lineNum">     299 </span><span class="lineCov">             15 :                                                 CACHE_POLYMORPHIC_PTR(key-&gt;cache_slot, ce, property_info);</span>
+<span class="lineNum">     300 </span>                :                                         }
+<span class="lineNum">     301 </span><span class="lineCov">           5156 :                                         return property_info;</span>
+<span class="lineNum">     302 </span>                :                                 }
+<span class="lineNum">     303 </span>                :                         } else {
+<span class="lineNum">     304 </span>                :                                 /* Try to look in the scope instead */
+<span class="lineNum">     305 </span><span class="lineCov">              2 :                                 denied_access = 1;</span>
+<span class="lineNum">     306 </span>                :                         }
+<span class="lineNum">     307 </span>                :                 }
+<span class="lineNum">     308 </span>                :         }
+<span class="lineNum">     309 </span><span class="lineCov">           2192 :         if (EG(scope) != ce</span>
+<span class="lineNum">     310 </span><span class="lineCov">           1047 :                 &amp;&amp; EG(scope)</span>
+<span class="lineNum">     311 </span>                :                 &amp;&amp; is_derived_class(ce, EG(scope))
+<span class="lineNum">     312 </span><span class="lineCov">             93 :                 &amp;&amp; zend_hash_quick_find(&amp;EG(scope)-&gt;properties_info, Z_STRVAL_P(member), Z_STRLEN_P(member)+1, h, (void **) &amp;scope_property_info)==SUCCESS</span>
+<span class="lineNum">     313 </span><span class="lineCov">            123 :                 &amp;&amp; scope_property_info-&gt;flags &amp; ZEND_ACC_PRIVATE) {</span>
+<span class="lineNum">     314 </span><span class="lineCov">             30 :                 if (key) {</span>
+<span class="lineNum">     315 </span><span class="lineNoCov">              0 :                         CACHE_POLYMORPHIC_PTR(key-&gt;cache_slot, ce, scope_property_info);</span>
+<span class="lineNum">     316 </span>                :                 }
+<span class="lineNum">     317 </span><span class="lineCov">             30 :                 return scope_property_info;</span>
+<span class="lineNum">     318 </span><span class="lineCov">           1023 :         } else if (property_info) {</span>
+<span class="lineNum">     319 </span><span class="lineCov">              2 :                 if (UNEXPECTED(denied_access != 0)) {</span>
+<span class="lineNum">     320 </span>                :                         /* Information was available, but we were denied access.  Error out. */
+<span class="lineNum">     321 </span><span class="lineCov">              2 :                         if (!silent) {</span>
+<span class="lineNum">     322 </span><span class="lineNoCov">              0 :                                 zend_error_noreturn(E_ERROR, &quot;Cannot access %s property %s::$%s&quot;, zend_visibility_string(property_info-&gt;flags), ce-&gt;name, Z_STRVAL_P(member));</span>
+<span class="lineNum">     323 </span>                :                         }
+<span class="lineNum">     324 </span><span class="lineCov">              2 :                         return NULL;</span>
+<span class="lineNum">     325 </span>                :                 } else {
+<span class="lineNum">     326 </span>                :                         /* fall through, return property_info... */
+<span class="lineNum">     327 </span><span class="lineNoCov">              0 :                         if (key) {</span>
+<span class="lineNum">     328 </span><span class="lineNoCov">              0 :                                 CACHE_POLYMORPHIC_PTR(key-&gt;cache_slot, ce, property_info);</span>
+<span class="lineNum">     329 </span>                :                         }
+<span class="lineNum">     330 </span>                :                 }
+<span class="lineNum">     331 </span>                :         } else {
+<span class="lineNum">     332 </span><span class="lineCov">           1021 :                 EG(std_property_info).flags = ZEND_ACC_PUBLIC;</span>
+<span class="lineNum">     333 </span><span class="lineCov">           1021 :                 EG(std_property_info).name = Z_STRVAL_P(member);</span>
+<span class="lineNum">     334 </span><span class="lineCov">           1021 :                 EG(std_property_info).name_length = Z_STRLEN_P(member);</span>
+<span class="lineNum">     335 </span><span class="lineCov">           1021 :                 EG(std_property_info).h = h;</span>
+<span class="lineNum">     336 </span><span class="lineCov">           1021 :                 EG(std_property_info).ce = ce;</span>
+<span class="lineNum">     337 </span><span class="lineCov">           1021 :                 EG(std_property_info).offset = -1;</span>
+<span class="lineNum">     338 </span><span class="lineCov">           1021 :                 property_info = &amp;EG(std_property_info);</span>
+<span class="lineNum">     339 </span>                :         }
+<span class="lineNum">     340 </span><span class="lineCov">           1021 :         return property_info;</span>
+<span class="lineNum">     341 </span>                : }
+<a name="342"><span class="lineNum">     342 </span>                : /* }}} */</a>
+<span class="lineNum">     343 </span>                : 
+<span class="lineNum">     344 </span><span class="lineNoCov">              0 : ZEND_API struct _zend_property_info *zend_get_property_info(zend_class_entry *ce, zval *member, int silent TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     345 </span>                : {
+<span class="lineNum">     346 </span><span class="lineNoCov">              0 :         return zend_get_property_info_quick(ce, member, silent, NULL TSRMLS_CC);</span>
+<span class="lineNum">     347 </span>                : }
+<a name="348"><span class="lineNum">     348 </span>                : /* }}} */</a>
+<span class="lineNum">     349 </span>                : 
+<span class="lineNum">     350 </span><span class="lineCov">              6 : ZEND_API int zend_check_property_access(zend_object *zobj, const char *prop_info_name, int prop_info_name_len TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     351 </span>                : {
+<span class="lineNum">     352 </span>                :         zend_property_info *property_info;
+<span class="lineNum">     353 </span>                :         const char *class_name, *prop_name;
+<span class="lineNum">     354 </span>                :         zval member;
+<span class="lineNum">     355 </span>                : 
+<span class="lineNum">     356 </span><span class="lineCov">              6 :         zend_unmangle_property_name(prop_info_name, prop_info_name_len, &amp;class_name, &amp;prop_name);</span>
+<span class="lineNum">     357 </span><span class="lineCov">              6 :         ZVAL_STRING(&amp;member, prop_name, 0);</span>
+<span class="lineNum">     358 </span><span class="lineCov">             12 :         property_info = zend_get_property_info_quick(zobj-&gt;ce, &amp;member, 1, NULL TSRMLS_CC);</span>
+<span class="lineNum">     359 </span><span class="lineCov">              6 :         if (!property_info) {</span>
+<span class="lineNum">     360 </span><span class="lineCov">              2 :                 return FAILURE;</span>
+<span class="lineNum">     361 </span>                :         }
+<span class="lineNum">     362 </span><span class="lineCov">              4 :         if (class_name &amp;&amp; class_name[0] != '*') {</span>
+<span class="lineNum">     363 </span><span class="lineNoCov">              0 :                 if (!(property_info-&gt;flags &amp; ZEND_ACC_PRIVATE)) {</span>
+<span class="lineNum">     364 </span>                :                         /* we we're looking for a private prop but found a non private one of the same name */
+<span class="lineNum">     365 </span><span class="lineNoCov">              0 :                         return FAILURE;</span>
+<span class="lineNum">     366 </span><span class="lineNoCov">              0 :                 } else if (strcmp(prop_info_name+1, property_info-&gt;name+1)) {</span>
+<span class="lineNum">     367 </span>                :                         /* we we're looking for a private prop but found a private one of the same name but another class */
+<span class="lineNum">     368 </span><span class="lineNoCov">              0 :                         return FAILURE;</span>
+<span class="lineNum">     369 </span>                :                 }
+<span class="lineNum">     370 </span>                :         }
+<span class="lineNum">     371 </span><span class="lineCov">              8 :         return zend_verify_property_access(property_info, zobj-&gt;ce TSRMLS_CC) ? SUCCESS : FAILURE;</span>
+<span class="lineNum">     372 </span>                : }
+<a name="373"><span class="lineNum">     373 </span>                : /* }}} */</a>
+<span class="lineNum">     374 </span>                : 
+<span class="lineNum">     375 </span><span class="lineCov">           1014 : static int zend_get_property_guard(zend_object *zobj, zend_property_info *property_info, zval *member, zend_guard **pguard) /* {{{ */</span>
+<span class="lineNum">     376 </span>                : {
+<span class="lineNum">     377 </span>                :         zend_property_info info;
+<span class="lineNum">     378 </span>                :         zend_guard stub;
+<span class="lineNum">     379 </span>                : 
+<span class="lineNum">     380 </span><span class="lineCov">           1014 :         if (!property_info) {</span>
+<span class="lineNum">     381 </span><span class="lineNoCov">              0 :                 property_info = &amp;info;</span>
+<span class="lineNum">     382 </span><span class="lineNoCov">              0 :                 info.name = Z_STRVAL_P(member);</span>
+<span class="lineNum">     383 </span><span class="lineNoCov">              0 :                 info.name_length = Z_STRLEN_P(member);</span>
+<span class="lineNum">     384 </span><span class="lineNoCov">              0 :                 info.h = zend_get_hash_value(Z_STRVAL_P(member), Z_STRLEN_P(member) + 1);</span>
+<span class="lineNum">     385 </span>                :         }
+<span class="lineNum">     386 </span><span class="lineCov">           1014 :         if (!zobj-&gt;guards) {</span>
+<span class="lineNum">     387 </span><span class="lineCov">             11 :                 ALLOC_HASHTABLE(zobj-&gt;guards);</span>
+<span class="lineNum">     388 </span><span class="lineCov">             11 :                 zend_hash_init(zobj-&gt;guards, 0, NULL, NULL, 0);</span>
+<span class="lineNum">     389 </span><span class="lineCov">           1003 :         } else if (zend_hash_quick_find(zobj-&gt;guards, property_info-&gt;name, property_info-&gt;name_length+1, property_info-&gt;h, (void **) pguard) == SUCCESS) {</span>
+<span class="lineNum">     390 </span><span class="lineCov">           1003 :                 return SUCCESS;</span>
+<span class="lineNum">     391 </span>                :         }
+<span class="lineNum">     392 </span><span class="lineCov">             11 :         stub.in_get = 0;</span>
+<span class="lineNum">     393 </span><span class="lineCov">             11 :         stub.in_set = 0;</span>
+<span class="lineNum">     394 </span><span class="lineCov">             11 :         stub.in_unset = 0;</span>
+<span class="lineNum">     395 </span><span class="lineCov">             11 :         stub.in_isset = 0;</span>
+<span class="lineNum">     396 </span><span class="lineCov">             11 :         return zend_hash_quick_add(zobj-&gt;guards, property_info-&gt;name, property_info-&gt;name_length+1, property_info-&gt;h, (void**)&amp;stub, sizeof(stub), (void**) pguard);</span>
+<span class="lineNum">     397 </span>                : }
+<a name="398"><span class="lineNum">     398 </span>                : /* }}} */</a>
+<span class="lineNum">     399 </span>                : 
+<span class="lineNum">     400 </span><span class="lineCov">           3491 : zval *zend_std_read_property(zval *object, zval *member, int type, const zend_literal *key TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     401 </span>                : {
+<span class="lineNum">     402 </span>                :         zend_object *zobj;
+<span class="lineNum">     403 </span><span class="lineCov">           3491 :         zval *tmp_member = NULL;</span>
+<span class="lineNum">     404 </span>                :         zval **retval;
+<span class="lineNum">     405 </span><span class="lineCov">           3491 :         zval *rv = NULL;</span>
+<span class="lineNum">     406 </span>                :         zend_property_info *property_info;
+<span class="lineNum">     407 </span>                :         int silent;
+<span class="lineNum">     408 </span>                : 
+<span class="lineNum">     409 </span><span class="lineCov">           3491 :         silent = (type == BP_VAR_IS);</span>
+<span class="lineNum">     410 </span><span class="lineCov">           3491 :         zobj = Z_OBJ_P(object);</span>
+<span class="lineNum">     411 </span>                : 
+<span class="lineNum">     412 </span><span class="lineCov">           3491 :         if (UNEXPECTED(Z_TYPE_P(member) != IS_STRING)) {</span>
+<span class="lineNum">     413 </span><span class="lineNoCov">              0 :                 ALLOC_ZVAL(tmp_member);</span>
+<span class="lineNum">     414 </span><span class="lineNoCov">              0 :                 *tmp_member = *member;</span>
+<span class="lineNum">     415 </span><span class="lineNoCov">              0 :                 INIT_PZVAL(tmp_member);</span>
+<span class="lineNum">     416 </span><span class="lineNoCov">              0 :                 zval_copy_ctor(tmp_member);</span>
+<span class="lineNum">     417 </span><span class="lineNoCov">              0 :                 convert_to_string(tmp_member);</span>
+<span class="lineNum">     418 </span><span class="lineNoCov">              0 :                 member = tmp_member;</span>
+<span class="lineNum">     419 </span><span class="lineNoCov">              0 :                 key = NULL;</span>
+<span class="lineNum">     420 </span>                :         }
+<span class="lineNum">     421 </span>                : 
+<span class="lineNum">     422 </span>                : #if DEBUG_OBJECT_HANDLERS
+<span class="lineNum">     423 </span>                :         fprintf(stderr, &quot;Read object #%d property: %s\n&quot;, Z_OBJ_HANDLE_P(object), Z_STRVAL_P(member));
+<span class="lineNum">     424 </span>                : #endif
+<span class="lineNum">     425 </span>                : 
+<span class="lineNum">     426 </span>                :         /* make zend_get_property_info silent if we have getter - we may want to use it */
+<span class="lineNum">     427 </span><span class="lineCov">           6982 :         property_info = zend_get_property_info_quick(zobj-&gt;ce, member, (zobj-&gt;ce-&gt;__get != NULL), key TSRMLS_CC);</span>
+<span class="lineNum">     428 </span>                : 
+<span class="lineNum">     429 </span><span class="lineCov">          18916 :         if (UNEXPECTED(!property_info) ||</span>
+<span class="lineNum">     430 </span><span class="lineCov">           3491 :             ((EXPECTED((property_info-&gt;flags &amp; ZEND_ACC_STATIC) == 0) &amp;&amp;</span>
+<span class="lineNum">     431 </span><span class="lineCov">           3491 :              property_info-&gt;offset &gt;= 0) ?</span>
+<span class="lineNum">     432 </span><span class="lineCov">           2476 :                 (zobj-&gt;properties ?</span>
+<span class="lineNum">     433 </span><span class="lineCov">             12 :                     ((retval = (zval**)zobj-&gt;properties_table[property_info-&gt;offset]) == NULL) :</span>
+<span class="lineNum">     434 </span><span class="lineCov">           4940 :                     (*(retval = &amp;zobj-&gt;properties_table[property_info-&gt;offset]) == NULL)) :</span>
+<span class="lineNum">     435 </span><span class="lineCov">           1015 :                 (UNEXPECTED(!zobj-&gt;properties) ||</span>
+<span class="lineNum">     436 </span><span class="lineNoCov">              0 :                   UNEXPECTED(zend_hash_quick_find(zobj-&gt;properties, property_info-&gt;name, property_info-&gt;name_length+1, property_info-&gt;h, (void **) &amp;retval) == FAILURE)))) {</span>
+<span class="lineNum">     437 </span><span class="lineCov">           1015 :                 zend_guard *guard = NULL;</span>
+<span class="lineNum">     438 </span>                : 
+<span class="lineNum">     439 </span><span class="lineCov">           4057 :                 if (zobj-&gt;ce-&gt;__get &amp;&amp;</span>
+<span class="lineNum">     440 </span><span class="lineCov">           1014 :                     zend_get_property_guard(zobj, property_info, member, &amp;guard) == SUCCESS &amp;&amp;</span>
+<span class="lineNum">     441 </span><span class="lineCov">           1014 :                     !guard-&gt;in_get) {</span>
+<span class="lineNum">     442 </span>                :                         /* have getter - try with it! */
+<span class="lineNum">     443 </span><span class="lineCov">           1014 :                         Z_ADDREF_P(object);</span>
+<span class="lineNum">     444 </span><span class="lineCov">           2028 :                         if (PZVAL_IS_REF(object)) {</span>
+<span class="lineNum">     445 </span><span class="lineNoCov">              0 :                                 SEPARATE_ZVAL(&amp;object);</span>
+<span class="lineNum">     446 </span>                :                         }
+<span class="lineNum">     447 </span><span class="lineCov">           1014 :                         guard-&gt;in_get = 1; /* prevent circular getting */</span>
+<span class="lineNum">     448 </span><span class="lineCov">           1014 :                         rv = zend_std_call_getter(object, member TSRMLS_CC);</span>
+<span class="lineNum">     449 </span><span class="lineCov">           1014 :                         guard-&gt;in_get = 0;</span>
+<span class="lineNum">     450 </span>                : 
+<span class="lineNum">     451 </span><span class="lineCov">           1014 :                         if (rv) {</span>
+<span class="lineNum">     452 </span><span class="lineCov">           1014 :                                 retval = &amp;rv;</span>
+<span class="lineNum">     453 </span><span class="lineCov">           2028 :                                 if (!Z_ISREF_P(rv) &amp;&amp;</span>
+<span class="lineNum">     454 </span>                :                                     (type == BP_VAR_W || type == BP_VAR_RW  || type == BP_VAR_UNSET)) {
+<span class="lineNum">     455 </span><span class="lineNoCov">              0 :                                         if (Z_REFCOUNT_P(rv) &gt; 0) {</span>
+<span class="lineNum">     456 </span><span class="lineNoCov">              0 :                                                 zval *tmp = rv;</span>
+<span class="lineNum">     457 </span>                : 
+<span class="lineNum">     458 </span><span class="lineNoCov">              0 :                                                 ALLOC_ZVAL(rv);</span>
+<span class="lineNum">     459 </span><span class="lineNoCov">              0 :                                                 *rv = *tmp;</span>
+<span class="lineNum">     460 </span><span class="lineNoCov">              0 :                                                 zval_copy_ctor(rv);</span>
+<span class="lineNum">     461 </span><span class="lineNoCov">              0 :                                                 Z_UNSET_ISREF_P(rv);</span>
+<span class="lineNum">     462 </span><span class="lineNoCov">              0 :                                                 Z_SET_REFCOUNT_P(rv, 0);</span>
+<span class="lineNum">     463 </span>                :                                         }
+<span class="lineNum">     464 </span><span class="lineNoCov">              0 :                                         if (UNEXPECTED(Z_TYPE_P(rv) != IS_OBJECT)) {</span>
+<span class="lineNum">     465 </span><span class="lineNoCov">              0 :                                                 zend_error(E_NOTICE, &quot;Indirect modification of overloaded property %s::$%s has no effect&quot;, zobj-&gt;ce-&gt;name, Z_STRVAL_P(member));</span>
+<span class="lineNum">     466 </span>                :                                         }
+<span class="lineNum">     467 </span>                :                                 }
+<span class="lineNum">     468 </span>                :                         } else {
+<span class="lineNum">     469 </span><span class="lineNoCov">              0 :                                 retval = &amp;EG(uninitialized_zval_ptr);</span>
+<span class="lineNum">     470 </span>                :                         }
+<span class="lineNum">     471 </span><span class="lineCov">           1014 :                         if (EXPECTED(*retval != object)) {</span>
+<span class="lineNum">     472 </span><span class="lineCov">           1014 :                                 zval_ptr_dtor(&amp;object);</span>
+<span class="lineNum">     473 </span>                :                         } else {
+<span class="lineNum">     474 </span><span class="lineNoCov">              0 :                                 Z_DELREF_P(object);</span>
+<span class="lineNum">     475 </span>                :                         }
+<span class="lineNum">     476 </span>                :                 } else {
+<span class="lineNum">     477 </span><span class="lineCov">              1 :                         if (zobj-&gt;ce-&gt;__get &amp;&amp; guard &amp;&amp; guard-&gt;in_get == 1) {</span>
+<span class="lineNum">     478 </span><span class="lineNoCov">              0 :                                 if (Z_STRVAL_P(member)[0] == '\0') {</span>
+<span class="lineNum">     479 </span><span class="lineNoCov">              0 :                                         if (Z_STRLEN_P(member) == 0) {</span>
+<span class="lineNum">     480 </span><span class="lineNoCov">              0 :                                                 zend_error(E_ERROR, &quot;Cannot access empty property&quot;);</span>
+<span class="lineNum">     481 </span>                :                                         } else {
+<span class="lineNum">     482 </span><span class="lineNoCov">              0 :                                                 zend_error(E_ERROR, &quot;Cannot access property started with '\\0'&quot;);</span>
+<span class="lineNum">     483 </span>                :                                         }
+<span class="lineNum">     484 </span>                :                                 }
+<span class="lineNum">     485 </span>                :                         }
+<span class="lineNum">     486 </span><span class="lineCov">              1 :                         if (!silent) {</span>
+<span class="lineNum">     487 </span><span class="lineNoCov">              0 :                                 zend_error(E_NOTICE,&quot;Undefined property: %s::$%s&quot;, zobj-&gt;ce-&gt;name, Z_STRVAL_P(member));</span>
+<span class="lineNum">     488 </span>                :                         }
+<span class="lineNum">     489 </span><span class="lineCov">              1 :                         retval = &amp;EG(uninitialized_zval_ptr);</span>
+<span class="lineNum">     490 </span>                :                 }
+<span class="lineNum">     491 </span>                :         }
+<span class="lineNum">     492 </span><span class="lineCov">           3491 :         if (UNEXPECTED(tmp_member != NULL)) {</span>
+<span class="lineNum">     493 </span><span class="lineNoCov">              0 :                 Z_ADDREF_PP(retval);</span>
+<span class="lineNum">     494 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;tmp_member);</span>
+<span class="lineNum">     495 </span><span class="lineNoCov">              0 :                 Z_DELREF_PP(retval);</span>
+<span class="lineNum">     496 </span>                :         }
+<span class="lineNum">     497 </span><span class="lineCov">           3491 :         return *retval;</span>
+<span class="lineNum">     498 </span>                : }
+<a name="499"><span class="lineNum">     499 </span>                : /* }}} */</a>
+<span class="lineNum">     500 </span>                : 
+<span class="lineNum">     501 </span><span class="lineCov">           2716 : ZEND_API void zend_std_write_property(zval *object, zval *member, zval *value, const zend_literal *key TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     502 </span>                : {
+<span class="lineNum">     503 </span>                :         zend_object *zobj;
+<span class="lineNum">     504 </span><span class="lineCov">           2716 :         zval *tmp_member = NULL;</span>
+<span class="lineNum">     505 </span>                :         zval **variable_ptr;
+<span class="lineNum">     506 </span>                :         zend_property_info *property_info;
+<span class="lineNum">     507 </span>                : 
+<span class="lineNum">     508 </span><span class="lineCov">           2716 :         zobj = Z_OBJ_P(object);</span>
+<span class="lineNum">     509 </span>                : 
+<span class="lineNum">     510 </span><span class="lineCov">           2716 :         if (UNEXPECTED(Z_TYPE_P(member) != IS_STRING)) {</span>
+<span class="lineNum">     511 </span><span class="lineNoCov">              0 :                 ALLOC_ZVAL(tmp_member);</span>
+<span class="lineNum">     512 </span><span class="lineNoCov">              0 :                 *tmp_member = *member;</span>
+<span class="lineNum">     513 </span><span class="lineNoCov">              0 :                 INIT_PZVAL(tmp_member);</span>
+<span class="lineNum">     514 </span><span class="lineNoCov">              0 :                 zval_copy_ctor(tmp_member);</span>
+<span class="lineNum">     515 </span><span class="lineNoCov">              0 :                 convert_to_string(tmp_member);</span>
+<span class="lineNum">     516 </span><span class="lineNoCov">              0 :                 member = tmp_member;</span>
+<span class="lineNum">     517 </span><span class="lineNoCov">              0 :                 key = NULL;</span>
+<span class="lineNum">     518 </span>                :         }
+<span class="lineNum">     519 </span>                : 
+<span class="lineNum">     520 </span><span class="lineCov">           5432 :         property_info = zend_get_property_info_quick(zobj-&gt;ce, member, (zobj-&gt;ce-&gt;__set != NULL), key TSRMLS_CC);</span>
+<span class="lineNum">     521 </span>                : 
+<span class="lineNum">     522 </span><span class="lineCov">          18994 :         if (EXPECTED(property_info != NULL) &amp;&amp;</span>
+<span class="lineNum">     523 </span><span class="lineCov">           2716 :             ((EXPECTED((property_info-&gt;flags &amp; ZEND_ACC_STATIC) == 0) &amp;&amp;</span>
+<span class="lineNum">     524 </span><span class="lineCov">           2716 :              property_info-&gt;offset &gt;= 0) ?</span>
+<span class="lineNum">     525 </span><span class="lineCov">           2710 :                 (zobj-&gt;properties ?</span>
+<span class="lineNum">     526 </span><span class="lineNoCov">              0 :                     ((variable_ptr = (zval**)zobj-&gt;properties_table[property_info-&gt;offset]) != NULL) :</span>
+<span class="lineNum">     527 </span><span class="lineCov">           5420 :                     (*(variable_ptr = &amp;zobj-&gt;properties_table[property_info-&gt;offset]) != NULL)) :</span>
+<span class="lineNum">     528 </span><span class="lineCov">              6 :                 (EXPECTED(zobj-&gt;properties != NULL) &amp;&amp;</span>
+<span class="lineNum">     529 </span><span class="lineNoCov">              0 :                   EXPECTED(zend_hash_quick_find(zobj-&gt;properties, property_info-&gt;name, property_info-&gt;name_length+1, property_info-&gt;h, (void **) &amp;variable_ptr) == SUCCESS)))) {</span>
+<span class="lineNum">     530 </span>                :                 /* if we already have this value there, we don't actually need to do anything */
+<span class="lineNum">     531 </span><span class="lineCov">           2710 :                 if (EXPECTED(*variable_ptr != value)) {</span>
+<span class="lineNum">     532 </span>                :                         /* if we are assigning reference, we shouldn't move it, but instead assign variable
+<span class="lineNum">     533 </span>                :                            to the same pointer */
+<span class="lineNum">     534 </span><span class="lineCov">           5420 :                         if (PZVAL_IS_REF(*variable_ptr)) {</span>
+<span class="lineNum">     535 </span><span class="lineNoCov">              0 :                                 zval garbage = **variable_ptr; /* old value should be destroyed */</span>
+<span class="lineNum">     536 </span>                : 
+<span class="lineNum">     537 </span>                :                                 /* To check: can't *variable_ptr be some system variable like error_zval here? */
+<span class="lineNum">     538 </span><span class="lineNoCov">              0 :                                 Z_TYPE_PP(variable_ptr) = Z_TYPE_P(value);</span>
+<span class="lineNum">     539 </span><span class="lineNoCov">              0 :                                 (*variable_ptr)-&gt;value = value-&gt;value;</span>
+<span class="lineNum">     540 </span><span class="lineNoCov">              0 :                                 if (Z_REFCOUNT_P(value) &gt; 0) {</span>
+<span class="lineNum">     541 </span><span class="lineNoCov">              0 :                                         zval_copy_ctor(*variable_ptr);</span>
+<span class="lineNum">     542 </span>                :                                 }
+<span class="lineNum">     543 </span>                :                                 zval_dtor(&amp;garbage);
+<span class="lineNum">     544 </span>                :                         } else {
+<span class="lineNum">     545 </span><span class="lineCov">           2710 :                                 zval *garbage = *variable_ptr;</span>
+<span class="lineNum">     546 </span>                : 
+<span class="lineNum">     547 </span>                :                                 /* if we assign referenced variable, we should separate it */
+<span class="lineNum">     548 </span><span class="lineCov">           2710 :                                 Z_ADDREF_P(value);</span>
+<span class="lineNum">     549 </span><span class="lineCov">           5420 :                                 if (PZVAL_IS_REF(value)) {</span>
+<span class="lineNum">     550 </span><span class="lineNoCov">              0 :                                         SEPARATE_ZVAL(&amp;value);</span>
+<span class="lineNum">     551 </span>                :                                 }
+<span class="lineNum">     552 </span><span class="lineCov">           2710 :                                 *variable_ptr = value;</span>
+<span class="lineNum">     553 </span><span class="lineCov">           2710 :                                 zval_ptr_dtor(&amp;garbage);</span>
+<span class="lineNum">     554 </span>                :                         }
+<span class="lineNum">     555 </span>                :                 }
+<span class="lineNum">     556 </span>                :         } else {
+<span class="lineNum">     557 </span><span class="lineCov">              6 :                 zend_guard *guard = NULL;</span>
+<span class="lineNum">     558 </span>                : 
+<span class="lineNum">     559 </span><span class="lineCov">              6 :                 if (zobj-&gt;ce-&gt;__set &amp;&amp;</span>
+<span class="lineNum">     560 </span><span class="lineNoCov">              0 :                     zend_get_property_guard(zobj, property_info, member, &amp;guard) == SUCCESS &amp;&amp;</span>
+<span class="lineNum">     561 </span><span class="lineNoCov">              0 :                     !guard-&gt;in_set) {</span>
+<span class="lineNum">     562 </span><span class="lineNoCov">              0 :                         Z_ADDREF_P(object);</span>
+<span class="lineNum">     563 </span><span class="lineNoCov">              0 :                         if (PZVAL_IS_REF(object)) {</span>
+<span class="lineNum">     564 </span><span class="lineNoCov">              0 :                                 SEPARATE_ZVAL(&amp;object);</span>
+<span class="lineNum">     565 </span>                :                         }
+<span class="lineNum">     566 </span><span class="lineNoCov">              0 :                         guard-&gt;in_set = 1; /* prevent circular setting */</span>
+<span class="lineNum">     567 </span><span class="lineNoCov">              0 :                         if (zend_std_call_setter(object, member, value TSRMLS_CC) != SUCCESS) {</span>
+<span class="lineNum">     568 </span>                :                                 /* for now, just ignore it - __set should take care of warnings, etc. */
+<span class="lineNum">     569 </span>                :                         }
+<span class="lineNum">     570 </span><span class="lineNoCov">              0 :                         guard-&gt;in_set = 0;</span>
+<span class="lineNum">     571 </span><span class="lineNoCov">              0 :                         zval_ptr_dtor(&amp;object);</span>
+<span class="lineNum">     572 </span><span class="lineCov">              6 :                 } else if (EXPECTED(property_info != NULL)) {</span>
+<span class="lineNum">     573 </span>                :                         /* if we assign referenced variable, we should separate it */
+<span class="lineNum">     574 </span><span class="lineCov">              6 :                         Z_ADDREF_P(value);</span>
+<span class="lineNum">     575 </span><span class="lineCov">             12 :                         if (PZVAL_IS_REF(value)) {</span>
+<span class="lineNum">     576 </span><span class="lineNoCov">              0 :                                 SEPARATE_ZVAL(&amp;value);</span>
+<span class="lineNum">     577 </span>                :                         }
+<span class="lineNum">     578 </span><span class="lineCov">             12 :                         if (EXPECTED((property_info-&gt;flags &amp; ZEND_ACC_STATIC) == 0) &amp;&amp;</span>
+<span class="lineNum">     579 </span><span class="lineCov">              6 :                             property_info-&gt;offset &gt;= 0) {</span>
+<span class="lineNum">     580 </span><span class="lineNoCov">              0 :                                         if (!zobj-&gt;properties) {</span>
+<span class="lineNum">     581 </span><span class="lineNoCov">              0 :                                                 zobj-&gt;properties_table[property_info-&gt;offset] = value;</span>
+<span class="lineNum">     582 </span><span class="lineNoCov">              0 :                                         } else if (zobj-&gt;properties_table[property_info-&gt;offset]) {</span>
+<span class="lineNum">     583 </span><span class="lineNoCov">              0 :                                                 *(zval**)zobj-&gt;properties_table[property_info-&gt;offset] = value;</span>
+<span class="lineNum">     584 </span>                :                                         } else {
+<span class="lineNum">     585 </span><span class="lineNoCov">              0 :                                                 zend_hash_quick_update(zobj-&gt;properties, property_info-&gt;name, property_info-&gt;name_length+1, property_info-&gt;h, &amp;value, sizeof(zval *), (void**)&amp;zobj-&gt;properties_table[property_info-&gt;offset]);</span>
+<span class="lineNum">     586 </span>                :                                         }
+<span class="lineNum">     587 </span>                :                                 } else {
+<span class="lineNum">     588 </span><span class="lineCov">              6 :                                         if (!zobj-&gt;properties) {</span>
+<span class="lineNum">     589 </span><span class="lineCov">              6 :                                         rebuild_object_properties(zobj);</span>
+<span class="lineNum">     590 </span>                :                                 }
+<span class="lineNum">     591 </span><span class="lineCov">              6 :                                 zend_hash_quick_update(zobj-&gt;properties, property_info-&gt;name, property_info-&gt;name_length+1, property_info-&gt;h, &amp;value, sizeof(zval *), NULL);</span>
+<span class="lineNum">     592 </span>                :                         }
+<span class="lineNum">     593 </span><span class="lineNoCov">              0 :                 } else if (zobj-&gt;ce-&gt;__set &amp;&amp; guard &amp;&amp; guard-&gt;in_set == 1) {</span>
+<span class="lineNum">     594 </span><span class="lineNoCov">              0 :                         if (Z_STRVAL_P(member)[0] == '\0') {</span>
+<span class="lineNum">     595 </span><span class="lineNoCov">              0 :                                 if (Z_STRLEN_P(member) == 0) {</span>
+<span class="lineNum">     596 </span><span class="lineNoCov">              0 :                                         zend_error(E_ERROR, &quot;Cannot access empty property&quot;);</span>
+<span class="lineNum">     597 </span>                :                                 } else {
+<span class="lineNum">     598 </span><span class="lineNoCov">              0 :                                         zend_error(E_ERROR, &quot;Cannot access property started with '\\0'&quot;);</span>
+<span class="lineNum">     599 </span>                :                                 }
+<span class="lineNum">     600 </span>                :                         }
+<span class="lineNum">     601 </span>                :                 }
+<span class="lineNum">     602 </span>                :         }
+<span class="lineNum">     603 </span>                : 
+<span class="lineNum">     604 </span><span class="lineCov">           2716 :         if (UNEXPECTED(tmp_member != NULL)) {</span>
+<span class="lineNum">     605 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;tmp_member);</span>
+<span class="lineNum">     606 </span>                :         }
+<span class="lineNum">     607 </span><span class="lineCov">           2716 : }</span>
+<a name="608"><span class="lineNum">     608 </span>                : /* }}} */</a>
+<span class="lineNum">     609 </span>                : 
+<span class="lineNum">     610 </span><span class="lineNoCov">              0 : zval *zend_std_read_dimension(zval *object, zval *offset, int type TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     611 </span>                : {
+<span class="lineNum">     612 </span><span class="lineNoCov">              0 :         zend_class_entry *ce = Z_OBJCE_P(object);</span>
+<span class="lineNum">     613 </span>                :         zval *retval;
+<span class="lineNum">     614 </span>                : 
+<span class="lineNum">     615 </span><span class="lineNoCov">              0 :         if (EXPECTED(instanceof_function_ex(ce, zend_ce_arrayaccess, 1 TSRMLS_CC) != 0)) {</span>
+<span class="lineNum">     616 </span><span class="lineNoCov">              0 :                 if(offset == NULL) {</span>
+<span class="lineNum">     617 </span>                :                         /* [] construct */
+<span class="lineNum">     618 </span><span class="lineNoCov">              0 :                         ALLOC_INIT_ZVAL(offset);</span>
+<span class="lineNum">     619 </span>                :                 } else {
+<span class="lineNum">     620 </span><span class="lineNoCov">              0 :                         SEPARATE_ARG_IF_REF(offset);</span>
+<span class="lineNum">     621 </span>                :                 }
+<span class="lineNum">     622 </span><span class="lineNoCov">              0 :                 zend_call_method_with_1_params(&amp;object, ce, NULL, &quot;offsetget&quot;, &amp;retval, offset);</span>
+<span class="lineNum">     623 </span>                : 
+<span class="lineNum">     624 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;offset);</span>
+<span class="lineNum">     625 </span>                : 
+<span class="lineNum">     626 </span><span class="lineNoCov">              0 :                 if (UNEXPECTED(!retval)) {</span>
+<span class="lineNum">     627 </span><span class="lineNoCov">              0 :                         if (UNEXPECTED(!EG(exception))) {</span>
+<span class="lineNum">     628 </span><span class="lineNoCov">              0 :                                 zend_error_noreturn(E_ERROR, &quot;Undefined offset for object of type %s used as array&quot;, ce-&gt;name);</span>
+<span class="lineNum">     629 </span>                :                         }
+<span class="lineNum">     630 </span><span class="lineNoCov">              0 :                         return 0;</span>
+<span class="lineNum">     631 </span>                :                 }
+<span class="lineNum">     632 </span>                : 
+<span class="lineNum">     633 </span>                :                 /* Undo PZVAL_LOCK() */
+<span class="lineNum">     634 </span><span class="lineNoCov">              0 :                 Z_DELREF_P(retval);</span>
+<span class="lineNum">     635 </span>                : 
+<span class="lineNum">     636 </span><span class="lineNoCov">              0 :                 return retval;</span>
+<span class="lineNum">     637 </span>                :         } else {
+<span class="lineNum">     638 </span><span class="lineNoCov">              0 :                 zend_error_noreturn(E_ERROR, &quot;Cannot use object of type %s as array&quot;, ce-&gt;name);</span>
+<span class="lineNum">     639 </span>                :                 return 0;
+<span class="lineNum">     640 </span>                :         }
+<span class="lineNum">     641 </span>                : }
+<a name="642"><span class="lineNum">     642 </span>                : /* }}} */</a>
+<span class="lineNum">     643 </span>                : 
+<span class="lineNum">     644 </span><span class="lineNoCov">              0 : static void zend_std_write_dimension(zval *object, zval *offset, zval *value TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     645 </span>                : {
+<span class="lineNum">     646 </span><span class="lineNoCov">              0 :         zend_class_entry *ce = Z_OBJCE_P(object);</span>
+<span class="lineNum">     647 </span>                : 
+<span class="lineNum">     648 </span><span class="lineNoCov">              0 :         if (EXPECTED(instanceof_function_ex(ce, zend_ce_arrayaccess, 1 TSRMLS_CC) != 0)) {</span>
+<span class="lineNum">     649 </span><span class="lineNoCov">              0 :                 if (!offset) {</span>
+<span class="lineNum">     650 </span><span class="lineNoCov">              0 :                         ALLOC_INIT_ZVAL(offset);</span>
+<span class="lineNum">     651 </span>                :                 } else {
+<span class="lineNum">     652 </span><span class="lineNoCov">              0 :                         SEPARATE_ARG_IF_REF(offset);</span>
+<span class="lineNum">     653 </span>                :                 }
+<span class="lineNum">     654 </span><span class="lineNoCov">              0 :                 zend_call_method_with_2_params(&amp;object, ce, NULL, &quot;offsetset&quot;, NULL, offset, value);</span>
+<span class="lineNum">     655 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;offset);</span>
+<span class="lineNum">     656 </span>                :         } else {
+<span class="lineNum">     657 </span><span class="lineNoCov">              0 :                 zend_error_noreturn(E_ERROR, &quot;Cannot use object of type %s as array&quot;, ce-&gt;name);</span>
+<span class="lineNum">     658 </span>                :         }
+<span class="lineNum">     659 </span><span class="lineNoCov">              0 : }</span>
+<a name="660"><span class="lineNum">     660 </span>                : /* }}} */</a>
+<span class="lineNum">     661 </span>                : 
+<span class="lineNum">     662 </span><span class="lineNoCov">              0 : static int zend_std_has_dimension(zval *object, zval *offset, int check_empty TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     663 </span>                : {
+<span class="lineNum">     664 </span><span class="lineNoCov">              0 :         zend_class_entry *ce = Z_OBJCE_P(object);</span>
+<span class="lineNum">     665 </span>                :         zval *retval;
+<span class="lineNum">     666 </span>                :         int result;
+<span class="lineNum">     667 </span>                : 
+<span class="lineNum">     668 </span><span class="lineNoCov">              0 :         if (EXPECTED(instanceof_function_ex(ce, zend_ce_arrayaccess, 1 TSRMLS_CC) != 0)) {</span>
+<span class="lineNum">     669 </span><span class="lineNoCov">              0 :                 SEPARATE_ARG_IF_REF(offset);</span>
+<span class="lineNum">     670 </span><span class="lineNoCov">              0 :                 zend_call_method_with_1_params(&amp;object, ce, NULL, &quot;offsetexists&quot;, &amp;retval, offset);</span>
+<span class="lineNum">     671 </span><span class="lineNoCov">              0 :                 if (EXPECTED(retval != NULL)) {</span>
+<span class="lineNum">     672 </span><span class="lineNoCov">              0 :                         result = i_zend_is_true(retval);</span>
+<span class="lineNum">     673 </span><span class="lineNoCov">              0 :                         zval_ptr_dtor(&amp;retval);</span>
+<span class="lineNum">     674 </span><span class="lineNoCov">              0 :                         if (check_empty &amp;&amp; result &amp;&amp; EXPECTED(!EG(exception))) {</span>
+<span class="lineNum">     675 </span><span class="lineNoCov">              0 :                                 zend_call_method_with_1_params(&amp;object, ce, NULL, &quot;offsetget&quot;, &amp;retval, offset);</span>
+<span class="lineNum">     676 </span><span class="lineNoCov">              0 :                                 if (retval) {</span>
+<span class="lineNum">     677 </span><span class="lineNoCov">              0 :                                         result = i_zend_is_true(retval);</span>
+<span class="lineNum">     678 </span><span class="lineNoCov">              0 :                                         zval_ptr_dtor(&amp;retval);</span>
+<span class="lineNum">     679 </span>                :                                 }
+<span class="lineNum">     680 </span>                :                         }
+<span class="lineNum">     681 </span>                :                 } else {
+<span class="lineNum">     682 </span><span class="lineNoCov">              0 :                         result = 0;</span>
+<span class="lineNum">     683 </span>                :                 }
+<span class="lineNum">     684 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;offset);</span>
+<span class="lineNum">     685 </span>                :         } else {
+<span class="lineNum">     686 </span><span class="lineNoCov">              0 :                 zend_error_noreturn(E_ERROR, &quot;Cannot use object of type %s as array&quot;, ce-&gt;name);</span>
+<span class="lineNum">     687 </span>                :                 return 0;
+<span class="lineNum">     688 </span>                :         }
+<span class="lineNum">     689 </span><span class="lineNoCov">              0 :         return result;</span>
+<span class="lineNum">     690 </span>                : }
+<a name="691"><span class="lineNum">     691 </span>                : /* }}} */</a>
+<span class="lineNum">     692 </span>                : 
+<span class="lineNum">     693 </span><span class="lineNoCov">              0 : static zval **zend_std_get_property_ptr_ptr(zval *object, zval *member, const zend_literal *key TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     694 </span>                : {
+<span class="lineNum">     695 </span>                :         zend_object *zobj;
+<span class="lineNum">     696 </span>                :         zval tmp_member;
+<span class="lineNum">     697 </span>                :         zval **retval;
+<span class="lineNum">     698 </span>                :         zend_property_info *property_info;
+<span class="lineNum">     699 </span>                : 
+<span class="lineNum">     700 </span><span class="lineNoCov">              0 :         zobj = Z_OBJ_P(object);</span>
+<span class="lineNum">     701 </span>                : 
+<span class="lineNum">     702 </span><span class="lineNoCov">              0 :         if (UNEXPECTED(Z_TYPE_P(member) != IS_STRING)) {</span>
+<span class="lineNum">     703 </span><span class="lineNoCov">              0 :                 tmp_member = *member;</span>
+<span class="lineNum">     704 </span>                :                 zval_copy_ctor(&amp;tmp_member);
+<span class="lineNum">     705 </span><span class="lineNoCov">              0 :                 convert_to_string(&amp;tmp_member);</span>
+<span class="lineNum">     706 </span><span class="lineNoCov">              0 :                 member = &amp;tmp_member;</span>
+<span class="lineNum">     707 </span><span class="lineNoCov">              0 :                 key = NULL;</span>
+<span class="lineNum">     708 </span>                :         }
+<span class="lineNum">     709 </span>                : 
+<span class="lineNum">     710 </span>                : #if DEBUG_OBJECT_HANDLERS
+<span class="lineNum">     711 </span>                :         fprintf(stderr, &quot;Ptr object #%d property: %s\n&quot;, Z_OBJ_HANDLE_P(object), Z_STRVAL_P(member));
+<span class="lineNum">     712 </span>                : #endif
+<span class="lineNum">     713 </span>                : 
+<span class="lineNum">     714 </span><span class="lineNoCov">              0 :         property_info = zend_get_property_info_quick(zobj-&gt;ce, member, (zobj-&gt;ce-&gt;__get != NULL), key TSRMLS_CC);</span>
+<span class="lineNum">     715 </span>                : 
+<span class="lineNum">     716 </span><span class="lineNoCov">              0 :         if (UNEXPECTED(!property_info) ||</span>
+<span class="lineNum">     717 </span><span class="lineNoCov">              0 :             ((EXPECTED((property_info-&gt;flags &amp; ZEND_ACC_STATIC) == 0) &amp;&amp;</span>
+<span class="lineNum">     718 </span><span class="lineNoCov">              0 :              property_info-&gt;offset &gt;= 0) ?</span>
+<span class="lineNum">     719 </span><span class="lineNoCov">              0 :                 (zobj-&gt;properties ?</span>
+<span class="lineNum">     720 </span><span class="lineNoCov">              0 :                     ((retval = (zval**)zobj-&gt;properties_table[property_info-&gt;offset]) == NULL) :</span>
+<span class="lineNum">     721 </span><span class="lineNoCov">              0 :                     (*(retval = &amp;zobj-&gt;properties_table[property_info-&gt;offset]) == NULL)) :</span>
+<span class="lineNum">     722 </span><span class="lineNoCov">              0 :                 (UNEXPECTED(!zobj-&gt;properties) ||</span>
+<span class="lineNum">     723 </span><span class="lineNoCov">              0 :                   UNEXPECTED(zend_hash_quick_find(zobj-&gt;properties, property_info-&gt;name, property_info-&gt;name_length+1, property_info-&gt;h, (void **) &amp;retval) == FAILURE)))) {</span>
+<span class="lineNum">     724 </span>                :                 zval *new_zval;
+<span class="lineNum">     725 </span>                :                 zend_guard *guard;
+<span class="lineNum">     726 </span>                : 
+<span class="lineNum">     727 </span><span class="lineNoCov">              0 :                 if (!zobj-&gt;ce-&gt;__get ||</span>
+<span class="lineNum">     728 </span><span class="lineNoCov">              0 :                         zend_get_property_guard(zobj, property_info, member, &amp;guard) != SUCCESS ||</span>
+<span class="lineNum">     729 </span><span class="lineNoCov">              0 :                         (property_info &amp;&amp; guard-&gt;in_get)) {</span>
+<span class="lineNum">     730 </span>                :                         /* we don't have access controls - will just add it */
+<span class="lineNum">     731 </span><span class="lineNoCov">              0 :                         new_zval = &amp;EG(uninitialized_zval);</span>
+<span class="lineNum">     732 </span>                : 
+<span class="lineNum">     733 </span>                : /*                      zend_error(E_NOTICE, &quot;Undefined property: %s&quot;, Z_STRVAL_P(member)); */
+<span class="lineNum">     734 </span><span class="lineNoCov">              0 :                         Z_ADDREF_P(new_zval);</span>
+<span class="lineNum">     735 </span><span class="lineNoCov">              0 :                         if (EXPECTED((property_info-&gt;flags &amp; ZEND_ACC_STATIC) == 0) &amp;&amp;</span>
+<span class="lineNum">     736 </span><span class="lineNoCov">              0 :                             property_info-&gt;offset &gt;= 0) {</span>
+<span class="lineNum">     737 </span><span class="lineNoCov">              0 :                                 if (!zobj-&gt;properties) {</span>
+<span class="lineNum">     738 </span><span class="lineNoCov">              0 :                                         zobj-&gt;properties_table[property_info-&gt;offset] = new_zval;</span>
+<span class="lineNum">     739 </span><span class="lineNoCov">              0 :                                         retval = &amp;zobj-&gt;properties_table[property_info-&gt;offset];</span>
+<span class="lineNum">     740 </span><span class="lineNoCov">              0 :                                 } else if (zobj-&gt;properties_table[property_info-&gt;offset]) {</span>
+<span class="lineNum">     741 </span><span class="lineNoCov">              0 :                                         *(zval**)zobj-&gt;properties_table[property_info-&gt;offset] = new_zval;</span>
+<span class="lineNum">     742 </span><span class="lineNoCov">              0 :                                         retval = (zval**)zobj-&gt;properties_table[property_info-&gt;offset];</span>
+<span class="lineNum">     743 </span>                :                                 } else {
+<span class="lineNum">     744 </span><span class="lineNoCov">              0 :                                         zend_hash_quick_update(zobj-&gt;properties, property_info-&gt;name, property_info-&gt;name_length+1, property_info-&gt;h, &amp;new_zval, sizeof(zval *), (void**)&amp;zobj-&gt;properties_table[property_info-&gt;offset]);</span>
+<span class="lineNum">     745 </span><span class="lineNoCov">              0 :                                         retval = (zval**)zobj-&gt;properties_table[property_info-&gt;offset];</span>
+<span class="lineNum">     746 </span>                :                                 }
+<span class="lineNum">     747 </span>                :                         } else {
+<span class="lineNum">     748 </span><span class="lineNoCov">              0 :                                 if (!zobj-&gt;properties) {</span>
+<span class="lineNum">     749 </span><span class="lineNoCov">              0 :                                         rebuild_object_properties(zobj);</span>
+<span class="lineNum">     750 </span>                :                                 }
+<span class="lineNum">     751 </span><span class="lineNoCov">              0 :                                 zend_hash_quick_update(zobj-&gt;properties, property_info-&gt;name, property_info-&gt;name_length+1, property_info-&gt;h, &amp;new_zval, sizeof(zval *), (void **) &amp;retval);</span>
+<span class="lineNum">     752 </span>                :                         }
+<span class="lineNum">     753 </span>                :                 } else {
+<span class="lineNum">     754 </span>                :                         /* we do have getter - fail and let it try again with usual get/set */
+<span class="lineNum">     755 </span><span class="lineNoCov">              0 :                         retval = NULL;</span>
+<span class="lineNum">     756 </span>                :                 }
+<span class="lineNum">     757 </span>                :         }
+<span class="lineNum">     758 </span><span class="lineNoCov">              0 :         if (UNEXPECTED(member == &amp;tmp_member)) {</span>
+<span class="lineNum">     759 </span>                :                 zval_dtor(member);
+<span class="lineNum">     760 </span>                :         }
+<span class="lineNum">     761 </span><span class="lineNoCov">              0 :         return retval;</span>
+<span class="lineNum">     762 </span>                : }
+<a name="763"><span class="lineNum">     763 </span>                : /* }}} */</a>
+<span class="lineNum">     764 </span>                : 
+<span class="lineNum">     765 </span><span class="lineNoCov">              0 : static void zend_std_unset_property(zval *object, zval *member, const zend_literal *key TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     766 </span>                : {
+<span class="lineNum">     767 </span>                :         zend_object *zobj;
+<span class="lineNum">     768 </span><span class="lineNoCov">              0 :         zval *tmp_member = NULL;</span>
+<span class="lineNum">     769 </span>                :         zend_property_info *property_info;
+<span class="lineNum">     770 </span>                : 
+<span class="lineNum">     771 </span><span class="lineNoCov">              0 :         zobj = Z_OBJ_P(object);</span>
+<span class="lineNum">     772 </span>                : 
+<span class="lineNum">     773 </span><span class="lineNoCov">              0 :         if (UNEXPECTED(Z_TYPE_P(member) != IS_STRING)) {</span>
+<span class="lineNum">     774 </span><span class="lineNoCov">              0 :                 ALLOC_ZVAL(tmp_member);</span>
+<span class="lineNum">     775 </span><span class="lineNoCov">              0 :                 *tmp_member = *member;</span>
+<span class="lineNum">     776 </span><span class="lineNoCov">              0 :                 INIT_PZVAL(tmp_member);</span>
+<span class="lineNum">     777 </span><span class="lineNoCov">              0 :                 zval_copy_ctor(tmp_member);</span>
+<span class="lineNum">     778 </span><span class="lineNoCov">              0 :                 convert_to_string(tmp_member);</span>
+<span class="lineNum">     779 </span><span class="lineNoCov">              0 :                 member = tmp_member;</span>
+<span class="lineNum">     780 </span><span class="lineNoCov">              0 :                 key = NULL;</span>
+<span class="lineNum">     781 </span>                :         }
+<span class="lineNum">     782 </span>                : 
+<span class="lineNum">     783 </span><span class="lineNoCov">              0 :         property_info = zend_get_property_info_quick(zobj-&gt;ce, member, (zobj-&gt;ce-&gt;__unset != NULL), key TSRMLS_CC);</span>
+<span class="lineNum">     784 </span>                : 
+<span class="lineNum">     785 </span><span class="lineNoCov">              0 :         if (EXPECTED(property_info != NULL) &amp;&amp;</span>
+<span class="lineNum">     786 </span><span class="lineNoCov">              0 :             EXPECTED((property_info-&gt;flags &amp; ZEND_ACC_STATIC) == 0) &amp;&amp;</span>
+<span class="lineNum">     787 </span><span class="lineNoCov">              0 :             !zobj-&gt;properties &amp;&amp;</span>
+<span class="lineNum">     788 </span><span class="lineNoCov">              0 :             property_info-&gt;offset &gt;= 0 &amp;&amp;</span>
+<span class="lineNum">     789 </span><span class="lineNoCov">              0 :             EXPECTED(zobj-&gt;properties_table[property_info-&gt;offset] != NULL)) {</span>
+<span class="lineNum">     790 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;zobj-&gt;properties_table[property_info-&gt;offset]);</span>
+<span class="lineNum">     791 </span><span class="lineNoCov">              0 :                 zobj-&gt;properties_table[property_info-&gt;offset] = NULL;</span>
+<span class="lineNum">     792 </span><span class="lineNoCov">              0 :         } else if (UNEXPECTED(!property_info) ||</span>
+<span class="lineNum">     793 </span><span class="lineNoCov">              0 :                    !zobj-&gt;properties ||</span>
+<span class="lineNum">     794 </span><span class="lineNoCov">              0 :                    UNEXPECTED(zend_hash_quick_del(zobj-&gt;properties, property_info-&gt;name, property_info-&gt;name_length+1, property_info-&gt;h) == FAILURE)) {</span>
+<span class="lineNum">     795 </span><span class="lineNoCov">              0 :                 zend_guard *guard = NULL;</span>
+<span class="lineNum">     796 </span>                : 
+<span class="lineNum">     797 </span><span class="lineNoCov">              0 :                 if (zobj-&gt;ce-&gt;__unset &amp;&amp;</span>
+<span class="lineNum">     798 </span><span class="lineNoCov">              0 :                     zend_get_property_guard(zobj, property_info, member, &amp;guard) == SUCCESS &amp;&amp;</span>
+<span class="lineNum">     799 </span><span class="lineNoCov">              0 :                     !guard-&gt;in_unset) {</span>
+<span class="lineNum">     800 </span>                :                         /* have unseter - try with it! */
+<span class="lineNum">     801 </span><span class="lineNoCov">              0 :                         Z_ADDREF_P(object);</span>
+<span class="lineNum">     802 </span><span class="lineNoCov">              0 :                         if (PZVAL_IS_REF(object)) {</span>
+<span class="lineNum">     803 </span><span class="lineNoCov">              0 :                                 SEPARATE_ZVAL(&amp;object);</span>
+<span class="lineNum">     804 </span>                :                         }
+<span class="lineNum">     805 </span><span class="lineNoCov">              0 :                         guard-&gt;in_unset = 1; /* prevent circular unsetting */</span>
+<span class="lineNum">     806 </span><span class="lineNoCov">              0 :                         zend_std_call_unsetter(object, member TSRMLS_CC);</span>
+<span class="lineNum">     807 </span><span class="lineNoCov">              0 :                         guard-&gt;in_unset = 0;</span>
+<span class="lineNum">     808 </span><span class="lineNoCov">              0 :                         zval_ptr_dtor(&amp;object);</span>
+<span class="lineNum">     809 </span><span class="lineNoCov">              0 :                 } else if (zobj-&gt;ce-&gt;__unset &amp;&amp; guard &amp;&amp; guard-&gt;in_unset == 1) {</span>
+<span class="lineNum">     810 </span><span class="lineNoCov">              0 :                         if (Z_STRVAL_P(member)[0] == '\0') {</span>
+<span class="lineNum">     811 </span><span class="lineNoCov">              0 :                                 if (Z_STRLEN_P(member) == 0) {</span>
+<span class="lineNum">     812 </span><span class="lineNoCov">              0 :                                         zend_error(E_ERROR, &quot;Cannot access empty property&quot;);</span>
+<span class="lineNum">     813 </span>                :                                 } else {
+<span class="lineNum">     814 </span><span class="lineNoCov">              0 :                                         zend_error(E_ERROR, &quot;Cannot access property started with '\\0'&quot;);</span>
+<span class="lineNum">     815 </span>                :                                 }
+<span class="lineNum">     816 </span>                :                         }
+<span class="lineNum">     817 </span>                :                 }
+<span class="lineNum">     818 </span><span class="lineNoCov">              0 :         } else if (EXPECTED(property_info != NULL) &amp;&amp;</span>
+<span class="lineNum">     819 </span><span class="lineNoCov">              0 :                    EXPECTED((property_info-&gt;flags &amp; ZEND_ACC_STATIC) == 0) &amp;&amp;</span>
+<span class="lineNum">     820 </span><span class="lineNoCov">              0 :                    property_info-&gt;offset &gt;= 0) {</span>
+<span class="lineNum">     821 </span><span class="lineNoCov">              0 :                 zobj-&gt;properties_table[property_info-&gt;offset] = NULL;</span>
+<span class="lineNum">     822 </span>                :         }
+<span class="lineNum">     823 </span>                : 
+<span class="lineNum">     824 </span><span class="lineNoCov">              0 :         if (UNEXPECTED(tmp_member != NULL)) {</span>
+<span class="lineNum">     825 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;tmp_member);</span>
+<span class="lineNum">     826 </span>                :         }
+<span class="lineNum">     827 </span><span class="lineNoCov">              0 : }</span>
+<a name="828"><span class="lineNum">     828 </span>                : /* }}} */</a>
+<span class="lineNum">     829 </span>                : 
+<span class="lineNum">     830 </span><span class="lineNoCov">              0 : static void zend_std_unset_dimension(zval *object, zval *offset TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     831 </span>                : {
+<span class="lineNum">     832 </span><span class="lineNoCov">              0 :         zend_class_entry *ce = Z_OBJCE_P(object);</span>
+<span class="lineNum">     833 </span>                : 
+<span class="lineNum">     834 </span><span class="lineNoCov">              0 :         if (instanceof_function_ex(ce, zend_ce_arrayaccess, 1 TSRMLS_CC)) {</span>
+<span class="lineNum">     835 </span><span class="lineNoCov">              0 :                 SEPARATE_ARG_IF_REF(offset);</span>
+<span class="lineNum">     836 </span><span class="lineNoCov">              0 :                 zend_call_method_with_1_params(&amp;object, ce, NULL, &quot;offsetunset&quot;, NULL, offset);</span>
+<span class="lineNum">     837 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;offset);</span>
+<span class="lineNum">     838 </span>                :         } else {
+<span class="lineNum">     839 </span><span class="lineNoCov">              0 :                 zend_error_noreturn(E_ERROR, &quot;Cannot use object of type %s as array&quot;, ce-&gt;name);</span>
+<span class="lineNum">     840 </span>                :         }
+<span class="lineNum">     841 </span><span class="lineNoCov">              0 : }</span>
+<a name="842"><span class="lineNum">     842 </span>                : /* }}} */</a>
+<span class="lineNum">     843 </span>                : 
+<span class="lineNum">     844 </span><span class="lineNoCov">              0 : ZEND_API void zend_std_call_user_call(INTERNAL_FUNCTION_PARAMETERS) /* {{{ */</span>
+<span class="lineNum">     845 </span>                : {
+<span class="lineNum">     846 </span><span class="lineNoCov">              0 :         zend_internal_function *func = (zend_internal_function *)EG(current_execute_data)-&gt;function_state.function;</span>
+<span class="lineNum">     847 </span>                :         zval *method_name_ptr, *method_args_ptr;
+<span class="lineNum">     848 </span><span class="lineNoCov">              0 :         zval *method_result_ptr = NULL;</span>
+<span class="lineNum">     849 </span><span class="lineNoCov">              0 :         zend_class_entry *ce = Z_OBJCE_P(this_ptr);</span>
+<span class="lineNum">     850 </span>                : 
+<span class="lineNum">     851 </span><span class="lineNoCov">              0 :         ALLOC_ZVAL(method_args_ptr);</span>
+<span class="lineNum">     852 </span><span class="lineNoCov">              0 :         INIT_PZVAL(method_args_ptr);</span>
+<span class="lineNum">     853 </span><span class="lineNoCov">              0 :         array_init_size(method_args_ptr, ZEND_NUM_ARGS());</span>
+<span class="lineNum">     854 </span>                : 
+<span class="lineNum">     855 </span><span class="lineNoCov">              0 :         if (UNEXPECTED(zend_copy_parameters_array(ZEND_NUM_ARGS(), method_args_ptr TSRMLS_CC) == FAILURE)) {</span>
+<span class="lineNum">     856 </span><span class="lineNoCov">              0 :                 zval_dtor(method_args_ptr);</span>
+<span class="lineNum">     857 </span><span class="lineNoCov">              0 :                 zend_error_noreturn(E_ERROR, &quot;Cannot get arguments for __call&quot;);</span>
+<span class="lineNum">     858 </span>                :                 RETURN_FALSE;
+<span class="lineNum">     859 </span>                :         }
+<span class="lineNum">     860 </span>                : 
+<span class="lineNum">     861 </span><span class="lineNoCov">              0 :         ALLOC_ZVAL(method_name_ptr);</span>
+<span class="lineNum">     862 </span><span class="lineNoCov">              0 :         INIT_PZVAL(method_name_ptr);</span>
+<span class="lineNum">     863 </span><span class="lineNoCov">              0 :         ZVAL_STRING(method_name_ptr, func-&gt;function_name, 0); /* no dup - it's a copy */</span>
+<span class="lineNum">     864 </span>                : 
+<span class="lineNum">     865 </span>                :         /* __call handler is called with two arguments:
+<span class="lineNum">     866 </span>                :            method name
+<span class="lineNum">     867 </span>                :            array of method parameters
+<span class="lineNum">     868 </span>                : 
+<span class="lineNum">     869 </span>                :         */
+<span class="lineNum">     870 </span><span class="lineNoCov">              0 :         zend_call_method_with_2_params(&amp;this_ptr, ce, &amp;ce-&gt;__call, ZEND_CALL_FUNC_NAME, &amp;method_result_ptr, method_name_ptr, method_args_ptr);</span>
+<span class="lineNum">     871 </span>                : 
+<span class="lineNum">     872 </span><span class="lineNoCov">              0 :         if (method_result_ptr) {</span>
+<span class="lineNum">     873 </span><span class="lineNoCov">              0 :                 if (Z_ISREF_P(method_result_ptr) || Z_REFCOUNT_P(method_result_ptr) &gt; 1) {</span>
+<span class="lineNum">     874 </span><span class="lineNoCov">              0 :                         RETVAL_ZVAL(method_result_ptr, 1, 1);</span>
+<span class="lineNum">     875 </span>                :                 } else {
+<span class="lineNum">     876 </span><span class="lineNoCov">              0 :                         RETVAL_ZVAL(method_result_ptr, 0, 1);</span>
+<span class="lineNum">     877 </span>                :                 }
+<span class="lineNum">     878 </span>                :         }
+<span class="lineNum">     879 </span>                : 
+<span class="lineNum">     880 </span>                :         /* now destruct all auxiliaries */
+<span class="lineNum">     881 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;method_args_ptr);</span>
+<span class="lineNum">     882 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;method_name_ptr);</span>
+<span class="lineNum">     883 </span>                : 
+<span class="lineNum">     884 </span>                :         /* destruct the function also, then - we have allocated it in get_method */
+<span class="lineNum">     885 </span><span class="lineNoCov">              0 :         efree(func);</span>
+<span class="lineNum">     886 </span>                : }
+<span class="lineNum">     887 </span>                : /* }}} */
+<span class="lineNum">     888 </span>                : 
+<span class="lineNum">     889 </span>                : /* Ensures that we're allowed to call a private method.
+<span class="lineNum">     890 </span>                :  * Returns the function address that should be called, or NULL
+<a name="891"><span class="lineNum">     891 </span>                :  * if no such function exists.</a>
+<span class="lineNum">     892 </span>                :  */
+<span class="lineNum">     893 </span><span class="lineNoCov">              0 : static inline zend_function *zend_check_private_int(zend_function *fbc, zend_class_entry *ce, char *function_name_strval, int function_name_strlen, ulong hash_value TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     894 </span>                : {
+<span class="lineNum">     895 </span><span class="lineNoCov">              0 :         if (!ce) {</span>
+<span class="lineNum">     896 </span><span class="lineNoCov">              0 :                 return 0;</span>
+<span class="lineNum">     897 </span>                :         }
+<span class="lineNum">     898 </span>                : 
+<span class="lineNum">     899 </span>                :         /* We may call a private function if:
+<span class="lineNum">     900 </span>                :          * 1.  The class of our object is the same as the scope, and the private
+<span class="lineNum">     901 </span>                :          *     function (EX(fbc)) has the same scope.
+<span class="lineNum">     902 </span>                :          * 2.  One of our parent classes are the same as the scope, and it contains
+<span class="lineNum">     903 </span>                :          *     a private function with the same name that has the same scope.
+<span class="lineNum">     904 </span>                :          */
+<span class="lineNum">     905 </span><span class="lineNoCov">              0 :         if (fbc-&gt;common.scope == ce &amp;&amp; EG(scope) == ce) {</span>
+<span class="lineNum">     906 </span>                :                 /* rule #1 checks out ok, allow the function call */
+<span class="lineNum">     907 </span><span class="lineNoCov">              0 :                 return fbc;</span>
+<span class="lineNum">     908 </span>                :         }
+<span class="lineNum">     909 </span>                : 
+<span class="lineNum">     910 </span>                : 
+<span class="lineNum">     911 </span>                :         /* Check rule #2 */
+<span class="lineNum">     912 </span><span class="lineNoCov">              0 :         ce = ce-&gt;parent;</span>
+<span class="lineNum">     913 </span><span class="lineNoCov">              0 :         while (ce) {</span>
+<span class="lineNum">     914 </span><span class="lineNoCov">              0 :                 if (ce == EG(scope)) {</span>
+<span class="lineNum">     915 </span><span class="lineNoCov">              0 :                         if (zend_hash_quick_find(&amp;ce-&gt;function_table, function_name_strval, function_name_strlen+1, hash_value, (void **) &amp;fbc)==SUCCESS</span>
+<span class="lineNum">     916 </span><span class="lineNoCov">              0 :                                 &amp;&amp; fbc-&gt;op_array.fn_flags &amp; ZEND_ACC_PRIVATE</span>
+<span class="lineNum">     917 </span><span class="lineNoCov">              0 :                                 &amp;&amp; fbc-&gt;common.scope == EG(scope)) {</span>
+<span class="lineNum">     918 </span><span class="lineNoCov">              0 :                                 return fbc;</span>
+<span class="lineNum">     919 </span>                :                         }
+<span class="lineNum">     920 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     921 </span>                :                 }
+<span class="lineNum">     922 </span><span class="lineNoCov">              0 :                 ce = ce-&gt;parent;</span>
+<span class="lineNum">     923 </span>                :         }
+<span class="lineNum">     924 </span><span class="lineNoCov">              0 :         return NULL;</span>
+<span class="lineNum">     925 </span>                : }
+<a name="926"><span class="lineNum">     926 </span>                : /* }}} */</a>
+<span class="lineNum">     927 </span>                : 
+<span class="lineNum">     928 </span><span class="lineNoCov">              0 : ZEND_API int zend_check_private(zend_function *fbc, zend_class_entry *ce, char *function_name_strval, int function_name_strlen TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     929 </span>                : {
+<span class="lineNum">     930 </span><span class="lineNoCov">              0 :         return zend_check_private_int(fbc, ce, function_name_strval, function_name_strlen, zend_hash_func(function_name_strval, function_name_strlen+1) TSRMLS_CC) != NULL;</span>
+<span class="lineNum">     931 </span>                : }
+<span class="lineNum">     932 </span>                : /* }}} */
+<span class="lineNum">     933 </span>                : 
+<a name="934"><span class="lineNum">     934 </span>                : /* Ensures that we're allowed to call a protected method.</a>
+<span class="lineNum">     935 </span>                :  */
+<span class="lineNum">     936 </span><span class="lineCov">            277 : ZEND_API int zend_check_protected(zend_class_entry *ce, zend_class_entry *scope) /* {{{ */</span>
+<span class="lineNum">     937 </span>                : {
+<span class="lineNum">     938 </span><span class="lineCov">            277 :         zend_class_entry *fbc_scope = ce;</span>
+<span class="lineNum">     939 </span>                : 
+<span class="lineNum">     940 </span>                :         /* Is the context that's calling the function, the same as one of
+<span class="lineNum">     941 </span>                :          * the function's parents?
+<span class="lineNum">     942 </span>                :          */
+<span class="lineNum">     943 </span><span class="lineCov">            561 :         while (fbc_scope) {</span>
+<span class="lineNum">     944 </span><span class="lineCov">            277 :                 if (fbc_scope==scope) {</span>
+<span class="lineNum">     945 </span><span class="lineCov">            270 :                         return 1;</span>
+<span class="lineNum">     946 </span>                :                 }
+<span class="lineNum">     947 </span><span class="lineCov">              7 :                 fbc_scope = fbc_scope-&gt;parent;</span>
+<span class="lineNum">     948 </span>                :         }
+<span class="lineNum">     949 </span>                : 
+<span class="lineNum">     950 </span>                :         /* Is the function's scope the same as our current object context,
+<span class="lineNum">     951 </span>                :          * or any of the parents of our context?
+<span class="lineNum">     952 </span>                :          */
+<span class="lineNum">     953 </span><span class="lineCov">             23 :         while (scope) {</span>
+<span class="lineNum">     954 </span><span class="lineCov">             14 :                 if (scope==ce) {</span>
+<span class="lineNum">     955 </span><span class="lineCov">              5 :                         return 1;</span>
+<span class="lineNum">     956 </span>                :                 }
+<span class="lineNum">     957 </span><span class="lineCov">              9 :                 scope = scope-&gt;parent;</span>
+<span class="lineNum">     958 </span>                :         }
+<span class="lineNum">     959 </span><span class="lineCov">              2 :         return 0;</span>
+<span class="lineNum">     960 </span>                : }
+<a name="961"><span class="lineNum">     961 </span>                : /* }}} */</a>
+<span class="lineNum">     962 </span>                : 
+<span class="lineNum">     963 </span><span class="lineNoCov">              0 : static inline union _zend_function *zend_get_user_call_function(zend_class_entry *ce, const char *method_name, int method_len) /* {{{ */</span>
+<span class="lineNum">     964 </span>                : {
+<span class="lineNum">     965 </span><span class="lineNoCov">              0 :         zend_internal_function *call_user_call = emalloc(sizeof(zend_internal_function));</span>
+<span class="lineNum">     966 </span><span class="lineNoCov">              0 :         call_user_call-&gt;type = ZEND_INTERNAL_FUNCTION;</span>
+<span class="lineNum">     967 </span><span class="lineNoCov">              0 :         call_user_call-&gt;module = (ce-&gt;type == ZEND_INTERNAL_CLASS) ? ce-&gt;info.internal.module : NULL;</span>
+<span class="lineNum">     968 </span><span class="lineNoCov">              0 :         call_user_call-&gt;handler = zend_std_call_user_call;</span>
+<span class="lineNum">     969 </span><span class="lineNoCov">              0 :         call_user_call-&gt;arg_info = NULL;</span>
+<span class="lineNum">     970 </span><span class="lineNoCov">              0 :         call_user_call-&gt;num_args = 0;</span>
+<span class="lineNum">     971 </span><span class="lineNoCov">              0 :         call_user_call-&gt;scope = ce;</span>
+<span class="lineNum">     972 </span><span class="lineNoCov">              0 :         call_user_call-&gt;fn_flags = ZEND_ACC_CALL_VIA_HANDLER;</span>
+<span class="lineNum">     973 </span><span class="lineNoCov">              0 :         call_user_call-&gt;function_name = estrndup(method_name, method_len);</span>
+<span class="lineNum">     974 </span>                : 
+<span class="lineNum">     975 </span><span class="lineNoCov">              0 :         return (union _zend_function *)call_user_call;</span>
+<span class="lineNum">     976 </span>                : }
+<a name="977"><span class="lineNum">     977 </span>                : /* }}} */</a>
+<span class="lineNum">     978 </span>                : 
+<span class="lineNum">     979 </span><span class="lineCov">            172 : static union _zend_function *zend_std_get_method(zval **object_ptr, char *method_name, int method_len, const zend_literal *key TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     980 </span>                : {
+<span class="lineNum">     981 </span>                :         zend_function *fbc;
+<span class="lineNum">     982 </span><span class="lineCov">            172 :         zval *object = *object_ptr;</span>
+<span class="lineNum">     983 </span><span class="lineCov">            172 :         zend_object *zobj = Z_OBJ_P(object);</span>
+<span class="lineNum">     984 </span>                :         ulong hash_value;
+<span class="lineNum">     985 </span>                :         char *lc_method_name;
+<span class="lineNum">     986 </span>                :         ALLOCA_FLAG(use_heap)
+<span class="lineNum">     987 </span>                : 
+<span class="lineNum">     988 </span><span class="lineCov">            172 :         if (EXPECTED(key != NULL)) {</span>
+<span class="lineNum">     989 </span><span class="lineCov">            172 :                 lc_method_name = Z_STRVAL(key-&gt;constant);</span>
+<span class="lineNum">     990 </span><span class="lineCov">            172 :                 hash_value = key-&gt;hash_value;</span>
+<span class="lineNum">     991 </span>                :         } else {
+<span class="lineNum">     992 </span><span class="lineNoCov">              0 :                 lc_method_name = do_alloca(method_len+1, use_heap);</span>
+<span class="lineNum">     993 </span>                :                 /* Create a zend_copy_str_tolower(dest, src, src_length); */
+<span class="lineNum">     994 </span><span class="lineNoCov">              0 :                 zend_str_tolower_copy(lc_method_name, method_name, method_len);</span>
+<span class="lineNum">     995 </span><span class="lineNoCov">              0 :                 hash_value = zend_hash_func(lc_method_name, method_len+1);</span>
+<span class="lineNum">     996 </span>                :         }
+<span class="lineNum">     997 </span>                : 
+<span class="lineNum">     998 </span><span class="lineCov">            172 :         if (UNEXPECTED(zend_hash_quick_find(&amp;zobj-&gt;ce-&gt;function_table, lc_method_name, method_len+1, hash_value, (void **)&amp;fbc) == FAILURE)) {</span>
+<span class="lineNum">     999 </span><span class="lineNoCov">              0 :                 if (UNEXPECTED(!key)) {</span>
+<span class="lineNum">    1000 </span><span class="lineNoCov">              0 :                         free_alloca(lc_method_name, use_heap);</span>
+<span class="lineNum">    1001 </span>                :                 }
+<span class="lineNum">    1002 </span><span class="lineNoCov">              0 :                 if (zobj-&gt;ce-&gt;__call) {</span>
+<span class="lineNum">    1003 </span><span class="lineNoCov">              0 :                         return zend_get_user_call_function(zobj-&gt;ce, method_name, method_len);</span>
+<span class="lineNum">    1004 </span>                :                 } else {
+<span class="lineNum">    1005 </span><span class="lineNoCov">              0 :                         return NULL;</span>
+<span class="lineNum">    1006 </span>                :                 }
+<span class="lineNum">    1007 </span>                :         }
+<span class="lineNum">    1008 </span>                : 
+<span class="lineNum">    1009 </span>                :         /* Check access level */
+<span class="lineNum">    1010 </span><span class="lineCov">            172 :         if (fbc-&gt;op_array.fn_flags &amp; ZEND_ACC_PRIVATE) {</span>
+<span class="lineNum">    1011 </span>                :                 zend_function *updated_fbc;
+<span class="lineNum">    1012 </span>                : 
+<span class="lineNum">    1013 </span>                :                 /* Ensure that if we're calling a private function, we're allowed to do so.
+<span class="lineNum">    1014 </span>                :                  * If we're not and __call() handler exists, invoke it, otherwise error out.
+<span class="lineNum">    1015 </span>                :                  */
+<span class="lineNum">    1016 </span><span class="lineNoCov">              0 :                 updated_fbc = zend_check_private_int(fbc, Z_OBJ_HANDLER_P(object, get_class_entry)(object TSRMLS_CC), lc_method_name, method_len, hash_value TSRMLS_CC);</span>
+<span class="lineNum">    1017 </span><span class="lineNoCov">              0 :                 if (EXPECTED(updated_fbc != NULL)) {</span>
+<span class="lineNum">    1018 </span><span class="lineNoCov">              0 :                         fbc = updated_fbc;</span>
+<span class="lineNum">    1019 </span>                :                 } else {
+<span class="lineNum">    1020 </span><span class="lineNoCov">              0 :                         if (zobj-&gt;ce-&gt;__call) {</span>
+<span class="lineNum">    1021 </span><span class="lineNoCov">              0 :                                 fbc = zend_get_user_call_function(zobj-&gt;ce, method_name, method_len);</span>
+<span class="lineNum">    1022 </span>                :                         } else {
+<span class="lineNum">    1023 </span><span class="lineNoCov">              0 :                                 zend_error_noreturn(E_ERROR, &quot;Call to %s method %s::%s() from context '%s'&quot;, zend_visibility_string(fbc-&gt;common.fn_flags), ZEND_FN_SCOPE_NAME(fbc), method_name, EG(scope) ? EG(scope)-&gt;name : &quot;&quot;);</span>
+<span class="lineNum">    1024 </span>                :                         }
+<span class="lineNum">    1025 </span>                :                 }
+<span class="lineNum">    1026 </span>                :         } else {
+<span class="lineNum">    1027 </span>                :                 /* Ensure that we haven't overridden a private function and end up calling
+<span class="lineNum">    1028 </span>                :                  * the overriding public function...
+<span class="lineNum">    1029 </span>                :                  */
+<span class="lineNum">    1030 </span><span class="lineCov">            174 :                 if (EG(scope) &amp;&amp;</span>
+<span class="lineNum">    1031 </span><span class="lineCov">              2 :                     is_derived_class(fbc-&gt;common.scope, EG(scope)) &amp;&amp;</span>
+<span class="lineNum">    1032 </span><span class="lineNoCov">              0 :                     fbc-&gt;op_array.fn_flags &amp; ZEND_ACC_CHANGED) {</span>
+<span class="lineNum">    1033 </span>                :                         zend_function *priv_fbc;
+<span class="lineNum">    1034 </span>                : 
+<span class="lineNum">    1035 </span><span class="lineNoCov">              0 :                         if (zend_hash_quick_find(&amp;EG(scope)-&gt;function_table, lc_method_name, method_len+1, hash_value, (void **) &amp;priv_fbc)==SUCCESS</span>
+<span class="lineNum">    1036 </span><span class="lineNoCov">              0 :                                 &amp;&amp; priv_fbc-&gt;common.fn_flags &amp; ZEND_ACC_PRIVATE</span>
+<span class="lineNum">    1037 </span><span class="lineNoCov">              0 :                                 &amp;&amp; priv_fbc-&gt;common.scope == EG(scope)) {</span>
+<span class="lineNum">    1038 </span><span class="lineNoCov">              0 :                                 fbc = priv_fbc;</span>
+<span class="lineNum">    1039 </span>                :                         }
+<span class="lineNum">    1040 </span>                :                 }
+<span class="lineNum">    1041 </span><span class="lineCov">            172 :                 if ((fbc-&gt;common.fn_flags &amp; ZEND_ACC_PROTECTED)) {</span>
+<span class="lineNum">    1042 </span>                :                         /* Ensure that if we're calling a protected function, we're allowed to do so.
+<span class="lineNum">    1043 </span>                :                          * If we're not and __call() handler exists, invoke it, otherwise error out.
+<span class="lineNum">    1044 </span>                :                          */
+<span class="lineNum">    1045 </span><span class="lineNoCov">              0 :                         if (UNEXPECTED(!zend_check_protected(zend_get_function_root_class(fbc), EG(scope)))) {</span>
+<span class="lineNum">    1046 </span><span class="lineNoCov">              0 :                                 if (zobj-&gt;ce-&gt;__call) {</span>
+<span class="lineNum">    1047 </span><span class="lineNoCov">              0 :                                         fbc = zend_get_user_call_function(zobj-&gt;ce, method_name, method_len);</span>
+<span class="lineNum">    1048 </span>                :                                 } else {
+<span class="lineNum">    1049 </span><span class="lineNoCov">              0 :                                         zend_error_noreturn(E_ERROR, &quot;Call to %s method %s::%s() from context '%s'&quot;, zend_visibility_string(fbc-&gt;common.fn_flags), ZEND_FN_SCOPE_NAME(fbc), method_name, EG(scope) ? EG(scope)-&gt;name : &quot;&quot;);</span>
+<span class="lineNum">    1050 </span>                :                                 }
+<span class="lineNum">    1051 </span>                :                         }
+<span class="lineNum">    1052 </span>                :                 }
+<span class="lineNum">    1053 </span>                :         }
+<span class="lineNum">    1054 </span>                : 
+<span class="lineNum">    1055 </span><span class="lineCov">            172 :         if (UNEXPECTED(!key)) {</span>
+<span class="lineNum">    1056 </span><span class="lineNoCov">              0 :                 free_alloca(lc_method_name, use_heap);</span>
+<span class="lineNum">    1057 </span>                :         }
+<span class="lineNum">    1058 </span><span class="lineCov">            172 :         return fbc;</span>
+<span class="lineNum">    1059 </span>                : }
+<a name="1060"><span class="lineNum">    1060 </span>                : /* }}} */</a>
+<span class="lineNum">    1061 </span>                : 
+<span class="lineNum">    1062 </span><span class="lineNoCov">              0 : ZEND_API void zend_std_callstatic_user_call(INTERNAL_FUNCTION_PARAMETERS) /* {{{ */</span>
+<span class="lineNum">    1063 </span>                : {
+<span class="lineNum">    1064 </span><span class="lineNoCov">              0 :         zend_internal_function *func = (zend_internal_function *)EG(current_execute_data)-&gt;function_state.function;</span>
+<span class="lineNum">    1065 </span>                :         zval *method_name_ptr, *method_args_ptr;
+<span class="lineNum">    1066 </span><span class="lineNoCov">              0 :         zval *method_result_ptr = NULL;</span>
+<span class="lineNum">    1067 </span><span class="lineNoCov">              0 :         zend_class_entry *ce = EG(scope);</span>
+<span class="lineNum">    1068 </span>                : 
+<span class="lineNum">    1069 </span><span class="lineNoCov">              0 :         ALLOC_ZVAL(method_args_ptr);</span>
+<span class="lineNum">    1070 </span><span class="lineNoCov">              0 :         INIT_PZVAL(method_args_ptr);</span>
+<span class="lineNum">    1071 </span><span class="lineNoCov">              0 :         array_init_size(method_args_ptr, ZEND_NUM_ARGS());</span>
+<span class="lineNum">    1072 </span>                : 
+<span class="lineNum">    1073 </span><span class="lineNoCov">              0 :         if (UNEXPECTED(zend_copy_parameters_array(ZEND_NUM_ARGS(), method_args_ptr TSRMLS_CC) == FAILURE)) {</span>
+<span class="lineNum">    1074 </span><span class="lineNoCov">              0 :                 zval_dtor(method_args_ptr);</span>
+<span class="lineNum">    1075 </span><span class="lineNoCov">              0 :                 zend_error_noreturn(E_ERROR, &quot;Cannot get arguments for &quot; ZEND_CALLSTATIC_FUNC_NAME);</span>
+<span class="lineNum">    1076 </span>                :                 RETURN_FALSE;
+<span class="lineNum">    1077 </span>                :         }
+<span class="lineNum">    1078 </span>                : 
+<span class="lineNum">    1079 </span><span class="lineNoCov">              0 :         ALLOC_ZVAL(method_name_ptr);</span>
+<span class="lineNum">    1080 </span><span class="lineNoCov">              0 :         INIT_PZVAL(method_name_ptr);</span>
+<span class="lineNum">    1081 </span><span class="lineNoCov">              0 :         ZVAL_STRING(method_name_ptr, func-&gt;function_name, 0); /* no dup - it's a copy */</span>
+<span class="lineNum">    1082 </span>                : 
+<span class="lineNum">    1083 </span>                :         /* __callStatic handler is called with two arguments:
+<span class="lineNum">    1084 </span>                :            method name
+<span class="lineNum">    1085 </span>                :            array of method parameters
+<span class="lineNum">    1086 </span>                :         */
+<span class="lineNum">    1087 </span><span class="lineNoCov">              0 :         zend_call_method_with_2_params(NULL, ce, &amp;ce-&gt;__callstatic, ZEND_CALLSTATIC_FUNC_NAME, &amp;method_result_ptr, method_name_ptr, method_args_ptr);</span>
+<span class="lineNum">    1088 </span>                : 
+<span class="lineNum">    1089 </span><span class="lineNoCov">              0 :         if (method_result_ptr) {</span>
+<span class="lineNum">    1090 </span><span class="lineNoCov">              0 :                 if (Z_ISREF_P(method_result_ptr) || Z_REFCOUNT_P(method_result_ptr) &gt; 1) {</span>
+<span class="lineNum">    1091 </span><span class="lineNoCov">              0 :                         RETVAL_ZVAL(method_result_ptr, 1, 1);</span>
+<span class="lineNum">    1092 </span>                :                 } else {
+<span class="lineNum">    1093 </span><span class="lineNoCov">              0 :                         RETVAL_ZVAL(method_result_ptr, 0, 1);</span>
+<span class="lineNum">    1094 </span>                :                 }
+<span class="lineNum">    1095 </span>                :         }
+<span class="lineNum">    1096 </span>                : 
+<span class="lineNum">    1097 </span>                :         /* now destruct all auxiliaries */
+<span class="lineNum">    1098 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;method_args_ptr);</span>
+<span class="lineNum">    1099 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;method_name_ptr);</span>
+<span class="lineNum">    1100 </span>                : 
+<span class="lineNum">    1101 </span>                :         /* destruct the function also, then - we have allocated it in get_method */
+<span class="lineNum">    1102 </span><span class="lineNoCov">              0 :         efree(func);</span>
+<span class="lineNum">    1103 </span>                : }
+<a name="1104"><span class="lineNum">    1104 </span>                : /* }}} */</a>
+<span class="lineNum">    1105 </span>                : 
+<span class="lineNum">    1106 </span><span class="lineNoCov">              0 : static inline union _zend_function *zend_get_user_callstatic_function(zend_class_entry *ce, const char *method_name, int method_len) /* {{{ */</span>
+<span class="lineNum">    1107 </span>                : {
+<span class="lineNum">    1108 </span><span class="lineNoCov">              0 :         zend_internal_function *callstatic_user_call = emalloc(sizeof(zend_internal_function));</span>
+<span class="lineNum">    1109 </span><span class="lineNoCov">              0 :         callstatic_user_call-&gt;type     = ZEND_INTERNAL_FUNCTION;</span>
+<span class="lineNum">    1110 </span><span class="lineNoCov">              0 :         callstatic_user_call-&gt;module   = (ce-&gt;type == ZEND_INTERNAL_CLASS) ? ce-&gt;info.internal.module : NULL;</span>
+<span class="lineNum">    1111 </span><span class="lineNoCov">              0 :         callstatic_user_call-&gt;handler  = zend_std_callstatic_user_call;</span>
+<span class="lineNum">    1112 </span><span class="lineNoCov">              0 :         callstatic_user_call-&gt;arg_info = NULL;</span>
+<span class="lineNum">    1113 </span><span class="lineNoCov">              0 :         callstatic_user_call-&gt;num_args = 0;</span>
+<span class="lineNum">    1114 </span><span class="lineNoCov">              0 :         callstatic_user_call-&gt;scope    = ce;</span>
+<span class="lineNum">    1115 </span><span class="lineNoCov">              0 :         callstatic_user_call-&gt;fn_flags = ZEND_ACC_STATIC | ZEND_ACC_PUBLIC | ZEND_ACC_CALL_VIA_HANDLER;</span>
+<span class="lineNum">    1116 </span><span class="lineNoCov">              0 :         callstatic_user_call-&gt;function_name = estrndup(method_name, method_len);</span>
+<span class="lineNum">    1117 </span>                : 
+<span class="lineNum">    1118 </span><span class="lineNoCov">              0 :         return (zend_function *)callstatic_user_call;</span>
+<span class="lineNum">    1119 </span>                : }
+<span class="lineNum">    1120 </span>                : /* }}} */
+<span class="lineNum">    1121 </span>                : 
+<a name="1122"><span class="lineNum">    1122 </span>                : /* This is not (yet?) in the API, but it belongs in the built-in objects callbacks */</a>
+<span class="lineNum">    1123 </span>                : 
+<span class="lineNum">    1124 </span><span class="lineCov">             22 : ZEND_API zend_function *zend_std_get_static_method(zend_class_entry *ce, const char *function_name_strval, int function_name_strlen, const zend_literal *key TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">    1125 </span>                : {
+<span class="lineNum">    1126 </span><span class="lineCov">             22 :         zend_function *fbc = NULL;</span>
+<span class="lineNum">    1127 </span><span class="lineCov">             22 :         char *lc_class_name, *lc_function_name = NULL;</span>
+<span class="lineNum">    1128 </span>                :         ulong hash_value;
+<span class="lineNum">    1129 </span>                :         ALLOCA_FLAG(use_heap)
+<span class="lineNum">    1130 </span>                : 
+<span class="lineNum">    1131 </span><span class="lineCov">             22 :         if (EXPECTED(key != NULL)) {</span>
+<span class="lineNum">    1132 </span><span class="lineCov">             22 :                 lc_function_name = Z_STRVAL(key-&gt;constant);</span>
+<span class="lineNum">    1133 </span><span class="lineCov">             22 :                 hash_value = key-&gt;hash_value;</span>
+<span class="lineNum">    1134 </span>                :         } else {
+<span class="lineNum">    1135 </span><span class="lineNoCov">              0 :                 lc_function_name = do_alloca(function_name_strlen+1, use_heap);</span>
+<span class="lineNum">    1136 </span>                :                 /* Create a zend_copy_str_tolower(dest, src, src_length); */
+<span class="lineNum">    1137 </span><span class="lineNoCov">              0 :                 zend_str_tolower_copy(lc_function_name, function_name_strval, function_name_strlen);</span>
+<span class="lineNum">    1138 </span><span class="lineNoCov">              0 :                 hash_value = zend_hash_func(lc_function_name, function_name_strlen+1);</span>
+<span class="lineNum">    1139 </span>                :         }
+<span class="lineNum">    1140 </span>                : 
+<span class="lineNum">    1141 </span><span class="lineCov">             22 :         if (function_name_strlen == ce-&gt;name_length &amp;&amp; ce-&gt;constructor) {</span>
+<span class="lineNum">    1142 </span><span class="lineNoCov">              0 :                 lc_class_name = zend_str_tolower_dup(ce-&gt;name, ce-&gt;name_length);</span>
+<span class="lineNum">    1143 </span>                :                 /* Only change the method to the constructor if the constructor isn't called __construct
+<span class="lineNum">    1144 </span>                :                  * we check for __ so we can be binary safe for lowering, we should use ZEND_CONSTRUCTOR_FUNC_NAME
+<span class="lineNum">    1145 </span>                :                  */
+<span class="lineNum">    1146 </span><span class="lineNoCov">              0 :                 if (!memcmp(lc_class_name, lc_function_name, function_name_strlen) &amp;&amp; memcmp(ce-&gt;constructor-&gt;common.function_name, &quot;__&quot;, sizeof(&quot;__&quot;) - 1)) {</span>
+<span class="lineNum">    1147 </span><span class="lineNoCov">              0 :                         fbc = ce-&gt;constructor;</span>
+<span class="lineNum">    1148 </span>                :                 }
+<span class="lineNum">    1149 </span><span class="lineNoCov">              0 :                 efree(lc_class_name);</span>
+<span class="lineNum">    1150 </span>                :         }
+<span class="lineNum">    1151 </span><span class="lineCov">             44 :         if (EXPECTED(!fbc) &amp;&amp;</span>
+<span class="lineNum">    1152 </span><span class="lineCov">             22 :             UNEXPECTED(zend_hash_quick_find(&amp;ce-&gt;function_table, lc_function_name, function_name_strlen+1, hash_value, (void **) &amp;fbc)==FAILURE)) {</span>
+<span class="lineNum">    1153 </span><span class="lineNoCov">              0 :                 if (UNEXPECTED(!key)) {</span>
+<span class="lineNum">    1154 </span><span class="lineNoCov">              0 :                         free_alloca(lc_function_name, use_heap);</span>
+<span class="lineNum">    1155 </span>                :                 }
+<span class="lineNum">    1156 </span>                : 
+<span class="lineNum">    1157 </span><span class="lineNoCov">              0 :                 if (ce-&gt;__call &amp;&amp;</span>
+<span class="lineNum">    1158 </span><span class="lineNoCov">              0 :                     EG(This) &amp;&amp;</span>
+<span class="lineNum">    1159 </span><span class="lineNoCov">              0 :                     Z_OBJ_HT_P(EG(This))-&gt;get_class_entry &amp;&amp;</span>
+<span class="lineNum">    1160 </span><span class="lineNoCov">              0 :                     instanceof_function(Z_OBJCE_P(EG(This)), ce TSRMLS_CC)) {</span>
+<span class="lineNum">    1161 </span><span class="lineNoCov">              0 :                         return zend_get_user_call_function(ce, function_name_strval, function_name_strlen);</span>
+<span class="lineNum">    1162 </span><span class="lineNoCov">              0 :                 } else if (ce-&gt;__callstatic) {</span>
+<span class="lineNum">    1163 </span><span class="lineNoCov">              0 :                         return zend_get_user_callstatic_function(ce, function_name_strval, function_name_strlen);</span>
+<span class="lineNum">    1164 </span>                :                 } else {
+<span class="lineNum">    1165 </span><span class="lineNoCov">              0 :                         return NULL;</span>
+<span class="lineNum">    1166 </span>                :                 }
+<span class="lineNum">    1167 </span>                :         }
+<span class="lineNum">    1168 </span>                : 
+<span class="lineNum">    1169 </span>                : #if MBO_0
+<span class="lineNum">    1170 </span>                :         /* right now this function is used for non static method lookup too */
+<span class="lineNum">    1171 </span>                :         /* Is the function static */
+<span class="lineNum">    1172 </span>                :         if (UNEXPECTED(!(fbc-&gt;common.fn_flags &amp; ZEND_ACC_STATIC))) {
+<span class="lineNum">    1173 </span>                :                 zend_error_noreturn(E_ERROR, &quot;Cannot call non static method %s::%s() without object&quot;, ZEND_FN_SCOPE_NAME(fbc), fbc-&gt;common.function_name);
+<span class="lineNum">    1174 </span>                :         }
+<span class="lineNum">    1175 </span>                : #endif
+<span class="lineNum">    1176 </span><span class="lineCov">             22 :         if (fbc-&gt;op_array.fn_flags &amp; ZEND_ACC_PUBLIC) {</span>
+<span class="lineNum">    1177 </span>                :                 /* No further checks necessary, most common case */
+<span class="lineNum">    1178 </span><span class="lineCov">              1 :         } else if (fbc-&gt;op_array.fn_flags &amp; ZEND_ACC_PRIVATE) {</span>
+<span class="lineNum">    1179 </span>                :                 zend_function *updated_fbc;
+<span class="lineNum">    1180 </span>                : 
+<span class="lineNum">    1181 </span>                :                 /* Ensure that if we're calling a private function, we're allowed to do so.
+<span class="lineNum">    1182 </span>                :                  */
+<span class="lineNum">    1183 </span><span class="lineNoCov">              0 :                 updated_fbc = zend_check_private_int(fbc, EG(scope), lc_function_name, function_name_strlen, hash_value TSRMLS_CC);</span>
+<span class="lineNum">    1184 </span><span class="lineNoCov">              0 :                 if (EXPECTED(updated_fbc != NULL)) {</span>
+<span class="lineNum">    1185 </span><span class="lineNoCov">              0 :                         fbc = updated_fbc;</span>
+<span class="lineNum">    1186 </span>                :                 } else {
+<span class="lineNum">    1187 </span><span class="lineNoCov">              0 :                         if (ce-&gt;__callstatic) {</span>
+<span class="lineNum">    1188 </span><span class="lineNoCov">              0 :                                 fbc = zend_get_user_callstatic_function(ce, function_name_strval, function_name_strlen);</span>
+<span class="lineNum">    1189 </span>                :                         } else {
+<span class="lineNum">    1190 </span><span class="lineNoCov">              0 :                                 zend_error_noreturn(E_ERROR, &quot;Call to %s method %s::%s() from context '%s'&quot;, zend_visibility_string(fbc-&gt;common.fn_flags), ZEND_FN_SCOPE_NAME(fbc), function_name_strval, EG(scope) ? EG(scope)-&gt;name : &quot;&quot;);</span>
+<span class="lineNum">    1191 </span>                :                         }
+<span class="lineNum">    1192 </span>                :                 }
+<span class="lineNum">    1193 </span><span class="lineCov">              1 :         } else if ((fbc-&gt;common.fn_flags &amp; ZEND_ACC_PROTECTED)) {</span>
+<span class="lineNum">    1194 </span>                :                 /* Ensure that if we're calling a protected function, we're allowed to do so.
+<span class="lineNum">    1195 </span>                :                  */
+<span class="lineNum">    1196 </span><span class="lineCov">              1 :                 if (UNEXPECTED(!zend_check_protected(zend_get_function_root_class(fbc), EG(scope)))) {</span>
+<span class="lineNum">    1197 </span><span class="lineNoCov">              0 :                         if (ce-&gt;__callstatic) {</span>
+<span class="lineNum">    1198 </span><span class="lineNoCov">              0 :                                 fbc = zend_get_user_callstatic_function(ce, function_name_strval, function_name_strlen);</span>
+<span class="lineNum">    1199 </span>                :                         } else {
+<span class="lineNum">    1200 </span><span class="lineNoCov">              0 :                                 zend_error_noreturn(E_ERROR, &quot;Call to %s method %s::%s() from context '%s'&quot;, zend_visibility_string(fbc-&gt;common.fn_flags), ZEND_FN_SCOPE_NAME(fbc), function_name_strval, EG(scope) ? EG(scope)-&gt;name : &quot;&quot;);</span>
+<span class="lineNum">    1201 </span>                :                         }
+<span class="lineNum">    1202 </span>                :                 }
+<span class="lineNum">    1203 </span>                :         }
+<span class="lineNum">    1204 </span>                : 
+<span class="lineNum">    1205 </span><span class="lineCov">             22 :         if (UNEXPECTED(!key)) {</span>
+<span class="lineNum">    1206 </span><span class="lineNoCov">              0 :                 free_alloca(lc_function_name, use_heap);</span>
+<span class="lineNum">    1207 </span>                :         }
+<span class="lineNum">    1208 </span>                : 
+<span class="lineNum">    1209 </span><span class="lineCov">             22 :         return fbc;</span>
+<span class="lineNum">    1210 </span>                : }
+<a name="1211"><span class="lineNum">    1211 </span>                : /* }}} */</a>
+<span class="lineNum">    1212 </span>                : 
+<span class="lineNum">    1213 </span><span class="lineCov">           2274 : ZEND_API zval **zend_std_get_static_property(zend_class_entry *ce, const char *property_name, int property_name_len, zend_bool silent, const zend_literal *key TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">    1214 </span>                : {
+<span class="lineNum">    1215 </span>                :         zend_property_info *property_info;
+<span class="lineNum">    1216 </span>                :         ulong hash_value;
+<span class="lineNum">    1217 </span>                : 
+<span class="lineNum">    1218 </span><span class="lineCov">           2274 :         if (UNEXPECTED(!key) ||</span>
+<span class="lineNum">    1219 </span><span class="lineNoCov">              0 :             (property_info = CACHED_POLYMORPHIC_PTR(key-&gt;cache_slot, ce)) == NULL) {</span>
+<span class="lineNum">    1220 </span><span class="lineCov">           2274 :                 if (EXPECTED(key != NULL)) {</span>
+<span class="lineNum">    1221 </span><span class="lineNoCov">              0 :                         hash_value = key-&gt;hash_value;</span>
+<span class="lineNum">    1222 </span>                :                 } else {
+<span class="lineNum">    1223 </span><span class="lineCov">           2274 :                         hash_value = zend_hash_func(property_name, property_name_len+1);</span>
+<span class="lineNum">    1224 </span>                :                 }
+<span class="lineNum">    1225 </span>                : 
+<span class="lineNum">    1226 </span><span class="lineCov">           2274 :                 if (UNEXPECTED(zend_hash_quick_find(&amp;ce-&gt;properties_info, property_name, property_name_len+1, hash_value, (void **) &amp;property_info)==FAILURE)) {</span>
+<span class="lineNum">    1227 </span><span class="lineNoCov">              0 :                         if (!silent) {</span>
+<span class="lineNum">    1228 </span><span class="lineNoCov">              0 :                                 zend_error_noreturn(E_ERROR, &quot;Access to undeclared static property: %s::$%s&quot;, ce-&gt;name, property_name);</span>
+<span class="lineNum">    1229 </span>                :                         }
+<span class="lineNum">    1230 </span><span class="lineNoCov">              0 :                         return NULL;</span>
+<span class="lineNum">    1231 </span>                :                 }
+<span class="lineNum">    1232 </span>                : 
+<span class="lineNum">    1233 </span>                : #if DEBUG_OBJECT_HANDLERS
+<span class="lineNum">    1234 </span>                :                 zend_printf(&quot;Access type for %s::%s is %s\n&quot;, ce-&gt;name, property_name, zend_visibility_string(property_info-&gt;flags));
+<span class="lineNum">    1235 </span>                : #endif
+<span class="lineNum">    1236 </span>                : 
+<span class="lineNum">    1237 </span><span class="lineCov">           4548 :                 if (UNEXPECTED(!zend_verify_property_access(property_info, ce TSRMLS_CC))) {</span>
+<span class="lineNum">    1238 </span><span class="lineNoCov">              0 :                         if (!silent) {</span>
+<span class="lineNum">    1239 </span><span class="lineNoCov">              0 :                                 zend_error_noreturn(E_ERROR, &quot;Cannot access %s property %s::$%s&quot;, zend_visibility_string(property_info-&gt;flags), ce-&gt;name, property_name);</span>
+<span class="lineNum">    1240 </span>                :                         }
+<span class="lineNum">    1241 </span><span class="lineNoCov">              0 :                         return NULL;</span>
+<span class="lineNum">    1242 </span>                :                 }
+<span class="lineNum">    1243 </span>                : 
+<span class="lineNum">    1244 </span><span class="lineCov">           2274 :                 if (UNEXPECTED((property_info-&gt;flags &amp; ZEND_ACC_STATIC) == 0)) {</span>
+<span class="lineNum">    1245 </span><span class="lineNoCov">              0 :                         if (!silent) {</span>
+<span class="lineNum">    1246 </span><span class="lineNoCov">              0 :                                 zend_error_noreturn(E_ERROR, &quot;Access to undeclared static property: %s::$%s&quot;, ce-&gt;name, property_name);</span>
+<span class="lineNum">    1247 </span>                :                         }
+<span class="lineNum">    1248 </span><span class="lineNoCov">              0 :                         return NULL;</span>
+<span class="lineNum">    1249 </span>                :                 }
+<span class="lineNum">    1250 </span>                : 
+<span class="lineNum">    1251 </span><span class="lineCov">           2274 :                 zend_update_class_constants(ce TSRMLS_CC);</span>
+<span class="lineNum">    1252 </span>                : 
+<span class="lineNum">    1253 </span><span class="lineCov">           2274 :                 if (EXPECTED(key != NULL)) {</span>
+<span class="lineNum">    1254 </span><span class="lineNoCov">              0 :                         CACHE_POLYMORPHIC_PTR(key-&gt;cache_slot, ce, property_info);</span>
+<span class="lineNum">    1255 </span>                :                 }
+<span class="lineNum">    1256 </span>                :         }
+<span class="lineNum">    1257 </span>                : 
+<span class="lineNum">    1258 </span><span class="lineCov">           2274 :         return &amp;CE_STATIC_MEMBERS(ce)[property_info-&gt;offset];</span>
+<span class="lineNum">    1259 </span>                : }
+<a name="1260"><span class="lineNum">    1260 </span>                : /* }}} */</a>
+<span class="lineNum">    1261 </span>                : 
+<span class="lineNum">    1262 </span><span class="lineNoCov">              0 : ZEND_API zend_bool zend_std_unset_static_property(zend_class_entry *ce, const char *property_name, int property_name_len, const zend_literal *key TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">    1263 </span>                : {
+<span class="lineNum">    1264 </span><span class="lineNoCov">              0 :         zend_error_noreturn(E_ERROR, &quot;Attempt to unset static property %s::$%s&quot;, ce-&gt;name, property_name);</span>
+<span class="lineNum">    1265 </span>                :         return 0;
+<span class="lineNum">    1266 </span>                : }
+<a name="1267"><span class="lineNum">    1267 </span>                : /* }}} */</a>
+<span class="lineNum">    1268 </span>                : 
+<span class="lineNum">    1269 </span><span class="lineCov">             75 : ZEND_API union _zend_function *zend_std_get_constructor(zval *object TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">    1270 </span>                : {
+<span class="lineNum">    1271 </span><span class="lineCov">             75 :         zend_object *zobj = Z_OBJ_P(object);</span>
+<span class="lineNum">    1272 </span><span class="lineCov">             75 :         zend_function *constructor = zobj-&gt;ce-&gt;constructor;</span>
+<span class="lineNum">    1273 </span>                : 
+<span class="lineNum">    1274 </span><span class="lineCov">             75 :         if (constructor) {</span>
+<span class="lineNum">    1275 </span><span class="lineCov">             75 :                 if (constructor-&gt;op_array.fn_flags &amp; ZEND_ACC_PUBLIC) {</span>
+<span class="lineNum">    1276 </span>                :                         /* No further checks necessary */
+<span class="lineNum">    1277 </span><span class="lineNoCov">              0 :                 } else if (constructor-&gt;op_array.fn_flags &amp; ZEND_ACC_PRIVATE) {</span>
+<span class="lineNum">    1278 </span>                :                         /* Ensure that if we're calling a private function, we're allowed to do so.
+<span class="lineNum">    1279 </span>                :                          */
+<span class="lineNum">    1280 </span><span class="lineNoCov">              0 :                         if (UNEXPECTED(constructor-&gt;common.scope != EG(scope))) {</span>
+<span class="lineNum">    1281 </span><span class="lineNoCov">              0 :                                 if (EG(scope)) {</span>
+<span class="lineNum">    1282 </span><span class="lineNoCov">              0 :                                         zend_error_noreturn(E_ERROR, &quot;Call to private %s::%s() from context '%s'&quot;, constructor-&gt;common.scope-&gt;name, constructor-&gt;common.function_name, EG(scope)-&gt;name);</span>
+<span class="lineNum">    1283 </span>                :                                 } else {
+<span class="lineNum">    1284 </span><span class="lineNoCov">              0 :                                         zend_error_noreturn(E_ERROR, &quot;Call to private %s::%s() from invalid context&quot;, constructor-&gt;common.scope-&gt;name, constructor-&gt;common.function_name);</span>
+<span class="lineNum">    1285 </span>                :                                 }
+<span class="lineNum">    1286 </span>                :                         }
+<span class="lineNum">    1287 </span><span class="lineNoCov">              0 :                 } else if ((constructor-&gt;common.fn_flags &amp; ZEND_ACC_PROTECTED)) {</span>
+<span class="lineNum">    1288 </span>                :                         /* Ensure that if we're calling a protected function, we're allowed to do so.
+<span class="lineNum">    1289 </span>                :                          * Constructors only have prototype if they are defined by an interface but
+<span class="lineNum">    1290 </span>                :                          * it is the compilers responsibility to take care of the prototype.
+<span class="lineNum">    1291 </span>                :                          */
+<span class="lineNum">    1292 </span><span class="lineNoCov">              0 :                         if (UNEXPECTED(!zend_check_protected(zend_get_function_root_class(constructor), EG(scope)))) {</span>
+<span class="lineNum">    1293 </span><span class="lineNoCov">              0 :                                 if (EG(scope)) {</span>
+<span class="lineNum">    1294 </span><span class="lineNoCov">              0 :                                         zend_error_noreturn(E_ERROR, &quot;Call to protected %s::%s() from context '%s'&quot;, constructor-&gt;common.scope-&gt;name, constructor-&gt;common.function_name, EG(scope)-&gt;name);</span>
+<span class="lineNum">    1295 </span>                :                                 } else {
+<span class="lineNum">    1296 </span><span class="lineNoCov">              0 :                                         zend_error_noreturn(E_ERROR, &quot;Call to protected %s::%s() from invalid context&quot;, constructor-&gt;common.scope-&gt;name, constructor-&gt;common.function_name);</span>
+<span class="lineNum">    1297 </span>                :                                 }
+<span class="lineNum">    1298 </span>                :                         }
+<span class="lineNum">    1299 </span>                :                 }
+<span class="lineNum">    1300 </span>                :         }
+<span class="lineNum">    1301 </span>                : 
+<span class="lineNum">    1302 </span><span class="lineCov">             75 :         return constructor;</span>
+<span class="lineNum">    1303 </span>                : }
+<span class="lineNum">    1304 </span>                : /* }}} */
+<span class="lineNum">    1305 </span>                : 
+<a name="1306"><span class="lineNum">    1306 </span>                : int zend_compare_symbol_tables_i(HashTable *ht1, HashTable *ht2 TSRMLS_DC);</a>
+<span class="lineNum">    1307 </span>                : 
+<span class="lineNum">    1308 </span><span class="lineNoCov">              0 : static int zend_std_compare_objects(zval *o1, zval *o2 TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">    1309 </span>                : {
+<span class="lineNum">    1310 </span>                :         zend_object *zobj1, *zobj2;
+<span class="lineNum">    1311 </span>                : 
+<span class="lineNum">    1312 </span><span class="lineNoCov">              0 :         zobj1 = Z_OBJ_P(o1);</span>
+<span class="lineNum">    1313 </span><span class="lineNoCov">              0 :         zobj2 = Z_OBJ_P(o2);</span>
+<span class="lineNum">    1314 </span>                : 
+<span class="lineNum">    1315 </span><span class="lineNoCov">              0 :         if (zobj1-&gt;ce != zobj2-&gt;ce) {</span>
+<span class="lineNum">    1316 </span><span class="lineNoCov">              0 :                 return 1; /* different classes */</span>
+<span class="lineNum">    1317 </span>                :         }
+<span class="lineNum">    1318 </span><span class="lineNoCov">              0 :         if (!zobj1-&gt;properties &amp;&amp; !zobj2-&gt;properties) {</span>
+<span class="lineNum">    1319 </span>                :                 int i;
+<span class="lineNum">    1320 </span><span class="lineNoCov">              0 :                 for (i = 0; i &lt; zobj1-&gt;ce-&gt;default_properties_count; i++) {</span>
+<span class="lineNum">    1321 </span><span class="lineNoCov">              0 :                         if (zobj1-&gt;properties_table[i]) {</span>
+<span class="lineNum">    1322 </span><span class="lineNoCov">              0 :                                 if (zobj2-&gt;properties_table[i]) {</span>
+<span class="lineNum">    1323 </span>                :                                         zval result;
+<span class="lineNum">    1324 </span>                : 
+<span class="lineNum">    1325 </span><span class="lineNoCov">              0 :                                         if (compare_function(&amp;result, zobj1-&gt;properties_table[i], zobj2-&gt;properties_table[i] TSRMLS_CC)==FAILURE) {</span>
+<span class="lineNum">    1326 </span><span class="lineNoCov">              0 :                                                 return 1;</span>
+<span class="lineNum">    1327 </span>                :                                         }
+<span class="lineNum">    1328 </span><span class="lineNoCov">              0 :                                         if (Z_LVAL(result) != 0) {</span>
+<span class="lineNum">    1329 </span><span class="lineNoCov">              0 :                                                 return Z_LVAL(result);</span>
+<span class="lineNum">    1330 </span>                :                                         }
+<span class="lineNum">    1331 </span>                :                                 } else {
+<span class="lineNum">    1332 </span><span class="lineNoCov">              0 :                                         return 1;</span>
+<span class="lineNum">    1333 </span>                :                                 }
+<span class="lineNum">    1334 </span>                :                         } else {
+<span class="lineNum">    1335 </span><span class="lineNoCov">              0 :                                 if (zobj2-&gt;properties_table[i]) {</span>
+<span class="lineNum">    1336 </span><span class="lineNoCov">              0 :                                         return 1;</span>
+<span class="lineNum">    1337 </span>                :                                 } else {
+<span class="lineNum">    1338 </span><span class="lineNoCov">              0 :                                         return 0;</span>
+<span class="lineNum">    1339 </span>                :                                 }
+<span class="lineNum">    1340 </span>                :                         }
+<span class="lineNum">    1341 </span>                :                 }
+<span class="lineNum">    1342 </span><span class="lineNoCov">              0 :                 return 0;</span>
+<span class="lineNum">    1343 </span>                :         } else {
+<span class="lineNum">    1344 </span><span class="lineNoCov">              0 :                 if (!zobj1-&gt;properties) {</span>
+<span class="lineNum">    1345 </span><span class="lineNoCov">              0 :                         rebuild_object_properties(zobj1);</span>
+<span class="lineNum">    1346 </span>                :                 }
+<span class="lineNum">    1347 </span><span class="lineNoCov">              0 :                 if (!zobj2-&gt;properties) {</span>
+<span class="lineNum">    1348 </span><span class="lineNoCov">              0 :                         rebuild_object_properties(zobj2);</span>
+<span class="lineNum">    1349 </span>                :                 }
+<span class="lineNum">    1350 </span><span class="lineNoCov">              0 :                 return zend_compare_symbol_tables_i(zobj1-&gt;properties, zobj2-&gt;properties TSRMLS_CC);</span>
+<span class="lineNum">    1351 </span>                :         }
+<span class="lineNum">    1352 </span>                : }
+<a name="1353"><span class="lineNum">    1353 </span>                : /* }}} */</a>
+<span class="lineNum">    1354 </span>                : 
+<span class="lineNum">    1355 </span><span class="lineNoCov">              0 : static int zend_std_has_property(zval *object, zval *member, int has_set_exists, const zend_literal *key TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">    1356 </span>                : {
+<span class="lineNum">    1357 </span>                :         zend_object *zobj;
+<span class="lineNum">    1358 </span>                :         int result;
+<span class="lineNum">    1359 </span><span class="lineNoCov">              0 :         zval **value = NULL;</span>
+<span class="lineNum">    1360 </span><span class="lineNoCov">              0 :         zval *tmp_member = NULL;</span>
+<span class="lineNum">    1361 </span>                :         zend_property_info *property_info;
+<span class="lineNum">    1362 </span>                : 
+<span class="lineNum">    1363 </span><span class="lineNoCov">              0 :         zobj = Z_OBJ_P(object);</span>
+<span class="lineNum">    1364 </span>                : 
+<span class="lineNum">    1365 </span><span class="lineNoCov">              0 :         if (UNEXPECTED(Z_TYPE_P(member) != IS_STRING)) {</span>
+<span class="lineNum">    1366 </span><span class="lineNoCov">              0 :                 ALLOC_ZVAL(tmp_member);</span>
+<span class="lineNum">    1367 </span><span class="lineNoCov">              0 :                 *tmp_member = *member;</span>
+<span class="lineNum">    1368 </span><span class="lineNoCov">              0 :                 INIT_PZVAL(tmp_member);</span>
+<span class="lineNum">    1369 </span><span class="lineNoCov">              0 :                 zval_copy_ctor(tmp_member);</span>
+<span class="lineNum">    1370 </span><span class="lineNoCov">              0 :                 convert_to_string(tmp_member);</span>
+<span class="lineNum">    1371 </span><span class="lineNoCov">              0 :                 member = tmp_member;</span>
+<span class="lineNum">    1372 </span><span class="lineNoCov">              0 :                 key = NULL;</span>
+<span class="lineNum">    1373 </span>                :         }
+<span class="lineNum">    1374 </span>                : 
+<span class="lineNum">    1375 </span>                : #if DEBUG_OBJECT_HANDLERS
+<span class="lineNum">    1376 </span>                :         fprintf(stderr, &quot;Read object #%d property: %s\n&quot;, Z_OBJ_HANDLE_P(object), Z_STRVAL_P(member));
+<span class="lineNum">    1377 </span>                : #endif
+<span class="lineNum">    1378 </span>                : 
+<span class="lineNum">    1379 </span><span class="lineNoCov">              0 :         property_info = zend_get_property_info_quick(zobj-&gt;ce, member, 1, key TSRMLS_CC);</span>
+<span class="lineNum">    1380 </span>                : 
+<span class="lineNum">    1381 </span><span class="lineNoCov">              0 :         if (UNEXPECTED(!property_info) ||</span>
+<span class="lineNum">    1382 </span><span class="lineNoCov">              0 :             ((EXPECTED((property_info-&gt;flags &amp; ZEND_ACC_STATIC) == 0) &amp;&amp;</span>
+<span class="lineNum">    1383 </span><span class="lineNoCov">              0 :              property_info-&gt;offset &gt;= 0) ?</span>
+<span class="lineNum">    1384 </span><span class="lineNoCov">              0 :                 (zobj-&gt;properties ?</span>
+<span class="lineNum">    1385 </span><span class="lineNoCov">              0 :                     ((value = (zval**)zobj-&gt;properties_table[property_info-&gt;offset]) == NULL) :</span>
+<span class="lineNum">    1386 </span><span class="lineNoCov">              0 :                     (*(value = &amp;zobj-&gt;properties_table[property_info-&gt;offset]) == NULL)) :</span>
+<span class="lineNum">    1387 </span><span class="lineNoCov">              0 :                 (UNEXPECTED(!zobj-&gt;properties) ||</span>
+<span class="lineNum">    1388 </span><span class="lineNoCov">              0 :                   UNEXPECTED(zend_hash_quick_find(zobj-&gt;properties, property_info-&gt;name, property_info-&gt;name_length+1, property_info-&gt;h, (void **) &amp;value) == FAILURE)))) {</span>
+<span class="lineNum">    1389 </span>                :                 zend_guard *guard;
+<span class="lineNum">    1390 </span>                : 
+<span class="lineNum">    1391 </span><span class="lineNoCov">              0 :                 result = 0;</span>
+<span class="lineNum">    1392 </span><span class="lineNoCov">              0 :                 if ((has_set_exists != 2) &amp;&amp;</span>
+<span class="lineNum">    1393 </span><span class="lineNoCov">              0 :                     zobj-&gt;ce-&gt;__isset &amp;&amp;</span>
+<span class="lineNum">    1394 </span><span class="lineNoCov">              0 :                     zend_get_property_guard(zobj, property_info, member, &amp;guard) == SUCCESS &amp;&amp;</span>
+<span class="lineNum">    1395 </span><span class="lineNoCov">              0 :                     !guard-&gt;in_isset) {</span>
+<span class="lineNum">    1396 </span>                :                         zval *rv;
+<span class="lineNum">    1397 </span>                : 
+<span class="lineNum">    1398 </span>                :                         /* have issetter - try with it! */
+<span class="lineNum">    1399 </span><span class="lineNoCov">              0 :                         Z_ADDREF_P(object);</span>
+<span class="lineNum">    1400 </span><span class="lineNoCov">              0 :                         if (PZVAL_IS_REF(object)) {</span>
+<span class="lineNum">    1401 </span><span class="lineNoCov">              0 :                                 SEPARATE_ZVAL(&amp;object);</span>
+<span class="lineNum">    1402 </span>                :                         }
+<span class="lineNum">    1403 </span><span class="lineNoCov">              0 :                         guard-&gt;in_isset = 1; /* prevent circular getting */</span>
+<span class="lineNum">    1404 </span><span class="lineNoCov">              0 :                         rv = zend_std_call_issetter(object, member TSRMLS_CC);</span>
+<span class="lineNum">    1405 </span><span class="lineNoCov">              0 :                         if (rv) {</span>
+<span class="lineNum">    1406 </span><span class="lineNoCov">              0 :                                 result = zend_is_true(rv);</span>
+<span class="lineNum">    1407 </span><span class="lineNoCov">              0 :                                 zval_ptr_dtor(&amp;rv);</span>
+<span class="lineNum">    1408 </span><span class="lineNoCov">              0 :                                 if (has_set_exists &amp;&amp; result) {</span>
+<span class="lineNum">    1409 </span><span class="lineNoCov">              0 :                                         if (EXPECTED(!EG(exception)) &amp;&amp; zobj-&gt;ce-&gt;__get &amp;&amp; !guard-&gt;in_get) {</span>
+<span class="lineNum">    1410 </span><span class="lineNoCov">              0 :                                                 guard-&gt;in_get = 1;</span>
+<span class="lineNum">    1411 </span><span class="lineNoCov">              0 :                                                 rv = zend_std_call_getter(object, member TSRMLS_CC);</span>
+<span class="lineNum">    1412 </span><span class="lineNoCov">              0 :                                                 guard-&gt;in_get = 0;</span>
+<span class="lineNum">    1413 </span><span class="lineNoCov">              0 :                                                 if (rv) {</span>
+<span class="lineNum">    1414 </span><span class="lineNoCov">              0 :                                                         Z_ADDREF_P(rv);</span>
+<span class="lineNum">    1415 </span><span class="lineNoCov">              0 :                                                         result = i_zend_is_true(rv);</span>
+<span class="lineNum">    1416 </span><span class="lineNoCov">              0 :                                                         zval_ptr_dtor(&amp;rv);</span>
+<span class="lineNum">    1417 </span>                :                                                 } else {
+<span class="lineNum">    1418 </span><span class="lineNoCov">              0 :                                                         result = 0;</span>
+<span class="lineNum">    1419 </span>                :                                                 }
+<span class="lineNum">    1420 </span>                :                                         } else {
+<span class="lineNum">    1421 </span><span class="lineNoCov">              0 :                                                 result = 0;</span>
+<span class="lineNum">    1422 </span>                :                                         }
+<span class="lineNum">    1423 </span>                :                                 }
+<span class="lineNum">    1424 </span>                :                         }
+<span class="lineNum">    1425 </span><span class="lineNoCov">              0 :                         guard-&gt;in_isset = 0;</span>
+<span class="lineNum">    1426 </span><span class="lineNoCov">              0 :                         zval_ptr_dtor(&amp;object);</span>
+<span class="lineNum">    1427 </span>                :                 }
+<span class="lineNum">    1428 </span>                :         } else {
+<span class="lineNum">    1429 </span><span class="lineNoCov">              0 :                 switch (has_set_exists) {</span>
+<span class="lineNum">    1430 </span>                :                 case 0:
+<span class="lineNum">    1431 </span><span class="lineNoCov">              0 :                         result = (Z_TYPE_PP(value) != IS_NULL);</span>
+<span class="lineNum">    1432 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">    1433 </span>                :                 default:
+<span class="lineNum">    1434 </span><span class="lineNoCov">              0 :                         result = zend_is_true(*value);</span>
+<span class="lineNum">    1435 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">    1436 </span>                :                 case 2:
+<span class="lineNum">    1437 </span><span class="lineNoCov">              0 :                         result = 1;</span>
+<span class="lineNum">    1438 </span>                :                         break;
+<span class="lineNum">    1439 </span>                :                 }
+<span class="lineNum">    1440 </span>                :         }
+<span class="lineNum">    1441 </span>                : 
+<span class="lineNum">    1442 </span><span class="lineNoCov">              0 :         if (UNEXPECTED(tmp_member != NULL)) {</span>
+<span class="lineNum">    1443 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;tmp_member);</span>
+<span class="lineNum">    1444 </span>                :         }
+<span class="lineNum">    1445 </span><span class="lineNoCov">              0 :         return result;</span>
+<span class="lineNum">    1446 </span>                : }
+<a name="1447"><span class="lineNum">    1447 </span>                : /* }}} */</a>
+<span class="lineNum">    1448 </span>                : 
+<span class="lineNum">    1449 </span><span class="lineCov">           8091 : zend_class_entry *zend_std_object_get_class(const zval *object TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">    1450 </span>                : {
+<span class="lineNum">    1451 </span>                :         zend_object *zobj;
+<span class="lineNum">    1452 </span><span class="lineCov">           8091 :         zobj = Z_OBJ_P(object);</span>
+<span class="lineNum">    1453 </span>                : 
+<span class="lineNum">    1454 </span><span class="lineCov">           8091 :         return zobj-&gt;ce;</span>
+<span class="lineNum">    1455 </span>                : }
+<a name="1456"><span class="lineNum">    1456 </span>                : /* }}} */</a>
+<span class="lineNum">    1457 </span>                : 
+<span class="lineNum">    1458 </span><span class="lineCov">             13 : int zend_std_object_get_class_name(const zval *object, const char **class_name, zend_uint *class_name_len, int parent TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">    1459 </span>                : {
+<span class="lineNum">    1460 </span>                :         zend_object *zobj;
+<span class="lineNum">    1461 </span>                :         zend_class_entry *ce;
+<span class="lineNum">    1462 </span><span class="lineCov">             13 :         zobj = Z_OBJ_P(object);</span>
+<span class="lineNum">    1463 </span>                : 
+<span class="lineNum">    1464 </span><span class="lineCov">             13 :         if (parent) {</span>
+<span class="lineNum">    1465 </span><span class="lineNoCov">              0 :                 if (!zobj-&gt;ce-&gt;parent) {</span>
+<span class="lineNum">    1466 </span><span class="lineNoCov">              0 :                         return FAILURE;</span>
+<span class="lineNum">    1467 </span>                :                 }
+<span class="lineNum">    1468 </span><span class="lineNoCov">              0 :                 ce = zobj-&gt;ce-&gt;parent;</span>
+<span class="lineNum">    1469 </span>                :         } else {
+<span class="lineNum">    1470 </span><span class="lineCov">             13 :                 ce = zobj-&gt;ce;</span>
+<span class="lineNum">    1471 </span>                :         }
+<span class="lineNum">    1472 </span>                : 
+<span class="lineNum">    1473 </span><span class="lineCov">             13 :         *class_name_len = ce-&gt;name_length;</span>
+<span class="lineNum">    1474 </span><span class="lineCov">             13 :         *class_name = estrndup(ce-&gt;name, ce-&gt;name_length);</span>
+<span class="lineNum">    1475 </span><span class="lineCov">             13 :         return SUCCESS;</span>
+<span class="lineNum">    1476 </span>                : }
+<a name="1477"><span class="lineNum">    1477 </span>                : /* }}} */</a>
+<span class="lineNum">    1478 </span>                : 
+<span class="lineNum">    1479 </span><span class="lineCov">              6 : ZEND_API int zend_std_cast_object_tostring(zval *readobj, zval *writeobj, int type TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">    1480 </span>                : {
+<span class="lineNum">    1481 </span>                :         zval *retval;
+<span class="lineNum">    1482 </span>                :         zend_class_entry *ce;
+<span class="lineNum">    1483 </span>                : 
+<span class="lineNum">    1484 </span><span class="lineCov">              6 :         switch (type) {</span>
+<span class="lineNum">    1485 </span>                :                 case IS_STRING:
+<span class="lineNum">    1486 </span><span class="lineCov">              6 :                         ce = Z_OBJCE_P(readobj);</span>
+<span class="lineNum">    1487 </span><span class="lineCov">             12 :                         if (ce-&gt;__tostring &amp;&amp;</span>
+<span class="lineNum">    1488 </span><span class="lineCov">              6 :                                 (zend_call_method_with_0_params(&amp;readobj, ce, &amp;ce-&gt;__tostring, &quot;__tostring&quot;, &amp;retval) || EG(exception))) {</span>
+<span class="lineNum">    1489 </span><span class="lineCov">              6 :                                 if (UNEXPECTED(EG(exception) != NULL)) {</span>
+<span class="lineNum">    1490 </span><span class="lineNoCov">              0 :                                         if (retval) {</span>
+<span class="lineNum">    1491 </span><span class="lineNoCov">              0 :                                                 zval_ptr_dtor(&amp;retval);</span>
+<span class="lineNum">    1492 </span>                :                                         }
+<span class="lineNum">    1493 </span><span class="lineNoCov">              0 :                                         zend_error_noreturn(E_ERROR, &quot;Method %s::__toString() must not throw an exception&quot;, ce-&gt;name);</span>
+<span class="lineNum">    1494 </span>                :                                         return FAILURE;
+<span class="lineNum">    1495 </span>                :                                 }
+<span class="lineNum">    1496 </span><span class="lineCov">              6 :                                 if (EXPECTED(Z_TYPE_P(retval) == IS_STRING)) {</span>
+<span class="lineNum">    1497 </span><span class="lineCov">              6 :                                         INIT_PZVAL(writeobj);</span>
+<span class="lineNum">    1498 </span><span class="lineCov">              6 :                                         if (readobj == writeobj) {</span>
+<span class="lineNum">    1499 </span><span class="lineNoCov">              0 :                                                 zval_dtor(readobj);</span>
+<span class="lineNum">    1500 </span>                :                                         }
+<span class="lineNum">    1501 </span><span class="lineCov">             18 :                                         ZVAL_ZVAL(writeobj, retval, 1, 1);</span>
+<span class="lineNum">    1502 </span><span class="lineCov">              6 :                                         if (Z_TYPE_P(writeobj) != type) {</span>
+<span class="lineNum">    1503 </span><span class="lineNoCov">              0 :                                                 convert_to_explicit_type(writeobj, type);</span>
+<span class="lineNum">    1504 </span>                :                                         }
+<span class="lineNum">    1505 </span><span class="lineCov">              6 :                                         return SUCCESS;</span>
+<span class="lineNum">    1506 </span>                :                                 } else {
+<span class="lineNum">    1507 </span><span class="lineNoCov">              0 :                                         zval_ptr_dtor(&amp;retval);</span>
+<span class="lineNum">    1508 </span><span class="lineNoCov">              0 :                                         INIT_PZVAL(writeobj);</span>
+<span class="lineNum">    1509 </span><span class="lineNoCov">              0 :                                         if (readobj == writeobj) {</span>
+<span class="lineNum">    1510 </span><span class="lineNoCov">              0 :                                                 zval_dtor(readobj);</span>
+<span class="lineNum">    1511 </span>                :                                         }
+<span class="lineNum">    1512 </span><span class="lineNoCov">              0 :                                         ZVAL_EMPTY_STRING(writeobj);</span>
+<span class="lineNum">    1513 </span><span class="lineNoCov">              0 :                                         zend_error(E_RECOVERABLE_ERROR, &quot;Method %s::__toString() must return a string value&quot;, ce-&gt;name);</span>
+<span class="lineNum">    1514 </span><span class="lineNoCov">              0 :                                         return SUCCESS;</span>
+<span class="lineNum">    1515 </span>                :                                 }
+<span class="lineNum">    1516 </span>                :                         }
+<span class="lineNum">    1517 </span><span class="lineNoCov">              0 :                         return FAILURE;</span>
+<span class="lineNum">    1518 </span>                :                 case IS_BOOL:
+<span class="lineNum">    1519 </span><span class="lineNoCov">              0 :                         INIT_PZVAL(writeobj);</span>
+<span class="lineNum">    1520 </span><span class="lineNoCov">              0 :                         ZVAL_BOOL(writeobj, 1);</span>
+<span class="lineNum">    1521 </span><span class="lineNoCov">              0 :                         return SUCCESS;</span>
+<span class="lineNum">    1522 </span>                :                 case IS_LONG:
+<span class="lineNum">    1523 </span><span class="lineNoCov">              0 :                         ce = Z_OBJCE_P(readobj);</span>
+<span class="lineNum">    1524 </span><span class="lineNoCov">              0 :                         zend_error(E_NOTICE, &quot;Object of class %s could not be converted to int&quot;, ce-&gt;name);</span>
+<span class="lineNum">    1525 </span><span class="lineNoCov">              0 :                         INIT_PZVAL(writeobj);</span>
+<span class="lineNum">    1526 </span><span class="lineNoCov">              0 :                         if (readobj == writeobj) {</span>
+<span class="lineNum">    1527 </span><span class="lineNoCov">              0 :                                 zval_dtor(readobj);</span>
+<span class="lineNum">    1528 </span>                :                         }
+<span class="lineNum">    1529 </span><span class="lineNoCov">              0 :                         ZVAL_LONG(writeobj, 1);</span>
+<span class="lineNum">    1530 </span><span class="lineNoCov">              0 :                         return SUCCESS;</span>
+<span class="lineNum">    1531 </span>                :                 case IS_DOUBLE:
+<span class="lineNum">    1532 </span><span class="lineNoCov">              0 :                         ce = Z_OBJCE_P(readobj);</span>
+<span class="lineNum">    1533 </span><span class="lineNoCov">              0 :                         zend_error(E_NOTICE, &quot;Object of class %s could not be converted to double&quot;, ce-&gt;name);</span>
+<span class="lineNum">    1534 </span><span class="lineNoCov">              0 :                         INIT_PZVAL(writeobj);</span>
+<span class="lineNum">    1535 </span><span class="lineNoCov">              0 :                         if (readobj == writeobj) {</span>
+<span class="lineNum">    1536 </span><span class="lineNoCov">              0 :                                 zval_dtor(readobj);</span>
+<span class="lineNum">    1537 </span>                :                         }
+<span class="lineNum">    1538 </span><span class="lineNoCov">              0 :                         ZVAL_DOUBLE(writeobj, 1);</span>
+<span class="lineNum">    1539 </span><span class="lineNoCov">              0 :                         return SUCCESS;</span>
+<span class="lineNum">    1540 </span>                :                 default:
+<span class="lineNum">    1541 </span><span class="lineNoCov">              0 :                         INIT_PZVAL(writeobj);</span>
+<span class="lineNum">    1542 </span><span class="lineNoCov">              0 :                         Z_TYPE_P(writeobj) = IS_NULL;</span>
+<span class="lineNum">    1543 </span>                :                         break;
+<span class="lineNum">    1544 </span>                :         }
+<span class="lineNum">    1545 </span><span class="lineNoCov">              0 :         return FAILURE;</span>
+<span class="lineNum">    1546 </span>                : }
+<a name="1547"><span class="lineNum">    1547 </span>                : /* }}} */</a>
+<span class="lineNum">    1548 </span>                : 
+<span class="lineNum">    1549 </span><span class="lineNoCov">              0 : int zend_std_get_closure(zval *obj, zend_class_entry **ce_ptr, zend_function **fptr_ptr, zval **zobj_ptr TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">    1550 </span>                : {
+<span class="lineNum">    1551 </span>                :         zend_class_entry *ce;
+<span class="lineNum">    1552 </span><span class="lineNoCov">              0 :         if (Z_TYPE_P(obj) != IS_OBJECT) {</span>
+<span class="lineNum">    1553 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">    1554 </span>                :         }
+<span class="lineNum">    1555 </span>                : 
+<span class="lineNum">    1556 </span><span class="lineNoCov">              0 :         ce = Z_OBJCE_P(obj);</span>
+<span class="lineNum">    1557 </span>                : 
+<span class="lineNum">    1558 </span><span class="lineNoCov">              0 :         if (zend_hash_find(&amp;ce-&gt;function_table, ZEND_INVOKE_FUNC_NAME, sizeof(ZEND_INVOKE_FUNC_NAME), (void**)fptr_ptr) == FAILURE) {</span>
+<span class="lineNum">    1559 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">    1560 </span>                :         }
+<span class="lineNum">    1561 </span>                : 
+<span class="lineNum">    1562 </span><span class="lineNoCov">              0 :         *ce_ptr = ce;</span>
+<span class="lineNum">    1563 </span><span class="lineNoCov">              0 :         if ((*fptr_ptr)-&gt;common.fn_flags &amp; ZEND_ACC_STATIC) {</span>
+<span class="lineNum">    1564 </span><span class="lineNoCov">              0 :                 if (zobj_ptr) {</span>
+<span class="lineNum">    1565 </span><span class="lineNoCov">              0 :                         *zobj_ptr = NULL;</span>
+<span class="lineNum">    1566 </span>                :                 }
+<span class="lineNum">    1567 </span>                :         } else {
+<span class="lineNum">    1568 </span><span class="lineNoCov">              0 :                 if (zobj_ptr) {</span>
+<span class="lineNum">    1569 </span><span class="lineNoCov">              0 :                         *zobj_ptr = obj;</span>
+<span class="lineNum">    1570 </span>                :                 }
+<span class="lineNum">    1571 </span>                :         }
+<span class="lineNum">    1572 </span><span class="lineNoCov">              0 :         return SUCCESS;</span>
+<span class="lineNum">    1573 </span>                : }
+<span class="lineNum">    1574 </span>                : /* }}} */
+<span class="lineNum">    1575 </span>                : 
+<span class="lineNum">    1576 </span>                : ZEND_API zend_object_handlers std_object_handlers = {
+<span class="lineNum">    1577 </span>                :         zend_objects_store_add_ref,                             /* add_ref */
+<span class="lineNum">    1578 </span>                :         zend_objects_store_del_ref,                             /* del_ref */
+<span class="lineNum">    1579 </span>                :         zend_objects_clone_obj,                                 /* clone_obj */
+<span class="lineNum">    1580 </span>                : 
+<span class="lineNum">    1581 </span>                :         zend_std_read_property,                                 /* read_property */
+<span class="lineNum">    1582 </span>                :         zend_std_write_property,                                /* write_property */
+<span class="lineNum">    1583 </span>                :         zend_std_read_dimension,                                /* read_dimension */
+<span class="lineNum">    1584 </span>                :         zend_std_write_dimension,                               /* write_dimension */
+<span class="lineNum">    1585 </span>                :         zend_std_get_property_ptr_ptr,                  /* get_property_ptr_ptr */
+<span class="lineNum">    1586 </span>                :         NULL,                                                                   /* get */
+<span class="lineNum">    1587 </span>                :         NULL,                                                                   /* set */
+<span class="lineNum">    1588 </span>                :         zend_std_has_property,                                  /* has_property */
+<span class="lineNum">    1589 </span>                :         zend_std_unset_property,                                /* unset_property */
+<span class="lineNum">    1590 </span>                :         zend_std_has_dimension,                                 /* has_dimension */
+<span class="lineNum">    1591 </span>                :         zend_std_unset_dimension,                               /* unset_dimension */
+<span class="lineNum">    1592 </span>                :         zend_std_get_properties,                                /* get_properties */
+<span class="lineNum">    1593 </span>                :         zend_std_get_method,                                    /* get_method */
+<span class="lineNum">    1594 </span>                :         NULL,                                                                   /* call_method */
+<span class="lineNum">    1595 </span>                :         zend_std_get_constructor,                               /* get_constructor */
+<span class="lineNum">    1596 </span>                :         zend_std_object_get_class,                              /* get_class_entry */
+<span class="lineNum">    1597 </span>                :         zend_std_object_get_class_name,                 /* get_class_name */
+<span class="lineNum">    1598 </span>                :         zend_std_compare_objects,                               /* compare_objects */
+<span class="lineNum">    1599 </span>                :         zend_std_cast_object_tostring,                  /* cast_object */
+<span class="lineNum">    1600 </span>                :         NULL,                                                                   /* count_elements */
+<span class="lineNum">    1601 </span>                :         NULL,                                                                   /* get_debug_info */
+<span class="lineNum">    1602 </span>                :         zend_std_get_closure,                                   /* get_closure */
+<span class="lineNum">    1603 </span>                :         zend_std_get_gc,                                                /* get_gc */
+<span class="lineNum">    1604 </span>                : };
+<span class="lineNum">    1605 </span>                : 
+<span class="lineNum">    1606 </span>                : /*
+<span class="lineNum">    1607 </span>                :  * Local variables:
+<span class="lineNum">    1608 </span>                :  * tab-width: 4
+<span class="lineNum">    1609 </span>                :  * c-basic-offset: 4
+<span class="lineNum">    1610 </span>                :  * indent-tabs-mode: t
+<span class="lineNum">    1611 </span>                :  * End:
+<span class="lineNum">    1612 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

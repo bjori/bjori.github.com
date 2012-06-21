@@ -1,0 +1,1795 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - main/streams/userspace.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../index.html">directory</a> - <a href="index.html">main/streams</a> - userspace.c (source / <a href="userspace.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">731</td>
+          <td class="headerCovTableEntry">27</td>
+          <td class="headerCovTableEntryLo">3.7 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">25</td>
+          <td class="headerCovTableEntry">1</td>
+          <td class="headerCovTableEntryLo">4.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Authors: Wez Furlong &lt;wez@thebrainroom.com&gt;                          |
+<span class="lineNum">      16 </span>                :    |          Sara Golemon &lt;pollita@php.net&gt;                              |
+<span class="lineNum">      17 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      18 </span>                : */
+<span class="lineNum">      19 </span>                : 
+<span class="lineNum">      20 </span>                : /* $Id$ */
+<span class="lineNum">      21 </span>                : 
+<span class="lineNum">      22 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">      23 </span>                : #include &quot;php_globals.h&quot;
+<span class="lineNum">      24 </span>                : #include &quot;ext/standard/file.h&quot;
+<span class="lineNum">      25 </span>                : #include &quot;ext/standard/flock_compat.h&quot;
+<span class="lineNum">      26 </span>                : #ifdef HAVE_SYS_FILE_H
+<span class="lineNum">      27 </span>                : #include &lt;sys/file.h&gt;
+<span class="lineNum">      28 </span>                : #endif
+<span class="lineNum">      29 </span>                : #include &lt;stddef.h&gt;
+<span class="lineNum">      30 </span>                : 
+<span class="lineNum">      31 </span>                : #if HAVE_UTIME
+<span class="lineNum">      32 </span>                : # ifdef PHP_WIN32
+<span class="lineNum">      33 </span>                : #  include &lt;sys/utime.h&gt;
+<span class="lineNum">      34 </span>                : # else
+<span class="lineNum">      35 </span>                : #  include &lt;utime.h&gt;
+<span class="lineNum">      36 </span>                : # endif
+<span class="lineNum">      37 </span>                : #endif
+<span class="lineNum">      38 </span>                : 
+<span class="lineNum">      39 </span>                : static int le_protocols;
+<span class="lineNum">      40 </span>                : 
+<span class="lineNum">      41 </span>                : struct php_user_stream_wrapper {
+<span class="lineNum">      42 </span>                :         char * protoname;
+<span class="lineNum">      43 </span>                :         char * classname;
+<span class="lineNum">      44 </span>                :         zend_class_entry *ce;
+<span class="lineNum">      45 </span>                :         php_stream_wrapper wrapper;
+<span class="lineNum">      46 </span>                : };
+<span class="lineNum">      47 </span>                : 
+<span class="lineNum">      48 </span>                : static php_stream *user_wrapper_opener(php_stream_wrapper *wrapper, char *filename, char *mode, int options, char **opened_path, php_stream_context *context STREAMS_DC TSRMLS_DC);
+<span class="lineNum">      49 </span>                : static int user_wrapper_stat_url(php_stream_wrapper *wrapper, char *url, int flags, php_stream_statbuf *ssb, php_stream_context *context TSRMLS_DC);
+<span class="lineNum">      50 </span>                : static int user_wrapper_unlink(php_stream_wrapper *wrapper, char *url, int options, php_stream_context *context TSRMLS_DC);
+<span class="lineNum">      51 </span>                : static int user_wrapper_rename(php_stream_wrapper *wrapper, char *url_from, char *url_to, int options, php_stream_context *context TSRMLS_DC);
+<span class="lineNum">      52 </span>                : static int user_wrapper_mkdir(php_stream_wrapper *wrapper, char *url, int mode, int options, php_stream_context *context TSRMLS_DC);
+<span class="lineNum">      53 </span>                : static int user_wrapper_rmdir(php_stream_wrapper *wrapper, char *url, int options, php_stream_context *context TSRMLS_DC);
+<span class="lineNum">      54 </span>                : static int user_wrapper_metadata(php_stream_wrapper *wrapper, char *url, int option, void *value, php_stream_context *context TSRMLS_DC);
+<span class="lineNum">      55 </span>                : static php_stream *user_wrapper_opendir(php_stream_wrapper *wrapper, char *filename, char *mode,
+<span class="lineNum">      56 </span>                :                 int options, char **opened_path, php_stream_context *context STREAMS_DC TSRMLS_DC);
+<span class="lineNum">      57 </span>                : 
+<span class="lineNum">      58 </span>                : static php_stream_wrapper_ops user_stream_wops = {
+<span class="lineNum">      59 </span>                :         user_wrapper_opener,
+<span class="lineNum">      60 </span>                :         NULL, /* close - the streams themselves know how */
+<span class="lineNum">      61 </span>                :         NULL, /* stat - the streams themselves know how */
+<span class="lineNum">      62 </span>                :         user_wrapper_stat_url,
+<span class="lineNum">      63 </span>                :         user_wrapper_opendir,
+<span class="lineNum">      64 </span>                :         &quot;user-space&quot;,
+<span class="lineNum">      65 </span>                :         user_wrapper_unlink,
+<span class="lineNum">      66 </span>                :         user_wrapper_rename,
+<span class="lineNum">      67 </span>                :         user_wrapper_mkdir,
+<span class="lineNum">      68 </span>                :         user_wrapper_rmdir,
+<span class="lineNum">      69 </span>                :         user_wrapper_metadata
+<span class="lineNum">      70 </span>                : };
+<a name="71"><span class="lineNum">      71 </span>                : </a>
+<span class="lineNum">      72 </span>                : 
+<span class="lineNum">      73 </span><span class="lineNoCov">              0 : static void stream_wrapper_dtor(zend_rsrc_list_entry *rsrc TSRMLS_DC)</span>
+<span class="lineNum">      74 </span>                : {
+<span class="lineNum">      75 </span><span class="lineNoCov">              0 :         struct php_user_stream_wrapper * uwrap = (struct php_user_stream_wrapper*)rsrc-&gt;ptr;</span>
+<span class="lineNum">      76 </span>                : 
+<span class="lineNum">      77 </span><span class="lineNoCov">              0 :         efree(uwrap-&gt;protoname);</span>
+<span class="lineNum">      78 </span><span class="lineNoCov">              0 :         efree(uwrap-&gt;classname);</span>
+<span class="lineNum">      79 </span><span class="lineNoCov">              0 :         efree(uwrap);</span>
+<span class="lineNum">      80 </span><span class="lineNoCov">              0 : }</span>
+<a name="81"><span class="lineNum">      81 </span>                : </a>
+<span class="lineNum">      82 </span>                : 
+<span class="lineNum">      83 </span><span class="lineCov">             48 : PHP_MINIT_FUNCTION(user_streams)</span>
+<span class="lineNum">      84 </span>                : {
+<span class="lineNum">      85 </span><span class="lineCov">             48 :         le_protocols = zend_register_list_destructors_ex(stream_wrapper_dtor, NULL, &quot;stream factory&quot;, 0);</span>
+<span class="lineNum">      86 </span><span class="lineCov">             48 :         if (le_protocols == FAILURE)</span>
+<span class="lineNum">      87 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">      88 </span>                : 
+<span class="lineNum">      89 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;STREAM_USE_PATH&quot;,                     USE_PATH, CONST_CS|CONST_PERSISTENT);</span>
+<span class="lineNum">      90 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;STREAM_IGNORE_URL&quot;,           IGNORE_URL, CONST_CS|CONST_PERSISTENT);</span>
+<span class="lineNum">      91 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;STREAM_REPORT_ERRORS&quot;,                REPORT_ERRORS, CONST_CS|CONST_PERSISTENT);</span>
+<span class="lineNum">      92 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;STREAM_MUST_SEEK&quot;,                    STREAM_MUST_SEEK, CONST_CS|CONST_PERSISTENT);</span>
+<span class="lineNum">      93 </span>                : 
+<span class="lineNum">      94 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;STREAM_URL_STAT_LINK&quot;,                PHP_STREAM_URL_STAT_LINK,               CONST_CS|CONST_PERSISTENT);</span>
+<span class="lineNum">      95 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;STREAM_URL_STAT_QUIET&quot;,       PHP_STREAM_URL_STAT_QUIET,              CONST_CS|CONST_PERSISTENT);</span>
+<span class="lineNum">      96 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;STREAM_MKDIR_RECURSIVE&quot;,      PHP_STREAM_MKDIR_RECURSIVE,             CONST_CS|CONST_PERSISTENT);</span>
+<span class="lineNum">      97 </span>                : 
+<span class="lineNum">      98 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;STREAM_IS_URL&quot;,       PHP_STREAM_IS_URL,              CONST_CS|CONST_PERSISTENT);</span>
+<span class="lineNum">      99 </span>                : 
+<span class="lineNum">     100 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;STREAM_OPTION_BLOCKING&quot;,      PHP_STREAM_OPTION_BLOCKING,             CONST_CS|CONST_PERSISTENT);</span>
+<span class="lineNum">     101 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;STREAM_OPTION_READ_TIMEOUT&quot;,  PHP_STREAM_OPTION_READ_TIMEOUT,         CONST_CS|CONST_PERSISTENT);</span>
+<span class="lineNum">     102 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;STREAM_OPTION_READ_BUFFER&quot;,   PHP_STREAM_OPTION_READ_BUFFER,          CONST_CS|CONST_PERSISTENT);</span>
+<span class="lineNum">     103 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;STREAM_OPTION_WRITE_BUFFER&quot;,  PHP_STREAM_OPTION_WRITE_BUFFER,         CONST_CS|CONST_PERSISTENT);</span>
+<span class="lineNum">     104 </span>                : 
+<span class="lineNum">     105 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;STREAM_BUFFER_NONE&quot;,          PHP_STREAM_BUFFER_NONE,                 CONST_CS|CONST_PERSISTENT);</span>
+<span class="lineNum">     106 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;STREAM_BUFFER_LINE&quot;,          PHP_STREAM_BUFFER_LINE,                 CONST_CS|CONST_PERSISTENT);</span>
+<span class="lineNum">     107 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;STREAM_BUFFER_FULL&quot;,          PHP_STREAM_BUFFER_FULL,                 CONST_CS|CONST_PERSISTENT);</span>
+<span class="lineNum">     108 </span>                : 
+<span class="lineNum">     109 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;STREAM_CAST_AS_STREAM&quot;,               PHP_STREAM_AS_STDIO,                    CONST_CS|CONST_PERSISTENT);</span>
+<span class="lineNum">     110 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;STREAM_CAST_FOR_SELECT&quot;,      PHP_STREAM_AS_FD_FOR_SELECT,            CONST_CS|CONST_PERSISTENT);</span>
+<span class="lineNum">     111 </span>                : 
+<span class="lineNum">     112 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;STREAM_META_TOUCH&quot;,                   PHP_STREAM_META_TOUCH,                  CONST_CS|CONST_PERSISTENT);</span>
+<span class="lineNum">     113 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;STREAM_META_OWNER&quot;,                   PHP_STREAM_META_OWNER,                  CONST_CS|CONST_PERSISTENT);</span>
+<span class="lineNum">     114 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;STREAM_META_OWNER_NAME&quot;,      PHP_STREAM_META_OWNER_NAME,             CONST_CS|CONST_PERSISTENT);</span>
+<span class="lineNum">     115 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;STREAM_META_GROUP&quot;,                   PHP_STREAM_META_GROUP,                  CONST_CS|CONST_PERSISTENT);</span>
+<span class="lineNum">     116 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;STREAM_META_GROUP_NAME&quot;,      PHP_STREAM_META_GROUP_NAME,             CONST_CS|CONST_PERSISTENT);</span>
+<span class="lineNum">     117 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;STREAM_META_ACCESS&quot;,          PHP_STREAM_META_ACCESS,                 CONST_CS|CONST_PERSISTENT);</span>
+<span class="lineNum">     118 </span><span class="lineCov">             48 :         return SUCCESS;</span>
+<span class="lineNum">     119 </span>                : }
+<span class="lineNum">     120 </span>                : 
+<span class="lineNum">     121 </span>                : struct _php_userstream_data {
+<span class="lineNum">     122 </span>                :         struct php_user_stream_wrapper * wrapper;
+<span class="lineNum">     123 </span>                :         zval * object;
+<span class="lineNum">     124 </span>                : };
+<span class="lineNum">     125 </span>                : typedef struct _php_userstream_data php_userstream_data_t;
+<span class="lineNum">     126 </span>                : 
+<span class="lineNum">     127 </span>                : /* names of methods */
+<span class="lineNum">     128 </span>                : #define USERSTREAM_OPEN         &quot;stream_open&quot;
+<span class="lineNum">     129 </span>                : #define USERSTREAM_CLOSE        &quot;stream_close&quot;
+<span class="lineNum">     130 </span>                : #define USERSTREAM_READ         &quot;stream_read&quot;
+<span class="lineNum">     131 </span>                : #define USERSTREAM_WRITE        &quot;stream_write&quot;
+<span class="lineNum">     132 </span>                : #define USERSTREAM_FLUSH        &quot;stream_flush&quot;
+<span class="lineNum">     133 </span>                : #define USERSTREAM_SEEK         &quot;stream_seek&quot;
+<span class="lineNum">     134 </span>                : #define USERSTREAM_TELL         &quot;stream_tell&quot;
+<span class="lineNum">     135 </span>                : #define USERSTREAM_EOF          &quot;stream_eof&quot;
+<span class="lineNum">     136 </span>                : #define USERSTREAM_STAT         &quot;stream_stat&quot;
+<span class="lineNum">     137 </span>                : #define USERSTREAM_STATURL      &quot;url_stat&quot;
+<span class="lineNum">     138 </span>                : #define USERSTREAM_UNLINK       &quot;unlink&quot;
+<span class="lineNum">     139 </span>                : #define USERSTREAM_RENAME       &quot;rename&quot;
+<span class="lineNum">     140 </span>                : #define USERSTREAM_MKDIR        &quot;mkdir&quot;
+<span class="lineNum">     141 </span>                : #define USERSTREAM_RMDIR        &quot;rmdir&quot;
+<span class="lineNum">     142 </span>                : #define USERSTREAM_DIR_OPEN             &quot;dir_opendir&quot;
+<span class="lineNum">     143 </span>                : #define USERSTREAM_DIR_READ             &quot;dir_readdir&quot;
+<span class="lineNum">     144 </span>                : #define USERSTREAM_DIR_REWIND   &quot;dir_rewinddir&quot;
+<span class="lineNum">     145 </span>                : #define USERSTREAM_DIR_CLOSE    &quot;dir_closedir&quot;
+<span class="lineNum">     146 </span>                : #define USERSTREAM_LOCK     &quot;stream_lock&quot;
+<span class="lineNum">     147 </span>                : #define USERSTREAM_CAST         &quot;stream_cast&quot;
+<span class="lineNum">     148 </span>                : #define USERSTREAM_SET_OPTION   &quot;stream_set_option&quot;
+<span class="lineNum">     149 </span>                : #define USERSTREAM_TRUNCATE     &quot;stream_truncate&quot;
+<span class="lineNum">     150 </span>                : #define USERSTREAM_METADATA     &quot;stream_metadata&quot;
+<span class="lineNum">     151 </span>                : 
+<span class="lineNum">     152 </span>                : /* {{{ class should have methods like these:
+<span class="lineNum">     153 </span>                : 
+<span class="lineNum">     154 </span>                :         function stream_open($path, $mode, $options, &amp;$opened_path)
+<span class="lineNum">     155 </span>                :         {
+<span class="lineNum">     156 </span>                :                 return true/false;
+<span class="lineNum">     157 </span>                :         }
+<span class="lineNum">     158 </span>                : 
+<span class="lineNum">     159 </span>                :         function stream_read($count)
+<span class="lineNum">     160 </span>                :         {
+<span class="lineNum">     161 </span>                :                 return false on error;
+<span class="lineNum">     162 </span>                :                 else return string;
+<span class="lineNum">     163 </span>                :         }
+<span class="lineNum">     164 </span>                : 
+<span class="lineNum">     165 </span>                :         function stream_write($data)
+<span class="lineNum">     166 </span>                :         {
+<span class="lineNum">     167 </span>                :                 return false on error;
+<span class="lineNum">     168 </span>                :                 else return count written;
+<span class="lineNum">     169 </span>                :         }
+<span class="lineNum">     170 </span>                : 
+<span class="lineNum">     171 </span>                :         function stream_close()
+<span class="lineNum">     172 </span>                :         {
+<span class="lineNum">     173 </span>                :         }
+<span class="lineNum">     174 </span>                : 
+<span class="lineNum">     175 </span>                :         function stream_flush()
+<span class="lineNum">     176 </span>                :         {
+<span class="lineNum">     177 </span>                :                 return true/false;
+<span class="lineNum">     178 </span>                :         }
+<span class="lineNum">     179 </span>                : 
+<span class="lineNum">     180 </span>                :         function stream_seek($offset, $whence)
+<span class="lineNum">     181 </span>                :         {
+<span class="lineNum">     182 </span>                :                 return true/false;
+<span class="lineNum">     183 </span>                :         }
+<span class="lineNum">     184 </span>                : 
+<span class="lineNum">     185 </span>                :         function stream_tell()
+<span class="lineNum">     186 </span>                :         {
+<span class="lineNum">     187 </span>                :                 return (int)$position;
+<span class="lineNum">     188 </span>                :         }
+<span class="lineNum">     189 </span>                : 
+<span class="lineNum">     190 </span>                :         function stream_eof()
+<span class="lineNum">     191 </span>                :         {
+<span class="lineNum">     192 </span>                :                 return true/false;
+<span class="lineNum">     193 </span>                :         }
+<span class="lineNum">     194 </span>                : 
+<span class="lineNum">     195 </span>                :         function stream_stat()
+<span class="lineNum">     196 </span>                :         {
+<span class="lineNum">     197 </span>                :                 return array( just like that returned by fstat() );
+<span class="lineNum">     198 </span>                :         }
+<span class="lineNum">     199 </span>                : 
+<span class="lineNum">     200 </span>                :         function stream_cast($castas)
+<span class="lineNum">     201 </span>                :         {
+<span class="lineNum">     202 </span>                :                 if ($castas == STREAM_CAST_FOR_SELECT) {
+<span class="lineNum">     203 </span>                :                         return $this-&gt;underlying_stream;
+<span class="lineNum">     204 </span>                :                 }
+<span class="lineNum">     205 </span>                :                 return false;
+<span class="lineNum">     206 </span>                :         }
+<span class="lineNum">     207 </span>                : 
+<span class="lineNum">     208 </span>                :         function stream_set_option($option, $arg1, $arg2)
+<span class="lineNum">     209 </span>                :         {
+<span class="lineNum">     210 </span>                :                 switch($option) {
+<span class="lineNum">     211 </span>                :                 case STREAM_OPTION_BLOCKING:
+<span class="lineNum">     212 </span>                :                         $blocking = $arg1;
+<span class="lineNum">     213 </span>                :                         ...
+<span class="lineNum">     214 </span>                :                 case STREAM_OPTION_READ_TIMEOUT:
+<span class="lineNum">     215 </span>                :                         $sec = $arg1;
+<span class="lineNum">     216 </span>                :                         $usec = $arg2;
+<span class="lineNum">     217 </span>                :                         ...
+<span class="lineNum">     218 </span>                :                 case STREAM_OPTION_WRITE_BUFFER:
+<span class="lineNum">     219 </span>                :                         $mode = $arg1;
+<span class="lineNum">     220 </span>                :                         $size = $arg2;
+<span class="lineNum">     221 </span>                :                         ...
+<span class="lineNum">     222 </span>                :                 default:
+<span class="lineNum">     223 </span>                :                         return false;
+<span class="lineNum">     224 </span>                :                 }
+<span class="lineNum">     225 </span>                :         }
+<span class="lineNum">     226 </span>                : 
+<span class="lineNum">     227 </span>                :         function url_stat(string $url, int $flags)
+<span class="lineNum">     228 </span>                :         {
+<span class="lineNum">     229 </span>                :                 return array( just like that returned by stat() );
+<span class="lineNum">     230 </span>                :         }
+<span class="lineNum">     231 </span>                : 
+<span class="lineNum">     232 </span>                :         function unlink(string $url)
+<span class="lineNum">     233 </span>                :         {
+<span class="lineNum">     234 </span>                :                 return true / false;
+<span class="lineNum">     235 </span>                :         }
+<span class="lineNum">     236 </span>                : 
+<span class="lineNum">     237 </span>                :         function rename(string $from, string $to)
+<span class="lineNum">     238 </span>                :         {
+<span class="lineNum">     239 </span>                :                 return true / false;
+<span class="lineNum">     240 </span>                :         }
+<span class="lineNum">     241 </span>                : 
+<span class="lineNum">     242 </span>                :         function mkdir($dir, $mode, $options)
+<span class="lineNum">     243 </span>                :         {
+<span class="lineNum">     244 </span>                :                 return true / false;
+<span class="lineNum">     245 </span>                :         }
+<span class="lineNum">     246 </span>                : 
+<span class="lineNum">     247 </span>                :         function rmdir($dir, $options)
+<span class="lineNum">     248 </span>                :         {
+<span class="lineNum">     249 </span>                :                 return true / false;
+<span class="lineNum">     250 </span>                :         }
+<span class="lineNum">     251 </span>                : 
+<span class="lineNum">     252 </span>                :         function dir_opendir(string $url, int $options)
+<span class="lineNum">     253 </span>                :         {
+<span class="lineNum">     254 </span>                :                 return true / false;
+<span class="lineNum">     255 </span>                :         }
+<span class="lineNum">     256 </span>                : 
+<span class="lineNum">     257 </span>                :         function dir_readdir()
+<span class="lineNum">     258 </span>                :         {
+<span class="lineNum">     259 </span>                :                 return string next filename in dir ;
+<span class="lineNum">     260 </span>                :         }
+<span class="lineNum">     261 </span>                : 
+<span class="lineNum">     262 </span>                :         function dir_closedir()
+<span class="lineNum">     263 </span>                :         {
+<span class="lineNum">     264 </span>                :                 release dir related resources;
+<span class="lineNum">     265 </span>                :         }
+<span class="lineNum">     266 </span>                : 
+<span class="lineNum">     267 </span>                :         function dir_rewinddir()
+<span class="lineNum">     268 </span>                :         {
+<span class="lineNum">     269 </span>                :                 reset to start of dir list;
+<span class="lineNum">     270 </span>                :         }
+<span class="lineNum">     271 </span>                : 
+<span class="lineNum">     272 </span>                :         function stream_lock($operation)
+<span class="lineNum">     273 </span>                :         {
+<span class="lineNum">     274 </span>                :                 return true / false;
+<span class="lineNum">     275 </span>                :         }
+<span class="lineNum">     276 </span>                : 
+<span class="lineNum">     277 </span>                :         function stream_truncate($new_size)
+<span class="lineNum">     278 </span>                :         {
+<span class="lineNum">     279 </span>                :                 return true / false;
+<span class="lineNum">     280 </span>                :         }
+<span class="lineNum">     281 </span>                : 
+<a name="282"><span class="lineNum">     282 </span>                :         }}} **/</a>
+<span class="lineNum">     283 </span>                : 
+<span class="lineNum">     284 </span><span class="lineNoCov">              0 : static php_stream *user_wrapper_opener(php_stream_wrapper *wrapper, char *filename, char *mode, int options, char **opened_path, php_stream_context *context STREAMS_DC TSRMLS_DC)</span>
+<span class="lineNum">     285 </span>                : {
+<span class="lineNum">     286 </span><span class="lineNoCov">              0 :         struct php_user_stream_wrapper *uwrap = (struct php_user_stream_wrapper*)wrapper-&gt;abstract;</span>
+<span class="lineNum">     287 </span>                :         php_userstream_data_t *us;
+<span class="lineNum">     288 </span><span class="lineNoCov">              0 :         zval *zfilename, *zmode, *zopened, *zoptions, *zretval = NULL, *zfuncname;</span>
+<span class="lineNum">     289 </span>                :         zval **args[4];
+<span class="lineNum">     290 </span>                :         int call_result;
+<span class="lineNum">     291 </span><span class="lineNoCov">              0 :         php_stream *stream = NULL;</span>
+<span class="lineNum">     292 </span>                :         zend_bool old_in_user_include;
+<span class="lineNum">     293 </span>                : 
+<span class="lineNum">     294 </span>                :         /* Try to catch bad usage without preventing flexibility */
+<span class="lineNum">     295 </span><span class="lineNoCov">              0 :         if (FG(user_stream_current_filename) != NULL &amp;&amp; strcmp(filename, FG(user_stream_current_filename)) == 0) {</span>
+<span class="lineNum">     296 </span><span class="lineNoCov">              0 :                 php_stream_wrapper_log_error(wrapper, options TSRMLS_CC, &quot;infinite recursion prevented&quot;);</span>
+<span class="lineNum">     297 </span><span class="lineNoCov">              0 :                 return NULL;</span>
+<span class="lineNum">     298 </span>                :         }
+<span class="lineNum">     299 </span><span class="lineNoCov">              0 :         FG(user_stream_current_filename) = filename;</span>
+<span class="lineNum">     300 </span>                : 
+<span class="lineNum">     301 </span>                :         /* if the user stream was registered as local and we are in include context,
+<span class="lineNum">     302 </span>                :                 we add allow_url_include restrictions to allow_url_fopen ones */
+<span class="lineNum">     303 </span>                :         /* we need only is_url == 0 here since if is_url == 1 and remote wrappers
+<span class="lineNum">     304 </span>                :                 were restricted we wouldn't get here */
+<span class="lineNum">     305 </span><span class="lineNoCov">              0 :         old_in_user_include = PG(in_user_include);</span>
+<span class="lineNum">     306 </span><span class="lineNoCov">              0 :         if(uwrap-&gt;wrapper.is_url == 0 &amp;&amp;</span>
+<span class="lineNum">     307 </span><span class="lineNoCov">              0 :                 (options &amp; STREAM_OPEN_FOR_INCLUDE) &amp;&amp;</span>
+<span class="lineNum">     308 </span><span class="lineNoCov">              0 :                 !PG(allow_url_include)) {</span>
+<span class="lineNum">     309 </span><span class="lineNoCov">              0 :                 PG(in_user_include) = 1;</span>
+<span class="lineNum">     310 </span>                :         }
+<span class="lineNum">     311 </span>                : 
+<span class="lineNum">     312 </span><span class="lineNoCov">              0 :         us = emalloc(sizeof(*us));</span>
+<span class="lineNum">     313 </span><span class="lineNoCov">              0 :         us-&gt;wrapper = uwrap;</span>
+<span class="lineNum">     314 </span>                : 
+<span class="lineNum">     315 </span>                :         /* create an instance of our class */
+<span class="lineNum">     316 </span><span class="lineNoCov">              0 :         ALLOC_ZVAL(us-&gt;object);</span>
+<span class="lineNum">     317 </span><span class="lineNoCov">              0 :         object_init_ex(us-&gt;object, uwrap-&gt;ce);</span>
+<span class="lineNum">     318 </span><span class="lineNoCov">              0 :         Z_SET_REFCOUNT_P(us-&gt;object, 1);</span>
+<span class="lineNum">     319 </span><span class="lineNoCov">              0 :         Z_SET_ISREF_P(us-&gt;object);</span>
+<span class="lineNum">     320 </span>                : 
+<span class="lineNum">     321 </span><span class="lineNoCov">              0 :         if (uwrap-&gt;ce-&gt;constructor) {</span>
+<span class="lineNum">     322 </span>                :                 zend_fcall_info fci;
+<span class="lineNum">     323 </span>                :                 zend_fcall_info_cache fcc;
+<span class="lineNum">     324 </span>                :                 zval *retval_ptr;
+<span class="lineNum">     325 </span>                : 
+<span class="lineNum">     326 </span><span class="lineNoCov">              0 :                 fci.size = sizeof(fci);</span>
+<span class="lineNum">     327 </span><span class="lineNoCov">              0 :                 fci.function_table = &amp;uwrap-&gt;ce-&gt;function_table;</span>
+<span class="lineNum">     328 </span><span class="lineNoCov">              0 :                 fci.function_name = NULL;</span>
+<span class="lineNum">     329 </span><span class="lineNoCov">              0 :                 fci.symbol_table = NULL;</span>
+<span class="lineNum">     330 </span><span class="lineNoCov">              0 :                 fci.object_ptr = us-&gt;object;</span>
+<span class="lineNum">     331 </span><span class="lineNoCov">              0 :                 fci.retval_ptr_ptr = &amp;retval_ptr;</span>
+<span class="lineNum">     332 </span><span class="lineNoCov">              0 :                 fci.param_count = 0;</span>
+<span class="lineNum">     333 </span><span class="lineNoCov">              0 :                 fci.params = NULL;</span>
+<span class="lineNum">     334 </span><span class="lineNoCov">              0 :                 fci.no_separation = 1;</span>
+<span class="lineNum">     335 </span>                : 
+<span class="lineNum">     336 </span><span class="lineNoCov">              0 :                 fcc.initialized = 1;</span>
+<span class="lineNum">     337 </span><span class="lineNoCov">              0 :                 fcc.function_handler = uwrap-&gt;ce-&gt;constructor;</span>
+<span class="lineNum">     338 </span><span class="lineNoCov">              0 :                 fcc.calling_scope = EG(scope);</span>
+<span class="lineNum">     339 </span><span class="lineNoCov">              0 :                 fcc.called_scope = Z_OBJCE_P(us-&gt;object);</span>
+<span class="lineNum">     340 </span><span class="lineNoCov">              0 :                 fcc.object_ptr = us-&gt;object;</span>
+<span class="lineNum">     341 </span>                : 
+<span class="lineNum">     342 </span><span class="lineNoCov">              0 :                 if (zend_call_function(&amp;fci, &amp;fcc TSRMLS_CC) == FAILURE) {</span>
+<span class="lineNum">     343 </span><span class="lineNoCov">              0 :                         php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Could not execute %s::%s()&quot;, uwrap-&gt;ce-&gt;name, uwrap-&gt;ce-&gt;constructor-&gt;common.function_name);</span>
+<span class="lineNum">     344 </span><span class="lineNoCov">              0 :                         zval_dtor(us-&gt;object);</span>
+<span class="lineNum">     345 </span><span class="lineNoCov">              0 :                         FREE_ZVAL(us-&gt;object);</span>
+<span class="lineNum">     346 </span><span class="lineNoCov">              0 :                         efree(us);</span>
+<span class="lineNum">     347 </span><span class="lineNoCov">              0 :                         FG(user_stream_current_filename) = NULL;</span>
+<span class="lineNum">     348 </span><span class="lineNoCov">              0 :                         PG(in_user_include) = old_in_user_include;</span>
+<span class="lineNum">     349 </span><span class="lineNoCov">              0 :                         return NULL;</span>
+<span class="lineNum">     350 </span>                :                 } else {
+<span class="lineNum">     351 </span><span class="lineNoCov">              0 :                         if (retval_ptr) {</span>
+<span class="lineNum">     352 </span><span class="lineNoCov">              0 :                                 zval_ptr_dtor(&amp;retval_ptr);</span>
+<span class="lineNum">     353 </span>                :                         }
+<span class="lineNum">     354 </span>                :                 }
+<span class="lineNum">     355 </span>                :         }
+<span class="lineNum">     356 </span>                : 
+<span class="lineNum">     357 </span><span class="lineNoCov">              0 :         if (context) {</span>
+<span class="lineNum">     358 </span><span class="lineNoCov">              0 :                 add_property_resource(us-&gt;object, &quot;context&quot;, context-&gt;rsrc_id);</span>
+<span class="lineNum">     359 </span><span class="lineNoCov">              0 :                 zend_list_addref(context-&gt;rsrc_id);</span>
+<span class="lineNum">     360 </span>                :         } else {
+<span class="lineNum">     361 </span><span class="lineNoCov">              0 :                 add_property_null(us-&gt;object, &quot;context&quot;);</span>
+<span class="lineNum">     362 </span>                :         }
+<span class="lineNum">     363 </span>                : 
+<span class="lineNum">     364 </span>                :         /* call it's stream_open method - set up params first */
+<span class="lineNum">     365 </span><span class="lineNoCov">              0 :         MAKE_STD_ZVAL(zfilename);</span>
+<span class="lineNum">     366 </span><span class="lineNoCov">              0 :         ZVAL_STRING(zfilename, filename, 1);</span>
+<span class="lineNum">     367 </span><span class="lineNoCov">              0 :         args[0] = &amp;zfilename;</span>
+<span class="lineNum">     368 </span>                : 
+<span class="lineNum">     369 </span><span class="lineNoCov">              0 :         MAKE_STD_ZVAL(zmode);</span>
+<span class="lineNum">     370 </span><span class="lineNoCov">              0 :         ZVAL_STRING(zmode, mode, 1);</span>
+<span class="lineNum">     371 </span><span class="lineNoCov">              0 :         args[1] = &amp;zmode;</span>
+<span class="lineNum">     372 </span>                : 
+<span class="lineNum">     373 </span><span class="lineNoCov">              0 :         MAKE_STD_ZVAL(zoptions);</span>
+<span class="lineNum">     374 </span><span class="lineNoCov">              0 :         ZVAL_LONG(zoptions, options);</span>
+<span class="lineNum">     375 </span><span class="lineNoCov">              0 :         args[2] = &amp;zoptions;</span>
+<span class="lineNum">     376 </span>                : 
+<span class="lineNum">     377 </span><span class="lineNoCov">              0 :         MAKE_STD_ZVAL(zopened);</span>
+<span class="lineNum">     378 </span><span class="lineNoCov">              0 :         Z_SET_REFCOUNT_P(zopened, 1);</span>
+<span class="lineNum">     379 </span><span class="lineNoCov">              0 :         Z_SET_ISREF_P(zopened);</span>
+<span class="lineNum">     380 </span><span class="lineNoCov">              0 :         ZVAL_NULL(zopened);</span>
+<span class="lineNum">     381 </span><span class="lineNoCov">              0 :         args[3] = &amp;zopened;</span>
+<span class="lineNum">     382 </span>                : 
+<span class="lineNum">     383 </span><span class="lineNoCov">              0 :         MAKE_STD_ZVAL(zfuncname);</span>
+<span class="lineNum">     384 </span><span class="lineNoCov">              0 :         ZVAL_STRING(zfuncname, USERSTREAM_OPEN, 1);</span>
+<span class="lineNum">     385 </span>                : 
+<span class="lineNum">     386 </span><span class="lineNoCov">              0 :         call_result = call_user_function_ex(NULL,</span>
+<span class="lineNum">     387 </span>                :                         &amp;us-&gt;object,
+<span class="lineNum">     388 </span>                :                         zfuncname,
+<span class="lineNum">     389 </span>                :                         &amp;zretval,
+<span class="lineNum">     390 </span>                :                         4, args,
+<span class="lineNum">     391 </span>                :                         0, NULL TSRMLS_CC);
+<span class="lineNum">     392 </span>                : 
+<span class="lineNum">     393 </span><span class="lineNoCov">              0 :         if (call_result == SUCCESS &amp;&amp; zretval != NULL &amp;&amp; zval_is_true(zretval)) {</span>
+<span class="lineNum">     394 </span>                :                 /* the stream is now open! */
+<span class="lineNum">     395 </span><span class="lineNoCov">              0 :                 stream = php_stream_alloc_rel(&amp;php_stream_userspace_ops, us, 0, mode);</span>
+<span class="lineNum">     396 </span>                : 
+<span class="lineNum">     397 </span>                :                 /* if the opened path is set, copy it out */
+<span class="lineNum">     398 </span><span class="lineNoCov">              0 :                 if (Z_TYPE_P(zopened) == IS_STRING &amp;&amp; opened_path) {</span>
+<span class="lineNum">     399 </span><span class="lineNoCov">              0 :                         *opened_path = estrndup(Z_STRVAL_P(zopened), Z_STRLEN_P(zopened));</span>
+<span class="lineNum">     400 </span>                :                 }
+<span class="lineNum">     401 </span>                : 
+<span class="lineNum">     402 </span>                :                 /* set wrapper data to be a reference to our object */
+<span class="lineNum">     403 </span><span class="lineNoCov">              0 :                 stream-&gt;wrapperdata = us-&gt;object;</span>
+<span class="lineNum">     404 </span><span class="lineNoCov">              0 :                 zval_add_ref(&amp;stream-&gt;wrapperdata);</span>
+<span class="lineNum">     405 </span>                :         } else {
+<span class="lineNum">     406 </span><span class="lineNoCov">              0 :                 php_stream_wrapper_log_error(wrapper, options TSRMLS_CC, &quot;\&quot;%s::&quot; USERSTREAM_OPEN &quot;\&quot; call failed&quot;,</span>
+<span class="lineNum">     407 </span><span class="lineNoCov">              0 :                         us-&gt;wrapper-&gt;classname);</span>
+<span class="lineNum">     408 </span>                :         }
+<span class="lineNum">     409 </span>                : 
+<span class="lineNum">     410 </span>                :         /* destroy everything else */
+<span class="lineNum">     411 </span><span class="lineNoCov">              0 :         if (stream == NULL) {</span>
+<span class="lineNum">     412 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;us-&gt;object);</span>
+<span class="lineNum">     413 </span><span class="lineNoCov">              0 :                 efree(us);</span>
+<span class="lineNum">     414 </span>                :         }
+<span class="lineNum">     415 </span><span class="lineNoCov">              0 :         if (zretval)</span>
+<span class="lineNum">     416 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;zretval);</span>
+<span class="lineNum">     417 </span>                : 
+<span class="lineNum">     418 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;zfuncname);</span>
+<span class="lineNum">     419 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;zopened);</span>
+<span class="lineNum">     420 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;zoptions);</span>
+<span class="lineNum">     421 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;zmode);</span>
+<span class="lineNum">     422 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;zfilename);</span>
+<span class="lineNum">     423 </span>                : 
+<span class="lineNum">     424 </span><span class="lineNoCov">              0 :         FG(user_stream_current_filename) = NULL;</span>
+<span class="lineNum">     425 </span>                : 
+<span class="lineNum">     426 </span><span class="lineNoCov">              0 :         PG(in_user_include) = old_in_user_include;</span>
+<span class="lineNum">     427 </span><span class="lineNoCov">              0 :         return stream;</span>
+<a name="428"><span class="lineNum">     428 </span>                : }</a>
+<span class="lineNum">     429 </span>                : 
+<span class="lineNum">     430 </span><span class="lineNoCov">              0 : static php_stream *user_wrapper_opendir(php_stream_wrapper *wrapper, char *filename, char *mode,</span>
+<span class="lineNum">     431 </span>                :                 int options, char **opened_path, php_stream_context *context STREAMS_DC TSRMLS_DC)
+<span class="lineNum">     432 </span>                : {
+<span class="lineNum">     433 </span><span class="lineNoCov">              0 :         struct php_user_stream_wrapper *uwrap = (struct php_user_stream_wrapper*)wrapper-&gt;abstract;</span>
+<span class="lineNum">     434 </span>                :         php_userstream_data_t *us;
+<span class="lineNum">     435 </span><span class="lineNoCov">              0 :         zval *zfilename, *zoptions, *zretval = NULL, *zfuncname;</span>
+<span class="lineNum">     436 </span>                :         zval **args[2];
+<span class="lineNum">     437 </span>                :         int call_result;
+<span class="lineNum">     438 </span><span class="lineNoCov">              0 :         php_stream *stream = NULL;</span>
+<span class="lineNum">     439 </span>                : 
+<span class="lineNum">     440 </span>                :         /* Try to catch bad usage without preventing flexibility */
+<span class="lineNum">     441 </span><span class="lineNoCov">              0 :         if (FG(user_stream_current_filename) != NULL &amp;&amp; strcmp(filename, FG(user_stream_current_filename)) == 0) {</span>
+<span class="lineNum">     442 </span><span class="lineNoCov">              0 :                 php_stream_wrapper_log_error(wrapper, options TSRMLS_CC, &quot;infinite recursion prevented&quot;);</span>
+<span class="lineNum">     443 </span><span class="lineNoCov">              0 :                 return NULL;</span>
+<span class="lineNum">     444 </span>                :         }
+<span class="lineNum">     445 </span><span class="lineNoCov">              0 :         FG(user_stream_current_filename) = filename;</span>
+<span class="lineNum">     446 </span>                : 
+<span class="lineNum">     447 </span><span class="lineNoCov">              0 :         us = emalloc(sizeof(*us));</span>
+<span class="lineNum">     448 </span><span class="lineNoCov">              0 :         us-&gt;wrapper = uwrap;</span>
+<span class="lineNum">     449 </span>                : 
+<span class="lineNum">     450 </span>                :         /* create an instance of our class */
+<span class="lineNum">     451 </span><span class="lineNoCov">              0 :         ALLOC_ZVAL(us-&gt;object);</span>
+<span class="lineNum">     452 </span><span class="lineNoCov">              0 :         object_init_ex(us-&gt;object, uwrap-&gt;ce);</span>
+<span class="lineNum">     453 </span><span class="lineNoCov">              0 :         Z_SET_REFCOUNT_P(us-&gt;object, 1);</span>
+<span class="lineNum">     454 </span><span class="lineNoCov">              0 :         Z_SET_ISREF_P(us-&gt;object);</span>
+<span class="lineNum">     455 </span>                : 
+<span class="lineNum">     456 </span><span class="lineNoCov">              0 :         if (context) {</span>
+<span class="lineNum">     457 </span><span class="lineNoCov">              0 :                 add_property_resource(us-&gt;object, &quot;context&quot;, context-&gt;rsrc_id);</span>
+<span class="lineNum">     458 </span><span class="lineNoCov">              0 :                 zend_list_addref(context-&gt;rsrc_id);</span>
+<span class="lineNum">     459 </span>                :         } else {
+<span class="lineNum">     460 </span><span class="lineNoCov">              0 :                 add_property_null(us-&gt;object, &quot;context&quot;);</span>
+<span class="lineNum">     461 </span>                :         }
+<span class="lineNum">     462 </span>                : 
+<span class="lineNum">     463 </span>                :         /* call it's dir_open method - set up params first */
+<span class="lineNum">     464 </span><span class="lineNoCov">              0 :         MAKE_STD_ZVAL(zfilename);</span>
+<span class="lineNum">     465 </span><span class="lineNoCov">              0 :         ZVAL_STRING(zfilename, filename, 1);</span>
+<span class="lineNum">     466 </span><span class="lineNoCov">              0 :         args[0] = &amp;zfilename;</span>
+<span class="lineNum">     467 </span>                : 
+<span class="lineNum">     468 </span><span class="lineNoCov">              0 :         MAKE_STD_ZVAL(zoptions);</span>
+<span class="lineNum">     469 </span><span class="lineNoCov">              0 :         ZVAL_LONG(zoptions, options);</span>
+<span class="lineNum">     470 </span><span class="lineNoCov">              0 :         args[1] = &amp;zoptions;</span>
+<span class="lineNum">     471 </span>                : 
+<span class="lineNum">     472 </span><span class="lineNoCov">              0 :         MAKE_STD_ZVAL(zfuncname);</span>
+<span class="lineNum">     473 </span><span class="lineNoCov">              0 :         ZVAL_STRING(zfuncname, USERSTREAM_DIR_OPEN, 1);</span>
+<span class="lineNum">     474 </span>                : 
+<span class="lineNum">     475 </span><span class="lineNoCov">              0 :         call_result = call_user_function_ex(NULL,</span>
+<span class="lineNum">     476 </span>                :                         &amp;us-&gt;object,
+<span class="lineNum">     477 </span>                :                         zfuncname,
+<span class="lineNum">     478 </span>                :                         &amp;zretval,
+<span class="lineNum">     479 </span>                :                         2, args,
+<span class="lineNum">     480 </span>                :                         0, NULL TSRMLS_CC);
+<span class="lineNum">     481 </span>                : 
+<span class="lineNum">     482 </span><span class="lineNoCov">              0 :         if (call_result == SUCCESS &amp;&amp; zretval != NULL &amp;&amp; zval_is_true(zretval)) {</span>
+<span class="lineNum">     483 </span>                :                 /* the stream is now open! */
+<span class="lineNum">     484 </span><span class="lineNoCov">              0 :                 stream = php_stream_alloc_rel(&amp;php_stream_userspace_dir_ops, us, 0, mode);</span>
+<span class="lineNum">     485 </span>                : 
+<span class="lineNum">     486 </span>                :                 /* set wrapper data to be a reference to our object */
+<span class="lineNum">     487 </span><span class="lineNoCov">              0 :                 stream-&gt;wrapperdata = us-&gt;object;</span>
+<span class="lineNum">     488 </span><span class="lineNoCov">              0 :                 zval_add_ref(&amp;stream-&gt;wrapperdata);</span>
+<span class="lineNum">     489 </span>                :         } else {
+<span class="lineNum">     490 </span><span class="lineNoCov">              0 :                 php_stream_wrapper_log_error(wrapper, options TSRMLS_CC, &quot;\&quot;%s::&quot; USERSTREAM_DIR_OPEN &quot;\&quot; call failed&quot;,</span>
+<span class="lineNum">     491 </span><span class="lineNoCov">              0 :                         us-&gt;wrapper-&gt;classname);</span>
+<span class="lineNum">     492 </span>                :         }
+<span class="lineNum">     493 </span>                : 
+<span class="lineNum">     494 </span>                :         /* destroy everything else */
+<span class="lineNum">     495 </span><span class="lineNoCov">              0 :         if (stream == NULL) {</span>
+<span class="lineNum">     496 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;us-&gt;object);</span>
+<span class="lineNum">     497 </span><span class="lineNoCov">              0 :                 efree(us);</span>
+<span class="lineNum">     498 </span>                :         }
+<span class="lineNum">     499 </span><span class="lineNoCov">              0 :         if (zretval)</span>
+<span class="lineNum">     500 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;zretval);</span>
+<span class="lineNum">     501 </span>                : 
+<span class="lineNum">     502 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;zfuncname);</span>
+<span class="lineNum">     503 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;zoptions);</span>
+<span class="lineNum">     504 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;zfilename);</span>
+<span class="lineNum">     505 </span>                : 
+<span class="lineNum">     506 </span><span class="lineNoCov">              0 :         FG(user_stream_current_filename) = NULL;</span>
+<span class="lineNum">     507 </span>                : 
+<span class="lineNum">     508 </span><span class="lineNoCov">              0 :         return stream;</span>
+<span class="lineNum">     509 </span>                : }
+<span class="lineNum">     510 </span>                : 
+<span class="lineNum">     511 </span>                : 
+<a name="512"><span class="lineNum">     512 </span>                : /* {{{ proto bool stream_wrapper_register(string protocol, string classname[, integer flags])</a>
+<span class="lineNum">     513 </span>                :    Registers a custom URL protocol handler class */
+<span class="lineNum">     514 </span><span class="lineNoCov">              0 : PHP_FUNCTION(stream_wrapper_register)</span>
+<span class="lineNum">     515 </span>                : {
+<span class="lineNum">     516 </span>                :         char *protocol, *classname;
+<span class="lineNum">     517 </span>                :         int protocol_len, classname_len;
+<span class="lineNum">     518 </span>                :         struct php_user_stream_wrapper * uwrap;
+<span class="lineNum">     519 </span>                :         int rsrc_id;
+<span class="lineNum">     520 </span><span class="lineNoCov">              0 :         long flags = 0;</span>
+<span class="lineNum">     521 </span>                : 
+<span class="lineNum">     522 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;ss|l&quot;, &amp;protocol, &amp;protocol_len, &amp;classname, &amp;classname_len, &amp;flags) == FAILURE) {</span>
+<span class="lineNum">     523 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     524 </span>                :         }
+<span class="lineNum">     525 </span>                : 
+<span class="lineNum">     526 </span><span class="lineNoCov">              0 :         uwrap = (struct php_user_stream_wrapper *)ecalloc(1, sizeof(*uwrap));</span>
+<span class="lineNum">     527 </span><span class="lineNoCov">              0 :         uwrap-&gt;protoname = estrndup(protocol, protocol_len);</span>
+<span class="lineNum">     528 </span><span class="lineNoCov">              0 :         uwrap-&gt;classname = estrndup(classname, classname_len);</span>
+<span class="lineNum">     529 </span><span class="lineNoCov">              0 :         uwrap-&gt;wrapper.wops = &amp;user_stream_wops;</span>
+<span class="lineNum">     530 </span><span class="lineNoCov">              0 :         uwrap-&gt;wrapper.abstract = uwrap;</span>
+<span class="lineNum">     531 </span><span class="lineNoCov">              0 :         uwrap-&gt;wrapper.is_url = ((flags &amp; PHP_STREAM_IS_URL) != 0);</span>
+<span class="lineNum">     532 </span>                : 
+<span class="lineNum">     533 </span><span class="lineNoCov">              0 :         rsrc_id = ZEND_REGISTER_RESOURCE(NULL, uwrap, le_protocols);</span>
+<span class="lineNum">     534 </span>                : 
+<span class="lineNum">     535 </span><span class="lineNoCov">              0 :         if (zend_lookup_class(uwrap-&gt;classname, classname_len, (zend_class_entry***)&amp;uwrap-&gt;ce TSRMLS_CC) == SUCCESS) {</span>
+<span class="lineNum">     536 </span><span class="lineNoCov">              0 :                 uwrap-&gt;ce = *(zend_class_entry**)uwrap-&gt;ce;</span>
+<span class="lineNum">     537 </span><span class="lineNoCov">              0 :                 if (php_register_url_stream_wrapper_volatile(protocol, &amp;uwrap-&gt;wrapper TSRMLS_CC) == SUCCESS) {</span>
+<span class="lineNum">     538 </span><span class="lineNoCov">              0 :                         RETURN_TRUE;</span>
+<span class="lineNum">     539 </span>                :                 } else {
+<span class="lineNum">     540 </span>                :                         /* We failed.  But why? */
+<span class="lineNum">     541 </span><span class="lineNoCov">              0 :                         if (zend_hash_exists(php_stream_get_url_stream_wrappers_hash(), protocol, protocol_len + 1)) {</span>
+<span class="lineNum">     542 </span><span class="lineNoCov">              0 :                                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Protocol %s:// is already defined.&quot;, protocol);</span>
+<span class="lineNum">     543 </span>                :                         } else {
+<span class="lineNum">     544 </span>                :                                 /* Hash doesn't exist so it must have been an invalid protocol scheme */
+<span class="lineNum">     545 </span><span class="lineNoCov">              0 :                                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Invalid protocol scheme specified. Unable to register wrapper class %s to %s://&quot;, classname, protocol);</span>
+<span class="lineNum">     546 </span>                :                         }
+<span class="lineNum">     547 </span>                :                 }
+<span class="lineNum">     548 </span>                :         } else {
+<span class="lineNum">     549 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;class '%s' is undefined&quot;, classname);</span>
+<span class="lineNum">     550 </span>                :         }
+<span class="lineNum">     551 </span>                : 
+<span class="lineNum">     552 </span><span class="lineNoCov">              0 :         zend_list_delete(rsrc_id);</span>
+<span class="lineNum">     553 </span><span class="lineNoCov">              0 :         RETURN_FALSE;</span>
+<span class="lineNum">     554 </span>                : }
+<span class="lineNum">     555 </span>                : /* }}} */
+<span class="lineNum">     556 </span>                : 
+<a name="557"><span class="lineNum">     557 </span>                : /* {{{ proto bool stream_wrapper_unregister(string protocol)</a>
+<span class="lineNum">     558 </span>                :         Unregister a wrapper for the life of the current request. */
+<span class="lineNum">     559 </span><span class="lineNoCov">              0 : PHP_FUNCTION(stream_wrapper_unregister)</span>
+<span class="lineNum">     560 </span>                : {
+<span class="lineNum">     561 </span>                :         char *protocol;
+<span class="lineNum">     562 </span>                :         int protocol_len;
+<span class="lineNum">     563 </span>                : 
+<span class="lineNum">     564 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;s&quot;, &amp;protocol, &amp;protocol_len) == FAILURE) {</span>
+<span class="lineNum">     565 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     566 </span>                :         }
+<span class="lineNum">     567 </span>                : 
+<span class="lineNum">     568 </span><span class="lineNoCov">              0 :         if (php_unregister_url_stream_wrapper_volatile(protocol TSRMLS_CC) == FAILURE) {</span>
+<span class="lineNum">     569 </span>                :                 /* We failed */
+<span class="lineNum">     570 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Unable to unregister protocol %s://&quot;, protocol);</span>
+<span class="lineNum">     571 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     572 </span>                :         }
+<span class="lineNum">     573 </span>                : 
+<span class="lineNum">     574 </span><span class="lineNoCov">              0 :         RETURN_TRUE;</span>
+<span class="lineNum">     575 </span>                : }
+<span class="lineNum">     576 </span>                : /* }}} */
+<span class="lineNum">     577 </span>                : 
+<a name="578"><span class="lineNum">     578 </span>                : /* {{{ proto bool stream_wrapper_restore(string protocol)</a>
+<span class="lineNum">     579 </span>                :         Restore the original protocol handler, overriding if necessary */
+<span class="lineNum">     580 </span><span class="lineNoCov">              0 : PHP_FUNCTION(stream_wrapper_restore)</span>
+<span class="lineNum">     581 </span>                : {
+<span class="lineNum">     582 </span>                :         char *protocol;
+<span class="lineNum">     583 </span>                :         int protocol_len;
+<span class="lineNum">     584 </span><span class="lineNoCov">              0 :         php_stream_wrapper **wrapperpp = NULL, *wrapper;</span>
+<span class="lineNum">     585 </span>                :         HashTable *global_wrapper_hash;
+<span class="lineNum">     586 </span>                : 
+<span class="lineNum">     587 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;s&quot;, &amp;protocol, &amp;protocol_len) == FAILURE) {</span>
+<span class="lineNum">     588 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     589 </span>                :         }
+<span class="lineNum">     590 </span>                : 
+<span class="lineNum">     591 </span><span class="lineNoCov">              0 :         global_wrapper_hash = php_stream_get_url_stream_wrappers_hash_global();</span>
+<span class="lineNum">     592 </span><span class="lineNoCov">              0 :         if (php_stream_get_url_stream_wrappers_hash() == global_wrapper_hash) {</span>
+<span class="lineNum">     593 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_NOTICE, &quot;%s:// was never changed, nothing to restore&quot;, protocol);</span>
+<span class="lineNum">     594 </span><span class="lineNoCov">              0 :                 RETURN_TRUE;</span>
+<span class="lineNum">     595 </span>                :         }
+<span class="lineNum">     596 </span>                : 
+<span class="lineNum">     597 </span><span class="lineNoCov">              0 :         if ((zend_hash_find(global_wrapper_hash, protocol, protocol_len + 1, (void**)&amp;wrapperpp) == FAILURE) || !wrapperpp) {</span>
+<span class="lineNum">     598 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;%s:// never existed, nothing to restore&quot;, protocol);</span>
+<span class="lineNum">     599 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     600 </span>                :         }
+<span class="lineNum">     601 </span>                : 
+<span class="lineNum">     602 </span>                :         /* next line might delete the pointer that wrapperpp points at, so deref it now */
+<span class="lineNum">     603 </span><span class="lineNoCov">              0 :         wrapper = *wrapperpp;</span>
+<span class="lineNum">     604 </span>                : 
+<span class="lineNum">     605 </span>                :         /* A failure here could be okay given that the protocol might have been merely unregistered */
+<span class="lineNum">     606 </span><span class="lineNoCov">              0 :         php_unregister_url_stream_wrapper_volatile(protocol TSRMLS_CC);</span>
+<span class="lineNum">     607 </span>                : 
+<span class="lineNum">     608 </span><span class="lineNoCov">              0 :         if (php_register_url_stream_wrapper_volatile(protocol, wrapper TSRMLS_CC) == FAILURE) {</span>
+<span class="lineNum">     609 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Unable to restore original %s:// wrapper&quot;, protocol);</span>
+<span class="lineNum">     610 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     611 </span>                :         }
+<span class="lineNum">     612 </span>                : 
+<span class="lineNum">     613 </span><span class="lineNoCov">              0 :         RETURN_TRUE;</span>
+<span class="lineNum">     614 </span>                : }
+<a name="615"><span class="lineNum">     615 </span>                : /* }}} */</a>
+<span class="lineNum">     616 </span>                : 
+<span class="lineNum">     617 </span><span class="lineNoCov">              0 : static size_t php_userstreamop_write(php_stream *stream, const char *buf, size_t count TSRMLS_DC)</span>
+<span class="lineNum">     618 </span>                : {
+<span class="lineNum">     619 </span>                :         zval func_name;
+<span class="lineNum">     620 </span><span class="lineNoCov">              0 :         zval *retval = NULL;</span>
+<span class="lineNum">     621 </span>                :         int call_result;
+<span class="lineNum">     622 </span><span class="lineNoCov">              0 :         php_userstream_data_t *us = (php_userstream_data_t *)stream-&gt;abstract;</span>
+<span class="lineNum">     623 </span>                :         zval **args[1];
+<span class="lineNum">     624 </span>                :         zval *zbufptr;
+<span class="lineNum">     625 </span><span class="lineNoCov">              0 :         size_t didwrite = 0;</span>
+<span class="lineNum">     626 </span>                : 
+<span class="lineNum">     627 </span>                :         assert(us != NULL);
+<span class="lineNum">     628 </span>                : 
+<span class="lineNum">     629 </span><span class="lineNoCov">              0 :         ZVAL_STRINGL(&amp;func_name, USERSTREAM_WRITE, sizeof(USERSTREAM_WRITE)-1, 0);</span>
+<span class="lineNum">     630 </span>                : 
+<span class="lineNum">     631 </span><span class="lineNoCov">              0 :         MAKE_STD_ZVAL(zbufptr);</span>
+<span class="lineNum">     632 </span><span class="lineNoCov">              0 :         ZVAL_STRINGL(zbufptr, (char*)buf, count, 1);;</span>
+<span class="lineNum">     633 </span><span class="lineNoCov">              0 :         args[0] = &amp;zbufptr;</span>
+<span class="lineNum">     634 </span>                : 
+<span class="lineNum">     635 </span><span class="lineNoCov">              0 :         call_result = call_user_function_ex(NULL,</span>
+<span class="lineNum">     636 </span>                :                         &amp;us-&gt;object,
+<span class="lineNum">     637 </span>                :                         &amp;func_name,
+<span class="lineNum">     638 </span>                :                         &amp;retval,
+<span class="lineNum">     639 </span>                :                         1, args,
+<span class="lineNum">     640 </span>                :                         0, NULL TSRMLS_CC);
+<span class="lineNum">     641 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;zbufptr);</span>
+<span class="lineNum">     642 </span>                : 
+<span class="lineNum">     643 </span><span class="lineNoCov">              0 :         didwrite = 0;</span>
+<span class="lineNum">     644 </span><span class="lineNoCov">              0 :         if (call_result == SUCCESS &amp;&amp; retval != NULL) {</span>
+<span class="lineNum">     645 </span><span class="lineNoCov">              0 :                 convert_to_long(retval);</span>
+<span class="lineNum">     646 </span><span class="lineNoCov">              0 :                 didwrite = Z_LVAL_P(retval);</span>
+<span class="lineNum">     647 </span><span class="lineNoCov">              0 :         } else if (call_result == FAILURE) {</span>
+<span class="lineNum">     648 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;%s::&quot; USERSTREAM_WRITE &quot; is not implemented!&quot;,</span>
+<span class="lineNum">     649 </span><span class="lineNoCov">              0 :                                 us-&gt;wrapper-&gt;classname);</span>
+<span class="lineNum">     650 </span>                :         }
+<span class="lineNum">     651 </span>                : 
+<span class="lineNum">     652 </span>                :         /* don't allow strange buffer overruns due to bogus return */
+<span class="lineNum">     653 </span><span class="lineNoCov">              0 :         if (didwrite &gt; count) {</span>
+<span class="lineNum">     654 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;%s::&quot; USERSTREAM_WRITE &quot; wrote %ld bytes more data than requested (%ld written, %ld max)&quot;,</span>
+<span class="lineNum">     655 </span><span class="lineNoCov">              0 :                                 us-&gt;wrapper-&gt;classname,</span>
+<span class="lineNum">     656 </span><span class="lineNoCov">              0 :                                 (long)(didwrite - count), (long)didwrite, (long)count);</span>
+<span class="lineNum">     657 </span><span class="lineNoCov">              0 :                 didwrite = count;</span>
+<span class="lineNum">     658 </span>                :         }
+<span class="lineNum">     659 </span>                : 
+<span class="lineNum">     660 </span><span class="lineNoCov">              0 :         if (retval)</span>
+<span class="lineNum">     661 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;retval);</span>
+<span class="lineNum">     662 </span>                : 
+<span class="lineNum">     663 </span><span class="lineNoCov">              0 :         return didwrite;</span>
+<a name="664"><span class="lineNum">     664 </span>                : }</a>
+<span class="lineNum">     665 </span>                : 
+<span class="lineNum">     666 </span><span class="lineNoCov">              0 : static size_t php_userstreamop_read(php_stream *stream, char *buf, size_t count TSRMLS_DC)</span>
+<span class="lineNum">     667 </span>                : {
+<span class="lineNum">     668 </span>                :         zval func_name;
+<span class="lineNum">     669 </span><span class="lineNoCov">              0 :         zval *retval = NULL;</span>
+<span class="lineNum">     670 </span>                :         zval **args[1];
+<span class="lineNum">     671 </span>                :         int call_result;
+<span class="lineNum">     672 </span><span class="lineNoCov">              0 :         size_t didread = 0;</span>
+<span class="lineNum">     673 </span><span class="lineNoCov">              0 :         php_userstream_data_t *us = (php_userstream_data_t *)stream-&gt;abstract;</span>
+<span class="lineNum">     674 </span>                :         zval *zcount;
+<span class="lineNum">     675 </span>                : 
+<span class="lineNum">     676 </span>                :         assert(us != NULL);
+<span class="lineNum">     677 </span>                : 
+<span class="lineNum">     678 </span><span class="lineNoCov">              0 :         ZVAL_STRINGL(&amp;func_name, USERSTREAM_READ, sizeof(USERSTREAM_READ)-1, 0);</span>
+<span class="lineNum">     679 </span>                : 
+<span class="lineNum">     680 </span><span class="lineNoCov">              0 :         MAKE_STD_ZVAL(zcount);</span>
+<span class="lineNum">     681 </span><span class="lineNoCov">              0 :         ZVAL_LONG(zcount, count);</span>
+<span class="lineNum">     682 </span><span class="lineNoCov">              0 :         args[0] = &amp;zcount;</span>
+<span class="lineNum">     683 </span>                : 
+<span class="lineNum">     684 </span><span class="lineNoCov">              0 :         call_result = call_user_function_ex(NULL,</span>
+<span class="lineNum">     685 </span>                :                         &amp;us-&gt;object,
+<span class="lineNum">     686 </span>                :                         &amp;func_name,
+<span class="lineNum">     687 </span>                :                         &amp;retval,
+<span class="lineNum">     688 </span>                :                         1, args,
+<span class="lineNum">     689 </span>                :                         0, NULL TSRMLS_CC);
+<span class="lineNum">     690 </span>                : 
+<span class="lineNum">     691 </span><span class="lineNoCov">              0 :         if (call_result == SUCCESS &amp;&amp; retval != NULL) {</span>
+<span class="lineNum">     692 </span><span class="lineNoCov">              0 :                 convert_to_string(retval);</span>
+<span class="lineNum">     693 </span><span class="lineNoCov">              0 :                 didread = Z_STRLEN_P(retval);</span>
+<span class="lineNum">     694 </span><span class="lineNoCov">              0 :                 if (didread &gt; count) {</span>
+<span class="lineNum">     695 </span><span class="lineNoCov">              0 :                         php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;%s::&quot; USERSTREAM_READ &quot; - read %ld bytes more data than requested (%ld read, %ld max) - excess data will be lost&quot;,</span>
+<span class="lineNum">     696 </span><span class="lineNoCov">              0 :                                         us-&gt;wrapper-&gt;classname, (long)(didread - count), (long)didread, (long)count);</span>
+<span class="lineNum">     697 </span><span class="lineNoCov">              0 :                         didread = count;</span>
+<span class="lineNum">     698 </span>                :                 }
+<span class="lineNum">     699 </span><span class="lineNoCov">              0 :                 if (didread &gt; 0)</span>
+<span class="lineNum">     700 </span><span class="lineNoCov">              0 :                         memcpy(buf, Z_STRVAL_P(retval), didread);</span>
+<span class="lineNum">     701 </span><span class="lineNoCov">              0 :         } else if (call_result == FAILURE) {</span>
+<span class="lineNum">     702 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;%s::&quot; USERSTREAM_READ &quot; is not implemented!&quot;,</span>
+<span class="lineNum">     703 </span><span class="lineNoCov">              0 :                                 us-&gt;wrapper-&gt;classname);</span>
+<span class="lineNum">     704 </span>                :         }
+<span class="lineNum">     705 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;zcount);</span>
+<span class="lineNum">     706 </span>                : 
+<span class="lineNum">     707 </span><span class="lineNoCov">              0 :         if (retval) {</span>
+<span class="lineNum">     708 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;retval);</span>
+<span class="lineNum">     709 </span><span class="lineNoCov">              0 :                 retval = NULL;</span>
+<span class="lineNum">     710 </span>                :         }
+<span class="lineNum">     711 </span>                : 
+<span class="lineNum">     712 </span>                :         /* since the user stream has no way of setting the eof flag directly, we need to ask it if we hit eof */
+<span class="lineNum">     713 </span>                : 
+<span class="lineNum">     714 </span><span class="lineNoCov">              0 :         ZVAL_STRINGL(&amp;func_name, USERSTREAM_EOF, sizeof(USERSTREAM_EOF)-1, 0);</span>
+<span class="lineNum">     715 </span>                : 
+<span class="lineNum">     716 </span><span class="lineNoCov">              0 :         call_result = call_user_function_ex(NULL,</span>
+<span class="lineNum">     717 </span>                :                         &amp;us-&gt;object,
+<span class="lineNum">     718 </span>                :                         &amp;func_name,
+<span class="lineNum">     719 </span>                :                         &amp;retval,
+<span class="lineNum">     720 </span>                :                         0, NULL, 0, NULL TSRMLS_CC);
+<span class="lineNum">     721 </span>                : 
+<span class="lineNum">     722 </span><span class="lineNoCov">              0 :         if (call_result == SUCCESS &amp;&amp; retval != NULL &amp;&amp; zval_is_true(retval)) {</span>
+<span class="lineNum">     723 </span><span class="lineNoCov">              0 :                 stream-&gt;eof = 1;</span>
+<span class="lineNum">     724 </span><span class="lineNoCov">              0 :         } else if (call_result == FAILURE) {</span>
+<span class="lineNum">     725 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING,</span>
+<span class="lineNum">     726 </span>                :                                 &quot;%s::&quot; USERSTREAM_EOF &quot; is not implemented! Assuming EOF&quot;,
+<span class="lineNum">     727 </span><span class="lineNoCov">              0 :                                 us-&gt;wrapper-&gt;classname);</span>
+<span class="lineNum">     728 </span>                : 
+<span class="lineNum">     729 </span><span class="lineNoCov">              0 :                 stream-&gt;eof = 1;</span>
+<span class="lineNum">     730 </span>                :         }
+<span class="lineNum">     731 </span>                : 
+<span class="lineNum">     732 </span><span class="lineNoCov">              0 :         if (retval) {</span>
+<span class="lineNum">     733 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;retval);</span>
+<span class="lineNum">     734 </span><span class="lineNoCov">              0 :                 retval = NULL;</span>
+<span class="lineNum">     735 </span>                :         }
+<span class="lineNum">     736 </span>                : 
+<span class="lineNum">     737 </span><span class="lineNoCov">              0 :         return didread;</span>
+<a name="738"><span class="lineNum">     738 </span>                : }</a>
+<span class="lineNum">     739 </span>                : 
+<span class="lineNum">     740 </span><span class="lineNoCov">              0 : static int php_userstreamop_close(php_stream *stream, int close_handle TSRMLS_DC)</span>
+<span class="lineNum">     741 </span>                : {
+<span class="lineNum">     742 </span>                :         zval func_name;
+<span class="lineNum">     743 </span><span class="lineNoCov">              0 :         zval *retval = NULL;</span>
+<span class="lineNum">     744 </span><span class="lineNoCov">              0 :         php_userstream_data_t *us = (php_userstream_data_t *)stream-&gt;abstract;</span>
+<span class="lineNum">     745 </span>                : 
+<span class="lineNum">     746 </span>                :         assert(us != NULL);
+<span class="lineNum">     747 </span>                : 
+<span class="lineNum">     748 </span><span class="lineNoCov">              0 :         ZVAL_STRINGL(&amp;func_name, USERSTREAM_CLOSE, sizeof(USERSTREAM_CLOSE)-1, 0);</span>
+<span class="lineNum">     749 </span>                : 
+<span class="lineNum">     750 </span><span class="lineNoCov">              0 :         call_user_function_ex(NULL,</span>
+<span class="lineNum">     751 </span>                :                         &amp;us-&gt;object,
+<span class="lineNum">     752 </span>                :                         &amp;func_name,
+<span class="lineNum">     753 </span>                :                         &amp;retval,
+<span class="lineNum">     754 </span>                :                         0, NULL, 0, NULL TSRMLS_CC);
+<span class="lineNum">     755 </span>                : 
+<span class="lineNum">     756 </span><span class="lineNoCov">              0 :         if (retval)</span>
+<span class="lineNum">     757 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;retval);</span>
+<span class="lineNum">     758 </span>                : 
+<span class="lineNum">     759 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;us-&gt;object);</span>
+<span class="lineNum">     760 </span>                : 
+<span class="lineNum">     761 </span><span class="lineNoCov">              0 :         efree(us);</span>
+<span class="lineNum">     762 </span>                : 
+<span class="lineNum">     763 </span><span class="lineNoCov">              0 :         return 0;</span>
+<a name="764"><span class="lineNum">     764 </span>                : }</a>
+<span class="lineNum">     765 </span>                : 
+<span class="lineNum">     766 </span><span class="lineNoCov">              0 : static int php_userstreamop_flush(php_stream *stream TSRMLS_DC)</span>
+<span class="lineNum">     767 </span>                : {
+<span class="lineNum">     768 </span>                :         zval func_name;
+<span class="lineNum">     769 </span><span class="lineNoCov">              0 :         zval *retval = NULL;</span>
+<span class="lineNum">     770 </span>                :         int call_result;
+<span class="lineNum">     771 </span><span class="lineNoCov">              0 :         php_userstream_data_t *us = (php_userstream_data_t *)stream-&gt;abstract;</span>
+<span class="lineNum">     772 </span>                : 
+<span class="lineNum">     773 </span>                :         assert(us != NULL);
+<span class="lineNum">     774 </span>                : 
+<span class="lineNum">     775 </span><span class="lineNoCov">              0 :         ZVAL_STRINGL(&amp;func_name, USERSTREAM_FLUSH, sizeof(USERSTREAM_FLUSH)-1, 0);</span>
+<span class="lineNum">     776 </span>                : 
+<span class="lineNum">     777 </span><span class="lineNoCov">              0 :         call_result = call_user_function_ex(NULL,</span>
+<span class="lineNum">     778 </span>                :                         &amp;us-&gt;object,
+<span class="lineNum">     779 </span>                :                         &amp;func_name,
+<span class="lineNum">     780 </span>                :                         &amp;retval,
+<span class="lineNum">     781 </span>                :                         0, NULL, 0, NULL TSRMLS_CC);
+<span class="lineNum">     782 </span>                : 
+<span class="lineNum">     783 </span><span class="lineNoCov">              0 :         if (call_result == SUCCESS &amp;&amp; retval != NULL &amp;&amp; zval_is_true(retval))</span>
+<span class="lineNum">     784 </span><span class="lineNoCov">              0 :                 call_result = 0;</span>
+<span class="lineNum">     785 </span>                :         else
+<span class="lineNum">     786 </span><span class="lineNoCov">              0 :                 call_result = -1;</span>
+<span class="lineNum">     787 </span>                : 
+<span class="lineNum">     788 </span><span class="lineNoCov">              0 :         if (retval)</span>
+<span class="lineNum">     789 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;retval);</span>
+<span class="lineNum">     790 </span>                : 
+<span class="lineNum">     791 </span><span class="lineNoCov">              0 :         return call_result;</span>
+<a name="792"><span class="lineNum">     792 </span>                : }</a>
+<span class="lineNum">     793 </span>                : 
+<span class="lineNum">     794 </span><span class="lineNoCov">              0 : static int php_userstreamop_seek(php_stream *stream, off_t offset, int whence, off_t *newoffs TSRMLS_DC)</span>
+<span class="lineNum">     795 </span>                : {
+<span class="lineNum">     796 </span>                :         zval func_name;
+<span class="lineNum">     797 </span><span class="lineNoCov">              0 :         zval *retval = NULL;</span>
+<span class="lineNum">     798 </span>                :         int call_result, ret;
+<span class="lineNum">     799 </span><span class="lineNoCov">              0 :         php_userstream_data_t *us = (php_userstream_data_t *)stream-&gt;abstract;</span>
+<span class="lineNum">     800 </span>                :         zval **args[2];
+<span class="lineNum">     801 </span>                :         zval *zoffs, *zwhence;
+<span class="lineNum">     802 </span>                : 
+<span class="lineNum">     803 </span>                :         assert(us != NULL);
+<span class="lineNum">     804 </span>                : 
+<span class="lineNum">     805 </span><span class="lineNoCov">              0 :         ZVAL_STRINGL(&amp;func_name, USERSTREAM_SEEK, sizeof(USERSTREAM_SEEK)-1, 0);</span>
+<span class="lineNum">     806 </span>                : 
+<span class="lineNum">     807 </span><span class="lineNoCov">              0 :         MAKE_STD_ZVAL(zoffs);</span>
+<span class="lineNum">     808 </span><span class="lineNoCov">              0 :         ZVAL_LONG(zoffs, offset);</span>
+<span class="lineNum">     809 </span><span class="lineNoCov">              0 :         args[0] = &amp;zoffs;</span>
+<span class="lineNum">     810 </span>                : 
+<span class="lineNum">     811 </span><span class="lineNoCov">              0 :         MAKE_STD_ZVAL(zwhence);</span>
+<span class="lineNum">     812 </span><span class="lineNoCov">              0 :         ZVAL_LONG(zwhence, whence);</span>
+<span class="lineNum">     813 </span><span class="lineNoCov">              0 :         args[1] = &amp;zwhence;</span>
+<span class="lineNum">     814 </span>                : 
+<span class="lineNum">     815 </span><span class="lineNoCov">              0 :         call_result = call_user_function_ex(NULL,</span>
+<span class="lineNum">     816 </span>                :                         &amp;us-&gt;object,
+<span class="lineNum">     817 </span>                :                         &amp;func_name,
+<span class="lineNum">     818 </span>                :                         &amp;retval,
+<span class="lineNum">     819 </span>                :                         2, args,
+<span class="lineNum">     820 </span>                :                         0, NULL TSRMLS_CC);
+<span class="lineNum">     821 </span>                : 
+<span class="lineNum">     822 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;zoffs);</span>
+<span class="lineNum">     823 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;zwhence);</span>
+<span class="lineNum">     824 </span>                : 
+<span class="lineNum">     825 </span><span class="lineNoCov">              0 :         if (call_result == FAILURE) {</span>
+<span class="lineNum">     826 </span>                :                 /* stream_seek is not implemented, so disable seeks for this stream */
+<span class="lineNum">     827 </span><span class="lineNoCov">              0 :                 stream-&gt;flags |= PHP_STREAM_FLAG_NO_SEEK;</span>
+<span class="lineNum">     828 </span>                :                 /* there should be no retval to clean up */
+<span class="lineNum">     829 </span>                : 
+<span class="lineNum">     830 </span><span class="lineNoCov">              0 :                 if (retval)</span>
+<span class="lineNum">     831 </span><span class="lineNoCov">              0 :                         zval_ptr_dtor(&amp;retval);</span>
+<span class="lineNum">     832 </span>                : 
+<span class="lineNum">     833 </span><span class="lineNoCov">              0 :                 return -1;</span>
+<span class="lineNum">     834 </span><span class="lineNoCov">              0 :         } else if (call_result == SUCCESS &amp;&amp; retval != NULL &amp;&amp; zval_is_true(retval)) {</span>
+<span class="lineNum">     835 </span><span class="lineNoCov">              0 :                 ret = 0;</span>
+<span class="lineNum">     836 </span>                :         } else {
+<span class="lineNum">     837 </span><span class="lineNoCov">              0 :                 ret = -1;</span>
+<span class="lineNum">     838 </span>                :         }
+<span class="lineNum">     839 </span>                : 
+<span class="lineNum">     840 </span><span class="lineNoCov">              0 :         if (retval) {</span>
+<span class="lineNum">     841 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;retval);</span>
+<span class="lineNum">     842 </span><span class="lineNoCov">              0 :                 retval = NULL;</span>
+<span class="lineNum">     843 </span>                :         }
+<span class="lineNum">     844 </span>                : 
+<span class="lineNum">     845 </span><span class="lineNoCov">              0 :         if (ret) {</span>
+<span class="lineNum">     846 </span><span class="lineNoCov">              0 :                 return ret;</span>
+<span class="lineNum">     847 </span>                :         }
+<span class="lineNum">     848 </span>                : 
+<span class="lineNum">     849 </span>                :         /* now determine where we are */
+<span class="lineNum">     850 </span><span class="lineNoCov">              0 :         ZVAL_STRINGL(&amp;func_name, USERSTREAM_TELL, sizeof(USERSTREAM_TELL)-1, 0);</span>
+<span class="lineNum">     851 </span>                : 
+<span class="lineNum">     852 </span><span class="lineNoCov">              0 :         call_result = call_user_function_ex(NULL,</span>
+<span class="lineNum">     853 </span>                :                 &amp;us-&gt;object,
+<span class="lineNum">     854 </span>                :                 &amp;func_name,
+<span class="lineNum">     855 </span>                :                 &amp;retval,
+<span class="lineNum">     856 </span>                :                 0, NULL, 0, NULL TSRMLS_CC);
+<span class="lineNum">     857 </span>                : 
+<span class="lineNum">     858 </span><span class="lineNoCov">              0 :         if (call_result == SUCCESS &amp;&amp; retval != NULL &amp;&amp; Z_TYPE_P(retval) == IS_LONG) {</span>
+<span class="lineNum">     859 </span><span class="lineNoCov">              0 :                 *newoffs = Z_LVAL_P(retval);</span>
+<span class="lineNum">     860 </span><span class="lineNoCov">              0 :                 ret = 0;</span>
+<span class="lineNum">     861 </span><span class="lineNoCov">              0 :         } else if (call_result == FAILURE) {</span>
+<span class="lineNum">     862 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;%s::&quot; USERSTREAM_TELL &quot; is not implemented!&quot;, us-&gt;wrapper-&gt;classname);</span>
+<span class="lineNum">     863 </span><span class="lineNoCov">              0 :                 ret = -1;</span>
+<span class="lineNum">     864 </span>                :         } else {
+<span class="lineNum">     865 </span><span class="lineNoCov">              0 :                 ret = -1;</span>
+<span class="lineNum">     866 </span>                :         }
+<span class="lineNum">     867 </span>                : 
+<span class="lineNum">     868 </span><span class="lineNoCov">              0 :         if (retval) {</span>
+<span class="lineNum">     869 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;retval);</span>
+<span class="lineNum">     870 </span>                :         }
+<span class="lineNum">     871 </span><span class="lineNoCov">              0 :         return ret;</span>
+<span class="lineNum">     872 </span>                : }
+<span class="lineNum">     873 </span>                : 
+<a name="874"><span class="lineNum">     874 </span>                : /* parse the return value from one of the stat functions and store the</a>
+<span class="lineNum">     875 </span>                :  * relevant fields into the statbuf provided */
+<span class="lineNum">     876 </span><span class="lineNoCov">              0 : static int statbuf_from_array(zval *array, php_stream_statbuf *ssb TSRMLS_DC)</span>
+<span class="lineNum">     877 </span>                : {
+<span class="lineNum">     878 </span>                :         zval **elem;
+<span class="lineNum">     879 </span>                : 
+<span class="lineNum">     880 </span>                : #define STAT_PROP_ENTRY_EX(name, name2)                        \
+<span class="lineNum">     881 </span>                :         if (SUCCESS == zend_hash_find(Z_ARRVAL_P(array), #name, sizeof(#name), (void**)&amp;elem)) {     \
+<span class="lineNum">     882 </span>                :                 SEPARATE_ZVAL(elem);                                                                                                                                     \
+<span class="lineNum">     883 </span>                :                 convert_to_long(*elem);                                                                   \
+<span class="lineNum">     884 </span>                :                 ssb-&gt;sb.st_##name2 = Z_LVAL_PP(elem);                                                      \
+<span class="lineNum">     885 </span>                :         }
+<span class="lineNum">     886 </span>                : 
+<span class="lineNum">     887 </span>                : #define STAT_PROP_ENTRY(name) STAT_PROP_ENTRY_EX(name,name)
+<span class="lineNum">     888 </span>                : 
+<span class="lineNum">     889 </span><span class="lineNoCov">              0 :         memset(ssb, 0, sizeof(php_stream_statbuf));</span>
+<span class="lineNum">     890 </span><span class="lineNoCov">              0 :         STAT_PROP_ENTRY(dev);</span>
+<span class="lineNum">     891 </span><span class="lineNoCov">              0 :         STAT_PROP_ENTRY(ino);</span>
+<span class="lineNum">     892 </span><span class="lineNoCov">              0 :         STAT_PROP_ENTRY(mode);</span>
+<span class="lineNum">     893 </span><span class="lineNoCov">              0 :         STAT_PROP_ENTRY(nlink);</span>
+<span class="lineNum">     894 </span><span class="lineNoCov">              0 :         STAT_PROP_ENTRY(uid);</span>
+<span class="lineNum">     895 </span><span class="lineNoCov">              0 :         STAT_PROP_ENTRY(gid);</span>
+<span class="lineNum">     896 </span>                : #if HAVE_ST_RDEV
+<span class="lineNum">     897 </span><span class="lineNoCov">              0 :         STAT_PROP_ENTRY(rdev);</span>
+<span class="lineNum">     898 </span>                : #endif
+<span class="lineNum">     899 </span><span class="lineNoCov">              0 :         STAT_PROP_ENTRY(size);</span>
+<span class="lineNum">     900 </span>                : #ifdef NETWARE
+<span class="lineNum">     901 </span>                :         STAT_PROP_ENTRY_EX(atime, atime.tv_sec);
+<span class="lineNum">     902 </span>                :         STAT_PROP_ENTRY_EX(mtime, mtime.tv_sec);
+<span class="lineNum">     903 </span>                :         STAT_PROP_ENTRY_EX(ctime, ctime.tv_sec);
+<span class="lineNum">     904 </span>                : #else
+<span class="lineNum">     905 </span><span class="lineNoCov">              0 :         STAT_PROP_ENTRY(atime);</span>
+<span class="lineNum">     906 </span><span class="lineNoCov">              0 :         STAT_PROP_ENTRY(mtime);</span>
+<span class="lineNum">     907 </span><span class="lineNoCov">              0 :         STAT_PROP_ENTRY(ctime);</span>
+<span class="lineNum">     908 </span>                : #endif
+<span class="lineNum">     909 </span>                : #ifdef HAVE_ST_BLKSIZE
+<span class="lineNum">     910 </span><span class="lineNoCov">              0 :         STAT_PROP_ENTRY(blksize);</span>
+<span class="lineNum">     911 </span>                : #endif
+<span class="lineNum">     912 </span>                : #ifdef HAVE_ST_BLOCKS
+<span class="lineNum">     913 </span><span class="lineNoCov">              0 :         STAT_PROP_ENTRY(blocks);</span>
+<span class="lineNum">     914 </span>                : #endif
+<span class="lineNum">     915 </span>                : 
+<span class="lineNum">     916 </span>                : #undef STAT_PROP_ENTRY
+<span class="lineNum">     917 </span>                : #undef STAT_PROP_ENTRY_EX
+<span class="lineNum">     918 </span><span class="lineNoCov">              0 :         return SUCCESS;</span>
+<a name="919"><span class="lineNum">     919 </span>                : }</a>
+<span class="lineNum">     920 </span>                : 
+<span class="lineNum">     921 </span><span class="lineNoCov">              0 : static int php_userstreamop_stat(php_stream *stream, php_stream_statbuf *ssb TSRMLS_DC)</span>
+<span class="lineNum">     922 </span>                : {
+<span class="lineNum">     923 </span>                :         zval func_name;
+<span class="lineNum">     924 </span><span class="lineNoCov">              0 :         zval *retval = NULL;</span>
+<span class="lineNum">     925 </span>                :         int call_result;
+<span class="lineNum">     926 </span><span class="lineNoCov">              0 :         php_userstream_data_t *us = (php_userstream_data_t *)stream-&gt;abstract;</span>
+<span class="lineNum">     927 </span><span class="lineNoCov">              0 :         int ret = -1;</span>
+<span class="lineNum">     928 </span>                : 
+<span class="lineNum">     929 </span><span class="lineNoCov">              0 :         ZVAL_STRINGL(&amp;func_name, USERSTREAM_STAT, sizeof(USERSTREAM_STAT)-1, 0);</span>
+<span class="lineNum">     930 </span>                : 
+<span class="lineNum">     931 </span><span class="lineNoCov">              0 :         call_result = call_user_function_ex(NULL,</span>
+<span class="lineNum">     932 </span>                :                         &amp;us-&gt;object,
+<span class="lineNum">     933 </span>                :                         &amp;func_name,
+<span class="lineNum">     934 </span>                :                         &amp;retval,
+<span class="lineNum">     935 </span>                :                         0, NULL, 0, NULL TSRMLS_CC);
+<span class="lineNum">     936 </span>                : 
+<span class="lineNum">     937 </span><span class="lineNoCov">              0 :         if (call_result == SUCCESS &amp;&amp; retval != NULL &amp;&amp; Z_TYPE_P(retval) == IS_ARRAY) {</span>
+<span class="lineNum">     938 </span><span class="lineNoCov">              0 :                 if (SUCCESS == statbuf_from_array(retval, ssb TSRMLS_CC))</span>
+<span class="lineNum">     939 </span><span class="lineNoCov">              0 :                         ret = 0;</span>
+<span class="lineNum">     940 </span>                :         } else {
+<span class="lineNum">     941 </span><span class="lineNoCov">              0 :                 if (call_result == FAILURE) {</span>
+<span class="lineNum">     942 </span><span class="lineNoCov">              0 :                         php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;%s::&quot; USERSTREAM_STAT &quot; is not implemented!&quot;,</span>
+<span class="lineNum">     943 </span><span class="lineNoCov">              0 :                                         us-&gt;wrapper-&gt;classname);</span>
+<span class="lineNum">     944 </span>                :                 }
+<span class="lineNum">     945 </span>                :         }
+<span class="lineNum">     946 </span>                : 
+<span class="lineNum">     947 </span><span class="lineNoCov">              0 :         if (retval)</span>
+<span class="lineNum">     948 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;retval);</span>
+<span class="lineNum">     949 </span>                : 
+<span class="lineNum">     950 </span><span class="lineNoCov">              0 :         return ret;</span>
+<span class="lineNum">     951 </span>                : }
+<a name="952"><span class="lineNum">     952 </span>                : </a>
+<span class="lineNum">     953 </span>                : 
+<span class="lineNum">     954 </span><span class="lineNoCov">              0 : static int php_userstreamop_set_option(php_stream *stream, int option, int value, void *ptrparam TSRMLS_DC) {</span>
+<span class="lineNum">     955 </span>                :         zval func_name;
+<span class="lineNum">     956 </span><span class="lineNoCov">              0 :         zval *retval = NULL;</span>
+<span class="lineNum">     957 </span>                :         int call_result;
+<span class="lineNum">     958 </span><span class="lineNoCov">              0 :         php_userstream_data_t *us = (php_userstream_data_t *)stream-&gt;abstract;</span>
+<span class="lineNum">     959 </span><span class="lineNoCov">              0 :         int ret = PHP_STREAM_OPTION_RETURN_NOTIMPL;</span>
+<span class="lineNum">     960 </span><span class="lineNoCov">              0 :         zval *zvalue = NULL;</span>
+<span class="lineNum">     961 </span>                :         zval **args[3];
+<span class="lineNum">     962 </span>                : 
+<span class="lineNum">     963 </span><span class="lineNoCov">              0 :         switch (option) {</span>
+<span class="lineNum">     964 </span>                :         case PHP_STREAM_OPTION_CHECK_LIVENESS:
+<span class="lineNum">     965 </span><span class="lineNoCov">              0 :                 ZVAL_STRINGL(&amp;func_name, USERSTREAM_EOF, sizeof(USERSTREAM_EOF)-1, 0);</span>
+<span class="lineNum">     966 </span><span class="lineNoCov">              0 :                 call_result = call_user_function_ex(NULL, &amp;us-&gt;object, &amp;func_name, &amp;retval, 0, NULL, 0, NULL TSRMLS_CC);</span>
+<span class="lineNum">     967 </span><span class="lineNoCov">              0 :                 if (call_result == SUCCESS &amp;&amp; retval != NULL &amp;&amp; Z_TYPE_P(retval) == IS_BOOL) {</span>
+<span class="lineNum">     968 </span><span class="lineNoCov">              0 :                         ret = zval_is_true(retval) ? PHP_STREAM_OPTION_RETURN_ERR : PHP_STREAM_OPTION_RETURN_OK;</span>
+<span class="lineNum">     969 </span>                :                 } else {
+<span class="lineNum">     970 </span><span class="lineNoCov">              0 :                         ret = PHP_STREAM_OPTION_RETURN_ERR;</span>
+<span class="lineNum">     971 </span><span class="lineNoCov">              0 :                         php_error_docref(NULL TSRMLS_CC, E_WARNING,</span>
+<span class="lineNum">     972 </span>                :                                         &quot;%s::&quot; USERSTREAM_EOF &quot; is not implemented! Assuming EOF&quot;,
+<span class="lineNum">     973 </span><span class="lineNoCov">              0 :                                         us-&gt;wrapper-&gt;classname);</span>
+<span class="lineNum">     974 </span>                :                 }
+<span class="lineNum">     975 </span><span class="lineNoCov">              0 :                 break;</span>
+<span class="lineNum">     976 </span>                : 
+<span class="lineNum">     977 </span>                :         case PHP_STREAM_OPTION_LOCKING:
+<span class="lineNum">     978 </span><span class="lineNoCov">              0 :                 MAKE_STD_ZVAL(zvalue);</span>
+<span class="lineNum">     979 </span><span class="lineNoCov">              0 :                 ZVAL_LONG(zvalue, 0);</span>
+<span class="lineNum">     980 </span>                : 
+<span class="lineNum">     981 </span><span class="lineNoCov">              0 :                 if (value &amp; LOCK_NB) {</span>
+<span class="lineNum">     982 </span><span class="lineNoCov">              0 :                         Z_LVAL_P(zvalue) |= PHP_LOCK_NB;</span>
+<span class="lineNum">     983 </span>                :                 }
+<span class="lineNum">     984 </span><span class="lineNoCov">              0 :                 switch(value &amp; ~LOCK_NB) {</span>
+<span class="lineNum">     985 </span>                :                 case LOCK_SH:
+<span class="lineNum">     986 </span><span class="lineNoCov">              0 :                         Z_LVAL_P(zvalue) |= PHP_LOCK_SH;</span>
+<span class="lineNum">     987 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     988 </span>                :                 case LOCK_EX:
+<span class="lineNum">     989 </span><span class="lineNoCov">              0 :                         Z_LVAL_P(zvalue) |= PHP_LOCK_EX;</span>
+<span class="lineNum">     990 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     991 </span>                :                 case LOCK_UN:
+<span class="lineNum">     992 </span><span class="lineNoCov">              0 :                         Z_LVAL_P(zvalue) |= PHP_LOCK_UN;</span>
+<span class="lineNum">     993 </span>                :                         break;
+<span class="lineNum">     994 </span>                :                 }
+<span class="lineNum">     995 </span>                : 
+<span class="lineNum">     996 </span><span class="lineNoCov">              0 :                 args[0] = &amp;zvalue;</span>
+<span class="lineNum">     997 </span>                : 
+<span class="lineNum">     998 </span>                :                 /* TODO wouldblock */
+<span class="lineNum">     999 </span><span class="lineNoCov">              0 :                 ZVAL_STRINGL(&amp;func_name, USERSTREAM_LOCK, sizeof(USERSTREAM_LOCK)-1, 0);</span>
+<span class="lineNum">    1000 </span>                : 
+<span class="lineNum">    1001 </span><span class="lineNoCov">              0 :                 call_result = call_user_function_ex(NULL,</span>
+<span class="lineNum">    1002 </span>                :                                                                                         &amp;us-&gt;object,
+<span class="lineNum">    1003 </span>                :                                                                                         &amp;func_name,
+<span class="lineNum">    1004 </span>                :                                                                                         &amp;retval,
+<span class="lineNum">    1005 </span>                :                                                                                         1, args, 0, NULL TSRMLS_CC);
+<span class="lineNum">    1006 </span>                : 
+<span class="lineNum">    1007 </span><span class="lineNoCov">              0 :                 if (call_result == SUCCESS &amp;&amp; retval != NULL &amp;&amp; Z_TYPE_P(retval) == IS_BOOL) {</span>
+<span class="lineNum">    1008 </span><span class="lineNoCov">              0 :                         ret = !Z_LVAL_P(retval);</span>
+<span class="lineNum">    1009 </span><span class="lineNoCov">              0 :                 } else if (call_result == FAILURE) {</span>
+<span class="lineNum">    1010 </span><span class="lineNoCov">              0 :                         if (value == 0) {</span>
+<span class="lineNum">    1011 </span>                :                                 /* lock support test (TODO: more check) */
+<span class="lineNum">    1012 </span><span class="lineNoCov">              0 :                                 ret = PHP_STREAM_OPTION_RETURN_OK;</span>
+<span class="lineNum">    1013 </span>                :                         } else {
+<span class="lineNum">    1014 </span><span class="lineNoCov">              0 :                                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;%s::&quot; USERSTREAM_LOCK &quot; is not implemented!&quot;,</span>
+<span class="lineNum">    1015 </span><span class="lineNoCov">              0 :                                                                  us-&gt;wrapper-&gt;classname);</span>
+<span class="lineNum">    1016 </span><span class="lineNoCov">              0 :                                 ret = PHP_STREAM_OPTION_RETURN_ERR;</span>
+<span class="lineNum">    1017 </span>                :                         }
+<span class="lineNum">    1018 </span>                :                 }
+<span class="lineNum">    1019 </span>                : 
+<span class="lineNum">    1020 </span><span class="lineNoCov">              0 :                 break;</span>
+<span class="lineNum">    1021 </span>                : 
+<span class="lineNum">    1022 </span>                :         case PHP_STREAM_OPTION_TRUNCATE_API:
+<span class="lineNum">    1023 </span><span class="lineNoCov">              0 :                 ZVAL_STRINGL(&amp;func_name, USERSTREAM_TRUNCATE, sizeof(USERSTREAM_TRUNCATE)-1, 0);</span>
+<span class="lineNum">    1024 </span>                : 
+<span class="lineNum">    1025 </span><span class="lineNoCov">              0 :                 switch (value) {</span>
+<span class="lineNum">    1026 </span>                :                 case PHP_STREAM_TRUNCATE_SUPPORTED:
+<span class="lineNum">    1027 </span><span class="lineNoCov">              0 :                         if (zend_is_callable_ex(&amp;func_name, us-&gt;object, IS_CALLABLE_CHECK_SILENT,</span>
+<span class="lineNum">    1028 </span>                :                                         NULL, NULL, NULL, NULL TSRMLS_CC))
+<span class="lineNum">    1029 </span><span class="lineNoCov">              0 :                                 ret = PHP_STREAM_OPTION_RETURN_OK;</span>
+<span class="lineNum">    1030 </span>                :                         else
+<span class="lineNum">    1031 </span><span class="lineNoCov">              0 :                                 ret = PHP_STREAM_OPTION_RETURN_ERR;</span>
+<span class="lineNum">    1032 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">    1033 </span>                : 
+<span class="lineNum">    1034 </span>                :                 case PHP_STREAM_TRUNCATE_SET_SIZE: {
+<span class="lineNum">    1035 </span><span class="lineNoCov">              0 :                         ptrdiff_t new_size = *(ptrdiff_t*) ptrparam;</span>
+<span class="lineNum">    1036 </span><span class="lineNoCov">              0 :                         if (new_size &gt;= 0 &amp;&amp; new_size &lt;= (ptrdiff_t)LONG_MAX) {</span>
+<span class="lineNum">    1037 </span><span class="lineNoCov">              0 :                                 MAKE_STD_ZVAL(zvalue);</span>
+<span class="lineNum">    1038 </span><span class="lineNoCov">              0 :                                 ZVAL_LONG(zvalue, (long)new_size);</span>
+<span class="lineNum">    1039 </span><span class="lineNoCov">              0 :                                 args[0] = &amp;zvalue;</span>
+<span class="lineNum">    1040 </span><span class="lineNoCov">              0 :                                 call_result = call_user_function_ex(NULL,</span>
+<span class="lineNum">    1041 </span>                :                                                                                                         &amp;us-&gt;object,
+<span class="lineNum">    1042 </span>                :                                                                                                         &amp;func_name,
+<span class="lineNum">    1043 </span>                :                                                                                                         &amp;retval,
+<span class="lineNum">    1044 </span>                :                                                                                                         1, args, 0, NULL TSRMLS_CC);
+<span class="lineNum">    1045 </span><span class="lineNoCov">              0 :                                 if (call_result == SUCCESS &amp;&amp; retval != NULL) {</span>
+<span class="lineNum">    1046 </span><span class="lineNoCov">              0 :                                         if (Z_TYPE_P(retval) == IS_BOOL) {</span>
+<span class="lineNum">    1047 </span><span class="lineNoCov">              0 :                                                 ret = Z_LVAL_P(retval) ? PHP_STREAM_OPTION_RETURN_OK :</span>
+<span class="lineNum">    1048 </span>                :                                                                                                  PHP_STREAM_OPTION_RETURN_ERR;
+<span class="lineNum">    1049 </span>                :                                         } else {
+<span class="lineNum">    1050 </span><span class="lineNoCov">              0 :                                                 php_error_docref(NULL TSRMLS_CC, E_WARNING,</span>
+<span class="lineNum">    1051 </span>                :                                                                 &quot;%s::&quot; USERSTREAM_TRUNCATE &quot; did not return a boolean!&quot;,
+<span class="lineNum">    1052 </span><span class="lineNoCov">              0 :                                                                 us-&gt;wrapper-&gt;classname);</span>
+<span class="lineNum">    1053 </span>                :                                         }
+<span class="lineNum">    1054 </span>                :                                 } else {
+<span class="lineNum">    1055 </span><span class="lineNoCov">              0 :                                         php_error_docref(NULL TSRMLS_CC, E_WARNING,</span>
+<span class="lineNum">    1056 </span>                :                                                         &quot;%s::&quot; USERSTREAM_TRUNCATE &quot; is not implemented!&quot;,
+<span class="lineNum">    1057 </span><span class="lineNoCov">              0 :                                                         us-&gt;wrapper-&gt;classname);</span>
+<span class="lineNum">    1058 </span>                :                                 }
+<span class="lineNum">    1059 </span>                :                         } else { /* bad new size */
+<span class="lineNum">    1060 </span><span class="lineNoCov">              0 :                                 ret = PHP_STREAM_OPTION_RETURN_ERR;</span>
+<span class="lineNum">    1061 </span>                :                         }
+<span class="lineNum">    1062 </span>                :                         break;
+<span class="lineNum">    1063 </span>                :                 }
+<span class="lineNum">    1064 </span>                :                 }
+<span class="lineNum">    1065 </span><span class="lineNoCov">              0 :                 break;</span>
+<span class="lineNum">    1066 </span>                : 
+<span class="lineNum">    1067 </span>                :         case PHP_STREAM_OPTION_READ_BUFFER:
+<span class="lineNum">    1068 </span>                :         case PHP_STREAM_OPTION_WRITE_BUFFER:
+<span class="lineNum">    1069 </span>                :         case PHP_STREAM_OPTION_READ_TIMEOUT:
+<span class="lineNum">    1070 </span>                :         case PHP_STREAM_OPTION_BLOCKING: {
+<span class="lineNum">    1071 </span><span class="lineNoCov">              0 :                 zval *zoption = NULL;</span>
+<span class="lineNum">    1072 </span><span class="lineNoCov">              0 :                 zval *zptrparam = NULL;</span>
+<span class="lineNum">    1073 </span>                : 
+<span class="lineNum">    1074 </span><span class="lineNoCov">              0 :                 ZVAL_STRINGL(&amp;func_name, USERSTREAM_SET_OPTION, sizeof(USERSTREAM_SET_OPTION)-1, 0);</span>
+<span class="lineNum">    1075 </span>                : 
+<span class="lineNum">    1076 </span><span class="lineNoCov">              0 :                 ALLOC_INIT_ZVAL(zoption);</span>
+<span class="lineNum">    1077 </span><span class="lineNoCov">              0 :                 ZVAL_LONG(zoption, option);</span>
+<span class="lineNum">    1078 </span>                : 
+<span class="lineNum">    1079 </span><span class="lineNoCov">              0 :                 ALLOC_INIT_ZVAL(zvalue);</span>
+<span class="lineNum">    1080 </span><span class="lineNoCov">              0 :                 ALLOC_INIT_ZVAL(zptrparam);</span>
+<span class="lineNum">    1081 </span>                : 
+<span class="lineNum">    1082 </span><span class="lineNoCov">              0 :                 args[0] = &amp;zoption;</span>
+<span class="lineNum">    1083 </span><span class="lineNoCov">              0 :                 args[1] = &amp;zvalue;</span>
+<span class="lineNum">    1084 </span><span class="lineNoCov">              0 :                 args[2] = &amp;zptrparam;</span>
+<span class="lineNum">    1085 </span>                : 
+<span class="lineNum">    1086 </span><span class="lineNoCov">              0 :                 switch(option) {</span>
+<span class="lineNum">    1087 </span>                :                 case PHP_STREAM_OPTION_READ_BUFFER:
+<span class="lineNum">    1088 </span>                :                 case PHP_STREAM_OPTION_WRITE_BUFFER:
+<span class="lineNum">    1089 </span><span class="lineNoCov">              0 :                         ZVAL_LONG(zvalue, value);</span>
+<span class="lineNum">    1090 </span><span class="lineNoCov">              0 :                         if (ptrparam) {</span>
+<span class="lineNum">    1091 </span><span class="lineNoCov">              0 :                                 ZVAL_LONG(zptrparam, *(long *)ptrparam);</span>
+<span class="lineNum">    1092 </span>                :                         } else {
+<span class="lineNum">    1093 </span><span class="lineNoCov">              0 :                                 ZVAL_LONG(zptrparam, BUFSIZ);</span>
+<span class="lineNum">    1094 </span>                :                         }
+<span class="lineNum">    1095 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">    1096 </span>                :                 case PHP_STREAM_OPTION_READ_TIMEOUT: {
+<span class="lineNum">    1097 </span><span class="lineNoCov">              0 :                         struct timeval tv = *(struct timeval*)ptrparam;</span>
+<span class="lineNum">    1098 </span><span class="lineNoCov">              0 :                         ZVAL_LONG(zvalue, tv.tv_sec);</span>
+<span class="lineNum">    1099 </span><span class="lineNoCov">              0 :                         ZVAL_LONG(zptrparam, tv.tv_usec);</span>
+<span class="lineNum">    1100 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">    1101 </span>                :                         }
+<span class="lineNum">    1102 </span>                :                 case PHP_STREAM_OPTION_BLOCKING:
+<span class="lineNum">    1103 </span><span class="lineNoCov">              0 :                         ZVAL_LONG(zvalue, value);</span>
+<span class="lineNum">    1104 </span>                :                         break;
+<span class="lineNum">    1105 </span>                :                 default:
+<span class="lineNum">    1106 </span>                :                         break;
+<span class="lineNum">    1107 </span>                :                 }
+<span class="lineNum">    1108 </span>                : 
+<span class="lineNum">    1109 </span><span class="lineNoCov">              0 :                 call_result = call_user_function_ex(NULL,</span>
+<span class="lineNum">    1110 </span>                :                         &amp;us-&gt;object,
+<span class="lineNum">    1111 </span>                :                         &amp;func_name,
+<span class="lineNum">    1112 </span>                :                         &amp;retval,
+<span class="lineNum">    1113 </span>                :                         3, args, 0, NULL TSRMLS_CC);
+<span class="lineNum">    1114 </span>                : 
+<span class="lineNum">    1115 </span><span class="lineNoCov">              0 :                 if (call_result == FAILURE) {</span>
+<span class="lineNum">    1116 </span><span class="lineNoCov">              0 :                         php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;%s::&quot; USERSTREAM_SET_OPTION &quot; is not implemented!&quot;,</span>
+<span class="lineNum">    1117 </span><span class="lineNoCov">              0 :                                         us-&gt;wrapper-&gt;classname);</span>
+<span class="lineNum">    1118 </span><span class="lineNoCov">              0 :                         ret = PHP_STREAM_OPTION_RETURN_ERR;</span>
+<span class="lineNum">    1119 </span><span class="lineNoCov">              0 :                 } else if (retval &amp;&amp; zend_is_true(retval)) {</span>
+<span class="lineNum">    1120 </span><span class="lineNoCov">              0 :                         ret = PHP_STREAM_OPTION_RETURN_OK;</span>
+<span class="lineNum">    1121 </span>                :                 } else {
+<span class="lineNum">    1122 </span><span class="lineNoCov">              0 :                         ret = PHP_STREAM_OPTION_RETURN_ERR;</span>
+<span class="lineNum">    1123 </span>                :                 }
+<span class="lineNum">    1124 </span>                : 
+<span class="lineNum">    1125 </span><span class="lineNoCov">              0 :                 if (zoption) {</span>
+<span class="lineNum">    1126 </span><span class="lineNoCov">              0 :                         zval_ptr_dtor(&amp;zoption);</span>
+<span class="lineNum">    1127 </span>                :                 }
+<span class="lineNum">    1128 </span><span class="lineNoCov">              0 :                 if (zptrparam) {</span>
+<span class="lineNum">    1129 </span><span class="lineNoCov">              0 :                         zval_ptr_dtor(&amp;zptrparam);</span>
+<span class="lineNum">    1130 </span>                :                 }
+<span class="lineNum">    1131 </span>                : 
+<span class="lineNum">    1132 </span>                :                 break;
+<span class="lineNum">    1133 </span>                :                 }
+<span class="lineNum">    1134 </span>                :         }
+<span class="lineNum">    1135 </span>                : 
+<span class="lineNum">    1136 </span>                :         /* clean up */
+<span class="lineNum">    1137 </span><span class="lineNoCov">              0 :         if (retval) {</span>
+<span class="lineNum">    1138 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;retval);</span>
+<span class="lineNum">    1139 </span>                :         }
+<span class="lineNum">    1140 </span>                : 
+<span class="lineNum">    1141 </span>                : 
+<span class="lineNum">    1142 </span><span class="lineNoCov">              0 :         if (zvalue) {</span>
+<span class="lineNum">    1143 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;zvalue);</span>
+<span class="lineNum">    1144 </span>                :         }
+<span class="lineNum">    1145 </span>                : 
+<span class="lineNum">    1146 </span><span class="lineNoCov">              0 :         return ret;</span>
+<span class="lineNum">    1147 </span>                : }
+<a name="1148"><span class="lineNum">    1148 </span>                : </a>
+<span class="lineNum">    1149 </span>                : 
+<span class="lineNum">    1150 </span><span class="lineNoCov">              0 : static int user_wrapper_unlink(php_stream_wrapper *wrapper, char *url, int options, php_stream_context *context TSRMLS_DC)</span>
+<span class="lineNum">    1151 </span>                : {
+<span class="lineNum">    1152 </span><span class="lineNoCov">              0 :         struct php_user_stream_wrapper *uwrap = (struct php_user_stream_wrapper*)wrapper-&gt;abstract;</span>
+<span class="lineNum">    1153 </span>                :         zval *zfilename, *zfuncname, *zretval;
+<span class="lineNum">    1154 </span>                :         zval **args[1];
+<span class="lineNum">    1155 </span>                :         int call_result;
+<span class="lineNum">    1156 </span>                :         zval *object;
+<span class="lineNum">    1157 </span><span class="lineNoCov">              0 :         int ret = 0;</span>
+<span class="lineNum">    1158 </span>                : 
+<span class="lineNum">    1159 </span>                :         /* create an instance of our class */
+<span class="lineNum">    1160 </span><span class="lineNoCov">              0 :         ALLOC_ZVAL(object);</span>
+<span class="lineNum">    1161 </span><span class="lineNoCov">              0 :         object_init_ex(object, uwrap-&gt;ce);</span>
+<span class="lineNum">    1162 </span><span class="lineNoCov">              0 :         Z_SET_REFCOUNT_P(object, 1);</span>
+<span class="lineNum">    1163 </span><span class="lineNoCov">              0 :         Z_SET_ISREF_P(object);</span>
+<span class="lineNum">    1164 </span>                : 
+<span class="lineNum">    1165 </span><span class="lineNoCov">              0 :         if (context) {</span>
+<span class="lineNum">    1166 </span><span class="lineNoCov">              0 :                 add_property_resource(object, &quot;context&quot;, context-&gt;rsrc_id);</span>
+<span class="lineNum">    1167 </span><span class="lineNoCov">              0 :                 zend_list_addref(context-&gt;rsrc_id);</span>
+<span class="lineNum">    1168 </span>                :         } else {
+<span class="lineNum">    1169 </span><span class="lineNoCov">              0 :                 add_property_null(object, &quot;context&quot;);</span>
+<span class="lineNum">    1170 </span>                :         }
+<span class="lineNum">    1171 </span>                : 
+<span class="lineNum">    1172 </span>                :         /* call the unlink method */
+<span class="lineNum">    1173 </span><span class="lineNoCov">              0 :         MAKE_STD_ZVAL(zfilename);</span>
+<span class="lineNum">    1174 </span><span class="lineNoCov">              0 :         ZVAL_STRING(zfilename, url, 1);</span>
+<span class="lineNum">    1175 </span><span class="lineNoCov">              0 :         args[0] = &amp;zfilename;</span>
+<span class="lineNum">    1176 </span>                : 
+<span class="lineNum">    1177 </span><span class="lineNoCov">              0 :         MAKE_STD_ZVAL(zfuncname);</span>
+<span class="lineNum">    1178 </span><span class="lineNoCov">              0 :         ZVAL_STRING(zfuncname, USERSTREAM_UNLINK, 1);</span>
+<span class="lineNum">    1179 </span>                : 
+<span class="lineNum">    1180 </span><span class="lineNoCov">              0 :         call_result = call_user_function_ex(NULL,</span>
+<span class="lineNum">    1181 </span>                :                         &amp;object,
+<span class="lineNum">    1182 </span>                :                         zfuncname,
+<span class="lineNum">    1183 </span>                :                         &amp;zretval,
+<span class="lineNum">    1184 </span>                :                         1, args,
+<span class="lineNum">    1185 </span>                :                         0, NULL TSRMLS_CC);
+<span class="lineNum">    1186 </span>                : 
+<span class="lineNum">    1187 </span><span class="lineNoCov">              0 :         if (call_result == SUCCESS &amp;&amp; zretval &amp;&amp; Z_TYPE_P(zretval) == IS_BOOL) {</span>
+<span class="lineNum">    1188 </span><span class="lineNoCov">              0 :                 ret = Z_LVAL_P(zretval);</span>
+<span class="lineNum">    1189 </span><span class="lineNoCov">              0 :         } else if (call_result == FAILURE) {</span>
+<span class="lineNum">    1190 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;%s::&quot; USERSTREAM_UNLINK &quot; is not implemented!&quot;, uwrap-&gt;classname);</span>
+<span class="lineNum">    1191 </span>                :         }
+<span class="lineNum">    1192 </span>                : 
+<span class="lineNum">    1193 </span>                :         /* clean up */
+<span class="lineNum">    1194 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;object);</span>
+<span class="lineNum">    1195 </span><span class="lineNoCov">              0 :         if (zretval)</span>
+<span class="lineNum">    1196 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;zretval);</span>
+<span class="lineNum">    1197 </span>                : 
+<span class="lineNum">    1198 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;zfuncname);</span>
+<span class="lineNum">    1199 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;zfilename);</span>
+<span class="lineNum">    1200 </span>                : 
+<span class="lineNum">    1201 </span><span class="lineNoCov">              0 :         return ret;</span>
+<a name="1202"><span class="lineNum">    1202 </span>                : }</a>
+<span class="lineNum">    1203 </span>                : 
+<span class="lineNum">    1204 </span><span class="lineNoCov">              0 : static int user_wrapper_rename(php_stream_wrapper *wrapper, char *url_from, char *url_to, int options, php_stream_context *context TSRMLS_DC)</span>
+<span class="lineNum">    1205 </span>                : {
+<span class="lineNum">    1206 </span><span class="lineNoCov">              0 :         struct php_user_stream_wrapper *uwrap = (struct php_user_stream_wrapper*)wrapper-&gt;abstract;</span>
+<span class="lineNum">    1207 </span>                :         zval *zold_name, *znew_name, *zfuncname, *zretval;
+<span class="lineNum">    1208 </span>                :         zval **args[2];
+<span class="lineNum">    1209 </span>                :         int call_result;
+<span class="lineNum">    1210 </span>                :         zval *object;
+<span class="lineNum">    1211 </span><span class="lineNoCov">              0 :         int ret = 0;</span>
+<span class="lineNum">    1212 </span>                : 
+<span class="lineNum">    1213 </span>                :         /* create an instance of our class */
+<span class="lineNum">    1214 </span><span class="lineNoCov">              0 :         ALLOC_ZVAL(object);</span>
+<span class="lineNum">    1215 </span><span class="lineNoCov">              0 :         object_init_ex(object, uwrap-&gt;ce);</span>
+<span class="lineNum">    1216 </span><span class="lineNoCov">              0 :         Z_SET_REFCOUNT_P(object, 1);</span>
+<span class="lineNum">    1217 </span><span class="lineNoCov">              0 :         Z_SET_ISREF_P(object);</span>
+<span class="lineNum">    1218 </span>                : 
+<span class="lineNum">    1219 </span><span class="lineNoCov">              0 :         if (context) {</span>
+<span class="lineNum">    1220 </span><span class="lineNoCov">              0 :                 add_property_resource(object, &quot;context&quot;, context-&gt;rsrc_id);</span>
+<span class="lineNum">    1221 </span><span class="lineNoCov">              0 :                 zend_list_addref(context-&gt;rsrc_id);</span>
+<span class="lineNum">    1222 </span>                :         } else {
+<span class="lineNum">    1223 </span><span class="lineNoCov">              0 :                 add_property_null(object, &quot;context&quot;);</span>
+<span class="lineNum">    1224 </span>                :         }
+<span class="lineNum">    1225 </span>                : 
+<span class="lineNum">    1226 </span>                :         /* call the rename method */
+<span class="lineNum">    1227 </span><span class="lineNoCov">              0 :         MAKE_STD_ZVAL(zold_name);</span>
+<span class="lineNum">    1228 </span><span class="lineNoCov">              0 :         ZVAL_STRING(zold_name, url_from, 1);</span>
+<span class="lineNum">    1229 </span><span class="lineNoCov">              0 :         args[0] = &amp;zold_name;</span>
+<span class="lineNum">    1230 </span>                : 
+<span class="lineNum">    1231 </span><span class="lineNoCov">              0 :         MAKE_STD_ZVAL(znew_name);</span>
+<span class="lineNum">    1232 </span><span class="lineNoCov">              0 :         ZVAL_STRING(znew_name, url_to, 1);</span>
+<span class="lineNum">    1233 </span><span class="lineNoCov">              0 :         args[1] = &amp;znew_name;</span>
+<span class="lineNum">    1234 </span>                : 
+<span class="lineNum">    1235 </span><span class="lineNoCov">              0 :         MAKE_STD_ZVAL(zfuncname);</span>
+<span class="lineNum">    1236 </span><span class="lineNoCov">              0 :         ZVAL_STRING(zfuncname, USERSTREAM_RENAME, 1);</span>
+<span class="lineNum">    1237 </span>                : 
+<span class="lineNum">    1238 </span><span class="lineNoCov">              0 :         call_result = call_user_function_ex(NULL,</span>
+<span class="lineNum">    1239 </span>                :                         &amp;object,
+<span class="lineNum">    1240 </span>                :                         zfuncname,
+<span class="lineNum">    1241 </span>                :                         &amp;zretval,
+<span class="lineNum">    1242 </span>                :                         2, args,
+<span class="lineNum">    1243 </span>                :                         0, NULL TSRMLS_CC);
+<span class="lineNum">    1244 </span>                : 
+<span class="lineNum">    1245 </span><span class="lineNoCov">              0 :         if (call_result == SUCCESS &amp;&amp; zretval &amp;&amp; Z_TYPE_P(zretval) == IS_BOOL) {</span>
+<span class="lineNum">    1246 </span><span class="lineNoCov">              0 :                 ret = Z_LVAL_P(zretval);</span>
+<span class="lineNum">    1247 </span><span class="lineNoCov">              0 :         } else if (call_result == FAILURE) {</span>
+<span class="lineNum">    1248 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;%s::&quot; USERSTREAM_RENAME &quot; is not implemented!&quot;, uwrap-&gt;classname);</span>
+<span class="lineNum">    1249 </span>                :         }
+<span class="lineNum">    1250 </span>                : 
+<span class="lineNum">    1251 </span>                :         /* clean up */
+<span class="lineNum">    1252 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;object);</span>
+<span class="lineNum">    1253 </span><span class="lineNoCov">              0 :         if (zretval)</span>
+<span class="lineNum">    1254 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;zretval);</span>
+<span class="lineNum">    1255 </span>                : 
+<span class="lineNum">    1256 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;zfuncname);</span>
+<span class="lineNum">    1257 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;zold_name);</span>
+<span class="lineNum">    1258 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;znew_name);</span>
+<span class="lineNum">    1259 </span>                : 
+<span class="lineNum">    1260 </span><span class="lineNoCov">              0 :         return ret;</span>
+<a name="1261"><span class="lineNum">    1261 </span>                : }</a>
+<span class="lineNum">    1262 </span>                : 
+<span class="lineNum">    1263 </span><span class="lineNoCov">              0 : static int user_wrapper_mkdir(php_stream_wrapper *wrapper, char *url, int mode, int options, php_stream_context *context TSRMLS_DC)</span>
+<span class="lineNum">    1264 </span>                : {
+<span class="lineNum">    1265 </span><span class="lineNoCov">              0 :         struct php_user_stream_wrapper *uwrap = (struct php_user_stream_wrapper*)wrapper-&gt;abstract;</span>
+<span class="lineNum">    1266 </span>                :         zval *zfilename, *zmode, *zoptions, *zfuncname, *zretval;
+<span class="lineNum">    1267 </span>                :         zval **args[3];
+<span class="lineNum">    1268 </span>                :         int call_result;
+<span class="lineNum">    1269 </span>                :         zval *object;
+<span class="lineNum">    1270 </span><span class="lineNoCov">              0 :         int ret = 0;</span>
+<span class="lineNum">    1271 </span>                : 
+<span class="lineNum">    1272 </span>                :         /* create an instance of our class */
+<span class="lineNum">    1273 </span><span class="lineNoCov">              0 :         ALLOC_ZVAL(object);</span>
+<span class="lineNum">    1274 </span><span class="lineNoCov">              0 :         object_init_ex(object, uwrap-&gt;ce);</span>
+<span class="lineNum">    1275 </span><span class="lineNoCov">              0 :         Z_SET_REFCOUNT_P(object, 1);</span>
+<span class="lineNum">    1276 </span><span class="lineNoCov">              0 :         Z_SET_ISREF_P(object);</span>
+<span class="lineNum">    1277 </span>                : 
+<span class="lineNum">    1278 </span><span class="lineNoCov">              0 :         if (context) {</span>
+<span class="lineNum">    1279 </span><span class="lineNoCov">              0 :                 add_property_resource(object, &quot;context&quot;, context-&gt;rsrc_id);</span>
+<span class="lineNum">    1280 </span><span class="lineNoCov">              0 :                 zend_list_addref(context-&gt;rsrc_id);</span>
+<span class="lineNum">    1281 </span>                :         } else {
+<span class="lineNum">    1282 </span><span class="lineNoCov">              0 :                 add_property_null(object, &quot;context&quot;);</span>
+<span class="lineNum">    1283 </span>                :         }
+<span class="lineNum">    1284 </span>                : 
+<span class="lineNum">    1285 </span>                :         /* call the mkdir method */
+<span class="lineNum">    1286 </span><span class="lineNoCov">              0 :         MAKE_STD_ZVAL(zfilename);</span>
+<span class="lineNum">    1287 </span><span class="lineNoCov">              0 :         ZVAL_STRING(zfilename, url, 1);</span>
+<span class="lineNum">    1288 </span><span class="lineNoCov">              0 :         args[0] = &amp;zfilename;</span>
+<span class="lineNum">    1289 </span>                : 
+<span class="lineNum">    1290 </span><span class="lineNoCov">              0 :         MAKE_STD_ZVAL(zmode);</span>
+<span class="lineNum">    1291 </span><span class="lineNoCov">              0 :         ZVAL_LONG(zmode, mode);</span>
+<span class="lineNum">    1292 </span><span class="lineNoCov">              0 :         args[1] = &amp;zmode;</span>
+<span class="lineNum">    1293 </span>                : 
+<span class="lineNum">    1294 </span><span class="lineNoCov">              0 :         MAKE_STD_ZVAL(zoptions);</span>
+<span class="lineNum">    1295 </span><span class="lineNoCov">              0 :         ZVAL_LONG(zoptions, options);</span>
+<span class="lineNum">    1296 </span><span class="lineNoCov">              0 :         args[2] = &amp;zoptions;</span>
+<span class="lineNum">    1297 </span>                : 
+<span class="lineNum">    1298 </span><span class="lineNoCov">              0 :         MAKE_STD_ZVAL(zfuncname);</span>
+<span class="lineNum">    1299 </span><span class="lineNoCov">              0 :         ZVAL_STRING(zfuncname, USERSTREAM_MKDIR, 1);</span>
+<span class="lineNum">    1300 </span>                : 
+<span class="lineNum">    1301 </span><span class="lineNoCov">              0 :         call_result = call_user_function_ex(NULL,</span>
+<span class="lineNum">    1302 </span>                :                         &amp;object,
+<span class="lineNum">    1303 </span>                :                         zfuncname,
+<span class="lineNum">    1304 </span>                :                         &amp;zretval,
+<span class="lineNum">    1305 </span>                :                         3, args,
+<span class="lineNum">    1306 </span>                :                         0, NULL TSRMLS_CC);
+<span class="lineNum">    1307 </span>                : 
+<span class="lineNum">    1308 </span><span class="lineNoCov">              0 :         if (call_result == SUCCESS &amp;&amp; zretval &amp;&amp; Z_TYPE_P(zretval) == IS_BOOL) {</span>
+<span class="lineNum">    1309 </span><span class="lineNoCov">              0 :                 ret = Z_LVAL_P(zretval);</span>
+<span class="lineNum">    1310 </span><span class="lineNoCov">              0 :         } else if (call_result == FAILURE) {</span>
+<span class="lineNum">    1311 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;%s::&quot; USERSTREAM_MKDIR &quot; is not implemented!&quot;, uwrap-&gt;classname);</span>
+<span class="lineNum">    1312 </span>                :         }
+<span class="lineNum">    1313 </span>                : 
+<span class="lineNum">    1314 </span>                :         /* clean up */
+<span class="lineNum">    1315 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;object);</span>
+<span class="lineNum">    1316 </span><span class="lineNoCov">              0 :         if (zretval) {</span>
+<span class="lineNum">    1317 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;zretval);</span>
+<span class="lineNum">    1318 </span>                :         }
+<span class="lineNum">    1319 </span>                : 
+<span class="lineNum">    1320 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;zfuncname);</span>
+<span class="lineNum">    1321 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;zfilename);</span>
+<span class="lineNum">    1322 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;zmode);</span>
+<span class="lineNum">    1323 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;zoptions);</span>
+<span class="lineNum">    1324 </span>                : 
+<span class="lineNum">    1325 </span><span class="lineNoCov">              0 :         return ret;</span>
+<a name="1326"><span class="lineNum">    1326 </span>                : }</a>
+<span class="lineNum">    1327 </span>                : 
+<span class="lineNum">    1328 </span><span class="lineNoCov">              0 : static int user_wrapper_rmdir(php_stream_wrapper *wrapper, char *url, int options, php_stream_context *context TSRMLS_DC)</span>
+<span class="lineNum">    1329 </span>                : {
+<span class="lineNum">    1330 </span><span class="lineNoCov">              0 :         struct php_user_stream_wrapper *uwrap = (struct php_user_stream_wrapper*)wrapper-&gt;abstract;</span>
+<span class="lineNum">    1331 </span>                :         zval *zfilename, *zoptions, *zfuncname, *zretval;
+<span class="lineNum">    1332 </span>                :         zval **args[3];
+<span class="lineNum">    1333 </span>                :         int call_result;
+<span class="lineNum">    1334 </span>                :         zval *object;
+<span class="lineNum">    1335 </span><span class="lineNoCov">              0 :         int ret = 0;</span>
+<span class="lineNum">    1336 </span>                : 
+<span class="lineNum">    1337 </span>                :         /* create an instance of our class */
+<span class="lineNum">    1338 </span><span class="lineNoCov">              0 :         ALLOC_ZVAL(object);</span>
+<span class="lineNum">    1339 </span><span class="lineNoCov">              0 :         object_init_ex(object, uwrap-&gt;ce);</span>
+<span class="lineNum">    1340 </span><span class="lineNoCov">              0 :         Z_SET_REFCOUNT_P(object, 1);</span>
+<span class="lineNum">    1341 </span><span class="lineNoCov">              0 :         Z_SET_ISREF_P(object);</span>
+<span class="lineNum">    1342 </span>                : 
+<span class="lineNum">    1343 </span><span class="lineNoCov">              0 :         if (context) {</span>
+<span class="lineNum">    1344 </span><span class="lineNoCov">              0 :                 add_property_resource(object, &quot;context&quot;, context-&gt;rsrc_id);</span>
+<span class="lineNum">    1345 </span><span class="lineNoCov">              0 :                 zend_list_addref(context-&gt;rsrc_id);</span>
+<span class="lineNum">    1346 </span>                :         } else {
+<span class="lineNum">    1347 </span><span class="lineNoCov">              0 :                 add_property_null(object, &quot;context&quot;);</span>
+<span class="lineNum">    1348 </span>                :         }
+<span class="lineNum">    1349 </span>                : 
+<span class="lineNum">    1350 </span>                :         /* call the rmdir method */
+<span class="lineNum">    1351 </span><span class="lineNoCov">              0 :         MAKE_STD_ZVAL(zfilename);</span>
+<span class="lineNum">    1352 </span><span class="lineNoCov">              0 :         ZVAL_STRING(zfilename, url, 1);</span>
+<span class="lineNum">    1353 </span><span class="lineNoCov">              0 :         args[0] = &amp;zfilename;</span>
+<span class="lineNum">    1354 </span>                : 
+<span class="lineNum">    1355 </span><span class="lineNoCov">              0 :         MAKE_STD_ZVAL(zoptions);</span>
+<span class="lineNum">    1356 </span><span class="lineNoCov">              0 :         ZVAL_LONG(zoptions, options);</span>
+<span class="lineNum">    1357 </span><span class="lineNoCov">              0 :         args[1] = &amp;zoptions;</span>
+<span class="lineNum">    1358 </span>                : 
+<span class="lineNum">    1359 </span><span class="lineNoCov">              0 :         MAKE_STD_ZVAL(zfuncname);</span>
+<span class="lineNum">    1360 </span><span class="lineNoCov">              0 :         ZVAL_STRING(zfuncname, USERSTREAM_RMDIR, 1);</span>
+<span class="lineNum">    1361 </span>                : 
+<span class="lineNum">    1362 </span><span class="lineNoCov">              0 :         call_result = call_user_function_ex(NULL,</span>
+<span class="lineNum">    1363 </span>                :                         &amp;object,
+<span class="lineNum">    1364 </span>                :                         zfuncname,
+<span class="lineNum">    1365 </span>                :                         &amp;zretval,
+<span class="lineNum">    1366 </span>                :                         2, args,
+<span class="lineNum">    1367 </span>                :                         0, NULL TSRMLS_CC);
+<span class="lineNum">    1368 </span>                : 
+<span class="lineNum">    1369 </span><span class="lineNoCov">              0 :         if (call_result == SUCCESS &amp;&amp; zretval &amp;&amp; Z_TYPE_P(zretval) == IS_BOOL) {</span>
+<span class="lineNum">    1370 </span><span class="lineNoCov">              0 :                 ret = Z_LVAL_P(zretval);</span>
+<span class="lineNum">    1371 </span><span class="lineNoCov">              0 :         } else if (call_result == FAILURE) {</span>
+<span class="lineNum">    1372 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;%s::&quot; USERSTREAM_RMDIR &quot; is not implemented!&quot;, uwrap-&gt;classname);</span>
+<span class="lineNum">    1373 </span>                :         }
+<span class="lineNum">    1374 </span>                : 
+<span class="lineNum">    1375 </span>                :         /* clean up */
+<span class="lineNum">    1376 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;object);</span>
+<span class="lineNum">    1377 </span><span class="lineNoCov">              0 :         if (zretval) {</span>
+<span class="lineNum">    1378 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;zretval);</span>
+<span class="lineNum">    1379 </span>                :         }
+<span class="lineNum">    1380 </span>                : 
+<span class="lineNum">    1381 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;zfuncname);</span>
+<span class="lineNum">    1382 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;zfilename);</span>
+<span class="lineNum">    1383 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;zoptions);</span>
+<span class="lineNum">    1384 </span>                : 
+<span class="lineNum">    1385 </span><span class="lineNoCov">              0 :         return ret;</span>
+<a name="1386"><span class="lineNum">    1386 </span>                : }</a>
+<span class="lineNum">    1387 </span>                : 
+<span class="lineNum">    1388 </span><span class="lineNoCov">              0 : static int user_wrapper_metadata(php_stream_wrapper *wrapper, char *url, int option, void *value, php_stream_context *context TSRMLS_DC)</span>
+<span class="lineNum">    1389 </span>                : {
+<span class="lineNum">    1390 </span><span class="lineNoCov">              0 :         struct php_user_stream_wrapper *uwrap = (struct php_user_stream_wrapper*)wrapper-&gt;abstract;</span>
+<span class="lineNum">    1391 </span>                :         zval *zfilename, *zoption, *zvalue, *zfuncname, *zretval;
+<span class="lineNum">    1392 </span>                :         zval **args[3];
+<span class="lineNum">    1393 </span>                :         int call_result;
+<span class="lineNum">    1394 </span>                :         zval *object;
+<span class="lineNum">    1395 </span><span class="lineNoCov">              0 :         int ret = 0;</span>
+<span class="lineNum">    1396 </span>                : 
+<span class="lineNum">    1397 </span><span class="lineNoCov">              0 :         MAKE_STD_ZVAL(zvalue);</span>
+<span class="lineNum">    1398 </span><span class="lineNoCov">              0 :         switch(option) {</span>
+<span class="lineNum">    1399 </span>                :                 case PHP_STREAM_META_TOUCH:
+<span class="lineNum">    1400 </span><span class="lineNoCov">              0 :                         array_init(zvalue);</span>
+<span class="lineNum">    1401 </span><span class="lineNoCov">              0 :                         if(value) {</span>
+<span class="lineNum">    1402 </span><span class="lineNoCov">              0 :                                 struct utimbuf *newtime = (struct utimbuf *)value;</span>
+<span class="lineNum">    1403 </span><span class="lineNoCov">              0 :                                 add_index_long(zvalue, 0, newtime-&gt;modtime);</span>
+<span class="lineNum">    1404 </span><span class="lineNoCov">              0 :                                 add_index_long(zvalue, 1, newtime-&gt;actime);</span>
+<span class="lineNum">    1405 </span>                :                         }
+<span class="lineNum">    1406 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">    1407 </span>                :                 case PHP_STREAM_META_GROUP:
+<span class="lineNum">    1408 </span>                :                 case PHP_STREAM_META_OWNER:
+<span class="lineNum">    1409 </span>                :                 case PHP_STREAM_META_ACCESS:
+<span class="lineNum">    1410 </span><span class="lineNoCov">              0 :                         ZVAL_LONG(zvalue, *(long *)value);</span>
+<span class="lineNum">    1411 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">    1412 </span>                :                 case PHP_STREAM_META_GROUP_NAME:
+<span class="lineNum">    1413 </span>                :                 case PHP_STREAM_META_OWNER_NAME:
+<span class="lineNum">    1414 </span><span class="lineNoCov">              0 :                         ZVAL_STRING(zvalue, value, 1);</span>
+<span class="lineNum">    1415 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">    1416 </span>                :                 default:
+<span class="lineNum">    1417 </span><span class="lineNoCov">              0 :                         php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Unknown option %d for &quot; USERSTREAM_METADATA, option);</span>
+<span class="lineNum">    1418 </span><span class="lineNoCov">              0 :                         zval_ptr_dtor(&amp;zvalue);</span>
+<span class="lineNum">    1419 </span><span class="lineNoCov">              0 :                         return ret;</span>
+<span class="lineNum">    1420 </span>                :         }
+<span class="lineNum">    1421 </span>                : 
+<span class="lineNum">    1422 </span>                :         /* create an instance of our class */
+<span class="lineNum">    1423 </span><span class="lineNoCov">              0 :         ALLOC_ZVAL(object);</span>
+<span class="lineNum">    1424 </span><span class="lineNoCov">              0 :         object_init_ex(object, uwrap-&gt;ce);</span>
+<span class="lineNum">    1425 </span><span class="lineNoCov">              0 :         Z_SET_REFCOUNT_P(object, 1);</span>
+<span class="lineNum">    1426 </span><span class="lineNoCov">              0 :         Z_SET_ISREF_P(object);</span>
+<span class="lineNum">    1427 </span>                : 
+<span class="lineNum">    1428 </span><span class="lineNoCov">              0 :         if (context) {</span>
+<span class="lineNum">    1429 </span><span class="lineNoCov">              0 :                 add_property_resource(object, &quot;context&quot;, context-&gt;rsrc_id);</span>
+<span class="lineNum">    1430 </span><span class="lineNoCov">              0 :                 zend_list_addref(context-&gt;rsrc_id);</span>
+<span class="lineNum">    1431 </span>                :         } else {
+<span class="lineNum">    1432 </span><span class="lineNoCov">              0 :                 add_property_null(object, &quot;context&quot;);</span>
+<span class="lineNum">    1433 </span>                :         }
+<span class="lineNum">    1434 </span>                : 
+<span class="lineNum">    1435 </span>                :         /* call the mkdir method */
+<span class="lineNum">    1436 </span><span class="lineNoCov">              0 :         MAKE_STD_ZVAL(zfilename);</span>
+<span class="lineNum">    1437 </span><span class="lineNoCov">              0 :         ZVAL_STRING(zfilename, url, 1);</span>
+<span class="lineNum">    1438 </span><span class="lineNoCov">              0 :         args[0] = &amp;zfilename;</span>
+<span class="lineNum">    1439 </span>                : 
+<span class="lineNum">    1440 </span><span class="lineNoCov">              0 :         MAKE_STD_ZVAL(zoption);</span>
+<span class="lineNum">    1441 </span><span class="lineNoCov">              0 :         ZVAL_LONG(zoption, option);</span>
+<span class="lineNum">    1442 </span><span class="lineNoCov">              0 :         args[1] = &amp;zoption;</span>
+<span class="lineNum">    1443 </span>                : 
+<span class="lineNum">    1444 </span><span class="lineNoCov">              0 :         args[2] = &amp;zvalue;</span>
+<span class="lineNum">    1445 </span>                : 
+<span class="lineNum">    1446 </span><span class="lineNoCov">              0 :         MAKE_STD_ZVAL(zfuncname);</span>
+<span class="lineNum">    1447 </span><span class="lineNoCov">              0 :         ZVAL_STRING(zfuncname, USERSTREAM_METADATA, 1);</span>
+<span class="lineNum">    1448 </span>                : 
+<span class="lineNum">    1449 </span><span class="lineNoCov">              0 :         call_result = call_user_function_ex(NULL,</span>
+<span class="lineNum">    1450 </span>                :                         &amp;object,
+<span class="lineNum">    1451 </span>                :                         zfuncname,
+<span class="lineNum">    1452 </span>                :                         &amp;zretval,
+<span class="lineNum">    1453 </span>                :                         3, args,
+<span class="lineNum">    1454 </span>                :                         0, NULL TSRMLS_CC);
+<span class="lineNum">    1455 </span>                : 
+<span class="lineNum">    1456 </span><span class="lineNoCov">              0 :         if (call_result == SUCCESS &amp;&amp; zretval &amp;&amp; Z_TYPE_P(zretval) == IS_BOOL) {</span>
+<span class="lineNum">    1457 </span><span class="lineNoCov">              0 :                 ret = Z_LVAL_P(zretval);</span>
+<span class="lineNum">    1458 </span><span class="lineNoCov">              0 :         } else if (call_result == FAILURE) {</span>
+<span class="lineNum">    1459 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;%s::&quot; USERSTREAM_METADATA &quot; is not implemented!&quot;, uwrap-&gt;classname);</span>
+<span class="lineNum">    1460 </span>                :         }
+<span class="lineNum">    1461 </span>                : 
+<span class="lineNum">    1462 </span>                :         /* clean up */
+<span class="lineNum">    1463 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;object);</span>
+<span class="lineNum">    1464 </span><span class="lineNoCov">              0 :         if (zretval) {</span>
+<span class="lineNum">    1465 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;zretval);</span>
+<span class="lineNum">    1466 </span>                :         }
+<span class="lineNum">    1467 </span>                : 
+<span class="lineNum">    1468 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;zfuncname);</span>
+<span class="lineNum">    1469 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;zfilename);</span>
+<span class="lineNum">    1470 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;zoption);</span>
+<span class="lineNum">    1471 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;zvalue);</span>
+<span class="lineNum">    1472 </span>                : 
+<span class="lineNum">    1473 </span><span class="lineNoCov">              0 :         return ret;</span>
+<span class="lineNum">    1474 </span>                : }
+<a name="1475"><span class="lineNum">    1475 </span>                : </a>
+<span class="lineNum">    1476 </span>                : 
+<span class="lineNum">    1477 </span><span class="lineNoCov">              0 : static int user_wrapper_stat_url(php_stream_wrapper *wrapper, char *url, int flags, php_stream_statbuf *ssb, php_stream_context *context TSRMLS_DC)</span>
+<span class="lineNum">    1478 </span>                : {
+<span class="lineNum">    1479 </span><span class="lineNoCov">              0 :         struct php_user_stream_wrapper *uwrap = (struct php_user_stream_wrapper*)wrapper-&gt;abstract;</span>
+<span class="lineNum">    1480 </span>                :         zval *zfilename, *zfuncname, *zretval, *zflags;
+<span class="lineNum">    1481 </span>                :         zval **args[2];
+<span class="lineNum">    1482 </span>                :         int call_result;
+<span class="lineNum">    1483 </span>                :         zval *object;
+<span class="lineNum">    1484 </span><span class="lineNoCov">              0 :         int ret = -1;</span>
+<span class="lineNum">    1485 </span>                : 
+<span class="lineNum">    1486 </span>                :         /* create an instance of our class */
+<span class="lineNum">    1487 </span><span class="lineNoCov">              0 :         ALLOC_ZVAL(object);</span>
+<span class="lineNum">    1488 </span><span class="lineNoCov">              0 :         object_init_ex(object, uwrap-&gt;ce);</span>
+<span class="lineNum">    1489 </span><span class="lineNoCov">              0 :         Z_SET_REFCOUNT_P(object, 1);</span>
+<span class="lineNum">    1490 </span><span class="lineNoCov">              0 :         Z_SET_ISREF_P(object);</span>
+<span class="lineNum">    1491 </span>                : 
+<span class="lineNum">    1492 </span><span class="lineNoCov">              0 :         if (context) {</span>
+<span class="lineNum">    1493 </span><span class="lineNoCov">              0 :                 add_property_resource(object, &quot;context&quot;, context-&gt;rsrc_id);</span>
+<span class="lineNum">    1494 </span><span class="lineNoCov">              0 :                 zend_list_addref(context-&gt;rsrc_id);</span>
+<span class="lineNum">    1495 </span>                :         } else {
+<span class="lineNum">    1496 </span><span class="lineNoCov">              0 :                 add_property_null(object, &quot;context&quot;);</span>
+<span class="lineNum">    1497 </span>                :         }
+<span class="lineNum">    1498 </span>                : 
+<span class="lineNum">    1499 </span>                :         /* call it's stat_url method - set up params first */
+<span class="lineNum">    1500 </span><span class="lineNoCov">              0 :         MAKE_STD_ZVAL(zfilename);</span>
+<span class="lineNum">    1501 </span><span class="lineNoCov">              0 :         ZVAL_STRING(zfilename, url, 1);</span>
+<span class="lineNum">    1502 </span><span class="lineNoCov">              0 :         args[0] = &amp;zfilename;</span>
+<span class="lineNum">    1503 </span>                : 
+<span class="lineNum">    1504 </span><span class="lineNoCov">              0 :         MAKE_STD_ZVAL(zflags);</span>
+<span class="lineNum">    1505 </span><span class="lineNoCov">              0 :         ZVAL_LONG(zflags, flags);</span>
+<span class="lineNum">    1506 </span><span class="lineNoCov">              0 :         args[1] = &amp;zflags;</span>
+<span class="lineNum">    1507 </span>                : 
+<span class="lineNum">    1508 </span><span class="lineNoCov">              0 :         MAKE_STD_ZVAL(zfuncname);</span>
+<span class="lineNum">    1509 </span><span class="lineNoCov">              0 :         ZVAL_STRING(zfuncname, USERSTREAM_STATURL, 1);</span>
+<span class="lineNum">    1510 </span>                : 
+<span class="lineNum">    1511 </span><span class="lineNoCov">              0 :         call_result = call_user_function_ex(NULL,</span>
+<span class="lineNum">    1512 </span>                :                         &amp;object,
+<span class="lineNum">    1513 </span>                :                         zfuncname,
+<span class="lineNum">    1514 </span>                :                         &amp;zretval,
+<span class="lineNum">    1515 </span>                :                         2, args,
+<span class="lineNum">    1516 </span>                :                         0, NULL TSRMLS_CC);
+<span class="lineNum">    1517 </span>                : 
+<span class="lineNum">    1518 </span><span class="lineNoCov">              0 :         if (call_result == SUCCESS &amp;&amp; zretval != NULL &amp;&amp; Z_TYPE_P(zretval) == IS_ARRAY) {</span>
+<span class="lineNum">    1519 </span>                :                 /* We got the info we needed */
+<span class="lineNum">    1520 </span><span class="lineNoCov">              0 :                 if (SUCCESS == statbuf_from_array(zretval, ssb TSRMLS_CC))</span>
+<span class="lineNum">    1521 </span><span class="lineNoCov">              0 :                         ret = 0;</span>
+<span class="lineNum">    1522 </span>                :         } else {
+<span class="lineNum">    1523 </span><span class="lineNoCov">              0 :                 if (call_result == FAILURE) {</span>
+<span class="lineNum">    1524 </span><span class="lineNoCov">              0 :                         php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;%s::&quot; USERSTREAM_STATURL &quot; is not implemented!&quot;,</span>
+<span class="lineNum">    1525 </span>                :                                         uwrap-&gt;classname);
+<span class="lineNum">    1526 </span>                :                 }
+<span class="lineNum">    1527 </span>                :         }
+<span class="lineNum">    1528 </span>                : 
+<span class="lineNum">    1529 </span>                :         /* clean up */
+<span class="lineNum">    1530 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;object);</span>
+<span class="lineNum">    1531 </span><span class="lineNoCov">              0 :         if (zretval)</span>
+<span class="lineNum">    1532 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;zretval);</span>
+<span class="lineNum">    1533 </span>                : 
+<span class="lineNum">    1534 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;zfuncname);</span>
+<span class="lineNum">    1535 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;zfilename);</span>
+<span class="lineNum">    1536 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;zflags);</span>
+<span class="lineNum">    1537 </span>                : 
+<span class="lineNum">    1538 </span><span class="lineNoCov">              0 :         return ret;</span>
+<span class="lineNum">    1539 </span>                : 
+<a name="1540"><span class="lineNum">    1540 </span>                : }</a>
+<span class="lineNum">    1541 </span>                : 
+<span class="lineNum">    1542 </span><span class="lineNoCov">              0 : static size_t php_userstreamop_readdir(php_stream *stream, char *buf, size_t count TSRMLS_DC)</span>
+<span class="lineNum">    1543 </span>                : {
+<span class="lineNum">    1544 </span>                :         zval func_name;
+<span class="lineNum">    1545 </span><span class="lineNoCov">              0 :         zval *retval = NULL;</span>
+<span class="lineNum">    1546 </span>                :         int call_result;
+<span class="lineNum">    1547 </span><span class="lineNoCov">              0 :         size_t didread = 0;</span>
+<span class="lineNum">    1548 </span><span class="lineNoCov">              0 :         php_userstream_data_t *us = (php_userstream_data_t *)stream-&gt;abstract;</span>
+<span class="lineNum">    1549 </span><span class="lineNoCov">              0 :         php_stream_dirent *ent = (php_stream_dirent*)buf;</span>
+<span class="lineNum">    1550 </span>                : 
+<span class="lineNum">    1551 </span>                :         /* avoid problems if someone mis-uses the stream */
+<span class="lineNum">    1552 </span><span class="lineNoCov">              0 :         if (count != sizeof(php_stream_dirent))</span>
+<span class="lineNum">    1553 </span><span class="lineNoCov">              0 :                 return 0;</span>
+<span class="lineNum">    1554 </span>                : 
+<span class="lineNum">    1555 </span><span class="lineNoCov">              0 :         ZVAL_STRINGL(&amp;func_name, USERSTREAM_DIR_READ, sizeof(USERSTREAM_DIR_READ)-1, 0);</span>
+<span class="lineNum">    1556 </span>                : 
+<span class="lineNum">    1557 </span><span class="lineNoCov">              0 :         call_result = call_user_function_ex(NULL,</span>
+<span class="lineNum">    1558 </span>                :                         &amp;us-&gt;object,
+<span class="lineNum">    1559 </span>                :                         &amp;func_name,
+<span class="lineNum">    1560 </span>                :                         &amp;retval,
+<span class="lineNum">    1561 </span>                :                         0, NULL,
+<span class="lineNum">    1562 </span>                :                         0, NULL TSRMLS_CC);
+<span class="lineNum">    1563 </span>                : 
+<span class="lineNum">    1564 </span><span class="lineNoCov">              0 :         if (call_result == SUCCESS &amp;&amp; retval != NULL &amp;&amp; Z_TYPE_P(retval) != IS_BOOL) {</span>
+<span class="lineNum">    1565 </span><span class="lineNoCov">              0 :                 convert_to_string(retval);</span>
+<span class="lineNum">    1566 </span><span class="lineNoCov">              0 :                 PHP_STRLCPY(ent-&gt;d_name, Z_STRVAL_P(retval), sizeof(ent-&gt;d_name), Z_STRLEN_P(retval));</span>
+<span class="lineNum">    1567 </span>                : 
+<span class="lineNum">    1568 </span><span class="lineNoCov">              0 :                 didread = sizeof(php_stream_dirent);</span>
+<span class="lineNum">    1569 </span><span class="lineNoCov">              0 :         } else if (call_result == FAILURE) {</span>
+<span class="lineNum">    1570 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;%s::&quot; USERSTREAM_DIR_READ &quot; is not implemented!&quot;,</span>
+<span class="lineNum">    1571 </span><span class="lineNoCov">              0 :                                 us-&gt;wrapper-&gt;classname);</span>
+<span class="lineNum">    1572 </span>                :         }
+<span class="lineNum">    1573 </span>                : 
+<span class="lineNum">    1574 </span><span class="lineNoCov">              0 :         if (retval)</span>
+<span class="lineNum">    1575 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;retval);</span>
+<span class="lineNum">    1576 </span>                : 
+<span class="lineNum">    1577 </span><span class="lineNoCov">              0 :         return didread;</span>
+<a name="1578"><span class="lineNum">    1578 </span>                : }</a>
+<span class="lineNum">    1579 </span>                : 
+<span class="lineNum">    1580 </span><span class="lineNoCov">              0 : static int php_userstreamop_closedir(php_stream *stream, int close_handle TSRMLS_DC)</span>
+<span class="lineNum">    1581 </span>                : {
+<span class="lineNum">    1582 </span>                :         zval func_name;
+<span class="lineNum">    1583 </span><span class="lineNoCov">              0 :         zval *retval = NULL;</span>
+<span class="lineNum">    1584 </span><span class="lineNoCov">              0 :         php_userstream_data_t *us = (php_userstream_data_t *)stream-&gt;abstract;</span>
+<span class="lineNum">    1585 </span>                : 
+<span class="lineNum">    1586 </span>                :         assert(us != NULL);
+<span class="lineNum">    1587 </span>                : 
+<span class="lineNum">    1588 </span><span class="lineNoCov">              0 :         ZVAL_STRINGL(&amp;func_name, USERSTREAM_DIR_CLOSE, sizeof(USERSTREAM_DIR_CLOSE)-1, 0);</span>
+<span class="lineNum">    1589 </span>                : 
+<span class="lineNum">    1590 </span><span class="lineNoCov">              0 :         call_user_function_ex(NULL,</span>
+<span class="lineNum">    1591 </span>                :                         &amp;us-&gt;object,
+<span class="lineNum">    1592 </span>                :                         &amp;func_name,
+<span class="lineNum">    1593 </span>                :                         &amp;retval,
+<span class="lineNum">    1594 </span>                :                         0, NULL, 0, NULL TSRMLS_CC);
+<span class="lineNum">    1595 </span>                : 
+<span class="lineNum">    1596 </span><span class="lineNoCov">              0 :         if (retval)</span>
+<span class="lineNum">    1597 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;retval);</span>
+<span class="lineNum">    1598 </span>                : 
+<span class="lineNum">    1599 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;us-&gt;object);</span>
+<span class="lineNum">    1600 </span>                : 
+<span class="lineNum">    1601 </span><span class="lineNoCov">              0 :         efree(us);</span>
+<span class="lineNum">    1602 </span>                : 
+<span class="lineNum">    1603 </span><span class="lineNoCov">              0 :         return 0;</span>
+<a name="1604"><span class="lineNum">    1604 </span>                : }</a>
+<span class="lineNum">    1605 </span>                : 
+<span class="lineNum">    1606 </span><span class="lineNoCov">              0 : static int php_userstreamop_rewinddir(php_stream *stream, off_t offset, int whence, off_t *newoffs TSRMLS_DC)</span>
+<span class="lineNum">    1607 </span>                : {
+<span class="lineNum">    1608 </span>                :         zval func_name;
+<span class="lineNum">    1609 </span><span class="lineNoCov">              0 :         zval *retval = NULL;</span>
+<span class="lineNum">    1610 </span><span class="lineNoCov">              0 :         php_userstream_data_t *us = (php_userstream_data_t *)stream-&gt;abstract;</span>
+<span class="lineNum">    1611 </span>                : 
+<span class="lineNum">    1612 </span><span class="lineNoCov">              0 :         ZVAL_STRINGL(&amp;func_name, USERSTREAM_DIR_REWIND, sizeof(USERSTREAM_DIR_REWIND)-1, 0);</span>
+<span class="lineNum">    1613 </span>                : 
+<span class="lineNum">    1614 </span><span class="lineNoCov">              0 :         call_user_function_ex(NULL,</span>
+<span class="lineNum">    1615 </span>                :                         &amp;us-&gt;object,
+<span class="lineNum">    1616 </span>                :                         &amp;func_name,
+<span class="lineNum">    1617 </span>                :                         &amp;retval,
+<span class="lineNum">    1618 </span>                :                         0, NULL, 0, NULL TSRMLS_CC);
+<span class="lineNum">    1619 </span>                : 
+<span class="lineNum">    1620 </span><span class="lineNoCov">              0 :         if (retval)</span>
+<span class="lineNum">    1621 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;retval);</span>
+<span class="lineNum">    1622 </span>                : 
+<span class="lineNum">    1623 </span><span class="lineNoCov">              0 :         return 0;</span>
+<span class="lineNum">    1624 </span>                : 
+<a name="1625"><span class="lineNum">    1625 </span>                : }</a>
+<span class="lineNum">    1626 </span>                : 
+<span class="lineNum">    1627 </span><span class="lineNoCov">              0 : static int php_userstreamop_cast(php_stream *stream, int castas, void **retptr TSRMLS_DC)</span>
+<span class="lineNum">    1628 </span>                : {
+<span class="lineNum">    1629 </span><span class="lineNoCov">              0 :         php_userstream_data_t *us = (php_userstream_data_t *)stream-&gt;abstract;</span>
+<span class="lineNum">    1630 </span>                :         zval func_name;
+<span class="lineNum">    1631 </span><span class="lineNoCov">              0 :         zval *retval = NULL;</span>
+<span class="lineNum">    1632 </span><span class="lineNoCov">              0 :         zval *zcastas = NULL;</span>
+<span class="lineNum">    1633 </span>                :         zval **args[1];
+<span class="lineNum">    1634 </span><span class="lineNoCov">              0 :         php_stream * intstream = NULL;</span>
+<span class="lineNum">    1635 </span>                :         int call_result;
+<span class="lineNum">    1636 </span><span class="lineNoCov">              0 :         int ret = FAILURE;</span>
+<span class="lineNum">    1637 </span>                : 
+<span class="lineNum">    1638 </span><span class="lineNoCov">              0 :         ZVAL_STRINGL(&amp;func_name, USERSTREAM_CAST, sizeof(USERSTREAM_CAST)-1, 0);</span>
+<span class="lineNum">    1639 </span>                : 
+<span class="lineNum">    1640 </span><span class="lineNoCov">              0 :         ALLOC_INIT_ZVAL(zcastas);</span>
+<span class="lineNum">    1641 </span><span class="lineNoCov">              0 :         switch(castas) {</span>
+<span class="lineNum">    1642 </span>                :         case PHP_STREAM_AS_FD_FOR_SELECT:
+<span class="lineNum">    1643 </span><span class="lineNoCov">              0 :                 ZVAL_LONG(zcastas, PHP_STREAM_AS_FD_FOR_SELECT);</span>
+<span class="lineNum">    1644 </span><span class="lineNoCov">              0 :                 break;</span>
+<span class="lineNum">    1645 </span>                :         default:
+<span class="lineNum">    1646 </span><span class="lineNoCov">              0 :                 ZVAL_LONG(zcastas, PHP_STREAM_AS_STDIO);</span>
+<span class="lineNum">    1647 </span>                :                 break;
+<span class="lineNum">    1648 </span>                :         }
+<span class="lineNum">    1649 </span><span class="lineNoCov">              0 :         args[0] = &amp;zcastas;</span>
+<span class="lineNum">    1650 </span>                : 
+<span class="lineNum">    1651 </span><span class="lineNoCov">              0 :         call_result = call_user_function_ex(NULL,</span>
+<span class="lineNum">    1652 </span>                :                         &amp;us-&gt;object,
+<span class="lineNum">    1653 </span>                :                         &amp;func_name,
+<span class="lineNum">    1654 </span>                :                         &amp;retval,
+<span class="lineNum">    1655 </span>                :                         1, args, 0, NULL TSRMLS_CC);
+<span class="lineNum">    1656 </span>                : 
+<span class="lineNum">    1657 </span>                :         do {
+<span class="lineNum">    1658 </span><span class="lineNoCov">              0 :                 if (call_result == FAILURE) {</span>
+<span class="lineNum">    1659 </span><span class="lineNoCov">              0 :                         php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;%s::&quot; USERSTREAM_CAST &quot; is not implemented!&quot;,</span>
+<span class="lineNum">    1660 </span><span class="lineNoCov">              0 :                                         us-&gt;wrapper-&gt;classname);</span>
+<span class="lineNum">    1661 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">    1662 </span>                :                 }
+<span class="lineNum">    1663 </span><span class="lineNoCov">              0 :                 if (retval == NULL || !zend_is_true(retval)) {</span>
+<span class="lineNum">    1664 </span>                :                         break;
+<span class="lineNum">    1665 </span>                :                 }
+<span class="lineNum">    1666 </span><span class="lineNoCov">              0 :                 php_stream_from_zval_no_verify(intstream, &amp;retval);</span>
+<span class="lineNum">    1667 </span><span class="lineNoCov">              0 :                 if (!intstream) {</span>
+<span class="lineNum">    1668 </span><span class="lineNoCov">              0 :                         php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;%s::&quot; USERSTREAM_CAST &quot; must return a stream resource&quot;,</span>
+<span class="lineNum">    1669 </span><span class="lineNoCov">              0 :                                         us-&gt;wrapper-&gt;classname);</span>
+<span class="lineNum">    1670 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">    1671 </span>                :                 }
+<span class="lineNum">    1672 </span><span class="lineNoCov">              0 :                 if (intstream == stream) {</span>
+<span class="lineNum">    1673 </span><span class="lineNoCov">              0 :                         php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;%s::&quot; USERSTREAM_CAST &quot; must not return itself&quot;,</span>
+<span class="lineNum">    1674 </span><span class="lineNoCov">              0 :                                         us-&gt;wrapper-&gt;classname);</span>
+<span class="lineNum">    1675 </span><span class="lineNoCov">              0 :                         intstream = NULL;</span>
+<span class="lineNum">    1676 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">    1677 </span>                :                 }
+<span class="lineNum">    1678 </span><span class="lineNoCov">              0 :                 ret = php_stream_cast(intstream, castas, retptr, 1);</span>
+<span class="lineNum">    1679 </span>                :         } while (0);
+<span class="lineNum">    1680 </span>                : 
+<span class="lineNum">    1681 </span><span class="lineNoCov">              0 :         if (retval) {</span>
+<span class="lineNum">    1682 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;retval);</span>
+<span class="lineNum">    1683 </span>                :         }
+<span class="lineNum">    1684 </span><span class="lineNoCov">              0 :         if (zcastas) {</span>
+<span class="lineNum">    1685 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;zcastas);</span>
+<span class="lineNum">    1686 </span>                :         }
+<span class="lineNum">    1687 </span>                : 
+<span class="lineNum">    1688 </span><span class="lineNoCov">              0 :         return ret;</span>
+<span class="lineNum">    1689 </span>                : }
+<span class="lineNum">    1690 </span>                : 
+<span class="lineNum">    1691 </span>                : php_stream_ops php_stream_userspace_ops = {
+<span class="lineNum">    1692 </span>                :         php_userstreamop_write, php_userstreamop_read,
+<span class="lineNum">    1693 </span>                :         php_userstreamop_close, php_userstreamop_flush,
+<span class="lineNum">    1694 </span>                :         &quot;user-space&quot;,
+<span class="lineNum">    1695 </span>                :         php_userstreamop_seek,
+<span class="lineNum">    1696 </span>                :         php_userstreamop_cast,
+<span class="lineNum">    1697 </span>                :         php_userstreamop_stat,
+<span class="lineNum">    1698 </span>                :         php_userstreamop_set_option,
+<span class="lineNum">    1699 </span>                : };
+<span class="lineNum">    1700 </span>                : 
+<span class="lineNum">    1701 </span>                : php_stream_ops php_stream_userspace_dir_ops = {
+<span class="lineNum">    1702 </span>                :         NULL, /* write */
+<span class="lineNum">    1703 </span>                :         php_userstreamop_readdir,
+<span class="lineNum">    1704 </span>                :         php_userstreamop_closedir,
+<span class="lineNum">    1705 </span>                :         NULL, /* flush */
+<span class="lineNum">    1706 </span>                :         &quot;user-space-dir&quot;,
+<span class="lineNum">    1707 </span>                :         php_userstreamop_rewinddir,
+<span class="lineNum">    1708 </span>                :         NULL, /* cast */
+<span class="lineNum">    1709 </span>                :         NULL, /* stat */
+<span class="lineNum">    1710 </span>                :         NULL  /* set_option */
+<span class="lineNum">    1711 </span>                : };
+<span class="lineNum">    1712 </span>                : 
+<span class="lineNum">    1713 </span>                : 
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

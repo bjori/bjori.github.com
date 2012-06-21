@@ -1,0 +1,220 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - ext/ereg/regex/regexec.c</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../../index.html">directory</a> - <a href="index.html">ext/ereg/regex</a> - regexec.c (source / <a href="regexec.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">10</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">1</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :  * the outer shell of regexec()
+<span class="lineNum">       3 </span>                :  *
+<span class="lineNum">       4 </span>                :  * This file includes engine.c *twice*, after muchos fiddling with the
+<span class="lineNum">       5 </span>                :  * macros that code uses.  This lets the same code operate on two different
+<span class="lineNum">       6 </span>                :  * representations for state sets.
+<span class="lineNum">       7 </span>                :  */
+<span class="lineNum">       8 </span>                : #include &lt;sys/types.h&gt;
+<span class="lineNum">       9 </span>                : #include &lt;stdio.h&gt;
+<span class="lineNum">      10 </span>                : #include &lt;stdlib.h&gt;
+<span class="lineNum">      11 </span>                : #include &lt;string.h&gt;
+<span class="lineNum">      12 </span>                : #include &lt;limits.h&gt;
+<span class="lineNum">      13 </span>                : #include &lt;ctype.h&gt;
+<span class="lineNum">      14 </span>                : 
+<span class="lineNum">      15 </span>                : #include &quot;regex.h&quot;
+<span class="lineNum">      16 </span>                : #include &quot;utils.h&quot;
+<span class="lineNum">      17 </span>                : #include &quot;regex2.h&quot;
+<span class="lineNum">      18 </span>                : 
+<span class="lineNum">      19 </span>                : #define PHP_REGEX_NOPE 0;               /* for use in asserts; shuts lint up */
+<span class="lineNum">      20 </span>                : 
+<span class="lineNum">      21 </span>                : /* macros for manipulating states, small version */
+<span class="lineNum">      22 </span>                : #define states  unsigned
+<span class="lineNum">      23 </span>                : #define states1 unsigned        /* for later use in regexec() decision */
+<span class="lineNum">      24 </span>                : #define CLEAR(v)        ((v) = 0)
+<span class="lineNum">      25 </span>                : #define SET0(v, n)      ((v) &amp;= ~((unsigned)1 &lt;&lt; (n)))
+<span class="lineNum">      26 </span>                : #define SET1(v, n)      ((v) |= (unsigned)1 &lt;&lt; (n))
+<span class="lineNum">      27 </span>                : #define ISSET(v, n)     ((v) &amp; ((unsigned)1 &lt;&lt; (n)))
+<span class="lineNum">      28 </span>                : #define ASSIGN(d, s)    ((d) = (s))
+<span class="lineNum">      29 </span>                : #define EQ(a, b)        ((a) == (b))
+<span class="lineNum">      30 </span>                : #define STATEVARS       int dummy       /* dummy version */
+<span class="lineNum">      31 </span>                : #define STATESETUP(m, n)        /* nothing */
+<span class="lineNum">      32 </span>                : #define STATETEARDOWN(m)        /* nothing */
+<span class="lineNum">      33 </span>                : #define SETUP(v)        ((v) = 0)
+<span class="lineNum">      34 </span>                : #define onestate        unsigned
+<span class="lineNum">      35 </span>                : #define INIT(o, n)      ((o) = (unsigned)1 &lt;&lt; (n))
+<span class="lineNum">      36 </span>                : #define INC(o)  ((o) &lt;&lt;= 1)
+<span class="lineNum">      37 </span>                : #define ISSTATEIN(v, o) ((v) &amp; (o))
+<span class="lineNum">      38 </span>                : /* some abbreviations; note that some of these know variable names! */
+<span class="lineNum">      39 </span>                : /* do &quot;if I'm here, I can also be there&quot; etc without branches */
+<span class="lineNum">      40 </span>                : #define FWD(dst, src, n)        ((dst) |= ((unsigned)(src)&amp;(here)) &lt;&lt; (n))
+<span class="lineNum">      41 </span>                : #define BACK(dst, src, n)       ((dst) |= ((unsigned)(src)&amp;(here)) &gt;&gt; (n))
+<span class="lineNum">      42 </span>                : #define ISSETBACK(v, n) ((v) &amp; ((unsigned)here &gt;&gt; (n)))
+<span class="lineNum">      43 </span>                : /* function names */
+<span class="lineNum">      44 </span>                : #define SNAMES                  /* engine.c looks after details */
+<span class="lineNum">      45 </span>                : 
+<span class="lineNum">      46 </span>                : #include &quot;engine.c&quot;
+<span class="lineNum">      47 </span>                : 
+<span class="lineNum">      48 </span>                : /* now undo things */
+<span class="lineNum">      49 </span>                : #undef  states
+<span class="lineNum">      50 </span>                : #undef  CLEAR
+<span class="lineNum">      51 </span>                : #undef  SET0
+<span class="lineNum">      52 </span>                : #undef  SET1
+<span class="lineNum">      53 </span>                : #undef  ISSET
+<span class="lineNum">      54 </span>                : #undef  ASSIGN
+<span class="lineNum">      55 </span>                : #undef  EQ
+<span class="lineNum">      56 </span>                : #undef  STATEVARS
+<span class="lineNum">      57 </span>                : #undef  STATESETUP
+<span class="lineNum">      58 </span>                : #undef  STATETEARDOWN
+<span class="lineNum">      59 </span>                : #undef  SETUP
+<span class="lineNum">      60 </span>                : #undef  onestate
+<span class="lineNum">      61 </span>                : #undef  INIT
+<span class="lineNum">      62 </span>                : #undef  INC
+<span class="lineNum">      63 </span>                : #undef  ISSTATEIN
+<span class="lineNum">      64 </span>                : #undef  FWD
+<span class="lineNum">      65 </span>                : #undef  BACK
+<span class="lineNum">      66 </span>                : #undef  ISSETBACK
+<span class="lineNum">      67 </span>                : #undef  SNAMES
+<span class="lineNum">      68 </span>                : 
+<span class="lineNum">      69 </span>                : /* macros for manipulating states, large version */
+<span class="lineNum">      70 </span>                : #define states  unsigned char *
+<span class="lineNum">      71 </span>                : #define CLEAR(v)        memset(v, 0, m-&gt;g-&gt;nstates)
+<span class="lineNum">      72 </span>                : #define SET0(v, n)      ((v)[n] = 0)
+<span class="lineNum">      73 </span>                : #define SET1(v, n)      ((v)[n] = 1)
+<span class="lineNum">      74 </span>                : #define ISSET(v, n)     ((v)[n])
+<span class="lineNum">      75 </span>                : #define ASSIGN(d, s)    memcpy(d, s, m-&gt;g-&gt;nstates)
+<span class="lineNum">      76 </span>                : #define EQ(a, b)        (memcmp(a, b, m-&gt;g-&gt;nstates) == 0)
+<span class="lineNum">      77 </span>                : #define STATEVARS       int vn; unsigned char *space
+<span class="lineNum">      78 </span>                : #define STATESETUP(m, nv)       { (m)-&gt;space = malloc((nv)*(m)-&gt;g-&gt;nstates); \
+<span class="lineNum">      79 </span>                :                                 if ((m)-&gt;space == NULL) return(REG_ESPACE); \
+<span class="lineNum">      80 </span>                :                                 (m)-&gt;vn = 0; }
+<span class="lineNum">      81 </span>                : #define STATETEARDOWN(m)        { free((m)-&gt;space); }
+<span class="lineNum">      82 </span>                : #define SETUP(v)        ((v) = &amp;m-&gt;space[m-&gt;vn++ * m-&gt;g-&gt;nstates])
+<span class="lineNum">      83 </span>                : #define onestate        int
+<span class="lineNum">      84 </span>                : #define INIT(o, n)      ((o) = (n))
+<span class="lineNum">      85 </span>                : #define INC(o)  ((o)++)
+<span class="lineNum">      86 </span>                : #define ISSTATEIN(v, o) ((v)[o])
+<span class="lineNum">      87 </span>                : /* some abbreviations; note that some of these know variable names! */
+<span class="lineNum">      88 </span>                : /* do &quot;if I'm here, I can also be there&quot; etc without branches */
+<span class="lineNum">      89 </span>                : #define FWD(dst, src, n)        ((dst)[here+(n)] |= (src)[here])
+<span class="lineNum">      90 </span>                : #define BACK(dst, src, n)       ((dst)[here-(n)] |= (src)[here])
+<span class="lineNum">      91 </span>                : #define ISSETBACK(v, n) ((v)[here - (n)])
+<span class="lineNum">      92 </span>                : /* function names */
+<span class="lineNum">      93 </span>                : #define LNAMES                  /* flag */
+<span class="lineNum">      94 </span>                : 
+<span class="lineNum">      95 </span>                : #include &quot;engine.c&quot;
+<span class="lineNum">      96 </span>                : 
+<span class="lineNum">      97 </span>                : /*
+<span class="lineNum">      98 </span>                :  - regexec - interface for matching
+<span class="lineNum">      99 </span>                :  = API_EXPORT(int) regexec(const regex_t *, const char *, size_t, \
+<span class="lineNum">     100 </span>                :  =                                      regmatch_t [], int);
+<span class="lineNum">     101 </span>                :  = #define      REG_NOTBOL      00001
+<span class="lineNum">     102 </span>                :  = #define      REG_NOTEOL      00002
+<span class="lineNum">     103 </span>                :  = #define      REG_STARTEND    00004
+<span class="lineNum">     104 </span>                :  = #define      REG_TRACE       00400   // tracing of execution
+<span class="lineNum">     105 </span>                :  = #define      REG_LARGE       01000   // force large representation
+<span class="lineNum">     106 </span>                :  = #define      REG_BACKR       02000   // force use of backref code
+<span class="lineNum">     107 </span>                :  *
+<span class="lineNum">     108 </span>                :  * We put this here so we can exploit knowledge of the state representation
+<span class="lineNum">     109 </span>                :  * when choosing which matcher to call.  Also, by this point the matchers
+<span class="lineNum">     110 </span>                :  * have been prototyped.
+<a name="111"><span class="lineNum">     111 </span>                :  */</a>
+<span class="lineNum">     112 </span>                : API_EXPORT(int)                         /* 0 success, REG_NOMATCH failure */
+<span class="lineNum">     113 </span><span class="lineNoCov">              0 : regexec(preg, string, nmatch, pmatch, eflags)</span>
+<span class="lineNum">     114 </span>                : const regex_t *preg;
+<span class="lineNum">     115 </span>                : const char *string;
+<span class="lineNum">     116 </span>                : size_t nmatch;
+<span class="lineNum">     117 </span>                : regmatch_t pmatch[];
+<span class="lineNum">     118 </span>                : int eflags;
+<span class="lineNum">     119 </span>                : {
+<span class="lineNum">     120 </span><span class="lineNoCov">              0 :         register struct re_guts *g = preg-&gt;re_g;</span>
+<span class="lineNum">     121 </span>                : #ifdef REDEBUG
+<span class="lineNum">     122 </span>                : #       define  GOODFLAGS(f)    (f)
+<span class="lineNum">     123 </span>                : #else
+<span class="lineNum">     124 </span>                : #       define  GOODFLAGS(f)    ((f)&amp;(REG_NOTBOL|REG_NOTEOL|REG_STARTEND))
+<span class="lineNum">     125 </span>                : #endif
+<span class="lineNum">     126 </span>                : 
+<span class="lineNum">     127 </span><span class="lineNoCov">              0 :         if (preg-&gt;re_magic != MAGIC1 || g-&gt;magic != MAGIC2)</span>
+<span class="lineNum">     128 </span><span class="lineNoCov">              0 :                 return(REG_BADPAT);</span>
+<span class="lineNum">     129 </span>                :         assert(!(g-&gt;iflags&amp;BAD));
+<span class="lineNum">     130 </span><span class="lineNoCov">              0 :         if (g-&gt;iflags&amp;BAD)               /* backstop for no-debug case */</span>
+<span class="lineNum">     131 </span><span class="lineNoCov">              0 :                 return(REG_BADPAT);</span>
+<span class="lineNum">     132 </span><span class="lineNoCov">              0 :         eflags = GOODFLAGS(eflags);</span>
+<span class="lineNum">     133 </span>                : 
+<span class="lineNum">     134 </span><span class="lineNoCov">              0 :         if (g-&gt;nstates &lt;= CHAR_BIT*sizeof(states1) &amp;&amp; !(eflags&amp;REG_LARGE))</span>
+<span class="lineNum">     135 </span><span class="lineNoCov">              0 :                 return(smatcher(g, (unsigned char *)string, nmatch, pmatch, eflags));</span>
+<span class="lineNum">     136 </span>                :         else
+<span class="lineNum">     137 </span><span class="lineNoCov">              0 :                 return(lmatcher(g, (unsigned char *)string, nmatch, pmatch, eflags));</span>
+<span class="lineNum">     138 </span>                : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

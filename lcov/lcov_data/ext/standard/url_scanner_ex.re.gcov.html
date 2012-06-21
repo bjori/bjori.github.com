@@ -1,0 +1,630 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - lcov_data/ext/standard/url_scanner_ex.re</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../../index.html">directory</a> - <a href="index.html">lcov_data/ext/standard</a> - url_scanner_ex.re (source / <a href="url_scanner_ex.re.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">234</td>
+          <td class="headerCovTableEntry">35</td>
+          <td class="headerCovTableEntryLo">15.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">20</td>
+          <td class="headerCovTableEntry">5</td>
+          <td class="headerCovTableEntryLo">25.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :   +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :   | PHP Version 6                                                        |
+<span class="lineNum">       4 </span>                :   +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :   | Copyright (c) 1997-2006 The PHP Group                                |
+<span class="lineNum">       6 </span>                :   +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :   | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :   | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :   | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :   | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :   | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :   | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :   | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :   +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :   | Author: Sascha Schumann &lt;sascha@schumann.cx&gt;                         |
+<span class="lineNum">      16 </span>                :   +----------------------------------------------------------------------+
+<span class="lineNum">      17 </span>                : */
+<span class="lineNum">      18 </span>                : 
+<span class="lineNum">      19 </span>                : /* $Id$ */
+<span class="lineNum">      20 </span>                : 
+<span class="lineNum">      21 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">      22 </span>                : 
+<span class="lineNum">      23 </span>                : #ifdef HAVE_UNISTD_H
+<span class="lineNum">      24 </span>                : #include &lt;unistd.h&gt;
+<span class="lineNum">      25 </span>                : #endif
+<span class="lineNum">      26 </span>                : #ifdef HAVE_LIMITS_H
+<span class="lineNum">      27 </span>                : #include &lt;limits.h&gt;
+<span class="lineNum">      28 </span>                : #endif
+<span class="lineNum">      29 </span>                : 
+<span class="lineNum">      30 </span>                : #include &lt;stdio.h&gt;
+<span class="lineNum">      31 </span>                : #include &lt;stdlib.h&gt;
+<span class="lineNum">      32 </span>                : #include &lt;string.h&gt;
+<span class="lineNum">      33 </span>                : 
+<span class="lineNum">      34 </span>                : #include &quot;php_ini.h&quot;
+<span class="lineNum">      35 </span>                : #include &quot;php_globals.h&quot;
+<span class="lineNum">      36 </span>                : #define STATE_TAG SOME_OTHER_STATE_TAG
+<span class="lineNum">      37 </span>                : #include &quot;basic_functions.h&quot;
+<span class="lineNum">      38 </span>                : #include &quot;url.h&quot;
+<span class="lineNum">      39 </span>                : #undef STATE_TAG
+<span class="lineNum">      40 </span>                : 
+<span class="lineNum">      41 </span>                : #define url_scanner url_scanner_ex
+<span class="lineNum">      42 </span>                : 
+<a name="43"><span class="lineNum">      43 </span>                : #include &quot;php_smart_str.h&quot;</a>
+<span class="lineNum">      44 </span>                : 
+<span class="lineNum">      45 </span><span class="lineCov">             48 : static PHP_INI_MH(OnUpdateTags)</span>
+<span class="lineNum">      46 </span>                : {
+<span class="lineNum">      47 </span>                :         url_adapt_state_ex_t *ctx;
+<span class="lineNum">      48 </span>                :         char *key;
+<span class="lineNum">      49 </span>                :         char *lasts;
+<span class="lineNum">      50 </span>                :         char *tmp;
+<span class="lineNum">      51 </span>                :         
+<span class="lineNum">      52 </span><span class="lineCov">             48 :         ctx = &amp;BG(url_adapt_state_ex);</span>
+<span class="lineNum">      53 </span>                :         
+<span class="lineNum">      54 </span><span class="lineCov">             48 :         tmp = estrndup(new_value, new_value_length);</span>
+<span class="lineNum">      55 </span>                :         
+<span class="lineNum">      56 </span><span class="lineCov">             48 :         if (ctx-&gt;tags)</span>
+<span class="lineNum">      57 </span><span class="lineNoCov">              0 :                 zend_hash_destroy(ctx-&gt;tags);</span>
+<span class="lineNum">      58 </span>                :         else {
+<span class="lineNum">      59 </span><span class="lineCov">             48 :                 ctx-&gt;tags = malloc(sizeof(HashTable));</span>
+<span class="lineNum">      60 </span><span class="lineCov">             48 :                 if (!ctx-&gt;tags) {</span>
+<span class="lineNum">      61 </span><span class="lineNoCov">              0 :                         return FAILURE;</span>
+<span class="lineNum">      62 </span>                :                 }
+<span class="lineNum">      63 </span>                :         }
+<span class="lineNum">      64 </span><span class="lineCov">             48 : </span>
+<span class="lineNum">      65 </span>                :         zend_hash_init(ctx-&gt;tags, 0, NULL, NULL, 1);
+<span class="lineNum">      66 </span><span class="lineCov">            336 :         </span>
+<span class="lineNum">      67 </span>                :         for (key = php_strtok_r(tmp, &quot;,&quot;, &amp;lasts);
+<span class="lineNum">      68 </span><span class="lineCov">            240 :                         key;</span>
+<span class="lineNum">      69 </span>                :                         key = php_strtok_r(NULL, &quot;,&quot;, &amp;lasts)) {
+<span class="lineNum">      70 </span>                :                 char *val;
+<span class="lineNum">      71 </span><span class="lineCov">            240 : </span>
+<span class="lineNum">      72 </span><span class="lineCov">            240 :                 val = strchr(key, '=');</span>
+<span class="lineNum">      73 </span>                :                 if (val) {
+<span class="lineNum">      74 </span>                :                         char *q;
+<span class="lineNum">      75 </span>                :                         int keylen;
+<span class="lineNum">      76 </span><span class="lineCov">            240 :                         </span>
+<span class="lineNum">      77 </span><span class="lineCov">           1296 :                         *val++ = '\0';</span>
+<span class="lineNum">      78 </span><span class="lineCov">           1056 :                         for (q = key; *q; q++)</span>
+<span class="lineNum">      79 </span><span class="lineCov">            240 :                                 *q = tolower(*q);</span>
+<span class="lineNum">      80 </span>                :                         keylen = q - key;
+<span class="lineNum">      81 </span>                :                         /* key is stored withOUT NUL
+<span class="lineNum">      82 </span><span class="lineCov">            240 :                            val is stored WITH    NUL */</span>
+<span class="lineNum">      83 </span>                :                         zend_hash_add(ctx-&gt;tags, key, keylen, val, strlen(val)+1, NULL);
+<span class="lineNum">      84 </span>                :                 }
+<span class="lineNum">      85 </span>                :         }
+<span class="lineNum">      86 </span><span class="lineCov">             48 : </span>
+<span class="lineNum">      87 </span>                :         efree(tmp);
+<span class="lineNum">      88 </span><span class="lineCov">             48 : </span>
+<span class="lineNum">      89 </span>                :         return SUCCESS;
+<span class="lineNum">      90 </span>                : }
+<span class="lineNum">      91 </span>                : 
+<span class="lineNum">      92 </span>                : PHP_INI_BEGIN()
+<span class="lineNum">      93 </span>                :         STD_PHP_INI_ENTRY(&quot;url_rewriter.tags&quot;, &quot;a=href,area=href,frame=src,form=,fieldset=&quot;, PHP_INI_ALL, OnUpdateTags, url_adapt_state_ex, php_basic_globals, basic_globals)
+<span class="lineNum">      94 </span>                : PHP_INI_END()
+<span class="lineNum">      95 </span>                : 
+<span class="lineNum">      96 </span>                : /*!re2c
+<span class="lineNum">      97 </span>                : any = [\000-\377];
+<span class="lineNum">      98 </span>                : N = (any\[&lt;]);
+<span class="lineNum">      99 </span>                : alpha = [a-zA-Z];
+<span class="lineNum">     100 </span>                : alphanamespace = [a-zA-Z:];
+<span class="lineNum">     101 </span>                : alphadash = ([a-zA-Z] | &quot;-&quot;);
+<span class="lineNum">     102 </span>                : */
+<span class="lineNum">     103 </span>                : 
+<a name="104"><span class="lineNum">     104 </span>                : #define YYFILL(n) goto done</a>
+<span class="lineNum">     105 </span>                : #define YYCTYPE unsigned char
+<span class="lineNum">     106 </span><span class="lineNoCov">              0 : #define YYCURSOR p</span>
+<span class="lineNum">     107 </span>                : #define YYLIMIT q
+<span class="lineNum">     108 </span>                : #define YYMARKER r
+<span class="lineNum">     109 </span><span class="lineNoCov">              0 :         </span>
+<span class="lineNum">     110 </span><span class="lineNoCov">              0 : static inline void append_modified_url(smart_str *url, smart_str *dest, smart_str *url_app, const char *separator)</span>
+<span class="lineNum">     111 </span>                : {
+<span class="lineNum">     112 </span><span class="lineNoCov">              0 :         register const char *p, *q;</span>
+<span class="lineNum">     113 </span>                :         const char *bash = NULL;
+<span class="lineNum">     114 </span>                :         const char *sep = &quot;?&quot;;
+<span class="lineNum">     115 </span>                :         
+<span class="lineNum">     116 </span><span class="lineNoCov">              0 :         q = (p = url-&gt;c) + url-&gt;len;</span>
+<span class="lineNum">     117 </span><span class="lineNoCov">              0 : </span>
+<span class="lineNum">     118 </span><span class="lineNoCov">              0 : scan:</span>
+<span class="lineNum">     119 </span><span class="lineNoCov">              0 : /*!re2c</span>
+<span class="lineNum">     120 </span>                :   &quot;:&quot;         { smart_str_append(dest, url); return; }
+<span class="lineNum">     121 </span>                :   &quot;?&quot;         { sep = separator; goto scan; }
+<span class="lineNum">     122 </span>                :   &quot;#&quot;         { bash = p - 1; goto done; }
+<span class="lineNum">     123 </span>                :   (any\[:?#])+          { goto scan; }
+<span class="lineNum">     124 </span><span class="lineNoCov">              0 : */</span>
+<span class="lineNum">     125 </span><span class="lineNoCov">              0 : done:</span>
+<span class="lineNum">     126 </span><span class="lineNoCov">              0 :         </span>
+<span class="lineNum">     127 </span>                :         /* Don't modify URLs of the format &quot;#mark&quot; */
+<span class="lineNum">     128 </span>                :         if (bash &amp;&amp; bash - url-&gt;c == 0) {
+<span class="lineNum">     129 </span><span class="lineNoCov">              0 :                 smart_str_append(dest, url);</span>
+<span class="lineNum">     130 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     131 </span>                :         }
+<span class="lineNum">     132 </span><span class="lineNoCov">              0 : </span>
+<span class="lineNum">     133 </span>                :         if (bash)
+<span class="lineNum">     134 </span><span class="lineNoCov">              0 :                 smart_str_appendl(dest, url-&gt;c, bash - url-&gt;c);</span>
+<span class="lineNum">     135 </span><span class="lineNoCov">              0 :         else</span>
+<span class="lineNum">     136 </span>                :                 smart_str_append(dest, url);
+<span class="lineNum">     137 </span><span class="lineNoCov">              0 : </span>
+<span class="lineNum">     138 </span><span class="lineNoCov">              0 :         smart_str_appends(dest, sep);</span>
+<span class="lineNum">     139 </span>                :         smart_str_append(dest, url_app);
+<span class="lineNum">     140 </span>                : 
+<span class="lineNum">     141 </span>                :         if (bash)
+<span class="lineNum">     142 </span>                :                 smart_str_appendl(dest, bash, q - bash);
+<span class="lineNum">     143 </span>                : }
+<span class="lineNum">     144 </span>                : 
+<span class="lineNum">     145 </span>                : 
+<a name="146"><span class="lineNum">     146 </span>                : #undef YYFILL</a>
+<span class="lineNum">     147 </span>                : #undef YYCTYPE
+<span class="lineNum">     148 </span><span class="lineNoCov">              0 : #undef YYCURSOR</span>
+<span class="lineNum">     149 </span>                : #undef YYLIMIT
+<span class="lineNum">     150 </span><span class="lineNoCov">              0 : #undef YYMARKER</span>
+<span class="lineNum">     151 </span>                : 
+<span class="lineNum">     152 </span><span class="lineNoCov">              0 : static inline void tag_arg(url_adapt_state_ex_t *ctx, char quotes, char type TSRMLS_DC)</span>
+<span class="lineNum">     153 </span><span class="lineNoCov">              0 : {</span>
+<span class="lineNum">     154 </span>                :         char f = 0;
+<span class="lineNum">     155 </span><span class="lineNoCov">              0 : </span>
+<span class="lineNum">     156 </span><span class="lineNoCov">              0 :         if (strncasecmp(ctx-&gt;arg.c, ctx-&gt;lookup_data, ctx-&gt;arg.len) == 0)</span>
+<span class="lineNum">     157 </span><span class="lineNoCov">              0 :                 f = 1;</span>
+<span class="lineNum">     158 </span><span class="lineNoCov">              0 : </span>
+<span class="lineNum">     159 </span>                :         if (quotes)
+<span class="lineNum">     160 </span><span class="lineNoCov">              0 :                 smart_str_appendc(&amp;ctx-&gt;result, type);</span>
+<span class="lineNum">     161 </span>                :         if (f) {
+<span class="lineNum">     162 </span><span class="lineNoCov">              0 :                 append_modified_url(&amp;ctx-&gt;val, &amp;ctx-&gt;result, &amp;ctx-&gt;url_app, PG(arg_separator).output);</span>
+<span class="lineNum">     163 </span><span class="lineNoCov">              0 :         } else {</span>
+<span class="lineNum">     164 </span><span class="lineNoCov">              0 :                 smart_str_append(&amp;ctx-&gt;result, &amp;ctx-&gt;val);</span>
+<span class="lineNum">     165 </span>                :         }
+<span class="lineNum">     166 </span>                :         if (quotes)
+<span class="lineNum">     167 </span>                :                 smart_str_appendc(&amp;ctx-&gt;result, type);
+<span class="lineNum">     168 </span>                : }
+<span class="lineNum">     169 </span>                : 
+<span class="lineNum">     170 </span>                : enum {
+<span class="lineNum">     171 </span>                :         STATE_PLAIN = 0,
+<span class="lineNum">     172 </span>                :         STATE_TAG,
+<span class="lineNum">     173 </span>                :         STATE_NEXT_ARG,
+<span class="lineNum">     174 </span>                :         STATE_ARG,
+<span class="lineNum">     175 </span>                :         STATE_BEFORE_VAL,
+<span class="lineNum">     176 </span>                :         STATE_VAL
+<span class="lineNum">     177 </span>                : };
+<span class="lineNum">     178 </span>                : 
+<span class="lineNum">     179 </span>                : #define YYFILL(n) goto stop
+<span class="lineNum">     180 </span>                : #define YYCTYPE unsigned char
+<span class="lineNum">     181 </span>                : #define YYCURSOR xp
+<span class="lineNum">     182 </span>                : #define YYLIMIT end
+<span class="lineNum">     183 </span>                : #define YYMARKER q
+<span class="lineNum">     184 </span>                : #define STATE ctx-&gt;state
+<span class="lineNum">     185 </span>                : 
+<span class="lineNum">     186 </span>                : #define STD_PARA url_adapt_state_ex_t *ctx, char *start, char *YYCURSOR TSRMLS_DC
+<span class="lineNum">     187 </span>                : #define STD_ARGS ctx, start, xp TSRMLS_CC
+<span class="lineNum">     188 </span>                : 
+<a name="189"><span class="lineNum">     189 </span>                : #if SCANNER_DEBUG</a>
+<span class="lineNum">     190 </span>                : #define scdebug(x) printf x
+<span class="lineNum">     191 </span><span class="lineNoCov">              0 : #else</span>
+<span class="lineNum">     192 </span>                : #define scdebug(x)
+<span class="lineNum">     193 </span>                : #endif
+<span class="lineNum">     194 </span><span class="lineNoCov">              0 : </span>
+<span class="lineNum">     195 </span><span class="lineNoCov">              0 : static inline void passthru(STD_PARA) </span>
+<span class="lineNum">     196 </span>                : {
+<span class="lineNum">     197 </span>                :         scdebug((&quot;appending %d chars, starting with %c\n&quot;, YYCURSOR-start, *start));
+<span class="lineNum">     198 </span>                :         smart_str_appendl(&amp;ctx-&gt;result, start, YYCURSOR - start);
+<span class="lineNum">     199 </span>                : }
+<a name="200"><span class="lineNum">     200 </span>                : </a>
+<span class="lineNum">     201 </span>                : /*
+<span class="lineNum">     202 </span><span class="lineNoCov">              0 :  * This function appends a hidden input field after a &lt;form&gt; or</span>
+<span class="lineNum">     203 </span>                :  * &lt;fieldset&gt;.  The latter is important for XHTML.
+<span class="lineNum">     204 </span><span class="lineNoCov">              0 :  */</span>
+<span class="lineNum">     205 </span>                : 
+<span class="lineNum">     206 </span><span class="lineNoCov">              0 : static void handle_form(STD_PARA) </span>
+<span class="lineNum">     207 </span><span class="lineNoCov">              0 : {</span>
+<span class="lineNum">     208 </span>                :         int doit = 0;
+<span class="lineNum">     209 </span><span class="lineNoCov">              0 : </span>
+<span class="lineNum">     210 </span><span class="lineNoCov">              0 :         if (ctx-&gt;form_app.len &gt; 0) {</span>
+<span class="lineNum">     211 </span>                :                 switch (ctx-&gt;tag.len) {
+<span class="lineNum">     212 </span><span class="lineNoCov">              0 :                         case sizeof(&quot;form&quot;) - 1:</span>
+<span class="lineNum">     213 </span><span class="lineNoCov">              0 :                                 if (!strncasecmp(ctx-&gt;tag.c, &quot;form&quot;, sizeof(&quot;form&quot;) - 1)) {</span>
+<span class="lineNum">     214 </span><span class="lineNoCov">              0 :                                         doit = 1;               </span>
+<span class="lineNum">     215 </span><span class="lineNoCov">              0 :                                 }</span>
+<span class="lineNum">     216 </span><span class="lineNoCov">              0 :                                 if (doit &amp;&amp; ctx-&gt;val.c &amp;&amp; ctx-&gt;lookup_data &amp;&amp; *ctx-&gt;lookup_data) {</span>
+<span class="lineNum">     217 </span><span class="lineNoCov">              0 :                                         char *e, *p = zend_memnstr(ctx-&gt;val.c, &quot;://&quot;, sizeof(&quot;://&quot;) - 1, ctx-&gt;val.c + ctx-&gt;val.len);</span>
+<span class="lineNum">     218 </span>                :                                         if (p) {
+<span class="lineNum">     219 </span><span class="lineNoCov">              0 :                                                 e = memchr(p, '/', (ctx-&gt;val.c + ctx-&gt;val.len) - p);</span>
+<span class="lineNum">     220 </span><span class="lineNoCov">              0 :                                                 if (!e) {</span>
+<span class="lineNum">     221 </span>                :                                                         e = ctx-&gt;val.c + ctx-&gt;val.len;
+<span class="lineNum">     222 </span>                :                                                 }
+<span class="lineNum">     223 </span>                :                                                 if ((e - p) &amp;&amp; strncasecmp(p, ctx-&gt;lookup_data, (e - p))) {
+<span class="lineNum">     224 </span><span class="lineNoCov">              0 :                                                         doit = 0;</span>
+<span class="lineNum">     225 </span>                :                                                 }
+<span class="lineNum">     226 </span>                :                                         }
+<span class="lineNum">     227 </span><span class="lineNoCov">              0 :                                 }</span>
+<span class="lineNum">     228 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     229 </span>                : 
+<span class="lineNum">     230 </span>                :                         case sizeof(&quot;fieldset&quot;) - 1:
+<span class="lineNum">     231 </span>                :                                 if (!strncasecmp(ctx-&gt;tag.c, &quot;fieldset&quot;, sizeof(&quot;fieldset&quot;) - 1)) {
+<span class="lineNum">     232 </span>                :                                         doit = 1;               
+<span class="lineNum">     233 </span><span class="lineNoCov">              0 :                                 }</span>
+<span class="lineNum">     234 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     235 </span>                :                 }
+<span class="lineNum">     236 </span><span class="lineNoCov">              0 : </span>
+<span class="lineNum">     237 </span>                :                 if (doit)
+<span class="lineNum">     238 </span>                :                         smart_str_append(&amp;ctx-&gt;result, &amp;ctx-&gt;form_app);
+<span class="lineNum">     239 </span>                :         }
+<span class="lineNum">     240 </span>                : }
+<span class="lineNum">     241 </span>                : 
+<span class="lineNum">     242 </span>                : /*
+<a name="243"><span class="lineNum">     243 </span>                :  *  HANDLE_TAG copies the HTML Tag and checks whether we </a>
+<span class="lineNum">     244 </span>                :  *  have that tag in our table. If we might modify it,
+<span class="lineNum">     245 </span><span class="lineNoCov">              0 :  *  we continue to scan the tag, otherwise we simply copy the complete</span>
+<span class="lineNum">     246 </span>                :  *  HTML stuff to the result buffer.
+<span class="lineNum">     247 </span><span class="lineNoCov">              0 :  */</span>
+<span class="lineNum">     248 </span>                : 
+<span class="lineNum">     249 </span>                : static inline void handle_tag(STD_PARA) 
+<span class="lineNum">     250 </span><span class="lineNoCov">              0 : {</span>
+<span class="lineNum">     251 </span><span class="lineNoCov">              0 :         int ok = 0;</span>
+<span class="lineNum">     252 </span><span class="lineNoCov">              0 :         unsigned int i;</span>
+<span class="lineNum">     253 </span><span class="lineNoCov">              0 : </span>
+<span class="lineNum">     254 </span><span class="lineNoCov">              0 :         ctx-&gt;tag.len = 0;</span>
+<span class="lineNum">     255 </span><span class="lineNoCov">              0 :         smart_str_appendl(&amp;ctx-&gt;tag, start, YYCURSOR - start);</span>
+<span class="lineNum">     256 </span><span class="lineNoCov">              0 :         for (i = 0; i &lt; ctx-&gt;tag.len; i++)</span>
+<a name="257"><span class="lineNum">     257 </span><span class="lineNoCov">              0 :                 ctx-&gt;tag.c[i] = tolower((int)(unsigned char)ctx-&gt;tag.c[i]);</span></a>
+<span class="lineNum">     258 </span>                :         if (zend_hash_find(ctx-&gt;tags, ctx-&gt;tag.c, ctx-&gt;tag.len, (void **) &amp;ctx-&gt;lookup_data) == SUCCESS)
+<span class="lineNum">     259 </span><span class="lineNoCov">              0 :                 ok = 1;</span>
+<span class="lineNum">     260 </span>                :         STATE = ok ? STATE_NEXT_ARG : STATE_PLAIN;
+<span class="lineNum">     261 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     262 </span><span class="lineNoCov">              0 : </span>
+<a name="263"><span class="lineNum">     263 </span><span class="lineNoCov">              0 : static inline void handle_arg(STD_PARA) </span></a>
+<span class="lineNum">     264 </span>                : {
+<span class="lineNum">     265 </span><span class="lineNoCov">              0 :         ctx-&gt;arg.len = 0;</span>
+<span class="lineNum">     266 </span>                :         smart_str_appendl(&amp;ctx-&gt;arg, start, YYCURSOR - start);
+<span class="lineNum">     267 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     268 </span><span class="lineNoCov">              0 : </span>
+<a name="269"><span class="lineNum">     269 </span><span class="lineNoCov">              0 : static inline void handle_val(STD_PARA, char quotes, char type) </span></a>
+<span class="lineNum">     270 </span>                : {
+<span class="lineNum">     271 </span><span class="lineNoCov">              0 :         smart_str_setl(&amp;ctx-&gt;val, start + quotes, YYCURSOR - start - quotes * 2);</span>
+<span class="lineNum">     272 </span>                :         tag_arg(ctx, quotes, type TSRMLS_CC);
+<span class="lineNum">     273 </span>                : }
+<span class="lineNum">     274 </span>                : 
+<span class="lineNum">     275 </span>                : static inline void xx_mainloop(url_adapt_state_ex_t *ctx, const char *newdata, size_t newlen TSRMLS_DC)
+<span class="lineNum">     276 </span>                : {
+<span class="lineNum">     277 </span>                :         char *end, *q;
+<span class="lineNum">     278 </span><span class="lineNoCov">              0 :         char *xp;</span>
+<span class="lineNum">     279 </span>                :         char *start;
+<span class="lineNum">     280 </span><span class="lineNoCov">              0 :         int rest;</span>
+<span class="lineNum">     281 </span><span class="lineNoCov">              0 : </span>
+<span class="lineNum">     282 </span>                :         smart_str_appendl(&amp;ctx-&gt;buf, newdata, newlen);
+<span class="lineNum">     283 </span><span class="lineNoCov">              0 :         </span>
+<span class="lineNum">     284 </span><span class="lineNoCov">              0 :         YYCURSOR = ctx-&gt;buf.c;</span>
+<span class="lineNum">     285 </span><span class="lineNoCov">              0 :         YYLIMIT = ctx-&gt;buf.c + ctx-&gt;buf.len;</span>
+<span class="lineNum">     286 </span><span class="lineNoCov">              0 : </span>
+<span class="lineNum">     287 </span><span class="lineNoCov">              0 :         switch (STATE) {</span>
+<span class="lineNum">     288 </span><span class="lineNoCov">              0 :                 case STATE_PLAIN: goto state_plain;</span>
+<span class="lineNum">     289 </span><span class="lineNoCov">              0 :                 case STATE_TAG: goto state_tag;</span>
+<span class="lineNum">     290 </span>                :                 case STATE_NEXT_ARG: goto state_next_arg;
+<span class="lineNum">     291 </span>                :                 case STATE_ARG: goto state_arg;
+<span class="lineNum">     292 </span>                :                 case STATE_BEFORE_VAL: goto state_before_val;
+<span class="lineNum">     293 </span>                :                 case STATE_VAL: goto state_val;
+<span class="lineNum">     294 </span><span class="lineNoCov">              0 :         }</span>
+<span class="lineNum">     295 </span>                :         
+<span class="lineNum">     296 </span>                : 
+<span class="lineNum">     297 </span><span class="lineNoCov">              0 : state_plain_begin:</span>
+<span class="lineNum">     298 </span>                :         STATE = STATE_PLAIN;
+<span class="lineNum">     299 </span><span class="lineNoCov">              0 :         </span>
+<span class="lineNum">     300 </span><span class="lineNoCov">              0 : state_plain:</span>
+<span class="lineNum">     301 </span>                :         start = YYCURSOR;
+<span class="lineNum">     302 </span>                : /*!re2c
+<span class="lineNum">     303 </span>                :   &quot;&lt;&quot;                              { passthru(STD_ARGS); STATE = STATE_TAG; goto state_tag; }
+<span class="lineNum">     304 </span><span class="lineNoCov">              0 :   N+                            { passthru(STD_ARGS); goto state_plain; }</span>
+<span class="lineNum">     305 </span>                : */
+<span class="lineNum">     306 </span><span class="lineNoCov">              0 : </span>
+<span class="lineNum">     307 </span><span class="lineNoCov">              0 : state_tag:      </span>
+<span class="lineNum">     308 </span>                :         start = YYCURSOR;
+<span class="lineNum">     309 </span>                : /*!re2c
+<span class="lineNum">     310 </span>                :   alphanamespace+       { handle_tag(STD_ARGS); /* Sets STATE */; passthru(STD_ARGS); if (STATE == STATE_PLAIN) goto state_plain; else goto state_next_arg; }
+<span class="lineNum">     311 </span><span class="lineNoCov">              0 :   any           { passthru(STD_ARGS); goto state_plain_begin; }</span>
+<span class="lineNum">     312 </span>                : */
+<span class="lineNum">     313 </span>                : 
+<span class="lineNum">     314 </span><span class="lineNoCov">              0 : state_next_arg_begin:</span>
+<span class="lineNum">     315 </span>                :         STATE = STATE_NEXT_ARG;
+<span class="lineNum">     316 </span><span class="lineNoCov">              0 :         </span>
+<span class="lineNum">     317 </span><span class="lineNoCov">              0 : state_next_arg:</span>
+<span class="lineNum">     318 </span><span class="lineNoCov">              0 :         start = YYCURSOR;</span>
+<span class="lineNum">     319 </span><span class="lineNoCov">              0 : /*!re2c</span>
+<span class="lineNum">     320 </span>                :   &quot;&gt;&quot;              { passthru(STD_ARGS); handle_form(STD_ARGS); goto state_plain_begin; }
+<span class="lineNum">     321 </span>                :   [ \v\r\t\n]+  { passthru(STD_ARGS); goto state_next_arg; }
+<span class="lineNum">     322 </span>                :   alpha         { --YYCURSOR; STATE = STATE_ARG; goto state_arg; }
+<span class="lineNum">     323 </span><span class="lineNoCov">              0 :   any           { passthru(STD_ARGS); goto state_plain_begin; }</span>
+<span class="lineNum">     324 </span>                : */
+<span class="lineNum">     325 </span><span class="lineNoCov">              0 : </span>
+<span class="lineNum">     326 </span><span class="lineNoCov">              0 : state_arg:</span>
+<span class="lineNum">     327 </span>                :         start = YYCURSOR;
+<span class="lineNum">     328 </span>                : /*!re2c
+<span class="lineNum">     329 </span>                :   alpha alphadash*      { passthru(STD_ARGS); handle_arg(STD_ARGS); STATE = STATE_BEFORE_VAL; goto state_before_val; }
+<span class="lineNum">     330 </span><span class="lineNoCov">              0 :   any           { passthru(STD_ARGS); STATE = STATE_NEXT_ARG; goto state_next_arg; }</span>
+<span class="lineNum">     331 </span>                : */
+<span class="lineNum">     332 </span><span class="lineNoCov">              0 : </span>
+<span class="lineNum">     333 </span><span class="lineNoCov">              0 : state_before_val:</span>
+<span class="lineNum">     334 </span>                :         start = YYCURSOR;
+<span class="lineNum">     335 </span>                : /*!re2c
+<span class="lineNum">     336 </span>                :   [ ]* &quot;=&quot; [ ]*               { passthru(STD_ARGS); STATE = STATE_VAL; goto state_val; }
+<span class="lineNum">     337 </span>                :   any                           { --YYCURSOR; goto state_next_arg_begin; }
+<span class="lineNum">     338 </span><span class="lineNoCov">              0 : */</span>
+<span class="lineNum">     339 </span>                : 
+<span class="lineNum">     340 </span><span class="lineNoCov">              0 : </span>
+<span class="lineNum">     341 </span><span class="lineNoCov">              0 : state_val:</span>
+<span class="lineNum">     342 </span><span class="lineNoCov">              0 :         start = YYCURSOR;</span>
+<span class="lineNum">     343 </span><span class="lineNoCov">              0 : /*!re2c</span>
+<span class="lineNum">     344 </span>                :   [&quot;] (any\[&quot;&gt;])* [&quot;] { handle_val(STD_ARGS, 1, '&quot;'); goto state_next_arg_begin; }
+<span class="lineNum">     345 </span>                :   ['] (any\['&gt;])* [']        { handle_val(STD_ARGS, 1, '\''); goto state_next_arg_begin; }
+<span class="lineNum">     346 </span>                :   (any\[ \r\t\n&gt;])+  { handle_val(STD_ARGS, 0, ' '); goto state_next_arg_begin; }
+<span class="lineNum">     347 </span><span class="lineNoCov">              0 :   any                                   { passthru(STD_ARGS); goto state_next_arg_begin; }</span>
+<span class="lineNum">     348 </span>                : */
+<span class="lineNum">     349 </span>                : 
+<span class="lineNum">     350 </span><span class="lineNoCov">              0 : stop:</span>
+<span class="lineNum">     351 </span>                :         rest = YYLIMIT - start;
+<span class="lineNum">     352 </span><span class="lineNoCov">              0 :         scdebug((&quot;stopped in state %d at pos %d (%d:%c) %d\n&quot;, STATE, YYCURSOR - ctx-&gt;buf.c, *YYCURSOR, *YYCURSOR, rest));</span>
+<span class="lineNum">     353 </span><span class="lineNoCov">              0 :         /* XXX: Crash avoidance. Need to work with reporter to figure out what goes wrong */    </span>
+<a name="354"><span class="lineNum">     354 </span><span class="lineNoCov">              0 :         if (rest &lt; 0) rest = 0;</span></a>
+<span class="lineNum">     355 </span>                :         
+<span class="lineNum">     356 </span><span class="lineNoCov">              0 :         if (rest) memmove(ctx-&gt;buf.c, start, rest);</span>
+<span class="lineNum">     357 </span>                :         ctx-&gt;buf.len = rest;
+<span class="lineNum">     358 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     359 </span><span class="lineNoCov">              0 : </span>
+<span class="lineNum">     360 </span><span class="lineNoCov">              0 : char *php_url_scanner_adapt_single_url(const char *url, size_t urllen, const char *name, const char *value, size_t *newlen TSRMLS_DC)</span>
+<span class="lineNum">     361 </span>                : {
+<span class="lineNum">     362 </span><span class="lineNoCov">              0 :         smart_str surl = {0};</span>
+<span class="lineNum">     363 </span>                :         smart_str buf = {0};
+<span class="lineNum">     364 </span><span class="lineNoCov">              0 :         smart_str url_app = {0};</span>
+<span class="lineNum">     365 </span><span class="lineNoCov">              0 : </span>
+<span class="lineNum">     366 </span><span class="lineNoCov">              0 :         smart_str_setl(&amp;surl, url, urllen);</span>
+<span class="lineNum">     367 </span>                : 
+<span class="lineNum">     368 </span><span class="lineNoCov">              0 :         smart_str_appends(&amp;url_app, name);</span>
+<span class="lineNum">     369 </span>                :         smart_str_appendc(&amp;url_app, '=');
+<span class="lineNum">     370 </span><span class="lineNoCov">              0 :         smart_str_appends(&amp;url_app, value);</span>
+<span class="lineNum">     371 </span><span class="lineNoCov">              0 : </span>
+<span class="lineNum">     372 </span>                :         append_modified_url(&amp;surl, &amp;buf, &amp;url_app, PG(arg_separator).output);
+<span class="lineNum">     373 </span><span class="lineNoCov">              0 : </span>
+<span class="lineNum">     374 </span>                :         smart_str_0(&amp;buf);
+<span class="lineNum">     375 </span><span class="lineNoCov">              0 :         if (newlen) *newlen = buf.len;</span>
+<span class="lineNum">     376 </span>                : 
+<a name="377"><span class="lineNum">     377 </span>                :         smart_str_free(&amp;url_app);</a>
+<span class="lineNum">     378 </span>                : 
+<span class="lineNum">     379 </span><span class="lineNoCov">              0 :         return buf.c;</span>
+<span class="lineNum">     380 </span>                : }
+<span class="lineNum">     381 </span>                : 
+<span class="lineNum">     382 </span>                : 
+<span class="lineNum">     383 </span>                : static char *url_adapt_ext(const char *src, size_t srclen, size_t *newlen, zend_bool do_flush TSRMLS_DC)
+<span class="lineNum">     384 </span><span class="lineNoCov">              0 : {</span>
+<span class="lineNum">     385 </span>                :         url_adapt_state_ex_t *ctx;
+<span class="lineNum">     386 </span><span class="lineNoCov">              0 :         char *retval;</span>
+<span class="lineNum">     387 </span>                : 
+<span class="lineNum">     388 </span><span class="lineNoCov">              0 :         ctx = &amp;BG(url_adapt_state_ex);</span>
+<span class="lineNum">     389 </span><span class="lineNoCov">              0 : </span>
+<span class="lineNum">     390 </span><span class="lineNoCov">              0 :         xx_mainloop(ctx, src, srclen TSRMLS_CC);</span>
+<span class="lineNum">     391 </span>                : 
+<span class="lineNum">     392 </span><span class="lineNoCov">              0 :         *newlen = ctx-&gt;result.len;</span>
+<span class="lineNum">     393 </span><span class="lineNoCov">              0 :         if (!ctx-&gt;result.c) {</span>
+<span class="lineNum">     394 </span><span class="lineNoCov">              0 :                 smart_str_appendl(&amp;ctx-&gt;result, &quot;&quot;, 0);</span>
+<span class="lineNum">     395 </span><span class="lineNoCov">              0 :         }</span>
+<span class="lineNum">     396 </span><span class="lineNoCov">              0 :         smart_str_0(&amp;ctx-&gt;result);</span>
+<span class="lineNum">     397 </span>                :         if (do_flush) {
+<span class="lineNum">     398 </span><span class="lineNoCov">              0 :                 smart_str_appendl(&amp;ctx-&gt;result, ctx-&gt;buf.c, ctx-&gt;buf.len);</span>
+<span class="lineNum">     399 </span><span class="lineNoCov">              0 :                 *newlen += ctx-&gt;buf.len;</span>
+<span class="lineNum">     400 </span><span class="lineNoCov">              0 :                 smart_str_free(&amp;ctx-&gt;buf);</span>
+<span class="lineNum">     401 </span><span class="lineNoCov">              0 :         }</span>
+<a name="402"><span class="lineNum">     402 </span>                :         retval = ctx-&gt;result.c;</a>
+<span class="lineNum">     403 </span>                :         ctx-&gt;result.c = NULL;
+<span class="lineNum">     404 </span><span class="lineNoCov">              0 :         ctx-&gt;result.len = 0;</span>
+<span class="lineNum">     405 </span>                :         return retval;
+<span class="lineNum">     406 </span>                : }
+<span class="lineNum">     407 </span>                : 
+<span class="lineNum">     408 </span><span class="lineNoCov">              0 : static int php_url_scanner_ex_activate(TSRMLS_D)</span>
+<span class="lineNum">     409 </span>                : {
+<span class="lineNum">     410 </span><span class="lineNoCov">              0 :         url_adapt_state_ex_t *ctx;</span>
+<span class="lineNum">     411 </span>                :         
+<span class="lineNum">     412 </span><span class="lineNoCov">              0 :         ctx = &amp;BG(url_adapt_state_ex);</span>
+<a name="413"><span class="lineNum">     413 </span>                : </a>
+<span class="lineNum">     414 </span>                :         memset(ctx, 0, ((size_t) &amp;((url_adapt_state_ex_t *)0)-&gt;tags));
+<span class="lineNum">     415 </span><span class="lineNoCov">              0 : </span>
+<span class="lineNum">     416 </span>                :         return SUCCESS;
+<span class="lineNum">     417 </span>                : }
+<span class="lineNum">     418 </span>                : 
+<span class="lineNum">     419 </span><span class="lineNoCov">              0 : static int php_url_scanner_ex_deactivate(TSRMLS_D)</span>
+<span class="lineNum">     420 </span>                : {
+<span class="lineNum">     421 </span><span class="lineNoCov">              0 :         url_adapt_state_ex_t *ctx;</span>
+<span class="lineNum">     422 </span><span class="lineNoCov">              0 :         </span>
+<span class="lineNum">     423 </span><span class="lineNoCov">              0 :         ctx = &amp;BG(url_adapt_state_ex);</span>
+<span class="lineNum">     424 </span><span class="lineNoCov">              0 : </span>
+<span class="lineNum">     425 </span>                :         smart_str_free(&amp;ctx-&gt;result);
+<span class="lineNum">     426 </span><span class="lineNoCov">              0 :         smart_str_free(&amp;ctx-&gt;buf);</span>
+<a name="427"><span class="lineNum">     427 </span>                :         smart_str_free(&amp;ctx-&gt;tag);</a>
+<span class="lineNum">     428 </span>                :         smart_str_free(&amp;ctx-&gt;arg);
+<span class="lineNum">     429 </span><span class="lineNoCov">              0 : </span>
+<span class="lineNum">     430 </span>                :         return SUCCESS;
+<span class="lineNum">     431 </span>                : }
+<span class="lineNum">     432 </span>                : 
+<span class="lineNum">     433 </span><span class="lineNoCov">              0 : static void php_url_scanner_output_handler(char *output, uint output_len, char **handled_output, uint *handled_output_len, int mode TSRMLS_DC)</span>
+<span class="lineNum">     434 </span><span class="lineNoCov">              0 : {</span>
+<span class="lineNum">     435 </span>                :         size_t len;
+<span class="lineNum">     436 </span><span class="lineNoCov">              0 : </span>
+<span class="lineNum">     437 </span><span class="lineNoCov">              0 :         if (BG(url_adapt_state_ex).url_app.len != 0) {</span>
+<span class="lineNum">     438 </span>                :                 *handled_output = url_adapt_ext(output, output_len, &amp;len, (zend_bool) (mode &amp; (PHP_OUTPUT_HANDLER_END | PHP_OUTPUT_HANDLER_CONT | PHP_OUTPUT_HANDLER_FLUSH | PHP_OUTPUT_HANDLER_FINAL) ? 1 : 0) TSRMLS_CC);
+<span class="lineNum">     439 </span><span class="lineNoCov">              0 :                 if (sizeof(uint) &lt; sizeof(size_t)) {</span>
+<span class="lineNum">     440 </span><span class="lineNoCov">              0 :                         if (len &gt; UINT_MAX)</span>
+<span class="lineNum">     441 </span><span class="lineNoCov">              0 :                                 len = UINT_MAX;</span>
+<span class="lineNum">     442 </span><span class="lineNoCov">              0 :                 }</span>
+<span class="lineNum">     443 </span><span class="lineNoCov">              0 :                 *handled_output_len = len;</span>
+<span class="lineNum">     444 </span><span class="lineNoCov">              0 :         } else if (BG(url_adapt_state_ex).url_app.len == 0) {</span>
+<span class="lineNum">     445 </span>                :                 url_adapt_state_ex_t *ctx = &amp;BG(url_adapt_state_ex);
+<span class="lineNum">     446 </span><span class="lineNoCov">              0 :                 if (ctx-&gt;buf.len) {</span>
+<span class="lineNum">     447 </span><span class="lineNoCov">              0 :                         smart_str_appendl(&amp;ctx-&gt;result, ctx-&gt;buf.c, ctx-&gt;buf.len);</span>
+<span class="lineNum">     448 </span>                :                         smart_str_appendl(&amp;ctx-&gt;result, output, output_len);
+<span class="lineNum">     449 </span><span class="lineNoCov">              0 : </span>
+<span class="lineNum">     450 </span><span class="lineNoCov">              0 :                         *handled_output = ctx-&gt;result.c;</span>
+<span class="lineNum">     451 </span><span class="lineNoCov">              0 :                         *handled_output_len = ctx-&gt;buf.len + output_len;</span>
+<span class="lineNum">     452 </span>                : 
+<span class="lineNum">     453 </span><span class="lineNoCov">              0 :                         ctx-&gt;result.c = NULL;</span>
+<span class="lineNum">     454 </span>                :                         ctx-&gt;result.len = 0;
+<span class="lineNum">     455 </span>                :                         smart_str_free(&amp;ctx-&gt;buf);
+<span class="lineNum">     456 </span><span class="lineNoCov">              0 :                 } else {</span>
+<span class="lineNum">     457 </span>                :                         *handled_output = estrndup(output, *handled_output_len = output_len);
+<a name="458"><span class="lineNum">     458 </span><span class="lineNoCov">              0 :                 }</span></a>
+<span class="lineNum">     459 </span>                :         } else {
+<span class="lineNum">     460 </span><span class="lineNoCov">              0 :                 *handled_output = NULL;</span>
+<span class="lineNum">     461 </span>                :         }
+<span class="lineNum">     462 </span>                : }
+<span class="lineNum">     463 </span>                : 
+<span class="lineNum">     464 </span>                : PHPAPI int php_url_scanner_add_var(char *name, int name_len, char *value, int value_len, int urlencode TSRMLS_DC)
+<span class="lineNum">     465 </span>                : {
+<span class="lineNum">     466 </span><span class="lineNoCov">              0 :         char *encoded;</span>
+<span class="lineNum">     467 </span><span class="lineNoCov">              0 :         int encoded_len;</span>
+<span class="lineNum">     468 </span><span class="lineNoCov">              0 :         smart_str val;</span>
+<span class="lineNum">     469 </span><span class="lineNoCov">              0 :         </span>
+<span class="lineNum">     470 </span>                :         if (! BG(url_adapt_state_ex).active) {
+<span class="lineNum">     471 </span>                :                 php_url_scanner_ex_activate(TSRMLS_C);
+<span class="lineNum">     472 </span>                :                 php_output_start_internal(ZEND_STRL(&quot;URL-Rewriter&quot;), php_url_scanner_output_handler, 0, PHP_OUTPUT_HANDLER_STDFLAGS TSRMLS_CC);
+<span class="lineNum">     473 </span><span class="lineNoCov">              0 :                 BG(url_adapt_state_ex).active = 1;</span>
+<span class="lineNum">     474 </span><span class="lineNoCov">              0 :         }</span>
+<span class="lineNum">     475 </span>                : 
+<span class="lineNum">     476 </span>                : 
+<span class="lineNum">     477 </span><span class="lineNoCov">              0 :         if (BG(url_adapt_state_ex).url_app.len != 0) {</span>
+<span class="lineNum">     478 </span><span class="lineNoCov">              0 :                 smart_str_appends(&amp;BG(url_adapt_state_ex).url_app, PG(arg_separator).output);</span>
+<span class="lineNum">     479 </span><span class="lineNoCov">              0 :         }</span>
+<span class="lineNum">     480 </span>                : 
+<span class="lineNum">     481 </span><span class="lineNoCov">              0 :         if (urlencode) {</span>
+<span class="lineNum">     482 </span>                :                 encoded = php_url_encode(value, value_len, &amp;encoded_len);
+<span class="lineNum">     483 </span>                :                 smart_str_setl(&amp;val, encoded, encoded_len);
+<span class="lineNum">     484 </span><span class="lineNoCov">              0 :         } else {</span>
+<span class="lineNum">     485 </span><span class="lineNoCov">              0 :                 smart_str_setl(&amp;val, value, value_len);</span>
+<span class="lineNum">     486 </span><span class="lineNoCov">              0 :         }</span>
+<span class="lineNum">     487 </span>                :         
+<span class="lineNum">     488 </span><span class="lineNoCov">              0 :         smart_str_appendl(&amp;BG(url_adapt_state_ex).url_app, name, name_len);</span>
+<span class="lineNum">     489 </span><span class="lineNoCov">              0 :         smart_str_appendc(&amp;BG(url_adapt_state_ex).url_app, '=');</span>
+<span class="lineNum">     490 </span><span class="lineNoCov">              0 :         smart_str_append(&amp;BG(url_adapt_state_ex).url_app, &amp;val);</span>
+<span class="lineNum">     491 </span><span class="lineNoCov">              0 : </span>
+<span class="lineNum">     492 </span><span class="lineNoCov">              0 :         smart_str_appends(&amp;BG(url_adapt_state_ex).form_app, &quot;&lt;input type=\&quot;hidden\&quot; name=\&quot;&quot;); </span>
+<span class="lineNum">     493 </span>                :         smart_str_appendl(&amp;BG(url_adapt_state_ex).form_app, name, name_len);
+<span class="lineNum">     494 </span><span class="lineNoCov">              0 :         smart_str_appends(&amp;BG(url_adapt_state_ex).form_app, &quot;\&quot; value=\&quot;&quot;);</span>
+<span class="lineNum">     495 </span><span class="lineNoCov">              0 :         smart_str_append(&amp;BG(url_adapt_state_ex).form_app, &amp;val);</span>
+<span class="lineNum">     496 </span>                :         smart_str_appends(&amp;BG(url_adapt_state_ex).form_app, &quot;\&quot; /&gt;&quot;);
+<span class="lineNum">     497 </span><span class="lineNoCov">              0 : </span>
+<a name="498"><span class="lineNum">     498 </span>                :         if (urlencode)</a>
+<span class="lineNum">     499 </span>                :                 efree(encoded);
+<span class="lineNum">     500 </span><span class="lineNoCov">              0 : </span>
+<span class="lineNum">     501 </span>                :         return SUCCESS;
+<span class="lineNum">     502 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     503 </span><span class="lineNoCov">              0 : </span>
+<span class="lineNum">     504 </span>                : PHPAPI int php_url_scanner_reset_vars(TSRMLS_D)
+<span class="lineNum">     505 </span><span class="lineNoCov">              0 : {</span>
+<a name="506"><span class="lineNum">     506 </span>                :         BG(url_adapt_state_ex).form_app.len = 0;</a>
+<span class="lineNum">     507 </span>                :         BG(url_adapt_state_ex).url_app.len = 0;
+<span class="lineNum">     508 </span><span class="lineCov">             48 : </span>
+<span class="lineNum">     509 </span>                :         return SUCCESS;
+<span class="lineNum">     510 </span><span class="lineCov">             48 : }</span>
+<span class="lineNum">     511 </span>                : 
+<span class="lineNum">     512 </span><span class="lineCov">             48 : PHP_MINIT_FUNCTION(url_scanner)</span>
+<span class="lineNum">     513 </span><span class="lineCov">             48 : {</span>
+<span class="lineNum">     514 </span>                :         BG(url_adapt_state_ex).tags = NULL;
+<span class="lineNum">     515 </span><span class="lineCov">             48 : </span>
+<span class="lineNum">     516 </span><span class="lineCov">             48 :         BG(url_adapt_state_ex).form_app.c = BG(url_adapt_state_ex).url_app.c = 0;</span>
+<a name="517"><span class="lineNum">     517 </span>                :         BG(url_adapt_state_ex).form_app.len = BG(url_adapt_state_ex).url_app.len = 0;</a>
+<span class="lineNum">     518 </span>                : 
+<span class="lineNum">     519 </span><span class="lineCov">             48 :         REGISTER_INI_ENTRIES();</span>
+<span class="lineNum">     520 </span>                :         return SUCCESS;
+<span class="lineNum">     521 </span><span class="lineCov">             48 : }</span>
+<span class="lineNum">     522 </span>                : 
+<span class="lineNum">     523 </span><span class="lineCov">             48 : PHP_MSHUTDOWN_FUNCTION(url_scanner)</span>
+<a name="524"><span class="lineNum">     524 </span>                : {</a>
+<span class="lineNum">     525 </span>                :         UNREGISTER_INI_ENTRIES();
+<span class="lineNum">     526 </span><span class="lineCov">             48 : </span>
+<span class="lineNum">     527 </span>                :         return SUCCESS;
+<span class="lineNum">     528 </span><span class="lineCov">             48 : }</span>
+<span class="lineNum">     529 </span>                : 
+<span class="lineNum">     530 </span><span class="lineCov">             48 : PHP_RINIT_FUNCTION(url_scanner)</span>
+<a name="531"><span class="lineNum">     531 </span>                : {</a>
+<span class="lineNum">     532 </span>                :         BG(url_adapt_state_ex).active = 0;
+<span class="lineNum">     533 </span><span class="lineCov">             48 :         </span>
+<span class="lineNum">     534 </span>                :         return SUCCESS;
+<span class="lineNum">     535 </span><span class="lineCov">             48 : }</span>
+<span class="lineNum">     536 </span><span class="lineNoCov">              0 : </span>
+<span class="lineNum">     537 </span><span class="lineNoCov">              0 : PHP_RSHUTDOWN_FUNCTION(url_scanner)</span>
+<span class="lineNum">     538 </span>                : {
+<span class="lineNum">     539 </span>                :         if (BG(url_adapt_state_ex).active) {
+<span class="lineNum">     540 </span><span class="lineCov">             48 :                 php_url_scanner_ex_deactivate(TSRMLS_C);</span>
+<span class="lineNum">     541 </span><span class="lineCov">             48 :                 BG(url_adapt_state_ex).active = 0;</span>
+<span class="lineNum">     542 </span>                :         }
+<span class="lineNum">     543 </span><span class="lineCov">             48 : </span>
+<span class="lineNum">     544 </span>                :         smart_str_free(&amp;BG(url_adapt_state_ex).form_app);
+<span class="lineNum">     545 </span>                :         smart_str_free(&amp;BG(url_adapt_state_ex).url_app);
+<span class="lineNum">     546 </span>                : 
+<span class="lineNum">     547 </span>                :         return SUCCESS;
+<span class="lineNum">     548 </span>                : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

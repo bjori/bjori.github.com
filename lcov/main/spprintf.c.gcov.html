@@ -1,0 +1,913 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - main/spprintf.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../index.html">directory</a> - <a href="index.html">main</a> - spprintf.c (source / <a href="spprintf.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">293</td>
+          <td class="headerCovTableEntry">126</td>
+          <td class="headerCovTableEntryMed">43.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">3</td>
+          <td class="headerCovTableEntry">3</td>
+          <td class="headerCovTableEntryHi">100.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Author: Marcus Boerger &lt;helly@php.net&gt;                               |
+<span class="lineNum">      16 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      17 </span>                : */
+<span class="lineNum">      18 </span>                : 
+<span class="lineNum">      19 </span>                : /* $Id$ */
+<span class="lineNum">      20 </span>                : 
+<span class="lineNum">      21 </span>                : /* This is the spprintf implementation.
+<span class="lineNum">      22 </span>                :  * It has emerged from apache snprintf. See original header:
+<span class="lineNum">      23 </span>                :  */
+<span class="lineNum">      24 </span>                : 
+<span class="lineNum">      25 </span>                : /* ====================================================================
+<span class="lineNum">      26 </span>                :  * Copyright (c) 1995-1998 The Apache Group.  All rights reserved.
+<span class="lineNum">      27 </span>                :  *
+<span class="lineNum">      28 </span>                :  * Redistribution and use in source and binary forms, with or without
+<span class="lineNum">      29 </span>                :  * modification, are permitted provided that the following conditions
+<span class="lineNum">      30 </span>                :  * are met:
+<span class="lineNum">      31 </span>                :  *
+<span class="lineNum">      32 </span>                :  * 1. Redistributions of source code must retain the above copyright
+<span class="lineNum">      33 </span>                :  *    notice, this list of conditions and the following disclaimer.
+<span class="lineNum">      34 </span>                :  *
+<span class="lineNum">      35 </span>                :  * 2. Redistributions in binary form must reproduce the above copyright
+<span class="lineNum">      36 </span>                :  *    notice, this list of conditions and the following disclaimer in
+<span class="lineNum">      37 </span>                :  *    the documentation and/or other materials provided with the
+<span class="lineNum">      38 </span>                :  *    distribution.
+<span class="lineNum">      39 </span>                :  *
+<span class="lineNum">      40 </span>                :  * 3. All advertising materials mentioning features or use of this
+<span class="lineNum">      41 </span>                :  *    software must display the following acknowledgment:
+<span class="lineNum">      42 </span>                :  *    &quot;This product includes software developed by the Apache Group
+<span class="lineNum">      43 </span>                :  *    for use in the Apache HTTP server project (http://www.apache.org/).&quot;
+<span class="lineNum">      44 </span>                :  *
+<span class="lineNum">      45 </span>                :  * 4. The names &quot;Apache Server&quot; and &quot;Apache Group&quot; must not be used to
+<span class="lineNum">      46 </span>                :  *    endorse or promote products derived from this software without
+<span class="lineNum">      47 </span>                :  *    prior written permission.
+<span class="lineNum">      48 </span>                :  *
+<span class="lineNum">      49 </span>                :  * 5. Redistributions of any form whatsoever must retain the following
+<span class="lineNum">      50 </span>                :  *    acknowledgment:
+<span class="lineNum">      51 </span>                :  *    &quot;This product includes software developed by the Apache Group
+<span class="lineNum">      52 </span>                :  *    for use in the Apache HTTP server project (http://www.apache.org/).&quot;
+<span class="lineNum">      53 </span>                :  *
+<span class="lineNum">      54 </span>                :  * THIS SOFTWARE IS PROVIDED BY THE APACHE GROUP ``AS IS'' AND ANY
+<span class="lineNum">      55 </span>                :  * EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+<span class="lineNum">      56 </span>                :  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+<span class="lineNum">      57 </span>                :  * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE APACHE GROUP OR
+<span class="lineNum">      58 </span>                :  * ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+<span class="lineNum">      59 </span>                :  * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+<span class="lineNum">      60 </span>                :  * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+<span class="lineNum">      61 </span>                :  * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+<span class="lineNum">      62 </span>                :  * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+<span class="lineNum">      63 </span>                :  * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+<span class="lineNum">      64 </span>                :  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+<span class="lineNum">      65 </span>                :  * OF THE POSSIBILITY OF SUCH DAMAGE.
+<span class="lineNum">      66 </span>                :  * ====================================================================
+<span class="lineNum">      67 </span>                :  *
+<span class="lineNum">      68 </span>                :  * This software consists of voluntary contributions made by many
+<span class="lineNum">      69 </span>                :  * individuals on behalf of the Apache Group and was originally based
+<span class="lineNum">      70 </span>                :  * on public domain software written at the National Center for
+<span class="lineNum">      71 </span>                :  * Supercomputing Applications, University of Illinois, Urbana-Champaign.
+<span class="lineNum">      72 </span>                :  * For more information on the Apache Group and the Apache HTTP server
+<span class="lineNum">      73 </span>                :  * project, please see &lt;http://www.apache.org/&gt;.
+<span class="lineNum">      74 </span>                :  *
+<span class="lineNum">      75 </span>                :  * This code is based on, and used with the permission of, the
+<span class="lineNum">      76 </span>                :  * SIO stdio-replacement strx_* functions by Panos Tsirigotis
+<span class="lineNum">      77 </span>                :  * &lt;panos@alumni.cs.colorado.edu&gt; for xinetd.
+<span class="lineNum">      78 </span>                :  */
+<span class="lineNum">      79 </span>                : #define _GNU_SOURCE
+<span class="lineNum">      80 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">      81 </span>                : 
+<span class="lineNum">      82 </span>                : #include &lt;stddef.h&gt;
+<span class="lineNum">      83 </span>                : #include &lt;stdio.h&gt;
+<span class="lineNum">      84 </span>                : #include &lt;ctype.h&gt;
+<span class="lineNum">      85 </span>                : #include &lt;sys/types.h&gt;
+<span class="lineNum">      86 </span>                : #include &lt;stdarg.h&gt;
+<span class="lineNum">      87 </span>                : #include &lt;string.h&gt;
+<span class="lineNum">      88 </span>                : #include &lt;stdlib.h&gt;
+<span class="lineNum">      89 </span>                : #include &lt;math.h&gt;
+<span class="lineNum">      90 </span>                : #ifdef HAVE_INTTYPES_H
+<span class="lineNum">      91 </span>                : #include &lt;inttypes.h&gt;
+<span class="lineNum">      92 </span>                : #endif
+<span class="lineNum">      93 </span>                : 
+<span class="lineNum">      94 </span>                : #ifdef HAVE_LOCALE_H
+<span class="lineNum">      95 </span>                : #include &lt;locale.h&gt;
+<span class="lineNum">      96 </span>                : #define LCONV_DECIMAL_POINT (*lconv-&gt;decimal_point)
+<span class="lineNum">      97 </span>                : #else
+<span class="lineNum">      98 </span>                : #define LCONV_DECIMAL_POINT '.'
+<span class="lineNum">      99 </span>                : #endif
+<span class="lineNum">     100 </span>                : 
+<span class="lineNum">     101 </span>                : #include &quot;snprintf.h&quot;
+<span class="lineNum">     102 </span>                : 
+<span class="lineNum">     103 </span>                : #define FALSE           0
+<span class="lineNum">     104 </span>                : #define TRUE            1
+<span class="lineNum">     105 </span>                : #define NUL             '\0'
+<span class="lineNum">     106 </span>                : #define INT_NULL        ((int *)0)
+<span class="lineNum">     107 </span>                : 
+<span class="lineNum">     108 </span>                : #define S_NULL          &quot;(null)&quot;
+<span class="lineNum">     109 </span>                : #define S_NULL_LEN      6
+<span class="lineNum">     110 </span>                : 
+<span class="lineNum">     111 </span>                : #define FLOAT_DIGITS    6
+<span class="lineNum">     112 </span>                : #define EXPONENT_LENGTH 10
+<span class="lineNum">     113 </span>                : 
+<span class="lineNum">     114 </span>                : #include &quot;ext/standard/php_smart_str.h&quot;
+<span class="lineNum">     115 </span>                : 
+<span class="lineNum">     116 </span>                : /* {{{ macros */
+<span class="lineNum">     117 </span>                : 
+<span class="lineNum">     118 </span>                : /*
+<span class="lineNum">     119 </span>                :  * NUM_BUF_SIZE is the size of the buffer used for arithmetic conversions
+<span class="lineNum">     120 </span>                :  *
+<span class="lineNum">     121 </span>                :  * XXX: this is a magic number; do not decrease it
+<span class="lineNum">     122 </span>                :  * Emax = 1023
+<span class="lineNum">     123 </span>                :  * NDIG = 320
+<span class="lineNum">     124 </span>                :  * NUM_BUF_SIZE &gt;= strlen(&quot;-&quot;) + Emax + strlrn(&quot;.&quot;) + NDIG + strlen(&quot;E+1023&quot;) + 1;
+<span class="lineNum">     125 </span>                :  */
+<span class="lineNum">     126 </span>                : #define NUM_BUF_SIZE            2048
+<span class="lineNum">     127 </span>                : 
+<span class="lineNum">     128 </span>                : /*
+<span class="lineNum">     129 </span>                :  * The INS_CHAR macro inserts a character in the buffer.
+<span class="lineNum">     130 </span>                :  *
+<span class="lineNum">     131 </span>                :  * NOTE: Evaluation of the ch argument should not have any side-effects
+<span class="lineNum">     132 </span>                :  */
+<span class="lineNum">     133 </span>                : #define INS_CHAR_NR(xbuf, ch) do {      \
+<span class="lineNum">     134 </span>                :         smart_str_appendc(xbuf, ch);    \
+<span class="lineNum">     135 </span>                : } while (0)
+<span class="lineNum">     136 </span>                : 
+<span class="lineNum">     137 </span>                : #define INS_STRING(xbuf, s, slen) do {  \
+<span class="lineNum">     138 </span>                :         smart_str_appendl(xbuf, s, slen);       \
+<span class="lineNum">     139 </span>                : } while (0)
+<span class="lineNum">     140 </span>                : 
+<span class="lineNum">     141 </span>                : #define INS_CHAR(xbuf, ch)          \
+<span class="lineNum">     142 </span>                :         INS_CHAR_NR(xbuf, ch)
+<span class="lineNum">     143 </span>                : 
+<span class="lineNum">     144 </span>                : /*
+<span class="lineNum">     145 </span>                :  * Macro that does padding. The padding is done by printing
+<span class="lineNum">     146 </span>                :  * the character ch.
+<span class="lineNum">     147 </span>                :  */
+<span class="lineNum">     148 </span>                : #define PAD(xbuf, count, ch) do {                                       \
+<span class="lineNum">     149 </span>                :         if ((count) &gt; 0) {                                   \
+<span class="lineNum">     150 </span>                :                 size_t newlen;                                                          \
+<span class="lineNum">     151 </span>                :                 smart_str_alloc(xbuf, (count), 0);                      \
+<span class="lineNum">     152 </span>                :                 memset(xbuf-&gt;c + xbuf-&gt;len, ch, (count)); \
+<span class="lineNum">     153 </span>                :                 xbuf-&gt;len += (count);                                \
+<span class="lineNum">     154 </span>                :         }                                                                                               \
+<span class="lineNum">     155 </span>                : } while (0)
+<span class="lineNum">     156 </span>                : 
+<span class="lineNum">     157 </span>                : #define NUM(c) (c - '0')
+<span class="lineNum">     158 </span>                : 
+<span class="lineNum">     159 </span>                : #define STR_TO_DEC(str, num) do {                       \
+<span class="lineNum">     160 </span>                :         num = NUM(*str++);                      \
+<span class="lineNum">     161 </span>                :         while (isdigit((int)*str)) {            \
+<span class="lineNum">     162 </span>                :                 num *= 10;                              \
+<span class="lineNum">     163 </span>                :                 num += NUM(*str++);                     \
+<span class="lineNum">     164 </span>                :                 if (num &gt;= INT_MAX / 10) {                   \
+<span class="lineNum">     165 </span>                :                         while (isdigit((int)*str++));   \
+<span class="lineNum">     166 </span>                :                         break;                                                  \
+<span class="lineNum">     167 </span>                :                 }                                                                       \
+<span class="lineNum">     168 </span>                :     }                                                                           \
+<span class="lineNum">     169 </span>                : } while (0)
+<span class="lineNum">     170 </span>                : 
+<span class="lineNum">     171 </span>                : /*
+<span class="lineNum">     172 </span>                :  * This macro does zero padding so that the precision
+<span class="lineNum">     173 </span>                :  * requirement is satisfied. The padding is done by
+<span class="lineNum">     174 </span>                :  * adding '0's to the left of the string that is going
+<span class="lineNum">     175 </span>                :  * to be printed.
+<span class="lineNum">     176 </span>                :  */
+<span class="lineNum">     177 </span>                : #define FIX_PRECISION(adjust, precision, s, s_len) do { \
+<span class="lineNum">     178 </span>                :     if (adjust)                                                         \
+<span class="lineNum">     179 </span>                :                 while (s_len &lt; precision) {                  \
+<span class="lineNum">     180 </span>                :                         *--s = '0';                                     \
+<span class="lineNum">     181 </span>                :                         s_len++;                                        \
+<span class="lineNum">     182 </span>                :                 }                                                                                               \
+<span class="lineNum">     183 </span>                : } while (0)
+<span class="lineNum">     184 </span>                : 
+<span class="lineNum">     185 </span>                : /* }}} */
+<span class="lineNum">     186 </span>                : 
+<span class="lineNum">     187 </span>                : 
+<span class="lineNum">     188 </span>                : #if !HAVE_STRNLEN
+<span class="lineNum">     189 </span>                : static size_t strnlen(const char *s, size_t maxlen) {
+<span class="lineNum">     190 </span>                :         char *r = memchr(s, '\0', maxlen);
+<span class="lineNum">     191 </span>                :         return r ? r-s : maxlen;
+<span class="lineNum">     192 </span>                : }
+<span class="lineNum">     193 </span>                : #endif
+<span class="lineNum">     194 </span>                : 
+<span class="lineNum">     195 </span>                : /*
+<a name="196"><span class="lineNum">     196 </span>                :  * Do format conversion placing the output in buffer</a>
+<span class="lineNum">     197 </span>                :  */
+<span class="lineNum">     198 </span><span class="lineCov">           6267 : static void xbuf_format_converter(smart_str *xbuf, const char *fmt, va_list ap) /* {{{ */</span>
+<span class="lineNum">     199 </span>                : {
+<span class="lineNum">     200 </span><span class="lineCov">           6267 :         char *s = NULL;</span>
+<span class="lineNum">     201 </span>                :         int s_len, free_zcopy;
+<span class="lineNum">     202 </span>                :         zval *zvp, zcopy;
+<span class="lineNum">     203 </span>                : 
+<span class="lineNum">     204 </span><span class="lineCov">           6267 :         int min_width = 0;</span>
+<span class="lineNum">     205 </span><span class="lineCov">           6267 :         int precision = 0;</span>
+<span class="lineNum">     206 </span>                :         enum {
+<span class="lineNum">     207 </span>                :                 LEFT, RIGHT
+<span class="lineNum">     208 </span>                :         } adjust;
+<span class="lineNum">     209 </span>                :         char pad_char;
+<span class="lineNum">     210 </span>                :         char prefix_char;
+<span class="lineNum">     211 </span>                : 
+<span class="lineNum">     212 </span>                :         double fp_num;
+<span class="lineNum">     213 </span><span class="lineCov">           6267 :         wide_int i_num = (wide_int) 0;</span>
+<span class="lineNum">     214 </span>                :         u_wide_int ui_num;
+<span class="lineNum">     215 </span>                : 
+<span class="lineNum">     216 </span>                :         char num_buf[NUM_BUF_SIZE];
+<span class="lineNum">     217 </span>                :         char char_buf[2];                       /* for printing %% and %&lt;unknown&gt; */
+<span class="lineNum">     218 </span>                : 
+<span class="lineNum">     219 </span>                : #ifdef HAVE_LOCALE_H
+<span class="lineNum">     220 </span><span class="lineCov">           6267 :         struct lconv *lconv = NULL;</span>
+<span class="lineNum">     221 </span>                : #endif
+<span class="lineNum">     222 </span>                : 
+<span class="lineNum">     223 </span>                :         /*
+<span class="lineNum">     224 </span>                :          * Flag variables
+<span class="lineNum">     225 </span>                :          */
+<span class="lineNum">     226 </span>                :         length_modifier_e modifier;
+<span class="lineNum">     227 </span>                :         boolean_e alternate_form;
+<span class="lineNum">     228 </span>                :         boolean_e print_sign;
+<span class="lineNum">     229 </span>                :         boolean_e print_blank;
+<span class="lineNum">     230 </span>                :         boolean_e adjust_precision;
+<span class="lineNum">     231 </span>                :         boolean_e adjust_width;
+<span class="lineNum">     232 </span>                :         bool_int is_negative;
+<span class="lineNum">     233 </span>                : 
+<span class="lineNum">     234 </span><span class="lineCov">          58510 :         while (*fmt) {</span>
+<span class="lineNum">     235 </span><span class="lineCov">          45976 :                 if (*fmt != '%') {</span>
+<span class="lineNum">     236 </span><span class="lineCov">          33569 :                         INS_CHAR(xbuf, *fmt);</span>
+<span class="lineNum">     237 </span>                :                 } else {
+<span class="lineNum">     238 </span>                :                         /*
+<span class="lineNum">     239 </span>                :                          * Default variable settings
+<span class="lineNum">     240 </span>                :                          */
+<span class="lineNum">     241 </span><span class="lineCov">          12407 :                         adjust = RIGHT;</span>
+<span class="lineNum">     242 </span><span class="lineCov">          12407 :                         alternate_form = print_sign = print_blank = NO;</span>
+<span class="lineNum">     243 </span><span class="lineCov">          12407 :                         pad_char = ' ';</span>
+<span class="lineNum">     244 </span><span class="lineCov">          12407 :                         prefix_char = NUL;</span>
+<span class="lineNum">     245 </span><span class="lineCov">          12407 :                         free_zcopy = 0;</span>
+<span class="lineNum">     246 </span>                : 
+<span class="lineNum">     247 </span><span class="lineCov">          12407 :                         fmt++;</span>
+<span class="lineNum">     248 </span>                : 
+<span class="lineNum">     249 </span>                :                         /*
+<span class="lineNum">     250 </span>                :                          * Try to avoid checking for flags, width or precision
+<span class="lineNum">     251 </span>                :                          */
+<span class="lineNum">     252 </span><span class="lineCov">          12739 :                         if (isascii((int)*fmt) &amp;&amp; !islower((int)*fmt)) {</span>
+<span class="lineNum">     253 </span>                :                                 /*
+<span class="lineNum">     254 </span>                :                                  * Recognize flags: -, #, BLANK, +
+<span class="lineNum">     255 </span>                :                                  */
+<span class="lineNum">     256 </span><span class="lineCov">             84 :                                 for (;; fmt++) {</span>
+<span class="lineNum">     257 </span><span class="lineCov">            416 :                                         if (*fmt == '-')</span>
+<span class="lineNum">     258 </span><span class="lineNoCov">              0 :                                                 adjust = LEFT;</span>
+<span class="lineNum">     259 </span><span class="lineCov">            416 :                                         else if (*fmt == '+')</span>
+<span class="lineNum">     260 </span><span class="lineNoCov">              0 :                                                 print_sign = YES;</span>
+<span class="lineNum">     261 </span><span class="lineCov">            416 :                                         else if (*fmt == '#')</span>
+<span class="lineNum">     262 </span><span class="lineNoCov">              0 :                                                 alternate_form = YES;</span>
+<span class="lineNum">     263 </span><span class="lineCov">            416 :                                         else if (*fmt == ' ')</span>
+<span class="lineNum">     264 </span><span class="lineNoCov">              0 :                                                 print_blank = YES;</span>
+<span class="lineNum">     265 </span><span class="lineCov">            416 :                                         else if (*fmt == '0')</span>
+<span class="lineNum">     266 </span><span class="lineCov">             84 :                                                 pad_char = '0';</span>
+<span class="lineNum">     267 </span>                :                                         else
+<span class="lineNum">     268 </span>                :                                                 break;
+<span class="lineNum">     269 </span><span class="lineCov">             84 :                                 }</span>
+<span class="lineNum">     270 </span>                : 
+<span class="lineNum">     271 </span>                :                                 /*
+<span class="lineNum">     272 </span>                :                                  * Check if a width was specified
+<span class="lineNum">     273 </span>                :                                  */
+<span class="lineNum">     274 </span><span class="lineCov">            332 :                                 if (isdigit((int)*fmt)) {</span>
+<span class="lineNum">     275 </span><span class="lineCov">             84 :                                         STR_TO_DEC(fmt, min_width);</span>
+<span class="lineNum">     276 </span><span class="lineCov">             84 :                                         adjust_width = YES;</span>
+<span class="lineNum">     277 </span><span class="lineCov">            248 :                                 } else if (*fmt == '*') {</span>
+<span class="lineNum">     278 </span><span class="lineCov">            242 :                                         min_width = va_arg(ap, int);</span>
+<span class="lineNum">     279 </span><span class="lineCov">            242 :                                         fmt++;</span>
+<span class="lineNum">     280 </span><span class="lineCov">            242 :                                         adjust_width = YES;</span>
+<span class="lineNum">     281 </span><span class="lineCov">            242 :                                         if (min_width &lt; 0) {</span>
+<span class="lineNum">     282 </span><span class="lineNoCov">              0 :                                                 adjust = LEFT;</span>
+<span class="lineNum">     283 </span><span class="lineNoCov">              0 :                                                 min_width = -min_width;</span>
+<span class="lineNum">     284 </span>                :                                         }
+<span class="lineNum">     285 </span>                :                                 } else
+<span class="lineNum">     286 </span><span class="lineCov">              6 :                                         adjust_width = NO;</span>
+<span class="lineNum">     287 </span>                : 
+<span class="lineNum">     288 </span>                :                                 /*
+<span class="lineNum">     289 </span>                :                                  * Check if a precision was specified
+<span class="lineNum">     290 </span>                :                                  */
+<span class="lineNum">     291 </span><span class="lineCov">            332 :                                 if (*fmt == '.') {</span>
+<span class="lineNum">     292 </span><span class="lineCov">              6 :                                         adjust_precision = YES;</span>
+<span class="lineNum">     293 </span><span class="lineCov">              6 :                                         fmt++;</span>
+<span class="lineNum">     294 </span><span class="lineCov">              6 :                                         if (isdigit((int)*fmt)) {</span>
+<span class="lineNum">     295 </span><span class="lineNoCov">              0 :                                                 STR_TO_DEC(fmt, precision);</span>
+<span class="lineNum">     296 </span><span class="lineCov">              6 :                                         } else if (*fmt == '*') {</span>
+<span class="lineNum">     297 </span><span class="lineCov">              6 :                                                 precision = va_arg(ap, int);</span>
+<span class="lineNum">     298 </span><span class="lineCov">              6 :                                                 fmt++;</span>
+<span class="lineNum">     299 </span><span class="lineCov">              6 :                                                 if (precision &lt; 0)</span>
+<span class="lineNum">     300 </span><span class="lineNoCov">              0 :                                                         precision = 0;</span>
+<span class="lineNum">     301 </span>                :                                         } else
+<span class="lineNum">     302 </span><span class="lineNoCov">              0 :                                                 precision = 0;</span>
+<span class="lineNum">     303 </span>                :                                         
+<span class="lineNum">     304 </span><span class="lineCov">              6 :                                         if (precision &gt; FORMAT_CONV_MAX_PRECISION) {</span>
+<span class="lineNum">     305 </span><span class="lineNoCov">              0 :                                                 precision = FORMAT_CONV_MAX_PRECISION;</span>
+<span class="lineNum">     306 </span>                :                                         }
+<span class="lineNum">     307 </span>                :                                 } else
+<span class="lineNum">     308 </span><span class="lineCov">            326 :                                         adjust_precision = NO;</span>
+<span class="lineNum">     309 </span>                :                         } else
+<span class="lineNum">     310 </span><span class="lineCov">          12075 :                                 adjust_precision = adjust_width = NO;</span>
+<span class="lineNum">     311 </span>                : 
+<span class="lineNum">     312 </span>                :                         /*
+<span class="lineNum">     313 </span>                :                          * Modifier check
+<span class="lineNum">     314 </span>                :                          */
+<span class="lineNum">     315 </span><span class="lineCov">          12407 :                         switch (*fmt) {</span>
+<span class="lineNum">     316 </span>                :                                 case 'L':
+<span class="lineNum">     317 </span><span class="lineNoCov">              0 :                                         fmt++;</span>
+<span class="lineNum">     318 </span><span class="lineNoCov">              0 :                                         modifier = LM_LONG_DOUBLE;</span>
+<span class="lineNum">     319 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">     320 </span>                :                                 case 'I':
+<span class="lineNum">     321 </span><span class="lineNoCov">              0 :                                         fmt++;</span>
+<span class="lineNum">     322 </span>                : #if SIZEOF_LONG_LONG
+<span class="lineNum">     323 </span><span class="lineNoCov">              0 :                                         if (*fmt == '6' &amp;&amp; *(fmt+1) == '4') {</span>
+<span class="lineNum">     324 </span><span class="lineNoCov">              0 :                                                 fmt += 2;</span>
+<span class="lineNum">     325 </span><span class="lineNoCov">              0 :                                                 modifier = LM_LONG_LONG;</span>
+<span class="lineNum">     326 </span>                :                                         } else
+<span class="lineNum">     327 </span>                : #endif
+<span class="lineNum">     328 </span><span class="lineNoCov">              0 :                                                 if (*fmt == '3' &amp;&amp; *(fmt+1) == '2') {</span>
+<span class="lineNum">     329 </span><span class="lineNoCov">              0 :                                                         fmt += 2;</span>
+<span class="lineNum">     330 </span><span class="lineNoCov">              0 :                                                         modifier = LM_LONG;</span>
+<span class="lineNum">     331 </span>                :                                                 } else {
+<span class="lineNum">     332 </span>                : #ifdef _WIN64
+<span class="lineNum">     333 </span>                :                                                         modifier = LM_LONG_LONG;
+<span class="lineNum">     334 </span>                : #else
+<span class="lineNum">     335 </span><span class="lineNoCov">              0 :                                                         modifier = LM_LONG;</span>
+<span class="lineNum">     336 </span>                : #endif
+<span class="lineNum">     337 </span>                :                                                 }
+<span class="lineNum">     338 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">     339 </span>                :                                 case 'l':
+<span class="lineNum">     340 </span><span class="lineCov">           1570 :                                         fmt++;</span>
+<span class="lineNum">     341 </span>                : #if SIZEOF_LONG_LONG
+<span class="lineNum">     342 </span><span class="lineCov">           1570 :                                         if (*fmt == 'l') {</span>
+<span class="lineNum">     343 </span><span class="lineNoCov">              0 :                                                 fmt++;</span>
+<span class="lineNum">     344 </span><span class="lineNoCov">              0 :                                                 modifier = LM_LONG_LONG;</span>
+<span class="lineNum">     345 </span>                :                                         } else
+<span class="lineNum">     346 </span>                : #endif
+<span class="lineNum">     347 </span><span class="lineCov">           1570 :                                                 modifier = LM_LONG;</span>
+<span class="lineNum">     348 </span><span class="lineCov">           1570 :                                         break;</span>
+<span class="lineNum">     349 </span>                :                                 case 'z':
+<span class="lineNum">     350 </span><span class="lineNoCov">              0 :                                         fmt++;</span>
+<span class="lineNum">     351 </span><span class="lineNoCov">              0 :                                         modifier = LM_SIZE_T;</span>
+<span class="lineNum">     352 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">     353 </span>                :                                 case 'j':
+<span class="lineNum">     354 </span><span class="lineNoCov">              0 :                                         fmt++;</span>
+<span class="lineNum">     355 </span>                : #if SIZEOF_INTMAX_T
+<span class="lineNum">     356 </span><span class="lineNoCov">              0 :                                         modifier = LM_INTMAX_T;</span>
+<span class="lineNum">     357 </span>                : #else
+<span class="lineNum">     358 </span>                :                                         modifier = LM_SIZE_T;
+<span class="lineNum">     359 </span>                : #endif
+<span class="lineNum">     360 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">     361 </span>                :                                 case 't':
+<span class="lineNum">     362 </span><span class="lineNoCov">              0 :                                         fmt++;</span>
+<span class="lineNum">     363 </span>                : #if SIZEOF_PTRDIFF_T
+<span class="lineNum">     364 </span><span class="lineNoCov">              0 :                                         modifier = LM_PTRDIFF_T;</span>
+<span class="lineNum">     365 </span>                : #else
+<span class="lineNum">     366 </span>                :                                         modifier = LM_SIZE_T;
+<span class="lineNum">     367 </span>                : #endif
+<span class="lineNum">     368 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">     369 </span>                :                                 case 'h':
+<span class="lineNum">     370 </span><span class="lineNoCov">              0 :                                         fmt++;</span>
+<span class="lineNum">     371 </span><span class="lineNoCov">              0 :                                         if (*fmt == 'h') {</span>
+<span class="lineNum">     372 </span><span class="lineNoCov">              0 :                                                 fmt++;</span>
+<span class="lineNum">     373 </span>                :                                         }
+<span class="lineNum">     374 </span>                :                                         /* these are promoted to int, so no break */
+<span class="lineNum">     375 </span>                :                                 default:
+<span class="lineNum">     376 </span><span class="lineCov">          10837 :                                         modifier = LM_STD;</span>
+<span class="lineNum">     377 </span>                :                                         break;
+<span class="lineNum">     378 </span>                :                         }
+<span class="lineNum">     379 </span>                : 
+<span class="lineNum">     380 </span>                :                         /*
+<span class="lineNum">     381 </span>                :                          * Argument extraction and printing.
+<span class="lineNum">     382 </span>                :                          * First we determine the argument type.
+<span class="lineNum">     383 </span>                :                          * Then, we convert the argument to a string.
+<span class="lineNum">     384 </span>                :                          * On exit from the switch, s points to the string that
+<span class="lineNum">     385 </span>                :                          * must be printed, s_len has the length of the string
+<span class="lineNum">     386 </span>                :                          * The precision requirements, if any, are reflected in s_len.
+<span class="lineNum">     387 </span>                :                          *
+<span class="lineNum">     388 </span>                :                          * NOTE: pad_char may be set to '0' because of the 0 flag.
+<span class="lineNum">     389 </span>                :                          *   It is reset to ' ' by non-numeric formats
+<span class="lineNum">     390 </span>                :                          */
+<span class="lineNum">     391 </span><span class="lineCov">          12407 :                         switch (*fmt) {</span>
+<span class="lineNum">     392 </span>                :                                 case 'Z':
+<span class="lineNum">     393 </span><span class="lineNoCov">              0 :                                         zvp = (zval*) va_arg(ap, zval*);</span>
+<span class="lineNum">     394 </span><span class="lineNoCov">              0 :                                         zend_make_printable_zval(zvp, &amp;zcopy, &amp;free_zcopy);</span>
+<span class="lineNum">     395 </span><span class="lineNoCov">              0 :                                         if (free_zcopy) {</span>
+<span class="lineNum">     396 </span><span class="lineNoCov">              0 :                                                 zvp = &amp;zcopy;</span>
+<span class="lineNum">     397 </span>                :                                         }
+<span class="lineNum">     398 </span><span class="lineNoCov">              0 :                                         s_len = Z_STRLEN_P(zvp);</span>
+<span class="lineNum">     399 </span><span class="lineNoCov">              0 :                                         s = Z_STRVAL_P(zvp);</span>
+<span class="lineNum">     400 </span><span class="lineNoCov">              0 :                                         if (adjust_precision &amp;&amp; precision &lt; s_len) {</span>
+<span class="lineNum">     401 </span><span class="lineNoCov">              0 :                                                 s_len = precision;</span>
+<span class="lineNum">     402 </span>                :                                         }
+<span class="lineNum">     403 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">     404 </span>                :                                 case 'u':
+<span class="lineNum">     405 </span><span class="lineNoCov">              0 :                                         switch(modifier) {</span>
+<span class="lineNum">     406 </span>                :                                                 default:
+<span class="lineNum">     407 </span><span class="lineNoCov">              0 :                                                         i_num = (wide_int) va_arg(ap, unsigned int);</span>
+<span class="lineNum">     408 </span><span class="lineNoCov">              0 :                                                         break;</span>
+<span class="lineNum">     409 </span>                :                                                 case LM_LONG_DOUBLE:
+<span class="lineNum">     410 </span><span class="lineNoCov">              0 :                                                         goto fmt_error;</span>
+<span class="lineNum">     411 </span>                :                                                 case LM_LONG:
+<span class="lineNum">     412 </span><span class="lineNoCov">              0 :                                                         i_num = (wide_int) va_arg(ap, unsigned long int);</span>
+<span class="lineNum">     413 </span><span class="lineNoCov">              0 :                                                         break;</span>
+<span class="lineNum">     414 </span>                :                                                 case LM_SIZE_T:
+<span class="lineNum">     415 </span><span class="lineNoCov">              0 :                                                         i_num = (wide_int) va_arg(ap, size_t);</span>
+<span class="lineNum">     416 </span><span class="lineNoCov">              0 :                                                         break;</span>
+<span class="lineNum">     417 </span>                : #if SIZEOF_LONG_LONG
+<span class="lineNum">     418 </span>                :                                                 case LM_LONG_LONG:
+<span class="lineNum">     419 </span><span class="lineNoCov">              0 :                                                         i_num = (wide_int) va_arg(ap, u_wide_int);</span>
+<span class="lineNum">     420 </span><span class="lineNoCov">              0 :                                                         break;</span>
+<span class="lineNum">     421 </span>                : #endif
+<span class="lineNum">     422 </span>                : #if SIZEOF_INTMAX_T
+<span class="lineNum">     423 </span>                :                                                 case LM_INTMAX_T:
+<span class="lineNum">     424 </span><span class="lineNoCov">              0 :                                                         i_num = (wide_int) va_arg(ap, uintmax_t);</span>
+<span class="lineNum">     425 </span><span class="lineNoCov">              0 :                                                         break;</span>
+<span class="lineNum">     426 </span>                : #endif
+<span class="lineNum">     427 </span>                : #if SIZEOF_PTRDIFF_T
+<span class="lineNum">     428 </span>                :                                                 case LM_PTRDIFF_T:
+<span class="lineNum">     429 </span><span class="lineNoCov">              0 :                                                         i_num = (wide_int) va_arg(ap, ptrdiff_t);</span>
+<span class="lineNum">     430 </span>                :                                                         break;
+<span class="lineNum">     431 </span>                : #endif
+<span class="lineNum">     432 </span>                :                                         }
+<span class="lineNum">     433 </span>                :                                         /*
+<span class="lineNum">     434 </span>                :                                          * The rest also applies to other integer formats, so fall
+<span class="lineNum">     435 </span>                :                                          * into that case.
+<span class="lineNum">     436 </span>                :                                          */
+<span class="lineNum">     437 </span>                :                                 case 'd':
+<span class="lineNum">     438 </span>                :                                 case 'i':
+<span class="lineNum">     439 </span>                :                                         /*
+<span class="lineNum">     440 </span>                :                                          * Get the arg if we haven't already.
+<span class="lineNum">     441 </span>                :                                          */
+<span class="lineNum">     442 </span><span class="lineCov">           2755 :                                         if ((*fmt) != 'u') {</span>
+<span class="lineNum">     443 </span><span class="lineCov">           2755 :                                                 switch(modifier) {</span>
+<span class="lineNum">     444 </span>                :                                                         default:
+<span class="lineNum">     445 </span><span class="lineCov">           1185 :                                                                 i_num = (wide_int) va_arg(ap, int);</span>
+<span class="lineNum">     446 </span><span class="lineCov">           1185 :                                                                 break;</span>
+<span class="lineNum">     447 </span>                :                                                         case LM_LONG_DOUBLE:
+<span class="lineNum">     448 </span><span class="lineNoCov">              0 :                                                                 goto fmt_error;</span>
+<span class="lineNum">     449 </span>                :                                                         case LM_LONG:
+<span class="lineNum">     450 </span><span class="lineCov">           1570 :                                                                 i_num = (wide_int) va_arg(ap, long int);</span>
+<span class="lineNum">     451 </span><span class="lineCov">           1570 :                                                                 break;</span>
+<span class="lineNum">     452 </span>                :                                                         case LM_SIZE_T:
+<span class="lineNum">     453 </span>                : #if SIZEOF_SSIZE_T
+<span class="lineNum">     454 </span><span class="lineNoCov">              0 :                                                                 i_num = (wide_int) va_arg(ap, ssize_t);</span>
+<span class="lineNum">     455 </span>                : #else
+<span class="lineNum">     456 </span>                :                                                                 i_num = (wide_int) va_arg(ap, size_t);
+<span class="lineNum">     457 </span>                : #endif
+<span class="lineNum">     458 </span><span class="lineNoCov">              0 :                                                                 break;</span>
+<span class="lineNum">     459 </span>                : #if SIZEOF_LONG_LONG
+<span class="lineNum">     460 </span>                :                                                         case LM_LONG_LONG:
+<span class="lineNum">     461 </span><span class="lineNoCov">              0 :                                                                 i_num = (wide_int) va_arg(ap, wide_int);</span>
+<span class="lineNum">     462 </span><span class="lineNoCov">              0 :                                                                 break;</span>
+<span class="lineNum">     463 </span>                : #endif
+<span class="lineNum">     464 </span>                : #if SIZEOF_INTMAX_T
+<span class="lineNum">     465 </span>                :                                                         case LM_INTMAX_T:
+<span class="lineNum">     466 </span><span class="lineNoCov">              0 :                                                                 i_num = (wide_int) va_arg(ap, intmax_t);</span>
+<span class="lineNum">     467 </span><span class="lineNoCov">              0 :                                                                 break;</span>
+<span class="lineNum">     468 </span>                : #endif
+<span class="lineNum">     469 </span>                : #if SIZEOF_PTRDIFF_T
+<span class="lineNum">     470 </span>                :                                                         case LM_PTRDIFF_T:
+<span class="lineNum">     471 </span><span class="lineNoCov">              0 :                                                                 i_num = (wide_int) va_arg(ap, ptrdiff_t);</span>
+<span class="lineNum">     472 </span>                :                                                                 break;
+<span class="lineNum">     473 </span>                : #endif
+<span class="lineNum">     474 </span>                :                                                 }
+<span class="lineNum">     475 </span>                :                                         }
+<span class="lineNum">     476 </span><span class="lineCov">           2755 :                                         s = ap_php_conv_10(i_num, (*fmt) == 'u', &amp;is_negative,</span>
+<span class="lineNum">     477 </span>                :                                                                 &amp;num_buf[NUM_BUF_SIZE], &amp;s_len);
+<span class="lineNum">     478 </span><span class="lineCov">           2755 :                                         FIX_PRECISION(adjust_precision, precision, s, s_len);</span>
+<span class="lineNum">     479 </span>                : 
+<span class="lineNum">     480 </span><span class="lineCov">           2755 :                                         if (*fmt != 'u') {</span>
+<span class="lineNum">     481 </span><span class="lineCov">           2755 :                                                 if (is_negative)</span>
+<span class="lineNum">     482 </span><span class="lineNoCov">              0 :                                                         prefix_char = '-';</span>
+<span class="lineNum">     483 </span><span class="lineCov">           2755 :                                                 else if (print_sign)</span>
+<span class="lineNum">     484 </span><span class="lineNoCov">              0 :                                                         prefix_char = '+';</span>
+<span class="lineNum">     485 </span><span class="lineCov">           2755 :                                                 else if (print_blank)</span>
+<span class="lineNum">     486 </span><span class="lineNoCov">              0 :                                                         prefix_char = ' ';</span>
+<span class="lineNum">     487 </span>                :                                         }
+<span class="lineNum">     488 </span><span class="lineCov">           2755 :                                         break;</span>
+<span class="lineNum">     489 </span>                : 
+<span class="lineNum">     490 </span>                : 
+<span class="lineNum">     491 </span>                :                                 case 'o':
+<span class="lineNum">     492 </span><span class="lineNoCov">              0 :                                         switch(modifier) {</span>
+<span class="lineNum">     493 </span>                :                                                 default:
+<span class="lineNum">     494 </span><span class="lineNoCov">              0 :                                                         ui_num = (u_wide_int) va_arg(ap, unsigned int);</span>
+<span class="lineNum">     495 </span><span class="lineNoCov">              0 :                                                         break;</span>
+<span class="lineNum">     496 </span>                :                                                 case LM_LONG_DOUBLE:
+<span class="lineNum">     497 </span><span class="lineNoCov">              0 :                                                         goto fmt_error;</span>
+<span class="lineNum">     498 </span>                :                                                 case LM_LONG:
+<span class="lineNum">     499 </span><span class="lineNoCov">              0 :                                                         ui_num = (u_wide_int) va_arg(ap, unsigned long int);</span>
+<span class="lineNum">     500 </span><span class="lineNoCov">              0 :                                                         break;</span>
+<span class="lineNum">     501 </span>                :                                                 case LM_SIZE_T:
+<span class="lineNum">     502 </span><span class="lineNoCov">              0 :                                                         ui_num = (u_wide_int) va_arg(ap, size_t);</span>
+<span class="lineNum">     503 </span><span class="lineNoCov">              0 :                                                         break;</span>
+<span class="lineNum">     504 </span>                : #if SIZEOF_LONG_LONG
+<span class="lineNum">     505 </span>                :                                                 case LM_LONG_LONG:
+<span class="lineNum">     506 </span><span class="lineNoCov">              0 :                                                         ui_num = (u_wide_int) va_arg(ap, u_wide_int);</span>
+<span class="lineNum">     507 </span><span class="lineNoCov">              0 :                                                         break;</span>
+<span class="lineNum">     508 </span>                : #endif
+<span class="lineNum">     509 </span>                : #if SIZEOF_INTMAX_T
+<span class="lineNum">     510 </span>                :                                                 case LM_INTMAX_T:
+<span class="lineNum">     511 </span><span class="lineNoCov">              0 :                                                         ui_num = (u_wide_int) va_arg(ap, uintmax_t);</span>
+<span class="lineNum">     512 </span><span class="lineNoCov">              0 :                                                         break;</span>
+<span class="lineNum">     513 </span>                : #endif
+<span class="lineNum">     514 </span>                : #if SIZEOF_PTRDIFF_T
+<span class="lineNum">     515 </span>                :                                                 case LM_PTRDIFF_T:
+<span class="lineNum">     516 </span><span class="lineNoCov">              0 :                                                         ui_num = (u_wide_int) va_arg(ap, ptrdiff_t);</span>
+<span class="lineNum">     517 </span>                :                                                         break;
+<span class="lineNum">     518 </span>                : #endif
+<span class="lineNum">     519 </span>                :                                         }
+<span class="lineNum">     520 </span><span class="lineNoCov">              0 :                                         s = ap_php_conv_p2(ui_num, 3, *fmt,</span>
+<span class="lineNum">     521 </span>                :                                                                 &amp;num_buf[NUM_BUF_SIZE], &amp;s_len);
+<span class="lineNum">     522 </span><span class="lineNoCov">              0 :                                         FIX_PRECISION(adjust_precision, precision, s, s_len);</span>
+<span class="lineNum">     523 </span><span class="lineNoCov">              0 :                                         if (alternate_form &amp;&amp; *s != '0') {</span>
+<span class="lineNum">     524 </span><span class="lineNoCov">              0 :                                                 *--s = '0';</span>
+<span class="lineNum">     525 </span><span class="lineNoCov">              0 :                                                 s_len++;</span>
+<span class="lineNum">     526 </span>                :                                         }
+<span class="lineNum">     527 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">     528 </span>                : 
+<span class="lineNum">     529 </span>                : 
+<span class="lineNum">     530 </span>                :                                 case 'x':
+<span class="lineNum">     531 </span>                :                                 case 'X':
+<span class="lineNum">     532 </span><span class="lineCov">             84 :                                         switch(modifier) {</span>
+<span class="lineNum">     533 </span>                :                                                 default:
+<span class="lineNum">     534 </span><span class="lineCov">             84 :                                                         ui_num = (u_wide_int) va_arg(ap, unsigned int);</span>
+<span class="lineNum">     535 </span><span class="lineCov">             84 :                                                         break;</span>
+<span class="lineNum">     536 </span>                :                                                 case LM_LONG_DOUBLE:
+<span class="lineNum">     537 </span><span class="lineNoCov">              0 :                                                         goto fmt_error;</span>
+<span class="lineNum">     538 </span>                :                                                 case LM_LONG:
+<span class="lineNum">     539 </span><span class="lineNoCov">              0 :                                                         ui_num = (u_wide_int) va_arg(ap, unsigned long int);</span>
+<span class="lineNum">     540 </span><span class="lineNoCov">              0 :                                                         break;</span>
+<span class="lineNum">     541 </span>                :                                                 case LM_SIZE_T:
+<span class="lineNum">     542 </span><span class="lineNoCov">              0 :                                                         ui_num = (u_wide_int) va_arg(ap, size_t);</span>
+<span class="lineNum">     543 </span><span class="lineNoCov">              0 :                                                         break;</span>
+<span class="lineNum">     544 </span>                : #if SIZEOF_LONG_LONG
+<span class="lineNum">     545 </span>                :                                                 case LM_LONG_LONG:
+<span class="lineNum">     546 </span><span class="lineNoCov">              0 :                                                         ui_num = (u_wide_int) va_arg(ap, u_wide_int);</span>
+<span class="lineNum">     547 </span><span class="lineNoCov">              0 :                                                         break;</span>
+<span class="lineNum">     548 </span>                : #endif
+<span class="lineNum">     549 </span>                : #if SIZEOF_INTMAX_T
+<span class="lineNum">     550 </span>                :                                                 case LM_INTMAX_T:
+<span class="lineNum">     551 </span><span class="lineNoCov">              0 :                                                         ui_num = (u_wide_int) va_arg(ap, uintmax_t);</span>
+<span class="lineNum">     552 </span><span class="lineNoCov">              0 :                                                         break;</span>
+<span class="lineNum">     553 </span>                : #endif
+<span class="lineNum">     554 </span>                : #if SIZEOF_PTRDIFF_T
+<span class="lineNum">     555 </span>                :                                                 case LM_PTRDIFF_T:
+<span class="lineNum">     556 </span><span class="lineNoCov">              0 :                                                         ui_num = (u_wide_int) va_arg(ap, ptrdiff_t);</span>
+<span class="lineNum">     557 </span>                :                                                         break;
+<span class="lineNum">     558 </span>                : #endif
+<span class="lineNum">     559 </span>                :                                         }
+<span class="lineNum">     560 </span><span class="lineCov">             84 :                                         s = ap_php_conv_p2(ui_num, 4, *fmt,</span>
+<span class="lineNum">     561 </span>                :                                                                 &amp;num_buf[NUM_BUF_SIZE], &amp;s_len);
+<span class="lineNum">     562 </span><span class="lineCov">             84 :                                         FIX_PRECISION(adjust_precision, precision, s, s_len);</span>
+<span class="lineNum">     563 </span><span class="lineCov">             84 :                                         if (alternate_form &amp;&amp; i_num != 0) {</span>
+<span class="lineNum">     564 </span><span class="lineNoCov">              0 :                                                 *--s = *fmt;    /* 'x' or 'X' */</span>
+<span class="lineNum">     565 </span><span class="lineNoCov">              0 :                                                 *--s = '0';</span>
+<span class="lineNum">     566 </span><span class="lineNoCov">              0 :                                                 s_len += 2;</span>
+<span class="lineNum">     567 </span>                :                                         }
+<span class="lineNum">     568 </span><span class="lineCov">             84 :                                         break;</span>
+<span class="lineNum">     569 </span>                : 
+<span class="lineNum">     570 </span>                : 
+<span class="lineNum">     571 </span>                :                                 case 's':
+<span class="lineNum">     572 </span>                :                                 case 'v':
+<span class="lineNum">     573 </span><span class="lineCov">           9311 :                                         s = va_arg(ap, char *);</span>
+<span class="lineNum">     574 </span><span class="lineCov">           9311 :                                         if (s != NULL) {</span>
+<span class="lineNum">     575 </span><span class="lineCov">           9311 :                                                 if (!adjust_precision) {</span>
+<span class="lineNum">     576 </span><span class="lineCov">           9311 :                                                         s_len = strlen(s);</span>
+<span class="lineNum">     577 </span>                :                                                 } else {
+<span class="lineNum">     578 </span><span class="lineNoCov">              0 :                                                         s_len = strnlen(s, precision);</span>
+<span class="lineNum">     579 </span>                :                                                 }
+<span class="lineNum">     580 </span>                :                                         } else {
+<span class="lineNum">     581 </span><span class="lineNoCov">              0 :                                                 s = S_NULL;</span>
+<span class="lineNum">     582 </span><span class="lineNoCov">              0 :                                                 s_len = S_NULL_LEN;</span>
+<span class="lineNum">     583 </span>                :                                         }
+<span class="lineNum">     584 </span><span class="lineCov">           9311 :                                         pad_char = ' ';</span>
+<span class="lineNum">     585 </span><span class="lineCov">           9311 :                                         break;</span>
+<span class="lineNum">     586 </span>                : 
+<span class="lineNum">     587 </span>                : 
+<span class="lineNum">     588 </span>                :                                 case 'f':
+<span class="lineNum">     589 </span>                :                                 case 'F':
+<span class="lineNum">     590 </span>                :                                 case 'e':
+<span class="lineNum">     591 </span>                :                                 case 'E':
+<span class="lineNum">     592 </span><span class="lineNoCov">              0 :                                         switch(modifier) {</span>
+<span class="lineNum">     593 </span>                :                                                 case LM_LONG_DOUBLE:
+<span class="lineNum">     594 </span><span class="lineNoCov">              0 :                                                         fp_num = (double) va_arg(ap, long double);</span>
+<span class="lineNum">     595 </span><span class="lineNoCov">              0 :                                                         break;</span>
+<span class="lineNum">     596 </span>                :                                                 case LM_STD:
+<span class="lineNum">     597 </span><span class="lineNoCov">              0 :                                                         fp_num = va_arg(ap, double);</span>
+<span class="lineNum">     598 </span><span class="lineNoCov">              0 :                                                         break;</span>
+<span class="lineNum">     599 </span>                :                                                 default:
+<span class="lineNum">     600 </span><span class="lineNoCov">              0 :                                                         goto fmt_error;</span>
+<span class="lineNum">     601 </span>                :                                         }
+<span class="lineNum">     602 </span>                : 
+<span class="lineNum">     603 </span><span class="lineNoCov">              0 :                                         if (zend_isnan(fp_num)) {</span>
+<span class="lineNum">     604 </span><span class="lineNoCov">              0 :                                                 s = &quot;nan&quot;;</span>
+<span class="lineNum">     605 </span><span class="lineNoCov">              0 :                                                 s_len = 3;</span>
+<span class="lineNum">     606 </span><span class="lineNoCov">              0 :                                         } else if (zend_isinf(fp_num)) {</span>
+<span class="lineNum">     607 </span><span class="lineNoCov">              0 :                                                 s = &quot;inf&quot;;</span>
+<span class="lineNum">     608 </span><span class="lineNoCov">              0 :                                                 s_len = 3;</span>
+<span class="lineNum">     609 </span>                :                                         } else {
+<span class="lineNum">     610 </span>                : #ifdef HAVE_LOCALE_H
+<span class="lineNum">     611 </span><span class="lineNoCov">              0 :                                                 if (!lconv) {</span>
+<span class="lineNum">     612 </span><span class="lineNoCov">              0 :                                                         lconv = localeconv();</span>
+<span class="lineNum">     613 </span>                :                                                 }
+<span class="lineNum">     614 </span>                : #endif
+<span class="lineNum">     615 </span><span class="lineNoCov">              0 :                                                 s = php_conv_fp((*fmt == 'f')?'F':*fmt, fp_num, alternate_form,</span>
+<span class="lineNum">     616 </span>                :                                                  (adjust_precision == NO) ? FLOAT_DIGITS : precision,
+<span class="lineNum">     617 </span><span class="lineNoCov">              0 :                                                  (*fmt == 'f')?LCONV_DECIMAL_POINT:'.',</span>
+<span class="lineNum">     618 </span>                :                                                                         &amp;is_negative, &amp;num_buf[1], &amp;s_len);
+<span class="lineNum">     619 </span><span class="lineNoCov">              0 :                                                 if (is_negative)</span>
+<span class="lineNum">     620 </span><span class="lineNoCov">              0 :                                                         prefix_char = '-';</span>
+<span class="lineNum">     621 </span><span class="lineNoCov">              0 :                                                 else if (print_sign)</span>
+<span class="lineNum">     622 </span><span class="lineNoCov">              0 :                                                         prefix_char = '+';</span>
+<span class="lineNum">     623 </span><span class="lineNoCov">              0 :                                                 else if (print_blank)</span>
+<span class="lineNum">     624 </span><span class="lineNoCov">              0 :                                                         prefix_char = ' ';</span>
+<span class="lineNum">     625 </span>                :                                         }
+<span class="lineNum">     626 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">     627 </span>                : 
+<span class="lineNum">     628 </span>                : 
+<span class="lineNum">     629 </span>                :                                 case 'g':
+<span class="lineNum">     630 </span>                :                                 case 'k':
+<span class="lineNum">     631 </span>                :                                 case 'G':
+<span class="lineNum">     632 </span>                :                                 case 'H':
+<span class="lineNum">     633 </span><span class="lineCov">              6 :                                         switch(modifier) {</span>
+<span class="lineNum">     634 </span>                :                                                 case LM_LONG_DOUBLE:
+<span class="lineNum">     635 </span><span class="lineNoCov">              0 :                                                         fp_num = (double) va_arg(ap, long double);</span>
+<span class="lineNum">     636 </span><span class="lineNoCov">              0 :                                                         break;</span>
+<span class="lineNum">     637 </span>                :                                                 case LM_STD:
+<span class="lineNum">     638 </span><span class="lineCov">              6 :                                                         fp_num = va_arg(ap, double);</span>
+<span class="lineNum">     639 </span><span class="lineCov">              6 :                                                         break;</span>
+<span class="lineNum">     640 </span>                :                                                 default:
+<span class="lineNum">     641 </span><span class="lineNoCov">              0 :                                                         goto fmt_error;</span>
+<span class="lineNum">     642 </span>                :                                         }
+<span class="lineNum">     643 </span>                : 
+<span class="lineNum">     644 </span><span class="lineCov">              6 :                                         if (zend_isnan(fp_num)) {</span>
+<span class="lineNum">     645 </span><span class="lineNoCov">              0 :                                                 s = &quot;NAN&quot;;</span>
+<span class="lineNum">     646 </span><span class="lineNoCov">              0 :                                                 s_len = 3;</span>
+<span class="lineNum">     647 </span><span class="lineNoCov">              0 :                                                 break;</span>
+<span class="lineNum">     648 </span><span class="lineCov">              6 :                                         } else if (zend_isinf(fp_num)) {</span>
+<span class="lineNum">     649 </span><span class="lineNoCov">              0 :                                                 if (fp_num &gt; 0) {</span>
+<span class="lineNum">     650 </span><span class="lineNoCov">              0 :                                                         s = &quot;INF&quot;;</span>
+<span class="lineNum">     651 </span><span class="lineNoCov">              0 :                                                         s_len = 3;</span>
+<span class="lineNum">     652 </span>                :                                                 } else {
+<span class="lineNum">     653 </span><span class="lineNoCov">              0 :                                                         s = &quot;-INF&quot;;</span>
+<span class="lineNum">     654 </span><span class="lineNoCov">              0 :                                                         s_len = 4;</span>
+<span class="lineNum">     655 </span>                :                                                 }
+<span class="lineNum">     656 </span><span class="lineNoCov">              0 :                                                 break;</span>
+<span class="lineNum">     657 </span>                :                                         }
+<span class="lineNum">     658 </span>                : 
+<span class="lineNum">     659 </span><span class="lineCov">              6 :                                         if (adjust_precision == NO)</span>
+<span class="lineNum">     660 </span><span class="lineNoCov">              0 :                                                 precision = FLOAT_DIGITS;</span>
+<span class="lineNum">     661 </span><span class="lineCov">              6 :                                         else if (precision == 0)</span>
+<span class="lineNum">     662 </span><span class="lineNoCov">              0 :                                                 precision = 1;</span>
+<span class="lineNum">     663 </span>                :                                         /*
+<span class="lineNum">     664 </span>                :                                          * * We use &amp;num_buf[ 1 ], so that we have room for the sign
+<span class="lineNum">     665 </span>                :                                          */
+<span class="lineNum">     666 </span>                : #ifdef HAVE_LOCALE_H
+<span class="lineNum">     667 </span><span class="lineCov">              6 :                                         if (!lconv) {</span>
+<span class="lineNum">     668 </span><span class="lineCov">              6 :                                                 lconv = localeconv();</span>
+<span class="lineNum">     669 </span>                :                                         }
+<span class="lineNum">     670 </span>                : #endif
+<span class="lineNum">     671 </span><span class="lineCov">              6 :                                         s = php_gcvt(fp_num, precision, (*fmt=='H' || *fmt == 'k') ? '.' : LCONV_DECIMAL_POINT, (*fmt == 'G' || *fmt == 'H')?'E':'e', &amp;num_buf[1]);</span>
+<span class="lineNum">     672 </span><span class="lineCov">              6 :                                         if (*s == '-')</span>
+<span class="lineNum">     673 </span><span class="lineNoCov">              0 :                                                 prefix_char = *s++;</span>
+<span class="lineNum">     674 </span><span class="lineCov">              6 :                                         else if (print_sign)</span>
+<span class="lineNum">     675 </span><span class="lineNoCov">              0 :                                                 prefix_char = '+';</span>
+<span class="lineNum">     676 </span><span class="lineCov">              6 :                                         else if (print_blank)</span>
+<span class="lineNum">     677 </span><span class="lineNoCov">              0 :                                                 prefix_char = ' ';</span>
+<span class="lineNum">     678 </span>                : 
+<span class="lineNum">     679 </span><span class="lineCov">              6 :                                         s_len = strlen(s);</span>
+<span class="lineNum">     680 </span>                : 
+<span class="lineNum">     681 </span><span class="lineCov">              6 :                                         if (alternate_form &amp;&amp; (strchr(s, '.')) == NULL)</span>
+<span class="lineNum">     682 </span><span class="lineNoCov">              0 :                                                 s[s_len++] = '.';</span>
+<span class="lineNum">     683 </span><span class="lineCov">              6 :                                         break;</span>
+<span class="lineNum">     684 </span>                : 
+<span class="lineNum">     685 </span>                : 
+<span class="lineNum">     686 </span>                :                                 case 'c':
+<span class="lineNum">     687 </span><span class="lineCov">            242 :                                         char_buf[0] = (char) (va_arg(ap, int));</span>
+<span class="lineNum">     688 </span><span class="lineCov">            242 :                                         s = &amp;char_buf[0];</span>
+<span class="lineNum">     689 </span><span class="lineCov">            242 :                                         s_len = 1;</span>
+<span class="lineNum">     690 </span><span class="lineCov">            242 :                                         pad_char = ' ';</span>
+<span class="lineNum">     691 </span><span class="lineCov">            242 :                                         break;</span>
+<span class="lineNum">     692 </span>                : 
+<span class="lineNum">     693 </span>                : 
+<span class="lineNum">     694 </span>                :                                 case '%':
+<span class="lineNum">     695 </span><span class="lineNoCov">              0 :                                         char_buf[0] = '%';</span>
+<span class="lineNum">     696 </span><span class="lineNoCov">              0 :                                         s = &amp;char_buf[0];</span>
+<span class="lineNum">     697 </span><span class="lineNoCov">              0 :                                         s_len = 1;</span>
+<span class="lineNum">     698 </span><span class="lineNoCov">              0 :                                         pad_char = ' ';</span>
+<span class="lineNum">     699 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">     700 </span>                : 
+<span class="lineNum">     701 </span>                : 
+<span class="lineNum">     702 </span>                :                                 case 'n':
+<span class="lineNum">     703 </span><span class="lineNoCov">              0 :                                         *(va_arg(ap, int *)) = xbuf-&gt;len;</span>
+<span class="lineNum">     704 </span><span class="lineNoCov">              0 :                                         goto skip_output;</span>
+<span class="lineNum">     705 </span>                : 
+<span class="lineNum">     706 </span>                :                                         /*
+<span class="lineNum">     707 </span>                :                                          * Always extract the argument as a &quot;char *&quot; pointer. We
+<span class="lineNum">     708 </span>                :                                          * should be using &quot;void *&quot; but there are still machines
+<span class="lineNum">     709 </span>                :                                          * that don't understand it.
+<span class="lineNum">     710 </span>                :                                          * If the pointer size is equal to the size of an unsigned
+<span class="lineNum">     711 </span>                :                                          * integer we convert the pointer to a hex number, otherwise
+<span class="lineNum">     712 </span>                :                                          * we print &quot;%p&quot; to indicate that we don't handle &quot;%p&quot;.
+<span class="lineNum">     713 </span>                :                                          */
+<span class="lineNum">     714 </span>                :                                 case 'p':
+<span class="lineNum">     715 </span>                :                                         if (sizeof(char *) &lt;= sizeof(u_wide_int)) {
+<span class="lineNum">     716 </span><span class="lineCov">              9 :                                                 ui_num = (u_wide_int)((size_t) va_arg(ap, char *));</span>
+<span class="lineNum">     717 </span><span class="lineCov">              9 :                                                 s = ap_php_conv_p2(ui_num, 4, 'x',</span>
+<span class="lineNum">     718 </span>                :                                                                 &amp;num_buf[NUM_BUF_SIZE], &amp;s_len);
+<span class="lineNum">     719 </span><span class="lineCov">              9 :                                                 if (ui_num != 0) {</span>
+<span class="lineNum">     720 </span><span class="lineCov">              9 :                                                         *--s = 'x';</span>
+<span class="lineNum">     721 </span><span class="lineCov">              9 :                                                         *--s = '0';</span>
+<span class="lineNum">     722 </span><span class="lineCov">              9 :                                                         s_len += 2;</span>
+<span class="lineNum">     723 </span>                :                                                 }
+<span class="lineNum">     724 </span>                :                                         } else {
+<span class="lineNum">     725 </span>                :                                                 s = &quot;%p&quot;;
+<span class="lineNum">     726 </span>                :                                                 s_len = 2;
+<span class="lineNum">     727 </span>                :                                         }
+<span class="lineNum">     728 </span><span class="lineCov">              9 :                                         pad_char = ' ';</span>
+<span class="lineNum">     729 </span><span class="lineCov">              9 :                                         break;</span>
+<span class="lineNum">     730 </span>                : 
+<span class="lineNum">     731 </span>                : 
+<span class="lineNum">     732 </span>                :                                 case NUL:
+<span class="lineNum">     733 </span>                :                                         /*
+<span class="lineNum">     734 </span>                :                                          * The last character of the format string was %.
+<span class="lineNum">     735 </span>                :                                          * We ignore it.
+<span class="lineNum">     736 </span>                :                                          */
+<span class="lineNum">     737 </span><span class="lineNoCov">              0 :                                         continue;</span>
+<span class="lineNum">     738 </span>                : 
+<span class="lineNum">     739 </span>                : 
+<span class="lineNum">     740 </span>                : fmt_error:
+<span class="lineNum">     741 </span><span class="lineNoCov">              0 :                                 php_error(E_ERROR, &quot;Illegal length modifier specified '%c' in s[np]printf call&quot;, *fmt);</span>
+<span class="lineNum">     742 </span>                :                                         /*
+<span class="lineNum">     743 </span>                :                                          * The default case is for unrecognized %'s.
+<span class="lineNum">     744 </span>                :                                          * We print %&lt;char&gt; to help the user identify what
+<span class="lineNum">     745 </span>                :                                          * option is not understood.
+<span class="lineNum">     746 </span>                :                                          * This is also useful in case the user wants to pass
+<span class="lineNum">     747 </span>                :                                          * the output of format_converter to another function
+<span class="lineNum">     748 </span>                :                                          * that understands some other %&lt;char&gt; (like syslog).
+<span class="lineNum">     749 </span>                :                                          * Note that we can't point s inside fmt because the
+<span class="lineNum">     750 </span>                :                                          * unknown &lt;char&gt; could be preceded by width etc.
+<span class="lineNum">     751 </span>                :                                          */
+<span class="lineNum">     752 </span>                :                                 default:
+<span class="lineNum">     753 </span><span class="lineNoCov">              0 :                                         char_buf[0] = '%';</span>
+<span class="lineNum">     754 </span><span class="lineNoCov">              0 :                                         char_buf[1] = *fmt;</span>
+<span class="lineNum">     755 </span><span class="lineNoCov">              0 :                                         s = char_buf;</span>
+<span class="lineNum">     756 </span><span class="lineNoCov">              0 :                                         s_len = 2;</span>
+<span class="lineNum">     757 </span><span class="lineNoCov">              0 :                                         pad_char = ' ';</span>
+<span class="lineNum">     758 </span>                :                                         break;
+<span class="lineNum">     759 </span>                :                         }
+<span class="lineNum">     760 </span>                : 
+<span class="lineNum">     761 </span><span class="lineCov">          12407 :                         if (prefix_char != NUL) {</span>
+<span class="lineNum">     762 </span><span class="lineNoCov">              0 :                                 *--s = prefix_char;</span>
+<span class="lineNum">     763 </span><span class="lineNoCov">              0 :                                 s_len++;</span>
+<span class="lineNum">     764 </span>                :                         }
+<span class="lineNum">     765 </span><span class="lineCov">          12407 :                         if (adjust_width &amp;&amp; adjust == RIGHT &amp;&amp; min_width &gt; s_len) {</span>
+<span class="lineNum">     766 </span><span class="lineCov">            246 :                                 if (pad_char == '0' &amp;&amp; prefix_char != NUL) {</span>
+<span class="lineNum">     767 </span><span class="lineNoCov">              0 :                                         INS_CHAR(xbuf, *s);</span>
+<span class="lineNum">     768 </span><span class="lineNoCov">              0 :                                         s++;</span>
+<span class="lineNum">     769 </span><span class="lineNoCov">              0 :                                         s_len--;</span>
+<span class="lineNum">     770 </span><span class="lineNoCov">              0 :                                         min_width--;</span>
+<span class="lineNum">     771 </span>                :                                 }
+<span class="lineNum">     772 </span><span class="lineCov">            246 :                                 PAD(xbuf, min_width - s_len, pad_char);</span>
+<span class="lineNum">     773 </span>                :                         }
+<span class="lineNum">     774 </span>                :                         /*
+<span class="lineNum">     775 </span>                :                          * Print the string s.
+<span class="lineNum">     776 </span>                :                          */
+<span class="lineNum">     777 </span><span class="lineCov">          12407 :                         INS_STRING(xbuf, s, s_len);</span>
+<span class="lineNum">     778 </span>                : 
+<span class="lineNum">     779 </span><span class="lineCov">          12407 :                         if (adjust_width &amp;&amp; adjust == LEFT &amp;&amp; min_width &gt; s_len)</span>
+<span class="lineNum">     780 </span><span class="lineNoCov">              0 :                                 PAD(xbuf, min_width - s_len, pad_char);</span>
+<span class="lineNum">     781 </span><span class="lineCov">          12407 :                         if (free_zcopy) {</span>
+<span class="lineNum">     782 </span>                :                                 zval_dtor(&amp;zcopy);
+<span class="lineNum">     783 </span>                :                         }
+<span class="lineNum">     784 </span>                :                 }
+<span class="lineNum">     785 </span>                : skip_output:
+<span class="lineNum">     786 </span><span class="lineCov">          45976 :                 fmt++;</span>
+<span class="lineNum">     787 </span>                :         }
+<span class="lineNum">     788 </span>                :         return;
+<span class="lineNum">     789 </span>                : }
+<span class="lineNum">     790 </span>                : /* }}} */
+<span class="lineNum">     791 </span>                : 
+<span class="lineNum">     792 </span>                : /*
+<a name="793"><span class="lineNum">     793 </span>                :  * This is the general purpose conversion function.</a>
+<span class="lineNum">     794 </span>                :  */
+<span class="lineNum">     795 </span><span class="lineCov">           6267 : PHPAPI int vspprintf(char **pbuf, size_t max_len, const char *format, va_list ap) /* {{{ */</span>
+<span class="lineNum">     796 </span>                : {
+<span class="lineNum">     797 </span><span class="lineCov">           6267 :         smart_str xbuf = {0};</span>
+<span class="lineNum">     798 </span>                : 
+<span class="lineNum">     799 </span><span class="lineCov">           6267 :         xbuf_format_converter(&amp;xbuf, format, ap);</span>
+<span class="lineNum">     800 </span>                : 
+<span class="lineNum">     801 </span><span class="lineCov">           6267 :         if (max_len &amp;&amp; xbuf.len &gt; max_len) {</span>
+<span class="lineNum">     802 </span><span class="lineNoCov">              0 :                 xbuf.len = max_len;</span>
+<span class="lineNum">     803 </span>                :         }
+<span class="lineNum">     804 </span><span class="lineCov">           6267 :         smart_str_0(&amp;xbuf);</span>
+<span class="lineNum">     805 </span>                : 
+<span class="lineNum">     806 </span><span class="lineCov">           6267 :         *pbuf = xbuf.c;</span>
+<span class="lineNum">     807 </span>                : 
+<span class="lineNum">     808 </span><span class="lineCov">           6267 :         return xbuf.len;</span>
+<span class="lineNum">     809 </span>                : }
+<a name="810"><span class="lineNum">     810 </span>                : /* }}} */</a>
+<span class="lineNum">     811 </span>                : 
+<span class="lineNum">     812 </span><span class="lineCov">           2528 : PHPAPI int spprintf(char **pbuf, size_t max_len, const char *format, ...) /* {{{ */</span>
+<span class="lineNum">     813 </span>                : {
+<span class="lineNum">     814 </span>                :         int cc;
+<span class="lineNum">     815 </span>                :         va_list ap;
+<span class="lineNum">     816 </span>                : 
+<span class="lineNum">     817 </span><span class="lineCov">           2528 :         va_start(ap, format);</span>
+<span class="lineNum">     818 </span><span class="lineCov">           2528 :         cc = vspprintf(pbuf, max_len, format, ap);</span>
+<span class="lineNum">     819 </span><span class="lineCov">           2528 :         va_end(ap);</span>
+<span class="lineNum">     820 </span><span class="lineCov">           2528 :         return (cc);</span>
+<span class="lineNum">     821 </span>                : }
+<span class="lineNum">     822 </span>                : /* }}} */
+<span class="lineNum">     823 </span>                : 
+<span class="lineNum">     824 </span>                : /*
+<span class="lineNum">     825 </span>                :  * Local variables:
+<span class="lineNum">     826 </span>                :  * tab-width: 4
+<span class="lineNum">     827 </span>                :  * c-basic-offset: 4
+<span class="lineNum">     828 </span>                :  * End:
+<span class="lineNum">     829 </span>                :  * vim600: sw=4 ts=4 fdm=marker
+<span class="lineNum">     830 </span>                :  * vim&lt;600: sw=4 ts=4
+<span class="lineNum">     831 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

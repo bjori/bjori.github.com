@@ -1,0 +1,630 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - Zend/zend_constants.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../index.html">directory</a> - <a href="index.html">Zend</a> - zend_constants.c (source / <a href="zend_constants.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">298</td>
+          <td class="headerCovTableEntry">129</td>
+          <td class="headerCovTableEntryMed">43.3 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">20</td>
+          <td class="headerCovTableEntry">12</td>
+          <td class="headerCovTableEntryLo">60.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | Zend Engine                                                          |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1998-2012 Zend Technologies Ltd. (http://www.zend.com) |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 2.00 of the Zend license,     |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        | 
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.zend.com/license/2_00.txt.                                |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the Zend license and are unable to  |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@zend.com so we can mail you a copy immediately.              |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Authors: Andi Gutmans &lt;andi@zend.com&gt;                                |
+<span class="lineNum">      16 </span>                :    |          Zeev Suraski &lt;zeev@zend.com&gt;                                |
+<span class="lineNum">      17 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      18 </span>                : */
+<span class="lineNum">      19 </span>                : 
+<span class="lineNum">      20 </span>                : /* $Id$ */
+<span class="lineNum">      21 </span>                : 
+<span class="lineNum">      22 </span>                : #include &quot;zend.h&quot;
+<span class="lineNum">      23 </span>                : #include &quot;zend_constants.h&quot;
+<span class="lineNum">      24 </span>                : #include &quot;zend_execute.h&quot;
+<span class="lineNum">      25 </span>                : #include &quot;zend_variables.h&quot;
+<span class="lineNum">      26 </span>                : #include &quot;zend_operators.h&quot;
+<span class="lineNum">      27 </span>                : #include &quot;zend_globals.h&quot;
+<a name="28"><span class="lineNum">      28 </span>                : </a>
+<span class="lineNum">      29 </span>                : 
+<span class="lineNum">      30 </span><span class="lineCov">          21556 : void free_zend_constant(zend_constant *c)</span>
+<span class="lineNum">      31 </span>                : {
+<span class="lineNum">      32 </span><span class="lineCov">          21556 :         if (!(c-&gt;flags &amp; CONST_PERSISTENT)) {</span>
+<span class="lineNum">      33 </span><span class="lineCov">            148 :                 zval_dtor(&amp;c-&gt;value);</span>
+<span class="lineNum">      34 </span>                :         }
+<span class="lineNum">      35 </span><span class="lineCov">          21556 :         str_free(c-&gt;name);</span>
+<span class="lineNum">      36 </span><span class="lineCov">          21556 : }</span>
+<a name="37"><span class="lineNum">      37 </span>                : </a>
+<span class="lineNum">      38 </span>                : 
+<span class="lineNum">      39 </span><span class="lineNoCov">              0 : void copy_zend_constant(zend_constant *c)</span>
+<span class="lineNum">      40 </span>                : {
+<span class="lineNum">      41 </span><span class="lineNoCov">              0 :         if (!IS_INTERNED(c-&gt;name)) {</span>
+<span class="lineNum">      42 </span><span class="lineNoCov">              0 :                 c-&gt;name = zend_strndup(c-&gt;name, c-&gt;name_len - 1);</span>
+<span class="lineNum">      43 </span>                :         }
+<span class="lineNum">      44 </span><span class="lineNoCov">              0 :         if (!(c-&gt;flags &amp; CONST_PERSISTENT)) {</span>
+<span class="lineNum">      45 </span><span class="lineNoCov">              0 :                 zval_copy_ctor(&amp;c-&gt;value);</span>
+<span class="lineNum">      46 </span>                :         }
+<span class="lineNum">      47 </span><span class="lineNoCov">              0 : }</span>
+<a name="48"><span class="lineNum">      48 </span>                : </a>
+<span class="lineNum">      49 </span>                : 
+<span class="lineNum">      50 </span><span class="lineNoCov">              0 : void zend_copy_constants(HashTable *target, HashTable *source)</span>
+<span class="lineNum">      51 </span>                : {
+<span class="lineNum">      52 </span>                :         zend_constant tmp_constant;
+<span class="lineNum">      53 </span>                : 
+<span class="lineNum">      54 </span><span class="lineNoCov">              0 :         zend_hash_copy(target, source, (copy_ctor_func_t) copy_zend_constant, &amp;tmp_constant, sizeof(zend_constant));</span>
+<span class="lineNum">      55 </span><span class="lineNoCov">              0 : }</span>
+<a name="56"><span class="lineNum">      56 </span>                : </a>
+<span class="lineNum">      57 </span>                : 
+<span class="lineNum">      58 </span><span class="lineCov">            196 : static int clean_non_persistent_constant(const zend_constant *c TSRMLS_DC)</span>
+<span class="lineNum">      59 </span>                : {
+<span class="lineNum">      60 </span><span class="lineCov">            196 :         return (c-&gt;flags &amp; CONST_PERSISTENT) ? ZEND_HASH_APPLY_STOP : ZEND_HASH_APPLY_REMOVE;</span>
+<span class="lineNum">      61 </span>                : }
+<a name="62"><span class="lineNum">      62 </span>                : </a>
+<span class="lineNum">      63 </span>                : 
+<span class="lineNum">      64 </span><span class="lineNoCov">              0 : static int clean_non_persistent_constant_full(const zend_constant *c TSRMLS_DC)</span>
+<span class="lineNum">      65 </span>                : {
+<span class="lineNum">      66 </span><span class="lineNoCov">              0 :         return (c-&gt;flags &amp; CONST_PERSISTENT) ? 0 : 1;</span>
+<span class="lineNum">      67 </span>                : }
+<a name="68"><span class="lineNum">      68 </span>                : </a>
+<span class="lineNum">      69 </span>                : 
+<span class="lineNum">      70 </span><span class="lineNoCov">              0 : static int clean_module_constant(const zend_constant *c, int *module_number TSRMLS_DC)</span>
+<span class="lineNum">      71 </span>                : {
+<span class="lineNum">      72 </span><span class="lineNoCov">              0 :         if (c-&gt;module_number == *module_number) {</span>
+<span class="lineNum">      73 </span><span class="lineNoCov">              0 :                 return 1;</span>
+<span class="lineNum">      74 </span>                :         } else {
+<span class="lineNum">      75 </span><span class="lineNoCov">              0 :                 return 0;</span>
+<span class="lineNum">      76 </span>                :         }
+<span class="lineNum">      77 </span>                : }
+<a name="78"><span class="lineNum">      78 </span>                : </a>
+<span class="lineNum">      79 </span>                : 
+<span class="lineNum">      80 </span><span class="lineNoCov">              0 : void clean_module_constants(int module_number TSRMLS_DC)</span>
+<span class="lineNum">      81 </span>                : {
+<span class="lineNum">      82 </span><span class="lineNoCov">              0 :         zend_hash_apply_with_argument(EG(zend_constants), (apply_func_arg_t) clean_module_constant, (void *) &amp;module_number TSRMLS_CC);</span>
+<span class="lineNum">      83 </span><span class="lineNoCov">              0 : }</span>
+<a name="84"><span class="lineNum">      84 </span>                : </a>
+<span class="lineNum">      85 </span>                : 
+<span class="lineNum">      86 </span><span class="lineNoCov">              0 : int zend_startup_constants(TSRMLS_D)</span>
+<span class="lineNum">      87 </span>                : {
+<span class="lineNum">      88 </span><span class="lineNoCov">              0 :         EG(zend_constants) = (HashTable *) malloc(sizeof(HashTable));</span>
+<span class="lineNum">      89 </span>                : 
+<span class="lineNum">      90 </span><span class="lineNoCov">              0 :         if (zend_hash_init(EG(zend_constants), 20, NULL, ZEND_CONSTANT_DTOR, 1)==FAILURE) {</span>
+<span class="lineNum">      91 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">      92 </span>                :         }
+<span class="lineNum">      93 </span><span class="lineNoCov">              0 :         return SUCCESS;</span>
+<span class="lineNum">      94 </span>                : }
+<span class="lineNum">      95 </span>                : 
+<a name="96"><span class="lineNum">      96 </span>                : </a>
+<span class="lineNum">      97 </span>                : 
+<span class="lineNum">      98 </span><span class="lineCov">             48 : void zend_register_standard_constants(TSRMLS_D)</span>
+<span class="lineNum">      99 </span>                : {
+<span class="lineNum">     100 </span><span class="lineCov">             48 :         REGISTER_MAIN_LONG_CONSTANT(&quot;E_ERROR&quot;, E_ERROR, CONST_PERSISTENT | CONST_CS);</span>
+<span class="lineNum">     101 </span><span class="lineCov">             48 :         REGISTER_MAIN_LONG_CONSTANT(&quot;E_RECOVERABLE_ERROR&quot;, E_RECOVERABLE_ERROR, CONST_PERSISTENT | CONST_CS);</span>
+<span class="lineNum">     102 </span><span class="lineCov">             48 :         REGISTER_MAIN_LONG_CONSTANT(&quot;E_WARNING&quot;, E_WARNING, CONST_PERSISTENT | CONST_CS);</span>
+<span class="lineNum">     103 </span><span class="lineCov">             48 :         REGISTER_MAIN_LONG_CONSTANT(&quot;E_PARSE&quot;, E_PARSE, CONST_PERSISTENT | CONST_CS);</span>
+<span class="lineNum">     104 </span><span class="lineCov">             48 :         REGISTER_MAIN_LONG_CONSTANT(&quot;E_NOTICE&quot;, E_NOTICE, CONST_PERSISTENT | CONST_CS);</span>
+<span class="lineNum">     105 </span><span class="lineCov">             48 :         REGISTER_MAIN_LONG_CONSTANT(&quot;E_STRICT&quot;, E_STRICT, CONST_PERSISTENT | CONST_CS);</span>
+<span class="lineNum">     106 </span><span class="lineCov">             48 :         REGISTER_MAIN_LONG_CONSTANT(&quot;E_DEPRECATED&quot;, E_DEPRECATED, CONST_PERSISTENT | CONST_CS);</span>
+<span class="lineNum">     107 </span><span class="lineCov">             48 :         REGISTER_MAIN_LONG_CONSTANT(&quot;E_CORE_ERROR&quot;, E_CORE_ERROR, CONST_PERSISTENT | CONST_CS);</span>
+<span class="lineNum">     108 </span><span class="lineCov">             48 :         REGISTER_MAIN_LONG_CONSTANT(&quot;E_CORE_WARNING&quot;, E_CORE_WARNING, CONST_PERSISTENT | CONST_CS);</span>
+<span class="lineNum">     109 </span><span class="lineCov">             48 :         REGISTER_MAIN_LONG_CONSTANT(&quot;E_COMPILE_ERROR&quot;, E_COMPILE_ERROR, CONST_PERSISTENT | CONST_CS);</span>
+<span class="lineNum">     110 </span><span class="lineCov">             48 :         REGISTER_MAIN_LONG_CONSTANT(&quot;E_COMPILE_WARNING&quot;, E_COMPILE_WARNING, CONST_PERSISTENT | CONST_CS);</span>
+<span class="lineNum">     111 </span><span class="lineCov">             48 :         REGISTER_MAIN_LONG_CONSTANT(&quot;E_USER_ERROR&quot;, E_USER_ERROR, CONST_PERSISTENT | CONST_CS);</span>
+<span class="lineNum">     112 </span><span class="lineCov">             48 :         REGISTER_MAIN_LONG_CONSTANT(&quot;E_USER_WARNING&quot;, E_USER_WARNING, CONST_PERSISTENT | CONST_CS);</span>
+<span class="lineNum">     113 </span><span class="lineCov">             48 :         REGISTER_MAIN_LONG_CONSTANT(&quot;E_USER_NOTICE&quot;, E_USER_NOTICE, CONST_PERSISTENT | CONST_CS);</span>
+<span class="lineNum">     114 </span><span class="lineCov">             48 :         REGISTER_MAIN_LONG_CONSTANT(&quot;E_USER_DEPRECATED&quot;, E_USER_DEPRECATED, CONST_PERSISTENT | CONST_CS);</span>
+<span class="lineNum">     115 </span>                : 
+<span class="lineNum">     116 </span><span class="lineCov">             48 :         REGISTER_MAIN_LONG_CONSTANT(&quot;E_ALL&quot;, E_ALL, CONST_PERSISTENT | CONST_CS);</span>
+<span class="lineNum">     117 </span>                : 
+<span class="lineNum">     118 </span><span class="lineCov">             48 :         REGISTER_MAIN_LONG_CONSTANT(&quot;DEBUG_BACKTRACE_PROVIDE_OBJECT&quot;, DEBUG_BACKTRACE_PROVIDE_OBJECT, CONST_PERSISTENT | CONST_CS);</span>
+<span class="lineNum">     119 </span><span class="lineCov">             48 :         REGISTER_MAIN_LONG_CONSTANT(&quot;DEBUG_BACKTRACE_IGNORE_ARGS&quot;, DEBUG_BACKTRACE_IGNORE_ARGS, CONST_PERSISTENT | CONST_CS);</span>
+<span class="lineNum">     120 </span>                :         /* true/false constants */
+<span class="lineNum">     121 </span>                :         {
+<span class="lineNum">     122 </span>                :                 zend_constant c;
+<span class="lineNum">     123 </span>                :         
+<span class="lineNum">     124 </span><span class="lineCov">             48 :                 c.flags = CONST_PERSISTENT | CONST_CT_SUBST;</span>
+<span class="lineNum">     125 </span><span class="lineCov">             48 :                 c.module_number = 0;</span>
+<span class="lineNum">     126 </span>                : 
+<span class="lineNum">     127 </span><span class="lineCov">             48 :                 c.name = zend_strndup(ZEND_STRL(&quot;TRUE&quot;));</span>
+<span class="lineNum">     128 </span><span class="lineCov">             48 :                 c.name_len = sizeof(&quot;TRUE&quot;);</span>
+<span class="lineNum">     129 </span><span class="lineCov">             48 :                 c.value.value.lval = 1;</span>
+<span class="lineNum">     130 </span><span class="lineCov">             48 :                 c.value.type = IS_BOOL;</span>
+<span class="lineNum">     131 </span><span class="lineCov">             48 :                 zend_register_constant(&amp;c TSRMLS_CC);</span>
+<span class="lineNum">     132 </span>                :                 
+<span class="lineNum">     133 </span><span class="lineCov">             48 :                 c.name = zend_strndup(ZEND_STRL(&quot;FALSE&quot;));</span>
+<span class="lineNum">     134 </span><span class="lineCov">             48 :                 c.name_len = sizeof(&quot;FALSE&quot;);</span>
+<span class="lineNum">     135 </span><span class="lineCov">             48 :                 c.value.value.lval = 0;</span>
+<span class="lineNum">     136 </span><span class="lineCov">             48 :                 c.value.type = IS_BOOL;</span>
+<span class="lineNum">     137 </span><span class="lineCov">             48 :                 zend_register_constant(&amp;c TSRMLS_CC);</span>
+<span class="lineNum">     138 </span>                : 
+<span class="lineNum">     139 </span><span class="lineCov">             48 :                 c.name = zend_strndup(ZEND_STRL(&quot;NULL&quot;));</span>
+<span class="lineNum">     140 </span><span class="lineCov">             48 :                 c.name_len = sizeof(&quot;NULL&quot;);</span>
+<span class="lineNum">     141 </span><span class="lineCov">             48 :                 c.value.type = IS_NULL;</span>
+<span class="lineNum">     142 </span><span class="lineCov">             48 :                 zend_register_constant(&amp;c TSRMLS_CC);</span>
+<span class="lineNum">     143 </span>                : 
+<span class="lineNum">     144 </span><span class="lineCov">             48 :                 c.flags = CONST_PERSISTENT | CONST_CS;</span>
+<span class="lineNum">     145 </span>                : 
+<span class="lineNum">     146 </span><span class="lineCov">             48 :                 c.name = zend_strndup(ZEND_STRL(&quot;ZEND_THREAD_SAFE&quot;));</span>
+<span class="lineNum">     147 </span><span class="lineCov">             48 :                 c.name_len = sizeof(&quot;ZEND_THREAD_SAFE&quot;);</span>
+<span class="lineNum">     148 </span><span class="lineCov">             48 :                 c.value.value.lval = ZTS_V;</span>
+<span class="lineNum">     149 </span><span class="lineCov">             48 :                 c.value.type = IS_BOOL;</span>
+<span class="lineNum">     150 </span><span class="lineCov">             48 :                 zend_register_constant(&amp;c TSRMLS_CC);</span>
+<span class="lineNum">     151 </span>                : 
+<span class="lineNum">     152 </span><span class="lineCov">             48 :                 c.name = zend_strndup(ZEND_STRL(&quot;ZEND_DEBUG_BUILD&quot;));</span>
+<span class="lineNum">     153 </span><span class="lineCov">             48 :                 c.name_len = sizeof(&quot;ZEND_DEBUG_BUILD&quot;);</span>
+<span class="lineNum">     154 </span><span class="lineCov">             48 :                 c.value.value.lval = ZEND_DEBUG;</span>
+<span class="lineNum">     155 </span><span class="lineCov">             48 :                 c.value.type = IS_BOOL;</span>
+<span class="lineNum">     156 </span><span class="lineCov">             48 :                 zend_register_constant(&amp;c TSRMLS_CC);</span>
+<span class="lineNum">     157 </span>                :         }
+<span class="lineNum">     158 </span><span class="lineCov">             48 : }</span>
+<a name="159"><span class="lineNum">     159 </span>                : </a>
+<span class="lineNum">     160 </span>                : 
+<span class="lineNum">     161 </span><span class="lineNoCov">              0 : int zend_shutdown_constants(TSRMLS_D)</span>
+<span class="lineNum">     162 </span>                : {
+<span class="lineNum">     163 </span><span class="lineNoCov">              0 :         zend_hash_destroy(EG(zend_constants));</span>
+<span class="lineNum">     164 </span><span class="lineNoCov">              0 :         free(EG(zend_constants));</span>
+<span class="lineNum">     165 </span><span class="lineNoCov">              0 :         return SUCCESS;</span>
+<span class="lineNum">     166 </span>                : }
+<a name="167"><span class="lineNum">     167 </span>                : </a>
+<span class="lineNum">     168 </span>                : 
+<span class="lineNum">     169 </span><span class="lineCov">             48 : void clean_non_persistent_constants(TSRMLS_D)</span>
+<span class="lineNum">     170 </span>                : {
+<span class="lineNum">     171 </span><span class="lineCov">             48 :         if (EG(full_tables_cleanup)) {</span>
+<span class="lineNum">     172 </span><span class="lineNoCov">              0 :                 zend_hash_apply(EG(zend_constants), (apply_func_t) clean_non_persistent_constant_full TSRMLS_CC);</span>
+<span class="lineNum">     173 </span>                :         } else {
+<span class="lineNum">     174 </span><span class="lineCov">             48 :                 zend_hash_reverse_apply(EG(zend_constants), (apply_func_t) clean_non_persistent_constant TSRMLS_CC);</span>
+<span class="lineNum">     175 </span>                :         }
+<span class="lineNum">     176 </span><span class="lineCov">             48 : }</span>
+<a name="177"><span class="lineNum">     177 </span>                : </a>
+<span class="lineNum">     178 </span>                : 
+<span class="lineNum">     179 </span><span class="lineCov">          18624 : ZEND_API void zend_register_long_constant(const char *name, uint name_len, long lval, int flags, int module_number TSRMLS_DC)</span>
+<span class="lineNum">     180 </span>                : {
+<span class="lineNum">     181 </span>                :         zend_constant c;
+<span class="lineNum">     182 </span>                :         
+<span class="lineNum">     183 </span><span class="lineCov">          18624 :         c.value.type = IS_LONG;</span>
+<span class="lineNum">     184 </span><span class="lineCov">          18624 :         c.value.value.lval = lval;</span>
+<span class="lineNum">     185 </span><span class="lineCov">          18624 :         c.flags = flags;</span>
+<span class="lineNum">     186 </span><span class="lineCov">          18624 :         c.name = zend_strndup(name, name_len-1);</span>
+<span class="lineNum">     187 </span><span class="lineCov">          18624 :         c.name_len = name_len;</span>
+<span class="lineNum">     188 </span><span class="lineCov">          18624 :         c.module_number = module_number;</span>
+<span class="lineNum">     189 </span><span class="lineCov">          18624 :         zend_register_constant(&amp;c TSRMLS_CC);</span>
+<span class="lineNum">     190 </span><span class="lineCov">          18624 : }</span>
+<a name="191"><span class="lineNum">     191 </span>                : </a>
+<span class="lineNum">     192 </span>                : 
+<span class="lineNum">     193 </span><span class="lineCov">            912 : ZEND_API void zend_register_double_constant(const char *name, uint name_len, double dval, int flags, int module_number TSRMLS_DC)</span>
+<span class="lineNum">     194 </span>                : {
+<span class="lineNum">     195 </span>                :         zend_constant c;
+<span class="lineNum">     196 </span>                :         
+<span class="lineNum">     197 </span><span class="lineCov">            912 :         c.value.type = IS_DOUBLE;</span>
+<span class="lineNum">     198 </span><span class="lineCov">            912 :         c.value.value.dval = dval;</span>
+<span class="lineNum">     199 </span><span class="lineCov">            912 :         c.flags = flags;</span>
+<span class="lineNum">     200 </span><span class="lineCov">            912 :         c.name = zend_strndup(name, name_len-1);</span>
+<span class="lineNum">     201 </span><span class="lineCov">            912 :         c.name_len = name_len;</span>
+<span class="lineNum">     202 </span><span class="lineCov">            912 :         c.module_number = module_number;</span>
+<span class="lineNum">     203 </span><span class="lineCov">            912 :         zend_register_constant(&amp;c TSRMLS_CC);</span>
+<span class="lineNum">     204 </span><span class="lineCov">            912 : }</span>
+<a name="205"><span class="lineNum">     205 </span>                : </a>
+<span class="lineNum">     206 </span>                : 
+<span class="lineNum">     207 </span><span class="lineCov">           1632 : ZEND_API void zend_register_stringl_constant(const char *name, uint name_len, char *strval, uint strlen, int flags, int module_number TSRMLS_DC)</span>
+<span class="lineNum">     208 </span>                : {
+<span class="lineNum">     209 </span>                :         zend_constant c;
+<span class="lineNum">     210 </span>                :         
+<span class="lineNum">     211 </span><span class="lineCov">           1632 :         c.value.type = IS_STRING;</span>
+<span class="lineNum">     212 </span><span class="lineCov">           1632 :         c.value.value.str.val = strval;</span>
+<span class="lineNum">     213 </span><span class="lineCov">           1632 :         c.value.value.str.len = strlen;</span>
+<span class="lineNum">     214 </span><span class="lineCov">           1632 :         c.flags = flags;</span>
+<span class="lineNum">     215 </span><span class="lineCov">           1632 :         c.name = zend_strndup(name, name_len-1);</span>
+<span class="lineNum">     216 </span><span class="lineCov">           1632 :         c.name_len = name_len;</span>
+<span class="lineNum">     217 </span><span class="lineCov">           1632 :         c.module_number = module_number;</span>
+<span class="lineNum">     218 </span><span class="lineCov">           1632 :         zend_register_constant(&amp;c TSRMLS_CC);</span>
+<span class="lineNum">     219 </span><span class="lineCov">           1632 : }</span>
+<a name="220"><span class="lineNum">     220 </span>                : </a>
+<span class="lineNum">     221 </span>                : 
+<span class="lineNum">     222 </span><span class="lineCov">            672 : ZEND_API void zend_register_string_constant(const char *name, uint name_len, char *strval, int flags, int module_number TSRMLS_DC)</span>
+<span class="lineNum">     223 </span>                : {
+<span class="lineNum">     224 </span><span class="lineCov">            672 :         zend_register_stringl_constant(name, name_len, strval, strlen(strval), flags, module_number TSRMLS_CC);</span>
+<a name="225"><span class="lineNum">     225 </span><span class="lineCov">            672 : }</span></a>
+<span class="lineNum">     226 </span>                : 
+<span class="lineNum">     227 </span><span class="lineCov">              2 : static int zend_get_special_constant(const char *name, uint name_len, zend_constant **c TSRMLS_DC)</span>
+<span class="lineNum">     228 </span>                : {
+<span class="lineNum">     229 </span>                :         int ret;
+<span class="lineNum">     230 </span>                :         static char haltoff[] = &quot;__COMPILER_HALT_OFFSET__&quot;;
+<span class="lineNum">     231 </span>                : 
+<span class="lineNum">     232 </span><span class="lineCov">              2 :         if (!EG(in_execution)) {</span>
+<span class="lineNum">     233 </span><span class="lineCov">              2 :                 return 0;</span>
+<span class="lineNum">     234 </span><span class="lineNoCov">              0 :         } else if (name_len == sizeof(&quot;__CLASS__&quot;)-1 &amp;&amp;</span>
+<span class="lineNum">     235 </span><span class="lineNoCov">              0 :                   !memcmp(name, &quot;__CLASS__&quot;, sizeof(&quot;__CLASS__&quot;)-1)) {</span>
+<span class="lineNum">     236 </span>                :                 zend_constant tmp;
+<span class="lineNum">     237 </span>                : 
+<span class="lineNum">     238 </span>                :                 /* Returned constants may be cached, so they have to be stored */
+<span class="lineNum">     239 </span><span class="lineNoCov">              0 :                 if (EG(scope) &amp;&amp; EG(scope)-&gt;name) {</span>
+<span class="lineNum">     240 </span>                :                         int const_name_len;
+<span class="lineNum">     241 </span>                :                         char *const_name;
+<span class="lineNum">     242 </span>                :                         ALLOCA_FLAG(use_heap)
+<span class="lineNum">     243 </span>                :                         
+<span class="lineNum">     244 </span><span class="lineNoCov">              0 :                         const_name_len = sizeof(&quot;\0__CLASS__&quot;) + EG(scope)-&gt;name_length;</span>
+<span class="lineNum">     245 </span><span class="lineNoCov">              0 :                         const_name = do_alloca(const_name_len, use_heap);</span>
+<span class="lineNum">     246 </span><span class="lineNoCov">              0 :                         memcpy(const_name, &quot;\0__CLASS__&quot;, sizeof(&quot;\0__CLASS__&quot;)-1);</span>
+<span class="lineNum">     247 </span><span class="lineNoCov">              0 :                         zend_str_tolower_copy(const_name + sizeof(&quot;\0__CLASS__&quot;)-1, EG(scope)-&gt;name, EG(scope)-&gt;name_length);</span>
+<span class="lineNum">     248 </span><span class="lineNoCov">              0 :                         if (zend_hash_find(EG(zend_constants), const_name, const_name_len, (void**)c) == FAILURE) {</span>
+<span class="lineNum">     249 </span><span class="lineNoCov">              0 :                                 zend_hash_add(EG(zend_constants), const_name, const_name_len, (void*)&amp;tmp, sizeof(zend_constant), (void**)c);</span>
+<span class="lineNum">     250 </span><span class="lineNoCov">              0 :                                 memset(*c, 0, sizeof(zend_constant));</span>
+<span class="lineNum">     251 </span><span class="lineNoCov">              0 :                                 Z_STRVAL((**c).value) = estrndup(EG(scope)-&gt;name, EG(scope)-&gt;name_length);</span>
+<span class="lineNum">     252 </span><span class="lineNoCov">              0 :                                 Z_STRLEN((**c).value) = EG(scope)-&gt;name_length;</span>
+<span class="lineNum">     253 </span><span class="lineNoCov">              0 :                                 Z_TYPE((**c).value) = IS_STRING;</span>
+<span class="lineNum">     254 </span>                :                         }
+<span class="lineNum">     255 </span><span class="lineNoCov">              0 :                         free_alloca(const_name, use_heap);</span>
+<span class="lineNum">     256 </span>                :                 } else {
+<span class="lineNum">     257 </span><span class="lineNoCov">              0 :                         if (zend_hash_find(EG(zend_constants), &quot;\0__CLASS__&quot;, sizeof(&quot;\0__CLASS__&quot;), (void**)c) == FAILURE) {</span>
+<span class="lineNum">     258 </span><span class="lineNoCov">              0 :                                 zend_hash_add(EG(zend_constants), &quot;\0__CLASS__&quot;, sizeof(&quot;\0__CLASS__&quot;), (void*)&amp;tmp, sizeof(zend_constant), (void**)c);</span>
+<span class="lineNum">     259 </span><span class="lineNoCov">              0 :                                 memset(*c, 0, sizeof(zend_constant));</span>
+<span class="lineNum">     260 </span><span class="lineNoCov">              0 :                                 Z_STRVAL((**c).value) = estrndup(&quot;&quot;, 0);</span>
+<span class="lineNum">     261 </span><span class="lineNoCov">              0 :                                 Z_STRLEN((**c).value) = 0;</span>
+<span class="lineNum">     262 </span><span class="lineNoCov">              0 :                                 Z_TYPE((**c).value) = IS_STRING;</span>
+<span class="lineNum">     263 </span>                :                         }
+<span class="lineNum">     264 </span>                :                 }
+<span class="lineNum">     265 </span><span class="lineNoCov">              0 :                 return 1;</span>
+<span class="lineNum">     266 </span><span class="lineNoCov">              0 :         } else if (name_len == sizeof(&quot;__COMPILER_HALT_OFFSET__&quot;)-1 &amp;&amp;</span>
+<span class="lineNum">     267 </span><span class="lineNoCov">              0 :                   !memcmp(name, &quot;__COMPILER_HALT_OFFSET__&quot;, sizeof(&quot;__COMPILER_HALT_OFFSET__&quot;)-1)) {</span>
+<span class="lineNum">     268 </span>                :                 const char *cfilename;
+<span class="lineNum">     269 </span>                :                 char *haltname;
+<span class="lineNum">     270 </span>                :                 int len, clen;
+<span class="lineNum">     271 </span>                : 
+<span class="lineNum">     272 </span><span class="lineNoCov">              0 :                 cfilename = zend_get_executed_filename(TSRMLS_C);</span>
+<span class="lineNum">     273 </span><span class="lineNoCov">              0 :                 clen = strlen(cfilename);</span>
+<span class="lineNum">     274 </span>                :                 /* check for __COMPILER_HALT_OFFSET__ */
+<span class="lineNum">     275 </span><span class="lineNoCov">              0 :                 zend_mangle_property_name(&amp;haltname, &amp;len, haltoff,</span>
+<span class="lineNum">     276 </span>                :                         sizeof(&quot;__COMPILER_HALT_OFFSET__&quot;) - 1, cfilename, clen, 0);
+<span class="lineNum">     277 </span><span class="lineNoCov">              0 :                 ret = zend_hash_find(EG(zend_constants), haltname, len+1, (void **) c);</span>
+<span class="lineNum">     278 </span><span class="lineNoCov">              0 :                 efree(haltname);</span>
+<span class="lineNum">     279 </span><span class="lineNoCov">              0 :                 return (ret == SUCCESS);</span>
+<span class="lineNum">     280 </span>                :         } else {
+<span class="lineNum">     281 </span><span class="lineNoCov">              0 :                 return 0;</span>
+<span class="lineNum">     282 </span>                :         }
+<span class="lineNum">     283 </span>                : }
+<a name="284"><span class="lineNum">     284 </span>                : </a>
+<span class="lineNum">     285 </span>                : 
+<span class="lineNum">     286 </span><span class="lineCov">              3 : ZEND_API int zend_get_constant(const char *name, uint name_len, zval *result TSRMLS_DC)</span>
+<span class="lineNum">     287 </span>                : {
+<span class="lineNum">     288 </span>                :         zend_constant *c;
+<span class="lineNum">     289 </span><span class="lineCov">              3 :         int retval = 1;</span>
+<span class="lineNum">     290 </span>                :         char *lookup_name;
+<span class="lineNum">     291 </span>                : 
+<span class="lineNum">     292 </span><span class="lineCov">              3 :         if (zend_hash_find(EG(zend_constants), name, name_len+1, (void **) &amp;c) == FAILURE) {</span>
+<span class="lineNum">     293 </span><span class="lineCov">              2 :                 lookup_name = zend_str_tolower_dup(name, name_len);</span>
+<span class="lineNum">     294 </span>                : 
+<span class="lineNum">     295 </span><span class="lineCov">              2 :                 if (zend_hash_find(EG(zend_constants), lookup_name, name_len+1, (void **) &amp;c)==SUCCESS) {</span>
+<span class="lineNum">     296 </span><span class="lineNoCov">              0 :                         if (c-&gt;flags &amp; CONST_CS) {</span>
+<span class="lineNum">     297 </span><span class="lineNoCov">              0 :                                 retval=0;</span>
+<span class="lineNum">     298 </span>                :                         }
+<span class="lineNum">     299 </span>                :                 } else {
+<span class="lineNum">     300 </span><span class="lineCov">              2 :                         retval = zend_get_special_constant(name, name_len, &amp;c TSRMLS_CC);</span>
+<span class="lineNum">     301 </span>                :                 }
+<span class="lineNum">     302 </span><span class="lineCov">              2 :                 efree(lookup_name);</span>
+<span class="lineNum">     303 </span>                :         }
+<span class="lineNum">     304 </span>                : 
+<span class="lineNum">     305 </span><span class="lineCov">              3 :         if (retval) {</span>
+<span class="lineNum">     306 </span><span class="lineCov">              1 :                 *result = c-&gt;value;</span>
+<span class="lineNum">     307 </span>                :                 zval_copy_ctor(result);
+<span class="lineNum">     308 </span>                :                 Z_SET_REFCOUNT_P(result, 1);
+<span class="lineNum">     309 </span>                :                 Z_UNSET_ISREF_P(result);
+<span class="lineNum">     310 </span>                :         }
+<span class="lineNum">     311 </span>                : 
+<span class="lineNum">     312 </span><span class="lineCov">              3 :         return retval;</span>
+<a name="313"><span class="lineNum">     313 </span>                : }</a>
+<span class="lineNum">     314 </span>                : 
+<span class="lineNum">     315 </span><span class="lineCov">              1 : ZEND_API int zend_get_constant_ex(const char *name, uint name_len, zval *result, zend_class_entry *scope, ulong flags TSRMLS_DC)</span>
+<span class="lineNum">     316 </span>                : {
+<span class="lineNum">     317 </span>                :         zend_constant *c;
+<span class="lineNum">     318 </span><span class="lineCov">              1 :         int retval = 1;</span>
+<span class="lineNum">     319 </span>                :         const char *colon;
+<span class="lineNum">     320 </span><span class="lineCov">              1 :         zend_class_entry *ce = NULL;</span>
+<span class="lineNum">     321 </span>                :         char *class_name;
+<span class="lineNum">     322 </span>                :         zval **ret_constant;
+<span class="lineNum">     323 </span>                : 
+<span class="lineNum">     324 </span>                :         /* Skip leading \\ */
+<span class="lineNum">     325 </span><span class="lineCov">              1 :         if (name[0] == '\\') {</span>
+<span class="lineNum">     326 </span><span class="lineNoCov">              0 :                 name += 1;</span>
+<span class="lineNum">     327 </span><span class="lineNoCov">              0 :                 name_len -= 1;</span>
+<span class="lineNum">     328 </span>                :         }
+<span class="lineNum">     329 </span>                : 
+<span class="lineNum">     330 </span>                : 
+<span class="lineNum">     331 </span><span class="lineCov">              1 :         if ((colon = zend_memrchr(name, ':', name_len)) &amp;&amp;</span>
+<span class="lineNum">     332 </span><span class="lineNoCov">              0 :             colon &gt; name &amp;&amp; (*(colon - 1) == ':')) {</span>
+<span class="lineNum">     333 </span><span class="lineNoCov">              0 :                 int class_name_len = colon - name - 1;</span>
+<span class="lineNum">     334 </span><span class="lineNoCov">              0 :                 int const_name_len = name_len - class_name_len - 2;</span>
+<span class="lineNum">     335 </span><span class="lineNoCov">              0 :                 const char *constant_name = colon + 1;</span>
+<span class="lineNum">     336 </span>                :                 char *lcname;
+<span class="lineNum">     337 </span>                : 
+<span class="lineNum">     338 </span><span class="lineNoCov">              0 :                 class_name = estrndup(name, class_name_len);</span>
+<span class="lineNum">     339 </span><span class="lineNoCov">              0 :                 lcname = zend_str_tolower_dup(class_name, class_name_len);</span>
+<span class="lineNum">     340 </span><span class="lineNoCov">              0 :                 if (!scope) {</span>
+<span class="lineNum">     341 </span><span class="lineNoCov">              0 :                         if (EG(in_execution)) {</span>
+<span class="lineNum">     342 </span><span class="lineNoCov">              0 :                                 scope = EG(scope);</span>
+<span class="lineNum">     343 </span>                :                         } else {
+<span class="lineNum">     344 </span><span class="lineNoCov">              0 :                                 scope = CG(active_class_entry);</span>
+<span class="lineNum">     345 </span>                :                         }
+<span class="lineNum">     346 </span>                :                 }
+<span class="lineNum">     347 </span>                : 
+<span class="lineNum">     348 </span><span class="lineNoCov">              0 :                 if (class_name_len == sizeof(&quot;self&quot;)-1 &amp;&amp;</span>
+<span class="lineNum">     349 </span><span class="lineNoCov">              0 :                     !memcmp(lcname, &quot;self&quot;, sizeof(&quot;self&quot;)-1)) {</span>
+<span class="lineNum">     350 </span><span class="lineNoCov">              0 :                         if (scope) {</span>
+<span class="lineNum">     351 </span><span class="lineNoCov">              0 :                                 ce = scope;</span>
+<span class="lineNum">     352 </span>                :                         } else {
+<span class="lineNum">     353 </span><span class="lineNoCov">              0 :                                 zend_error(E_ERROR, &quot;Cannot access self:: when no class scope is active&quot;);</span>
+<span class="lineNum">     354 </span><span class="lineNoCov">              0 :                                 retval = 0;</span>
+<span class="lineNum">     355 </span>                :                         }
+<span class="lineNum">     356 </span><span class="lineNoCov">              0 :                         efree(lcname);</span>
+<span class="lineNum">     357 </span><span class="lineNoCov">              0 :                 } else if (class_name_len == sizeof(&quot;parent&quot;)-1 &amp;&amp;</span>
+<span class="lineNum">     358 </span><span class="lineNoCov">              0 :                            !memcmp(lcname, &quot;parent&quot;, sizeof(&quot;parent&quot;)-1)) {</span>
+<span class="lineNum">     359 </span><span class="lineNoCov">              0 :                         if (!scope) {</span>
+<span class="lineNum">     360 </span><span class="lineNoCov">              0 :                                 zend_error(E_ERROR, &quot;Cannot access parent:: when no class scope is active&quot;);</span>
+<span class="lineNum">     361 </span><span class="lineNoCov">              0 :                         } else if (!scope-&gt;parent) {</span>
+<span class="lineNum">     362 </span><span class="lineNoCov">              0 :                                 zend_error(E_ERROR, &quot;Cannot access parent:: when current class scope has no parent&quot;);</span>
+<span class="lineNum">     363 </span>                :                         } else {
+<span class="lineNum">     364 </span><span class="lineNoCov">              0 :                                 ce = scope-&gt;parent;</span>
+<span class="lineNum">     365 </span>                :                         }
+<span class="lineNum">     366 </span><span class="lineNoCov">              0 :                         efree(lcname);</span>
+<span class="lineNum">     367 </span><span class="lineNoCov">              0 :                 } else if (class_name_len == sizeof(&quot;static&quot;)-1 &amp;&amp;</span>
+<span class="lineNum">     368 </span><span class="lineNoCov">              0 :                            !memcmp(lcname, &quot;static&quot;, sizeof(&quot;static&quot;)-1)) {</span>
+<span class="lineNum">     369 </span><span class="lineNoCov">              0 :                         if (EG(called_scope)) {</span>
+<span class="lineNum">     370 </span><span class="lineNoCov">              0 :                                 ce = EG(called_scope);</span>
+<span class="lineNum">     371 </span>                :                         } else {
+<span class="lineNum">     372 </span><span class="lineNoCov">              0 :                                 zend_error(E_ERROR, &quot;Cannot access static:: when no class scope is active&quot;);</span>
+<span class="lineNum">     373 </span>                :                         }
+<span class="lineNum">     374 </span><span class="lineNoCov">              0 :                         efree(lcname);</span>
+<span class="lineNum">     375 </span>                :                 } else {
+<span class="lineNum">     376 </span><span class="lineNoCov">              0 :                         efree(lcname);</span>
+<span class="lineNum">     377 </span><span class="lineNoCov">              0 :                         ce = zend_fetch_class(class_name, class_name_len, flags TSRMLS_CC);</span>
+<span class="lineNum">     378 </span>                :                 }
+<span class="lineNum">     379 </span><span class="lineNoCov">              0 :                 if (retval &amp;&amp; ce) {</span>
+<span class="lineNum">     380 </span><span class="lineNoCov">              0 :                         if (zend_hash_find(&amp;ce-&gt;constants_table, constant_name, const_name_len+1, (void **) &amp;ret_constant) != SUCCESS) {</span>
+<span class="lineNum">     381 </span><span class="lineNoCov">              0 :                                 retval = 0;</span>
+<span class="lineNum">     382 </span><span class="lineNoCov">              0 :                                 if ((flags &amp; ZEND_FETCH_CLASS_SILENT) == 0) {</span>
+<span class="lineNum">     383 </span><span class="lineNoCov">              0 :                                         zend_error(E_ERROR, &quot;Undefined class constant '%s::%s'&quot;, class_name, constant_name);</span>
+<span class="lineNum">     384 </span>                :                                 }
+<span class="lineNum">     385 </span>                :                         }
+<span class="lineNum">     386 </span><span class="lineNoCov">              0 :                 } else if (!ce) {</span>
+<span class="lineNum">     387 </span><span class="lineNoCov">              0 :                         retval = 0;</span>
+<span class="lineNum">     388 </span>                :                 }
+<span class="lineNum">     389 </span><span class="lineNoCov">              0 :                 efree(class_name);</span>
+<span class="lineNum">     390 </span><span class="lineNoCov">              0 :                 goto finish;</span>
+<span class="lineNum">     391 </span>                :         }
+<span class="lineNum">     392 </span>                : 
+<span class="lineNum">     393 </span>                :         /* non-class constant */
+<span class="lineNum">     394 </span><span class="lineCov">              1 :         if ((colon = zend_memrchr(name, '\\', name_len)) != NULL) {</span>
+<span class="lineNum">     395 </span>                :                 /* compound constant name */
+<span class="lineNum">     396 </span><span class="lineNoCov">              0 :                 int prefix_len = colon - name;</span>
+<span class="lineNum">     397 </span><span class="lineNoCov">              0 :                 int const_name_len = name_len - prefix_len - 1;</span>
+<span class="lineNum">     398 </span><span class="lineNoCov">              0 :                 const char *constant_name = colon + 1;</span>
+<span class="lineNum">     399 </span>                :                 char *lcname;
+<span class="lineNum">     400 </span><span class="lineNoCov">              0 :                 int found_const = 0;</span>
+<span class="lineNum">     401 </span>                : 
+<span class="lineNum">     402 </span><span class="lineNoCov">              0 :                 lcname = zend_str_tolower_dup(name, prefix_len);</span>
+<span class="lineNum">     403 </span>                :                 /* Check for namespace constant */
+<span class="lineNum">     404 </span>                : 
+<span class="lineNum">     405 </span>                :                 /* Concatenate lowercase namespace name and constant name */
+<span class="lineNum">     406 </span><span class="lineNoCov">              0 :                 lcname = erealloc(lcname, prefix_len + 1 + const_name_len + 1);</span>
+<span class="lineNum">     407 </span><span class="lineNoCov">              0 :                 lcname[prefix_len] = '\\';</span>
+<span class="lineNum">     408 </span><span class="lineNoCov">              0 :                 memcpy(lcname + prefix_len + 1, constant_name, const_name_len + 1);</span>
+<span class="lineNum">     409 </span>                : 
+<span class="lineNum">     410 </span><span class="lineNoCov">              0 :                 if (zend_hash_find(EG(zend_constants), lcname, prefix_len + 1 + const_name_len + 1, (void **) &amp;c) == SUCCESS) {</span>
+<span class="lineNum">     411 </span><span class="lineNoCov">              0 :                         found_const = 1;</span>
+<span class="lineNum">     412 </span>                :                 } else {
+<span class="lineNum">     413 </span>                :                         /* try lowercase */
+<span class="lineNum">     414 </span><span class="lineNoCov">              0 :                         zend_str_tolower(lcname + prefix_len + 1, const_name_len);</span>
+<span class="lineNum">     415 </span><span class="lineNoCov">              0 :                         if (zend_hash_find(EG(zend_constants), lcname, prefix_len + 1 + const_name_len + 1, (void **) &amp;c) == SUCCESS) {</span>
+<span class="lineNum">     416 </span><span class="lineNoCov">              0 :                                 if ((c-&gt;flags &amp; CONST_CS) == 0) {</span>
+<span class="lineNum">     417 </span><span class="lineNoCov">              0 :                                         found_const = 1;</span>
+<span class="lineNum">     418 </span>                :                                 }
+<span class="lineNum">     419 </span>                :                         }
+<span class="lineNum">     420 </span>                :                 }
+<span class="lineNum">     421 </span><span class="lineNoCov">              0 :                 efree(lcname);</span>
+<span class="lineNum">     422 </span><span class="lineNoCov">              0 :                 if(found_const) {</span>
+<span class="lineNum">     423 </span><span class="lineNoCov">              0 :                         *result = c-&gt;value;</span>
+<span class="lineNum">     424 </span><span class="lineNoCov">              0 :                         zval_update_constant_ex(&amp;result, (void*)1, NULL TSRMLS_CC);</span>
+<span class="lineNum">     425 </span><span class="lineNoCov">              0 :                         zval_copy_ctor(result);</span>
+<span class="lineNum">     426 </span><span class="lineNoCov">              0 :                         Z_SET_REFCOUNT_P(result, 1);</span>
+<span class="lineNum">     427 </span><span class="lineNoCov">              0 :                         Z_UNSET_ISREF_P(result);</span>
+<span class="lineNum">     428 </span><span class="lineNoCov">              0 :                         return 1;</span>
+<span class="lineNum">     429 </span>                :                 }
+<span class="lineNum">     430 </span>                :                 /* name requires runtime resolution, need to check non-namespaced name */
+<span class="lineNum">     431 </span><span class="lineNoCov">              0 :                 if ((flags &amp; IS_CONSTANT_UNQUALIFIED) != 0) {</span>
+<span class="lineNum">     432 </span><span class="lineNoCov">              0 :                         name = constant_name;</span>
+<span class="lineNum">     433 </span><span class="lineNoCov">              0 :                         name_len = const_name_len;</span>
+<span class="lineNum">     434 </span><span class="lineNoCov">              0 :                         return zend_get_constant(name, name_len, result TSRMLS_CC);</span>
+<span class="lineNum">     435 </span>                :                 }
+<span class="lineNum">     436 </span><span class="lineNoCov">              0 :                 retval = 0;</span>
+<span class="lineNum">     437 </span>                : finish:
+<span class="lineNum">     438 </span><span class="lineNoCov">              0 :                 if (retval) {</span>
+<span class="lineNum">     439 </span><span class="lineNoCov">              0 :                         zval_update_constant_ex(ret_constant, (void*)1, ce TSRMLS_CC);</span>
+<span class="lineNum">     440 </span><span class="lineNoCov">              0 :                         *result = **ret_constant;</span>
+<span class="lineNum">     441 </span><span class="lineNoCov">              0 :                         zval_copy_ctor(result);</span>
+<span class="lineNum">     442 </span><span class="lineNoCov">              0 :                         INIT_PZVAL(result);</span>
+<span class="lineNum">     443 </span>                :                 }
+<span class="lineNum">     444 </span>                : 
+<span class="lineNum">     445 </span><span class="lineNoCov">              0 :                 return retval;</span>
+<span class="lineNum">     446 </span>                :         }
+<span class="lineNum">     447 </span>                : 
+<span class="lineNum">     448 </span><span class="lineCov">              1 :         return zend_get_constant(name, name_len, result TSRMLS_CC);</span>
+<a name="449"><span class="lineNum">     449 </span>                : }</a>
+<span class="lineNum">     450 </span>                : 
+<span class="lineNum">     451 </span><span class="lineNoCov">              0 : zend_constant *zend_quick_get_constant(const zend_literal *key, ulong flags TSRMLS_DC)</span>
+<span class="lineNum">     452 </span>                : {
+<span class="lineNum">     453 </span>                :         zend_constant *c;
+<span class="lineNum">     454 </span>                : 
+<span class="lineNum">     455 </span><span class="lineNoCov">              0 :         if (zend_hash_quick_find(EG(zend_constants), Z_STRVAL(key-&gt;constant), Z_STRLEN(key-&gt;constant) + 1, key-&gt;hash_value, (void **) &amp;c) == FAILURE) {</span>
+<span class="lineNum">     456 </span><span class="lineNoCov">              0 :                 key++;</span>
+<span class="lineNum">     457 </span><span class="lineNoCov">              0 :                 if (zend_hash_quick_find(EG(zend_constants), Z_STRVAL(key-&gt;constant), Z_STRLEN(key-&gt;constant) + 1, key-&gt;hash_value, (void **) &amp;c) == FAILURE ||</span>
+<span class="lineNum">     458 </span><span class="lineNoCov">              0 :                     (c-&gt;flags &amp; CONST_CS) != 0) {</span>
+<span class="lineNum">     459 </span><span class="lineNoCov">              0 :                         if ((flags &amp; (IS_CONSTANT_IN_NAMESPACE|IS_CONSTANT_UNQUALIFIED)) == (IS_CONSTANT_IN_NAMESPACE|IS_CONSTANT_UNQUALIFIED)) {</span>
+<span class="lineNum">     460 </span><span class="lineNoCov">              0 :                                 key++;</span>
+<span class="lineNum">     461 </span><span class="lineNoCov">              0 :                                 if (zend_hash_quick_find(EG(zend_constants), Z_STRVAL(key-&gt;constant), Z_STRLEN(key-&gt;constant) + 1, key-&gt;hash_value, (void **) &amp;c) == FAILURE) {</span>
+<span class="lineNum">     462 </span><span class="lineNoCov">              0 :                                     key++;</span>
+<span class="lineNum">     463 </span><span class="lineNoCov">              0 :                                         if (zend_hash_quick_find(EG(zend_constants), Z_STRVAL(key-&gt;constant), Z_STRLEN(key-&gt;constant) + 1, key-&gt;hash_value, (void **) &amp;c) == FAILURE ||</span>
+<span class="lineNum">     464 </span><span class="lineNoCov">              0 :                                             (c-&gt;flags &amp; CONST_CS) != 0) {</span>
+<span class="lineNum">     465 </span>                : 
+<span class="lineNum">     466 </span><span class="lineNoCov">              0 :                                                 key--;</span>
+<span class="lineNum">     467 </span><span class="lineNoCov">              0 :                                                 if (!zend_get_special_constant(Z_STRVAL(key-&gt;constant), Z_STRLEN(key-&gt;constant), &amp;c TSRMLS_CC)) {</span>
+<span class="lineNum">     468 </span><span class="lineNoCov">              0 :                                                         return NULL;</span>
+<span class="lineNum">     469 </span>                :                                                 }
+<span class="lineNum">     470 </span>                :                                         }
+<span class="lineNum">     471 </span>                :                                 }
+<span class="lineNum">     472 </span>                :                         } else {
+<span class="lineNum">     473 </span><span class="lineNoCov">              0 :                                 key--;</span>
+<span class="lineNum">     474 </span><span class="lineNoCov">              0 :                                 if (!zend_get_special_constant(Z_STRVAL(key-&gt;constant), Z_STRLEN(key-&gt;constant), &amp;c TSRMLS_CC)) {</span>
+<span class="lineNum">     475 </span><span class="lineNoCov">              0 :                                         return NULL;</span>
+<span class="lineNum">     476 </span>                :                                 }
+<span class="lineNum">     477 </span>                :                         }
+<span class="lineNum">     478 </span>                :                 }
+<span class="lineNum">     479 </span>                :         }
+<span class="lineNum">     480 </span><span class="lineNoCov">              0 :         return c;</span>
+<a name="481"><span class="lineNum">     481 </span>                : }</a>
+<span class="lineNum">     482 </span>                : 
+<span class="lineNum">     483 </span><span class="lineCov">          21556 : ZEND_API int zend_register_constant(zend_constant *c TSRMLS_DC)</span>
+<span class="lineNum">     484 </span>                : {
+<span class="lineNum">     485 </span><span class="lineCov">          21556 :         char *lowercase_name = NULL;</span>
+<span class="lineNum">     486 </span>                :         char *name;
+<span class="lineNum">     487 </span><span class="lineCov">          21556 :         int ret = SUCCESS;</span>
+<span class="lineNum">     488 </span><span class="lineCov">          21556 :         ulong chash = 0;</span>
+<span class="lineNum">     489 </span>                : 
+<span class="lineNum">     490 </span>                : #if 0
+<span class="lineNum">     491 </span>                :         printf(&quot;Registering constant for module %d\n&quot;, c-&gt;module_number);
+<span class="lineNum">     492 </span>                : #endif
+<span class="lineNum">     493 </span>                : 
+<span class="lineNum">     494 </span><span class="lineCov">          21556 :         if (!(c-&gt;flags &amp; CONST_CS)) {</span>
+<span class="lineNum">     495 </span>                :                 /* keep in mind that c-&gt;name_len already contains the '\0' */
+<span class="lineNum">     496 </span><span class="lineCov">            144 :                 lowercase_name = estrndup(c-&gt;name, c-&gt;name_len-1);</span>
+<span class="lineNum">     497 </span><span class="lineCov">            144 :                 zend_str_tolower(lowercase_name, c-&gt;name_len-1);</span>
+<span class="lineNum">     498 </span><span class="lineCov">            144 :                 lowercase_name = (char*)zend_new_interned_string(lowercase_name, c-&gt;name_len, 1 TSRMLS_CC);</span>
+<span class="lineNum">     499 </span><span class="lineCov">            144 :                 name = lowercase_name;</span>
+<span class="lineNum">     500 </span><span class="lineCov">            144 :                 chash = IS_INTERNED(lowercase_name) ? INTERNED_HASH(lowercase_name) : 0;</span>
+<span class="lineNum">     501 </span>                :         } else {
+<span class="lineNum">     502 </span><span class="lineCov">          21412 :                 char *slash = strrchr(c-&gt;name, '\\');</span>
+<span class="lineNum">     503 </span><span class="lineCov">          21412 :                 if(slash) {</span>
+<span class="lineNum">     504 </span><span class="lineNoCov">              0 :                         lowercase_name = estrndup(c-&gt;name, c-&gt;name_len-1);</span>
+<span class="lineNum">     505 </span><span class="lineNoCov">              0 :                         zend_str_tolower(lowercase_name, slash-c-&gt;name);</span>
+<span class="lineNum">     506 </span><span class="lineNoCov">              0 :                         lowercase_name = (char*)zend_new_interned_string(lowercase_name, c-&gt;name_len, 1 TSRMLS_CC);</span>
+<span class="lineNum">     507 </span><span class="lineNoCov">              0 :                         name = lowercase_name;</span>
+<span class="lineNum">     508 </span>                :                         
+<span class="lineNum">     509 </span><span class="lineNoCov">              0 :                         chash = IS_INTERNED(lowercase_name) ? INTERNED_HASH(lowercase_name) : 0;</span>
+<span class="lineNum">     510 </span>                :                 } else {
+<span class="lineNum">     511 </span><span class="lineCov">          21412 :                         name = c-&gt;name;</span>
+<span class="lineNum">     512 </span>                :                 }
+<span class="lineNum">     513 </span>                :         }
+<span class="lineNum">     514 </span><span class="lineCov">          21556 :         if (chash == 0) {</span>
+<span class="lineNum">     515 </span><span class="lineCov">          21412 :                 chash = zend_hash_func(name, c-&gt;name_len);</span>
+<span class="lineNum">     516 </span>                :         }
+<span class="lineNum">     517 </span>                : 
+<span class="lineNum">     518 </span>                :         /* Check if the user is trying to define the internal pseudo constant name __COMPILER_HALT_OFFSET__ */
+<span class="lineNum">     519 </span><span class="lineCov">          43544 :         if ((c-&gt;name_len == sizeof(&quot;__COMPILER_HALT_OFFSET__&quot;)</span>
+<span class="lineNum">     520 </span><span class="lineCov">          21988 :                 &amp;&amp; !memcmp(name, &quot;__COMPILER_HALT_OFFSET__&quot;, sizeof(&quot;__COMPILER_HALT_OFFSET__&quot;)-1))</span>
+<span class="lineNum">     521 </span><span class="lineCov">          21556 :                 || zend_hash_quick_add(EG(zend_constants), name, c-&gt;name_len, chash, (void *) c, sizeof(zend_constant), NULL)==FAILURE) {</span>
+<span class="lineNum">     522 </span>                :                 
+<span class="lineNum">     523 </span>                :                 /* The internal __COMPILER_HALT_OFFSET__ is prefixed by NULL byte */
+<span class="lineNum">     524 </span><span class="lineNoCov">              0 :                 if (c-&gt;name[0] == '\0' &amp;&amp; c-&gt;name_len &gt; sizeof(&quot;\0__COMPILER_HALT_OFFSET__&quot;)</span>
+<span class="lineNum">     525 </span><span class="lineNoCov">              0 :                         &amp;&amp; memcmp(name, &quot;\0__COMPILER_HALT_OFFSET__&quot;, sizeof(&quot;\0__COMPILER_HALT_OFFSET__&quot;)) == 0) {</span>
+<span class="lineNum">     526 </span><span class="lineNoCov">              0 :                         name++;</span>
+<span class="lineNum">     527 </span>                :                 }
+<span class="lineNum">     528 </span><span class="lineNoCov">              0 :                 zend_error(E_NOTICE,&quot;Constant %s already defined&quot;, name);</span>
+<span class="lineNum">     529 </span><span class="lineNoCov">              0 :                 str_free(c-&gt;name);</span>
+<span class="lineNum">     530 </span><span class="lineNoCov">              0 :                 if (!(c-&gt;flags &amp; CONST_PERSISTENT)) {</span>
+<span class="lineNum">     531 </span><span class="lineNoCov">              0 :                         zval_dtor(&amp;c-&gt;value);</span>
+<span class="lineNum">     532 </span>                :                 }
+<span class="lineNum">     533 </span><span class="lineNoCov">              0 :                 ret = FAILURE;</span>
+<span class="lineNum">     534 </span>                :         }
+<span class="lineNum">     535 </span><span class="lineCov">          21556 :         if (lowercase_name &amp;&amp; !IS_INTERNED(lowercase_name)) {</span>
+<span class="lineNum">     536 </span><span class="lineNoCov">              0 :                 efree(lowercase_name);</span>
+<span class="lineNum">     537 </span>                :         }
+<span class="lineNum">     538 </span><span class="lineCov">          21556 :         return ret;</span>
+<span class="lineNum">     539 </span>                : }
+<span class="lineNum">     540 </span>                : 
+<span class="lineNum">     541 </span>                : 
+<span class="lineNum">     542 </span>                : /*
+<span class="lineNum">     543 </span>                :  * Local variables:
+<span class="lineNum">     544 </span>                :  * tab-width: 4
+<span class="lineNum">     545 </span>                :  * c-basic-offset: 4
+<span class="lineNum">     546 </span>                :  * indent-tabs-mode: t
+<span class="lineNum">     547 </span>                :  * End:
+<span class="lineNum">     548 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

@@ -1,0 +1,841 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - ext/standard/crypt_sha256.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../index.html">directory</a> - <a href="index.html">ext/standard</a> - crypt_sha256.c (source / <a href="crypt_sha256.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">236</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">8</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /* SHA256-based Unix crypt implementation.</a>
+<span class="lineNum">       2 </span>                :    Released into the Public Domain by Ulrich Drepper &lt;drepper@redhat.com&gt;.  */
+<span class="lineNum">       3 </span>                : /* Windows VC++ port by Pierre Joye &lt;pierre@php.net&gt; */
+<span class="lineNum">       4 </span>                : 
+<span class="lineNum">       5 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">       6 </span>                : #include &quot;php_main.h&quot;
+<span class="lineNum">       7 </span>                : 
+<span class="lineNum">       8 </span>                : #include &lt;errno.h&gt;
+<span class="lineNum">       9 </span>                : #include &lt;limits.h&gt;
+<span class="lineNum">      10 </span>                : 
+<span class="lineNum">      11 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">      12 </span>                : # include &quot;win32/php_stdint.h&quot;
+<span class="lineNum">      13 </span>                : # define __alignof__ __alignof
+<span class="lineNum">      14 </span>                : # define alloca _alloca
+<span class="lineNum">      15 </span>                : #else
+<span class="lineNum">      16 </span>                : # if HAVE_INTTYPES_H
+<span class="lineNum">      17 </span>                : #  include &lt;inttypes.h&gt;
+<span class="lineNum">      18 </span>                : # elif HAVE_STDINT_H
+<span class="lineNum">      19 </span>                : #  include &lt;stdint.h&gt;
+<span class="lineNum">      20 </span>                : # endif
+<span class="lineNum">      21 </span>                : # ifndef HAVE_ALIGNOF
+<span class="lineNum">      22 </span>                : #  include &lt;stddef.h&gt;
+<span class="lineNum">      23 </span>                : #  define __alignof__(type) offsetof (struct { char c; type member;}, member)
+<span class="lineNum">      24 </span>                : # endif
+<span class="lineNum">      25 </span>                : # if HAVE_ATTRIBUTE_ALIGNED
+<span class="lineNum">      26 </span>                : #  define ALIGNED(size) __attribute__ ((__aligned__ (size)))
+<span class="lineNum">      27 </span>                : # else
+<span class="lineNum">      28 </span>                : #  define ALIGNED(size)
+<span class="lineNum">      29 </span>                : # endif
+<span class="lineNum">      30 </span>                : #endif
+<span class="lineNum">      31 </span>                : 
+<span class="lineNum">      32 </span>                : #include &lt;stdio.h&gt;
+<span class="lineNum">      33 </span>                : #include &lt;stdlib.h&gt;
+<span class="lineNum">      34 </span>                : 
+<span class="lineNum">      35 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">      36 </span>                : # include &lt;string.h&gt;
+<span class="lineNum">      37 </span>                : #else
+<span class="lineNum">      38 </span>                : # include &lt;sys/param.h&gt;
+<span class="lineNum">      39 </span>                : # include &lt;sys/types.h&gt;
+<span class="lineNum">      40 </span>                : # if HAVE_STRING_H
+<span class="lineNum">      41 </span>                : #  include &lt;string.h&gt;
+<span class="lineNum">      42 </span>                : # else
+<span class="lineNum">      43 </span>                : #  include &lt;strings.h&gt;
+<span class="lineNum">      44 </span>                : # endif
+<a name="45"><span class="lineNum">      45 </span>                : #endif</a>
+<span class="lineNum">      46 </span>                : 
+<span class="lineNum">      47 </span><span class="lineNoCov">              0 : char * __php_stpncpy(char *dst, const char *src, size_t len)</span>
+<span class="lineNum">      48 </span>                : {
+<span class="lineNum">      49 </span><span class="lineNoCov">              0 :         size_t n = strlen(src);</span>
+<span class="lineNum">      50 </span><span class="lineNoCov">              0 :         if (n &gt; len) {</span>
+<span class="lineNum">      51 </span><span class="lineNoCov">              0 :                 n = len;</span>
+<span class="lineNum">      52 </span>                :         }
+<span class="lineNum">      53 </span><span class="lineNoCov">              0 :         return strncpy(dst, src, len) + n;</span>
+<a name="54"><span class="lineNum">      54 </span>                : }</a>
+<span class="lineNum">      55 </span>                : 
+<span class="lineNum">      56 </span><span class="lineNoCov">              0 : void * __php_mempcpy(void * dst, const void * src, size_t len)</span>
+<span class="lineNum">      57 </span>                : {
+<span class="lineNum">      58 </span><span class="lineNoCov">              0 :         return (((char *)memcpy(dst, src, len)) + len);</span>
+<span class="lineNum">      59 </span>                : }
+<span class="lineNum">      60 </span>                : 
+<span class="lineNum">      61 </span>                : #ifndef MIN
+<span class="lineNum">      62 </span>                : # define MIN(a, b) (((a) &lt; (b)) ? (a) : (b))
+<span class="lineNum">      63 </span>                : #endif
+<span class="lineNum">      64 </span>                : #ifndef MAX
+<span class="lineNum">      65 </span>                : # define MAX(a, b) (((a) &gt; (b)) ? (a) : (b))
+<span class="lineNum">      66 </span>                : #endif
+<span class="lineNum">      67 </span>                : 
+<span class="lineNum">      68 </span>                : /* Structure to save state of computation between the single steps.  */
+<span class="lineNum">      69 </span>                : struct sha256_ctx {
+<span class="lineNum">      70 </span>                :         uint32_t H[8];
+<span class="lineNum">      71 </span>                : 
+<span class="lineNum">      72 </span>                :         uint32_t total[2];
+<span class="lineNum">      73 </span>                :         uint32_t buflen;
+<span class="lineNum">      74 </span>                :         char buffer[128]; /* NB: always correctly aligned for uint32_t.  */
+<span class="lineNum">      75 </span>                : };
+<span class="lineNum">      76 </span>                : 
+<span class="lineNum">      77 </span>                : #if PHP_WIN32 || (!defined(WORDS_BIGENDIAN))
+<span class="lineNum">      78 </span>                : # define SWAP(n) \
+<span class="lineNum">      79 </span>                :     (((n) &lt;&lt; 24) | (((n) &amp; 0xff00) &lt;&lt; 8) | (((n) &gt;&gt; 8) &amp; 0xff00) | ((n) &gt;&gt; 24))
+<span class="lineNum">      80 </span>                : #else
+<span class="lineNum">      81 </span>                : # define SWAP(n) (n)
+<span class="lineNum">      82 </span>                : #endif
+<span class="lineNum">      83 </span>                : 
+<span class="lineNum">      84 </span>                : /* This array contains the bytes used to pad the buffer to the next
+<span class="lineNum">      85 </span>                :    64-byte boundary.  (FIPS 180-2:5.1.1)  */
+<span class="lineNum">      86 </span>                : static const unsigned char fillbuf[64] = { 0x80, 0 /* , 0, 0, ...  */ };
+<span class="lineNum">      87 </span>                : 
+<span class="lineNum">      88 </span>                : 
+<span class="lineNum">      89 </span>                : /* Constants for SHA256 from FIPS 180-2:4.2.2.  */
+<span class="lineNum">      90 </span>                : static const uint32_t K[64] = {
+<span class="lineNum">      91 </span>                :         0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
+<span class="lineNum">      92 </span>                :         0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+<span class="lineNum">      93 </span>                :         0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
+<span class="lineNum">      94 </span>                :         0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+<span class="lineNum">      95 </span>                :         0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc,
+<span class="lineNum">      96 </span>                :         0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+<span class="lineNum">      97 </span>                :         0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7,
+<span class="lineNum">      98 </span>                :         0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+<span class="lineNum">      99 </span>                :         0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13,
+<span class="lineNum">     100 </span>                :         0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+<span class="lineNum">     101 </span>                :         0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3,
+<span class="lineNum">     102 </span>                :         0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+<span class="lineNum">     103 </span>                :         0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5,
+<span class="lineNum">     104 </span>                :         0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+<span class="lineNum">     105 </span>                :         0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
+<span class="lineNum">     106 </span>                :         0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+<span class="lineNum">     107 </span>                : };
+<span class="lineNum">     108 </span>                : 
+<span class="lineNum">     109 </span>                : 
+<a name="110"><span class="lineNum">     110 </span>                : /* Process LEN bytes of BUFFER, accumulating context into CTX.</a>
+<span class="lineNum">     111 </span>                :    It is assumed that LEN % 64 == 0.  */
+<span class="lineNum">     112 </span><span class="lineNoCov">              0 : static void sha256_process_block (const void *buffer, size_t len, struct sha256_ctx *ctx) {</span>
+<span class="lineNum">     113 </span><span class="lineNoCov">              0 :         const uint32_t *words = buffer;</span>
+<span class="lineNum">     114 </span><span class="lineNoCov">              0 :         size_t nwords = len / sizeof (uint32_t);</span>
+<span class="lineNum">     115 </span>                :         unsigned int t;
+<span class="lineNum">     116 </span>                : 
+<span class="lineNum">     117 </span><span class="lineNoCov">              0 :         uint32_t a = ctx-&gt;H[0];</span>
+<span class="lineNum">     118 </span><span class="lineNoCov">              0 :         uint32_t b = ctx-&gt;H[1];</span>
+<span class="lineNum">     119 </span><span class="lineNoCov">              0 :         uint32_t c = ctx-&gt;H[2];</span>
+<span class="lineNum">     120 </span><span class="lineNoCov">              0 :         uint32_t d = ctx-&gt;H[3];</span>
+<span class="lineNum">     121 </span><span class="lineNoCov">              0 :         uint32_t e = ctx-&gt;H[4];</span>
+<span class="lineNum">     122 </span><span class="lineNoCov">              0 :         uint32_t f = ctx-&gt;H[5];</span>
+<span class="lineNum">     123 </span><span class="lineNoCov">              0 :         uint32_t g = ctx-&gt;H[6];</span>
+<span class="lineNum">     124 </span><span class="lineNoCov">              0 :         uint32_t h = ctx-&gt;H[7];</span>
+<span class="lineNum">     125 </span>                : 
+<span class="lineNum">     126 </span>                :         /* First increment the byte count.  FIPS 180-2 specifies the possible
+<span class="lineNum">     127 </span>                :          length of the file up to 2^64 bits.  Here we only compute the
+<span class="lineNum">     128 </span>                :          number of bytes.  Do a double word increment.  */
+<span class="lineNum">     129 </span><span class="lineNoCov">              0 :         ctx-&gt;total[0] += len;</span>
+<span class="lineNum">     130 </span><span class="lineNoCov">              0 :         if (ctx-&gt;total[0] &lt; len) {</span>
+<span class="lineNum">     131 </span><span class="lineNoCov">              0 :                 ++ctx-&gt;total[1];</span>
+<span class="lineNum">     132 </span>                :         }
+<span class="lineNum">     133 </span>                : 
+<span class="lineNum">     134 </span>                :         /* Process all bytes in the buffer with 64 bytes in each round of
+<span class="lineNum">     135 </span>                :          the loop.  */
+<span class="lineNum">     136 </span><span class="lineNoCov">              0 :         while (nwords &gt; 0) {</span>
+<span class="lineNum">     137 </span>                :                 uint32_t W[64];
+<span class="lineNum">     138 </span><span class="lineNoCov">              0 :                 uint32_t a_save = a;</span>
+<span class="lineNum">     139 </span><span class="lineNoCov">              0 :                 uint32_t b_save = b;</span>
+<span class="lineNum">     140 </span><span class="lineNoCov">              0 :                 uint32_t c_save = c;</span>
+<span class="lineNum">     141 </span><span class="lineNoCov">              0 :                 uint32_t d_save = d;</span>
+<span class="lineNum">     142 </span><span class="lineNoCov">              0 :                 uint32_t e_save = e;</span>
+<span class="lineNum">     143 </span><span class="lineNoCov">              0 :                 uint32_t f_save = f;</span>
+<span class="lineNum">     144 </span><span class="lineNoCov">              0 :                 uint32_t g_save = g;</span>
+<span class="lineNum">     145 </span><span class="lineNoCov">              0 :                 uint32_t h_save = h;</span>
+<span class="lineNum">     146 </span>                : 
+<span class="lineNum">     147 </span>                :         /* Operators defined in FIPS 180-2:4.1.2.  */
+<span class="lineNum">     148 </span>                : #define Ch(x, y, z) ((x &amp; y) ^ (~x &amp; z))
+<span class="lineNum">     149 </span>                : #define Maj(x, y, z) ((x &amp; y) ^ (x &amp; z) ^ (y &amp; z))
+<span class="lineNum">     150 </span>                : #define S0(x) (CYCLIC (x, 2) ^ CYCLIC (x, 13) ^ CYCLIC (x, 22))
+<span class="lineNum">     151 </span>                : #define S1(x) (CYCLIC (x, 6) ^ CYCLIC (x, 11) ^ CYCLIC (x, 25))
+<span class="lineNum">     152 </span>                : #define R0(x) (CYCLIC (x, 7) ^ CYCLIC (x, 18) ^ (x &gt;&gt; 3))
+<span class="lineNum">     153 </span>                : #define R1(x) (CYCLIC (x, 17) ^ CYCLIC (x, 19) ^ (x &gt;&gt; 10))
+<span class="lineNum">     154 </span>                : 
+<span class="lineNum">     155 </span>                :         /* It is unfortunate that C does not provide an operator for
+<span class="lineNum">     156 </span>                :         cyclic rotation.  Hope the C compiler is smart enough.  */
+<span class="lineNum">     157 </span>                : #define CYCLIC(w, s) ((w &gt;&gt; s) | (w &lt;&lt; (32 - s)))
+<span class="lineNum">     158 </span>                : 
+<span class="lineNum">     159 </span>                :                 /* Compute the message schedule according to FIPS 180-2:6.2.2 step 2.  */
+<span class="lineNum">     160 </span><span class="lineNoCov">              0 :                 for (t = 0; t &lt; 16; ++t) {</span>
+<span class="lineNum">     161 </span><span class="lineNoCov">              0 :                         W[t] = SWAP (*words);</span>
+<span class="lineNum">     162 </span><span class="lineNoCov">              0 :                         ++words;</span>
+<span class="lineNum">     163 </span>                :                 }
+<span class="lineNum">     164 </span><span class="lineNoCov">              0 :                 for (t = 16; t &lt; 64; ++t)</span>
+<span class="lineNum">     165 </span><span class="lineNoCov">              0 :                         W[t] = R1 (W[t - 2]) + W[t - 7] + R0 (W[t - 15]) + W[t - 16];</span>
+<span class="lineNum">     166 </span>                : 
+<span class="lineNum">     167 </span>                :                 /* The actual computation according to FIPS 180-2:6.2.2 step 3.  */
+<span class="lineNum">     168 </span><span class="lineNoCov">              0 :                 for (t = 0; t &lt; 64; ++t) {</span>
+<span class="lineNum">     169 </span><span class="lineNoCov">              0 :                         uint32_t T1 = h + S1 (e) + Ch (e, f, g) + K[t] + W[t];</span>
+<span class="lineNum">     170 </span><span class="lineNoCov">              0 :                         uint32_t T2 = S0 (a) + Maj (a, b, c);</span>
+<span class="lineNum">     171 </span><span class="lineNoCov">              0 :                         h = g;</span>
+<span class="lineNum">     172 </span><span class="lineNoCov">              0 :                         g = f;</span>
+<span class="lineNum">     173 </span><span class="lineNoCov">              0 :                         f = e;</span>
+<span class="lineNum">     174 </span><span class="lineNoCov">              0 :                         e = d + T1;</span>
+<span class="lineNum">     175 </span><span class="lineNoCov">              0 :                         d = c;</span>
+<span class="lineNum">     176 </span><span class="lineNoCov">              0 :                         c = b;</span>
+<span class="lineNum">     177 </span><span class="lineNoCov">              0 :                         b = a;</span>
+<span class="lineNum">     178 </span><span class="lineNoCov">              0 :                         a = T1 + T2;</span>
+<span class="lineNum">     179 </span>                :                 }
+<span class="lineNum">     180 </span>                : 
+<span class="lineNum">     181 </span>                :                 /* Add the starting values of the context according to FIPS 180-2:6.2.2
+<span class="lineNum">     182 </span>                :                 step 4.  */
+<span class="lineNum">     183 </span><span class="lineNoCov">              0 :                 a += a_save;</span>
+<span class="lineNum">     184 </span><span class="lineNoCov">              0 :                 b += b_save;</span>
+<span class="lineNum">     185 </span><span class="lineNoCov">              0 :                 c += c_save;</span>
+<span class="lineNum">     186 </span><span class="lineNoCov">              0 :                 d += d_save;</span>
+<span class="lineNum">     187 </span><span class="lineNoCov">              0 :                 e += e_save;</span>
+<span class="lineNum">     188 </span><span class="lineNoCov">              0 :                 f += f_save;</span>
+<span class="lineNum">     189 </span><span class="lineNoCov">              0 :                 g += g_save;</span>
+<span class="lineNum">     190 </span><span class="lineNoCov">              0 :                 h += h_save;</span>
+<span class="lineNum">     191 </span>                : 
+<span class="lineNum">     192 </span>                :                 /* Prepare for the next round.  */
+<span class="lineNum">     193 </span><span class="lineNoCov">              0 :                 nwords -= 16;</span>
+<span class="lineNum">     194 </span>                :         }
+<span class="lineNum">     195 </span>                : 
+<span class="lineNum">     196 </span>                :         /* Put checksum in context given as argument.  */
+<span class="lineNum">     197 </span><span class="lineNoCov">              0 :         ctx-&gt;H[0] = a;</span>
+<span class="lineNum">     198 </span><span class="lineNoCov">              0 :         ctx-&gt;H[1] = b;</span>
+<span class="lineNum">     199 </span><span class="lineNoCov">              0 :         ctx-&gt;H[2] = c;</span>
+<span class="lineNum">     200 </span><span class="lineNoCov">              0 :         ctx-&gt;H[3] = d;</span>
+<span class="lineNum">     201 </span><span class="lineNoCov">              0 :         ctx-&gt;H[4] = e;</span>
+<span class="lineNum">     202 </span><span class="lineNoCov">              0 :         ctx-&gt;H[5] = f;</span>
+<span class="lineNum">     203 </span><span class="lineNoCov">              0 :         ctx-&gt;H[6] = g;</span>
+<span class="lineNum">     204 </span><span class="lineNoCov">              0 :         ctx-&gt;H[7] = h;</span>
+<span class="lineNum">     205 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     206 </span>                : 
+<span class="lineNum">     207 </span>                : 
+<a name="208"><span class="lineNum">     208 </span>                : /* Initialize structure containing state of computation.</a>
+<span class="lineNum">     209 </span>                :    (FIPS 180-2:5.3.2)  */
+<span class="lineNum">     210 </span><span class="lineNoCov">              0 : static void sha256_init_ctx(struct sha256_ctx *ctx) {</span>
+<span class="lineNum">     211 </span><span class="lineNoCov">              0 :         ctx-&gt;H[0] = 0x6a09e667;</span>
+<span class="lineNum">     212 </span><span class="lineNoCov">              0 :         ctx-&gt;H[1] = 0xbb67ae85;</span>
+<span class="lineNum">     213 </span><span class="lineNoCov">              0 :         ctx-&gt;H[2] = 0x3c6ef372;</span>
+<span class="lineNum">     214 </span><span class="lineNoCov">              0 :         ctx-&gt;H[3] = 0xa54ff53a;</span>
+<span class="lineNum">     215 </span><span class="lineNoCov">              0 :         ctx-&gt;H[4] = 0x510e527f;</span>
+<span class="lineNum">     216 </span><span class="lineNoCov">              0 :         ctx-&gt;H[5] = 0x9b05688c;</span>
+<span class="lineNum">     217 </span><span class="lineNoCov">              0 :         ctx-&gt;H[6] = 0x1f83d9ab;</span>
+<span class="lineNum">     218 </span><span class="lineNoCov">              0 :         ctx-&gt;H[7] = 0x5be0cd19;</span>
+<span class="lineNum">     219 </span>                : 
+<span class="lineNum">     220 </span><span class="lineNoCov">              0 :         ctx-&gt;total[0] = ctx-&gt;total[1] = 0;</span>
+<span class="lineNum">     221 </span><span class="lineNoCov">              0 :         ctx-&gt;buflen = 0;</span>
+<span class="lineNum">     222 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     223 </span>                : 
+<span class="lineNum">     224 </span>                : 
+<span class="lineNum">     225 </span>                : /* Process the remaining bytes in the internal buffer and the usual
+<span class="lineNum">     226 </span>                :    prolog according to the standard and write the result to RESBUF.
+<span class="lineNum">     227 </span>                : 
+<a name="228"><span class="lineNum">     228 </span>                :    IMPORTANT: On some systems it is required that RESBUF is correctly</a>
+<span class="lineNum">     229 </span>                :    aligned for a 32 bits value.  */
+<span class="lineNum">     230 </span><span class="lineNoCov">              0 : static void * sha256_finish_ctx(struct sha256_ctx *ctx, void *resbuf) {</span>
+<span class="lineNum">     231 </span>                :         /* Take yet unprocessed bytes into account.  */
+<span class="lineNum">     232 </span><span class="lineNoCov">              0 :         uint32_t bytes = ctx-&gt;buflen;</span>
+<span class="lineNum">     233 </span>                :         size_t pad;
+<span class="lineNum">     234 </span>                :         unsigned int i;
+<span class="lineNum">     235 </span>                : 
+<span class="lineNum">     236 </span>                :         /* Now count remaining bytes.  */
+<span class="lineNum">     237 </span><span class="lineNoCov">              0 :         ctx-&gt;total[0] += bytes;</span>
+<span class="lineNum">     238 </span><span class="lineNoCov">              0 :         if (ctx-&gt;total[0] &lt; bytes) {</span>
+<span class="lineNum">     239 </span><span class="lineNoCov">              0 :                 ++ctx-&gt;total[1];</span>
+<span class="lineNum">     240 </span>                :         }
+<span class="lineNum">     241 </span>                : 
+<span class="lineNum">     242 </span><span class="lineNoCov">              0 :         pad = bytes &gt;= 56 ? 64 + 56 - bytes : 56 - bytes;</span>
+<span class="lineNum">     243 </span><span class="lineNoCov">              0 :         memcpy(&amp;ctx-&gt;buffer[bytes], fillbuf, pad);</span>
+<span class="lineNum">     244 </span>                : 
+<span class="lineNum">     245 </span>                :         /* Put the 64-bit file length in *bits* at the end of the buffer.  */
+<span class="lineNum">     246 </span><span class="lineNoCov">              0 :         *(uint32_t *) &amp;ctx-&gt;buffer[bytes + pad + 4] = SWAP (ctx-&gt;total[0] &lt;&lt; 3);</span>
+<span class="lineNum">     247 </span><span class="lineNoCov">              0 :         *(uint32_t *) &amp;ctx-&gt;buffer[bytes + pad] = SWAP ((ctx-&gt;total[1] &lt;&lt; 3) |</span>
+<span class="lineNum">     248 </span>                :                                                   (ctx-&gt;total[0] &gt;&gt; 29));
+<span class="lineNum">     249 </span>                : 
+<span class="lineNum">     250 </span>                :         /* Process last bytes.  */
+<span class="lineNum">     251 </span><span class="lineNoCov">              0 :         sha256_process_block(ctx-&gt;buffer, bytes + pad + 8, ctx);</span>
+<span class="lineNum">     252 </span>                : 
+<span class="lineNum">     253 </span>                :         /* Put result from CTX in first 32 bytes following RESBUF.  */
+<span class="lineNum">     254 </span><span class="lineNoCov">              0 :         for (i = 0; i &lt; 8; ++i) {</span>
+<span class="lineNum">     255 </span><span class="lineNoCov">              0 :                 ((uint32_t *) resbuf)[i] = SWAP(ctx-&gt;H[i]);</span>
+<span class="lineNum">     256 </span>                :         }
+<span class="lineNum">     257 </span>                : 
+<span class="lineNum">     258 </span><span class="lineNoCov">              0 :         return resbuf;</span>
+<span class="lineNum">     259 </span>                : }
+<a name="260"><span class="lineNum">     260 </span>                : </a>
+<span class="lineNum">     261 </span>                : 
+<span class="lineNum">     262 </span><span class="lineNoCov">              0 : static void sha256_process_bytes(const void *buffer, size_t len, struct sha256_ctx *ctx) {</span>
+<span class="lineNum">     263 </span>                :         /* When we already have some bits in our internal buffer concatenate
+<span class="lineNum">     264 </span>                :          both inputs first.  */
+<span class="lineNum">     265 </span><span class="lineNoCov">              0 :         if (ctx-&gt;buflen != 0) {</span>
+<span class="lineNum">     266 </span><span class="lineNoCov">              0 :                 size_t left_over = ctx-&gt;buflen;</span>
+<span class="lineNum">     267 </span><span class="lineNoCov">              0 :                 size_t add = 128 - left_over &gt; len ? len : 128 - left_over;</span>
+<span class="lineNum">     268 </span>                : 
+<span class="lineNum">     269 </span><span class="lineNoCov">              0 :                   memcpy(&amp;ctx-&gt;buffer[left_over], buffer, add);</span>
+<span class="lineNum">     270 </span><span class="lineNoCov">              0 :                   ctx-&gt;buflen += add;</span>
+<span class="lineNum">     271 </span>                : 
+<span class="lineNum">     272 </span><span class="lineNoCov">              0 :                 if (ctx-&gt;buflen &gt; 64) {</span>
+<span class="lineNum">     273 </span><span class="lineNoCov">              0 :                         sha256_process_block(ctx-&gt;buffer, ctx-&gt;buflen &amp; ~63, ctx);</span>
+<span class="lineNum">     274 </span><span class="lineNoCov">              0 :                         ctx-&gt;buflen &amp;= 63;</span>
+<span class="lineNum">     275 </span>                :                         /* The regions in the following copy operation cannot overlap.  */
+<span class="lineNum">     276 </span><span class="lineNoCov">              0 :                         memcpy(ctx-&gt;buffer, &amp;ctx-&gt;buffer[(left_over + add) &amp; ~63], ctx-&gt;buflen);</span>
+<span class="lineNum">     277 </span>                :                 }
+<span class="lineNum">     278 </span>                : 
+<span class="lineNum">     279 </span><span class="lineNoCov">              0 :                 buffer = (const char *) buffer + add;</span>
+<span class="lineNum">     280 </span><span class="lineNoCov">              0 :                 len -= add;</span>
+<span class="lineNum">     281 </span>                :         }
+<span class="lineNum">     282 </span>                : 
+<span class="lineNum">     283 </span>                :         /* Process available complete blocks.  */
+<span class="lineNum">     284 </span><span class="lineNoCov">              0 :         if (len &gt;= 64) {</span>
+<span class="lineNum">     285 </span>                : /* To check alignment gcc has an appropriate operator.  Other
+<span class="lineNum">     286 </span>                : compilers don't.  */
+<span class="lineNum">     287 </span>                : #if __GNUC__ &gt;= 2
+<span class="lineNum">     288 </span>                : # define UNALIGNED_P(p) (((uintptr_t) p) % __alignof__ (uint32_t) != 0)
+<span class="lineNum">     289 </span>                : #else
+<span class="lineNum">     290 </span>                : # define UNALIGNED_P(p) (((uintptr_t) p) % sizeof (uint32_t) != 0)
+<span class="lineNum">     291 </span>                : #endif
+<span class="lineNum">     292 </span><span class="lineNoCov">              0 :                 if (UNALIGNED_P (buffer))</span>
+<span class="lineNum">     293 </span><span class="lineNoCov">              0 :                         while (len &gt; 64) {</span>
+<span class="lineNum">     294 </span><span class="lineNoCov">              0 :                                 sha256_process_block(memcpy(ctx-&gt;buffer, buffer, 64), 64, ctx);</span>
+<span class="lineNum">     295 </span><span class="lineNoCov">              0 :                                 buffer = (const char *) buffer + 64;</span>
+<span class="lineNum">     296 </span><span class="lineNoCov">              0 :                                 len -= 64;</span>
+<span class="lineNum">     297 </span>                :                         } else {
+<span class="lineNum">     298 </span><span class="lineNoCov">              0 :                                 sha256_process_block(buffer, len &amp; ~63, ctx);</span>
+<span class="lineNum">     299 </span><span class="lineNoCov">              0 :                                 buffer = (const char *) buffer + (len &amp; ~63);</span>
+<span class="lineNum">     300 </span><span class="lineNoCov">              0 :                                 len &amp;= 63;</span>
+<span class="lineNum">     301 </span>                :                         }
+<span class="lineNum">     302 </span>                :         }
+<span class="lineNum">     303 </span>                : 
+<span class="lineNum">     304 </span>                :         /* Move remaining bytes into internal buffer.  */
+<span class="lineNum">     305 </span><span class="lineNoCov">              0 :         if (len &gt; 0) {</span>
+<span class="lineNum">     306 </span><span class="lineNoCov">              0 :                 size_t left_over = ctx-&gt;buflen;</span>
+<span class="lineNum">     307 </span>                : 
+<span class="lineNum">     308 </span><span class="lineNoCov">              0 :                 memcpy(&amp;ctx-&gt;buffer[left_over], buffer, len);</span>
+<span class="lineNum">     309 </span><span class="lineNoCov">              0 :                 left_over += len;</span>
+<span class="lineNum">     310 </span><span class="lineNoCov">              0 :                 if (left_over &gt;= 64) {</span>
+<span class="lineNum">     311 </span><span class="lineNoCov">              0 :                         sha256_process_block(ctx-&gt;buffer, 64, ctx);</span>
+<span class="lineNum">     312 </span><span class="lineNoCov">              0 :                         left_over -= 64;</span>
+<span class="lineNum">     313 </span><span class="lineNoCov">              0 :                         memcpy(ctx-&gt;buffer, &amp;ctx-&gt;buffer[64], left_over);</span>
+<span class="lineNum">     314 </span>                :                 }
+<span class="lineNum">     315 </span><span class="lineNoCov">              0 :                 ctx-&gt;buflen = left_over;</span>
+<span class="lineNum">     316 </span>                :         }
+<span class="lineNum">     317 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     318 </span>                : 
+<span class="lineNum">     319 </span>                : 
+<span class="lineNum">     320 </span>                : /* Define our magic string to mark salt for SHA256 &quot;encryption&quot;
+<span class="lineNum">     321 </span>                :    replacement.  */
+<span class="lineNum">     322 </span>                : static const char sha256_salt_prefix[] = &quot;$5$&quot;;
+<span class="lineNum">     323 </span>                : 
+<span class="lineNum">     324 </span>                : /* Prefix for optional rounds specification.  */
+<span class="lineNum">     325 </span>                : static const char sha256_rounds_prefix[] = &quot;rounds=&quot;;
+<span class="lineNum">     326 </span>                : 
+<span class="lineNum">     327 </span>                : /* Maximum salt string length.  */
+<span class="lineNum">     328 </span>                : #define SALT_LEN_MAX 16
+<span class="lineNum">     329 </span>                : /* Default number of rounds if not explicitly specified.  */
+<span class="lineNum">     330 </span>                : #define ROUNDS_DEFAULT 5000
+<span class="lineNum">     331 </span>                : /* Minimum number of rounds.  */
+<span class="lineNum">     332 </span>                : #define ROUNDS_MIN 1000
+<span class="lineNum">     333 </span>                : /* Maximum number of rounds.  */
+<span class="lineNum">     334 </span>                : #define ROUNDS_MAX 999999999
+<span class="lineNum">     335 </span>                : 
+<span class="lineNum">     336 </span>                : /* Table with characters for base64 transformation.  */
+<span class="lineNum">     337 </span>                : static const char b64t[64] =
+<a name="338"><span class="lineNum">     338 </span>                : &quot;./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz&quot;;</a>
+<span class="lineNum">     339 </span>                : 
+<span class="lineNum">     340 </span><span class="lineNoCov">              0 : char * php_sha256_crypt_r(const char *key, const char *salt, char *buffer, int buflen)</span>
+<span class="lineNum">     341 </span>                : {
+<span class="lineNum">     342 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">     343 </span>                : # if _MSC &lt;= 1300
+<span class="lineNum">     344 </span>                : #  pragma pack(push, 16)
+<span class="lineNum">     345 </span>                :         unsigned char alt_result[32];
+<span class="lineNum">     346 </span>                :         unsigned char temp_result[32];
+<span class="lineNum">     347 </span>                : #  pragma pack(pop)
+<span class="lineNum">     348 </span>                : # else
+<span class="lineNum">     349 </span>                :         __declspec(align(32)) unsigned char alt_result[32];
+<span class="lineNum">     350 </span>                :         __declspec(align(32)) unsigned char temp_result[32];
+<span class="lineNum">     351 </span>                : # endif
+<span class="lineNum">     352 </span>                : #else
+<span class="lineNum">     353 </span>                :         unsigned char alt_result[32] ALIGNED(__alignof__ (uint32_t));
+<span class="lineNum">     354 </span>                :         unsigned char temp_result[32] ALIGNED(__alignof__ (uint32_t));
+<span class="lineNum">     355 </span>                : #endif
+<span class="lineNum">     356 </span>                : 
+<span class="lineNum">     357 </span>                :         struct sha256_ctx ctx;
+<span class="lineNum">     358 </span>                :         struct sha256_ctx alt_ctx;
+<span class="lineNum">     359 </span>                :         size_t salt_len;
+<span class="lineNum">     360 </span>                :         size_t key_len;
+<span class="lineNum">     361 </span>                :         size_t cnt;
+<span class="lineNum">     362 </span>                :         char *cp;
+<span class="lineNum">     363 </span><span class="lineNoCov">              0 :         char *copied_key = NULL;</span>
+<span class="lineNum">     364 </span><span class="lineNoCov">              0 :         char *copied_salt = NULL;</span>
+<span class="lineNum">     365 </span>                :         char *p_bytes;
+<span class="lineNum">     366 </span>                :         char *s_bytes;
+<span class="lineNum">     367 </span>                :         /* Default number of rounds.  */
+<span class="lineNum">     368 </span><span class="lineNoCov">              0 :         size_t rounds = ROUNDS_DEFAULT;</span>
+<span class="lineNum">     369 </span><span class="lineNoCov">              0 :         zend_bool rounds_custom = 0;</span>
+<span class="lineNum">     370 </span>                : 
+<span class="lineNum">     371 </span>                :         /* Find beginning of salt string.  The prefix should normally always
+<span class="lineNum">     372 </span>                :         be present.  Just in case it is not.  */
+<span class="lineNum">     373 </span><span class="lineNoCov">              0 :         if (strncmp(sha256_salt_prefix, salt, sizeof(sha256_salt_prefix) - 1) == 0) {</span>
+<span class="lineNum">     374 </span>                :                 /* Skip salt prefix.  */
+<span class="lineNum">     375 </span><span class="lineNoCov">              0 :                 salt += sizeof(sha256_salt_prefix) - 1;</span>
+<span class="lineNum">     376 </span>                :         }
+<span class="lineNum">     377 </span>                : 
+<span class="lineNum">     378 </span><span class="lineNoCov">              0 :         if (strncmp(salt, sha256_rounds_prefix, sizeof(sha256_rounds_prefix) - 1) == 0) {</span>
+<span class="lineNum">     379 </span><span class="lineNoCov">              0 :                 const char *num = salt + sizeof(sha256_rounds_prefix) - 1;</span>
+<span class="lineNum">     380 </span>                :                 char *endp;
+<span class="lineNum">     381 </span><span class="lineNoCov">              0 :                 unsigned long int srounds = strtoul(num, &amp;endp, 10);</span>
+<span class="lineNum">     382 </span><span class="lineNoCov">              0 :                 if (*endp == '$') {</span>
+<span class="lineNum">     383 </span><span class="lineNoCov">              0 :                         salt = endp + 1;</span>
+<span class="lineNum">     384 </span><span class="lineNoCov">              0 :                         rounds = MAX(ROUNDS_MIN, MIN(srounds, ROUNDS_MAX));</span>
+<span class="lineNum">     385 </span><span class="lineNoCov">              0 :                         rounds_custom = 1;</span>
+<span class="lineNum">     386 </span>                :                 }
+<span class="lineNum">     387 </span>                :         }
+<span class="lineNum">     388 </span>                : 
+<span class="lineNum">     389 </span><span class="lineNoCov">              0 :         salt_len = MIN(strcspn(salt, &quot;$&quot;), SALT_LEN_MAX);</span>
+<span class="lineNum">     390 </span><span class="lineNoCov">              0 :         key_len = strlen(key);</span>
+<span class="lineNum">     391 </span>                : 
+<span class="lineNum">     392 </span><span class="lineNoCov">              0 :         if ((key - (char *) 0) % __alignof__ (uint32_t) != 0) {</span>
+<span class="lineNum">     393 </span><span class="lineNoCov">              0 :                 char *tmp = (char *) alloca(key_len + __alignof__(uint32_t));</span>
+<span class="lineNum">     394 </span><span class="lineNoCov">              0 :                 key = copied_key = memcpy(tmp + __alignof__(uint32_t) - (tmp - (char *) 0) % __alignof__(uint32_t), key, key_len);</span>
+<span class="lineNum">     395 </span>                :         }
+<span class="lineNum">     396 </span>                : 
+<span class="lineNum">     397 </span><span class="lineNoCov">              0 :         if ((salt - (char *) 0) % __alignof__(uint32_t) != 0) {</span>
+<span class="lineNum">     398 </span><span class="lineNoCov">              0 :                 char *tmp = (char *) alloca(salt_len + 1 + __alignof__(uint32_t));</span>
+<span class="lineNum">     399 </span><span class="lineNoCov">              0 :                 salt = copied_salt =</span>
+<span class="lineNum">     400 </span><span class="lineNoCov">              0 :                 memcpy(tmp + __alignof__(uint32_t) - (tmp - (char *) 0) % __alignof__ (uint32_t), salt, salt_len);</span>
+<span class="lineNum">     401 </span><span class="lineNoCov">              0 :                 copied_salt[salt_len] = 0;</span>
+<span class="lineNum">     402 </span>                :         }
+<span class="lineNum">     403 </span>                : 
+<span class="lineNum">     404 </span>                :         /* Prepare for the real work.  */
+<span class="lineNum">     405 </span><span class="lineNoCov">              0 :         sha256_init_ctx(&amp;ctx);</span>
+<span class="lineNum">     406 </span>                : 
+<span class="lineNum">     407 </span>                :         /* Add the key string.  */
+<span class="lineNum">     408 </span><span class="lineNoCov">              0 :         sha256_process_bytes(key, key_len, &amp;ctx);</span>
+<span class="lineNum">     409 </span>                : 
+<span class="lineNum">     410 </span>                :         /* The last part is the salt string.  This must be at most 16
+<span class="lineNum">     411 </span>                :          characters and it ends at the first `$' character (for
+<span class="lineNum">     412 </span>                :          compatibility with existing implementations).  */
+<span class="lineNum">     413 </span><span class="lineNoCov">              0 :         sha256_process_bytes(salt, salt_len, &amp;ctx);</span>
+<span class="lineNum">     414 </span>                : 
+<span class="lineNum">     415 </span>                : 
+<span class="lineNum">     416 </span>                :         /* Compute alternate SHA256 sum with input KEY, SALT, and KEY.  The
+<span class="lineNum">     417 </span>                :          final result will be added to the first context.  */
+<span class="lineNum">     418 </span><span class="lineNoCov">              0 :         sha256_init_ctx(&amp;alt_ctx);</span>
+<span class="lineNum">     419 </span>                : 
+<span class="lineNum">     420 </span>                :         /* Add key.  */
+<span class="lineNum">     421 </span><span class="lineNoCov">              0 :         sha256_process_bytes(key, key_len, &amp;alt_ctx);</span>
+<span class="lineNum">     422 </span>                : 
+<span class="lineNum">     423 </span>                :         /* Add salt.  */
+<span class="lineNum">     424 </span><span class="lineNoCov">              0 :         sha256_process_bytes(salt, salt_len, &amp;alt_ctx);</span>
+<span class="lineNum">     425 </span>                : 
+<span class="lineNum">     426 </span>                :         /* Add key again.  */
+<span class="lineNum">     427 </span><span class="lineNoCov">              0 :         sha256_process_bytes(key, key_len, &amp;alt_ctx);</span>
+<span class="lineNum">     428 </span>                : 
+<span class="lineNum">     429 </span>                :         /* Now get result of this (32 bytes) and add it to the other
+<span class="lineNum">     430 </span>                :          context.  */
+<span class="lineNum">     431 </span><span class="lineNoCov">              0 :         sha256_finish_ctx(&amp;alt_ctx, alt_result);</span>
+<span class="lineNum">     432 </span>                : 
+<span class="lineNum">     433 </span>                :         /* Add for any character in the key one byte of the alternate sum.  */
+<span class="lineNum">     434 </span><span class="lineNoCov">              0 :         for (cnt = key_len; cnt &gt; 32; cnt -= 32) {</span>
+<span class="lineNum">     435 </span><span class="lineNoCov">              0 :                 sha256_process_bytes(alt_result, 32, &amp;ctx);</span>
+<span class="lineNum">     436 </span>                :         }
+<span class="lineNum">     437 </span><span class="lineNoCov">              0 :         sha256_process_bytes(alt_result, cnt, &amp;ctx);</span>
+<span class="lineNum">     438 </span>                : 
+<span class="lineNum">     439 </span>                :         /* Take the binary representation of the length of the key and for every
+<span class="lineNum">     440 </span>                :         1 add the alternate sum, for every 0 the key.  */
+<span class="lineNum">     441 </span><span class="lineNoCov">              0 :         for (cnt = key_len; cnt &gt; 0; cnt &gt;&gt;= 1) {</span>
+<span class="lineNum">     442 </span><span class="lineNoCov">              0 :                 if ((cnt &amp; 1) != 0) {</span>
+<span class="lineNum">     443 </span><span class="lineNoCov">              0 :                         sha256_process_bytes(alt_result, 32, &amp;ctx);</span>
+<span class="lineNum">     444 </span>                :                 } else {
+<span class="lineNum">     445 </span><span class="lineNoCov">              0 :                         sha256_process_bytes(key, key_len, &amp;ctx);</span>
+<span class="lineNum">     446 </span>                :                 }
+<span class="lineNum">     447 </span>                :         }
+<span class="lineNum">     448 </span>                : 
+<span class="lineNum">     449 </span>                :         /* Create intermediate result.  */
+<span class="lineNum">     450 </span><span class="lineNoCov">              0 :         sha256_finish_ctx(&amp;ctx, alt_result);</span>
+<span class="lineNum">     451 </span>                : 
+<span class="lineNum">     452 </span>                :         /* Start computation of P byte sequence.  */
+<span class="lineNum">     453 </span><span class="lineNoCov">              0 :         sha256_init_ctx(&amp;alt_ctx);</span>
+<span class="lineNum">     454 </span>                : 
+<span class="lineNum">     455 </span>                :         /* For every character in the password add the entire password.  */
+<span class="lineNum">     456 </span><span class="lineNoCov">              0 :         for (cnt = 0; cnt &lt; key_len; ++cnt) {</span>
+<span class="lineNum">     457 </span><span class="lineNoCov">              0 :                 sha256_process_bytes(key, key_len, &amp;alt_ctx);</span>
+<span class="lineNum">     458 </span>                :         }
+<span class="lineNum">     459 </span>                : 
+<span class="lineNum">     460 </span>                :         /* Finish the digest.  */
+<span class="lineNum">     461 </span><span class="lineNoCov">              0 :         sha256_finish_ctx(&amp;alt_ctx, temp_result);</span>
+<span class="lineNum">     462 </span>                : 
+<span class="lineNum">     463 </span>                :         /* Create byte sequence P.  */
+<span class="lineNum">     464 </span><span class="lineNoCov">              0 :         cp = p_bytes = alloca(key_len);</span>
+<span class="lineNum">     465 </span><span class="lineNoCov">              0 :         for (cnt = key_len; cnt &gt;= 32; cnt -= 32) {</span>
+<span class="lineNum">     466 </span><span class="lineNoCov">              0 :                 cp = __php_mempcpy((void *)cp, (const void *)temp_result, 32);</span>
+<span class="lineNum">     467 </span>                :         }
+<span class="lineNum">     468 </span><span class="lineNoCov">              0 :         memcpy(cp, temp_result, cnt);</span>
+<span class="lineNum">     469 </span>                : 
+<span class="lineNum">     470 </span>                :         /* Start computation of S byte sequence.  */
+<span class="lineNum">     471 </span><span class="lineNoCov">              0 :         sha256_init_ctx(&amp;alt_ctx);</span>
+<span class="lineNum">     472 </span>                : 
+<span class="lineNum">     473 </span>                :         /* For every character in the password add the entire password.  */
+<span class="lineNum">     474 </span><span class="lineNoCov">              0 :         for (cnt = 0; cnt &lt; (size_t) (16 + alt_result[0]); ++cnt) {</span>
+<span class="lineNum">     475 </span><span class="lineNoCov">              0 :                 sha256_process_bytes(salt, salt_len, &amp;alt_ctx);</span>
+<span class="lineNum">     476 </span>                :         }
+<span class="lineNum">     477 </span>                : 
+<span class="lineNum">     478 </span>                :         /* Finish the digest.  */
+<span class="lineNum">     479 </span><span class="lineNoCov">              0 :         sha256_finish_ctx(&amp;alt_ctx, temp_result);</span>
+<span class="lineNum">     480 </span>                : 
+<span class="lineNum">     481 </span>                :         /* Create byte sequence S.  */
+<span class="lineNum">     482 </span><span class="lineNoCov">              0 :         cp = s_bytes = alloca(salt_len);</span>
+<span class="lineNum">     483 </span><span class="lineNoCov">              0 :         for (cnt = salt_len; cnt &gt;= 32; cnt -= 32) {</span>
+<span class="lineNum">     484 </span><span class="lineNoCov">              0 :                 cp = __php_mempcpy(cp, temp_result, 32);</span>
+<span class="lineNum">     485 </span>                :         }
+<span class="lineNum">     486 </span><span class="lineNoCov">              0 :         memcpy(cp, temp_result, cnt);</span>
+<span class="lineNum">     487 </span>                : 
+<span class="lineNum">     488 </span>                :         /* Repeatedly run the collected hash value through SHA256 to burn
+<span class="lineNum">     489 </span>                :         CPU cycles.  */
+<span class="lineNum">     490 </span><span class="lineNoCov">              0 :         for (cnt = 0; cnt &lt; rounds; ++cnt) {</span>
+<span class="lineNum">     491 </span>                :                 /* New context.  */
+<span class="lineNum">     492 </span><span class="lineNoCov">              0 :                 sha256_init_ctx(&amp;ctx);</span>
+<span class="lineNum">     493 </span>                : 
+<span class="lineNum">     494 </span>                :                 /* Add key or last result.  */
+<span class="lineNum">     495 </span><span class="lineNoCov">              0 :                 if ((cnt &amp; 1) != 0) {</span>
+<span class="lineNum">     496 </span><span class="lineNoCov">              0 :                         sha256_process_bytes(p_bytes, key_len, &amp;ctx);</span>
+<span class="lineNum">     497 </span>                :                 } else {
+<span class="lineNum">     498 </span><span class="lineNoCov">              0 :                         sha256_process_bytes(alt_result, 32, &amp;ctx);</span>
+<span class="lineNum">     499 </span>                :                 }
+<span class="lineNum">     500 </span>                : 
+<span class="lineNum">     501 </span>                :                 /* Add salt for numbers not divisible by 3.  */
+<span class="lineNum">     502 </span><span class="lineNoCov">              0 :                 if (cnt % 3 != 0) {</span>
+<span class="lineNum">     503 </span><span class="lineNoCov">              0 :                         sha256_process_bytes(s_bytes, salt_len, &amp;ctx);</span>
+<span class="lineNum">     504 </span>                :                 }
+<span class="lineNum">     505 </span>                : 
+<span class="lineNum">     506 </span>                :                 /* Add key for numbers not divisible by 7.  */
+<span class="lineNum">     507 </span><span class="lineNoCov">              0 :                 if (cnt % 7 != 0) {</span>
+<span class="lineNum">     508 </span><span class="lineNoCov">              0 :                         sha256_process_bytes(p_bytes, key_len, &amp;ctx);</span>
+<span class="lineNum">     509 </span>                :                 }
+<span class="lineNum">     510 </span>                : 
+<span class="lineNum">     511 </span>                :                 /* Add key or last result.  */
+<span class="lineNum">     512 </span><span class="lineNoCov">              0 :                 if ((cnt &amp; 1) != 0) {</span>
+<span class="lineNum">     513 </span><span class="lineNoCov">              0 :                         sha256_process_bytes(alt_result, 32, &amp;ctx);</span>
+<span class="lineNum">     514 </span>                :                 } else {
+<span class="lineNum">     515 </span><span class="lineNoCov">              0 :                         sha256_process_bytes(p_bytes, key_len, &amp;ctx);</span>
+<span class="lineNum">     516 </span>                :                 }
+<span class="lineNum">     517 </span>                : 
+<span class="lineNum">     518 </span>                :                 /* Create intermediate result.  */
+<span class="lineNum">     519 </span><span class="lineNoCov">              0 :                 sha256_finish_ctx(&amp;ctx, alt_result);</span>
+<span class="lineNum">     520 </span>                :         }
+<span class="lineNum">     521 </span>                : 
+<span class="lineNum">     522 </span>                :         /* Now we can construct the result string.  It consists of three
+<span class="lineNum">     523 </span>                :         parts.  */
+<span class="lineNum">     524 </span><span class="lineNoCov">              0 :         cp = __php_stpncpy(buffer, sha256_salt_prefix, MAX(0, buflen));</span>
+<span class="lineNum">     525 </span><span class="lineNoCov">              0 :         buflen -= sizeof(sha256_salt_prefix) - 1;</span>
+<span class="lineNum">     526 </span>                : 
+<span class="lineNum">     527 </span><span class="lineNoCov">              0 :         if (rounds_custom) {</span>
+<span class="lineNum">     528 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">     529 </span>                :                 int n = _snprintf(cp, MAX(0, buflen), &quot;%s%u$&quot;, sha256_rounds_prefix, rounds);
+<span class="lineNum">     530 </span>                : #else
+<span class="lineNum">     531 </span><span class="lineNoCov">              0 :                 int n = snprintf(cp, MAX(0, buflen), &quot;%s%zu$&quot;, sha256_rounds_prefix, rounds);</span>
+<span class="lineNum">     532 </span>                : #endif
+<span class="lineNum">     533 </span><span class="lineNoCov">              0 :                 cp += n;</span>
+<span class="lineNum">     534 </span><span class="lineNoCov">              0 :                 buflen -= n;</span>
+<span class="lineNum">     535 </span>                :         }
+<span class="lineNum">     536 </span>                : 
+<span class="lineNum">     537 </span><span class="lineNoCov">              0 :         cp = __php_stpncpy(cp, salt, MIN ((size_t) MAX (0, buflen), salt_len));</span>
+<span class="lineNum">     538 </span><span class="lineNoCov">              0 :         buflen -= MIN((size_t) MAX (0, buflen), salt_len);</span>
+<span class="lineNum">     539 </span>                : 
+<span class="lineNum">     540 </span><span class="lineNoCov">              0 :         if (buflen &gt; 0) {</span>
+<span class="lineNum">     541 </span><span class="lineNoCov">              0 :                 *cp++ = '$';</span>
+<span class="lineNum">     542 </span><span class="lineNoCov">              0 :                 --buflen;</span>
+<span class="lineNum">     543 </span>                :         }
+<span class="lineNum">     544 </span>                : 
+<span class="lineNum">     545 </span>                : #define b64_from_24bit(B2, B1, B0, N)                                         \
+<span class="lineNum">     546 </span>                :   do {                                                                        \
+<span class="lineNum">     547 </span>                :     unsigned int w = ((B2) &lt;&lt; 16) | ((B1) &lt;&lt; 8) | (B0);                           \
+<span class="lineNum">     548 </span>                :     int n = (N);                                                              \
+<span class="lineNum">     549 </span>                :     while (n-- &gt; 0 &amp;&amp; buflen &gt; 0)                                       \
+<span class="lineNum">     550 </span>                :       {                                                                       \
+<span class="lineNum">     551 </span>                :         *cp++ = b64t[w &amp; 0x3f];                                                   \
+<span class="lineNum">     552 </span>                :         --buflen;                                                             \
+<span class="lineNum">     553 </span>                :         w &gt;&gt;= 6;                                                        \
+<span class="lineNum">     554 </span>                :       }                                                                       \
+<span class="lineNum">     555 </span>                :   } while (0)
+<span class="lineNum">     556 </span>                : 
+<span class="lineNum">     557 </span><span class="lineNoCov">              0 :         b64_from_24bit(alt_result[0], alt_result[10], alt_result[20], 4);</span>
+<span class="lineNum">     558 </span><span class="lineNoCov">              0 :         b64_from_24bit(alt_result[21], alt_result[1], alt_result[11], 4);</span>
+<span class="lineNum">     559 </span><span class="lineNoCov">              0 :         b64_from_24bit(alt_result[12], alt_result[22], alt_result[2], 4);</span>
+<span class="lineNum">     560 </span><span class="lineNoCov">              0 :         b64_from_24bit(alt_result[3], alt_result[13], alt_result[23], 4);</span>
+<span class="lineNum">     561 </span><span class="lineNoCov">              0 :         b64_from_24bit(alt_result[24], alt_result[4], alt_result[14], 4);</span>
+<span class="lineNum">     562 </span><span class="lineNoCov">              0 :         b64_from_24bit(alt_result[15], alt_result[25], alt_result[5], 4);</span>
+<span class="lineNum">     563 </span><span class="lineNoCov">              0 :         b64_from_24bit(alt_result[6], alt_result[16], alt_result[26], 4);</span>
+<span class="lineNum">     564 </span><span class="lineNoCov">              0 :         b64_from_24bit(alt_result[27], alt_result[7], alt_result[17], 4);</span>
+<span class="lineNum">     565 </span><span class="lineNoCov">              0 :         b64_from_24bit(alt_result[18], alt_result[28], alt_result[8], 4);</span>
+<span class="lineNum">     566 </span><span class="lineNoCov">              0 :         b64_from_24bit(alt_result[9], alt_result[19], alt_result[29], 4);</span>
+<span class="lineNum">     567 </span><span class="lineNoCov">              0 :         b64_from_24bit(0, alt_result[31], alt_result[30], 3);</span>
+<span class="lineNum">     568 </span><span class="lineNoCov">              0 :         if (buflen &lt;= 0) {</span>
+<span class="lineNum">     569 </span><span class="lineNoCov">              0 :                 errno = ERANGE;</span>
+<span class="lineNum">     570 </span><span class="lineNoCov">              0 :                 buffer = NULL;</span>
+<span class="lineNum">     571 </span>                :         } else
+<span class="lineNum">     572 </span><span class="lineNoCov">              0 :                 *cp = '\0';             /* Terminate the string.  */</span>
+<span class="lineNum">     573 </span>                : 
+<span class="lineNum">     574 </span>                :         /* Clear the buffer for the intermediate result so that people
+<span class="lineNum">     575 </span>                :      attaching to processes or reading core dumps cannot get any
+<span class="lineNum">     576 </span>                :      information.  We do it in this way to clear correct_words[]
+<span class="lineNum">     577 </span>                :      inside the SHA256 implementation as well.  */
+<span class="lineNum">     578 </span><span class="lineNoCov">              0 :         sha256_init_ctx(&amp;ctx);</span>
+<span class="lineNum">     579 </span><span class="lineNoCov">              0 :         sha256_finish_ctx(&amp;ctx, alt_result);</span>
+<span class="lineNum">     580 </span><span class="lineNoCov">              0 :         memset(temp_result, '\0', sizeof(temp_result));</span>
+<span class="lineNum">     581 </span><span class="lineNoCov">              0 :         memset(p_bytes, '\0', key_len);</span>
+<span class="lineNum">     582 </span><span class="lineNoCov">              0 :         memset(s_bytes, '\0', salt_len);</span>
+<span class="lineNum">     583 </span><span class="lineNoCov">              0 :         memset(&amp;ctx, '\0', sizeof(ctx));</span>
+<span class="lineNum">     584 </span><span class="lineNoCov">              0 :         memset(&amp;alt_ctx, '\0', sizeof(alt_ctx));</span>
+<span class="lineNum">     585 </span>                : 
+<span class="lineNum">     586 </span><span class="lineNoCov">              0 :         if (copied_key != NULL) {</span>
+<span class="lineNum">     587 </span><span class="lineNoCov">              0 :                 memset(copied_key, '\0', key_len);</span>
+<span class="lineNum">     588 </span>                : 
+<span class="lineNum">     589 </span>                :         }
+<span class="lineNum">     590 </span><span class="lineNoCov">              0 :         if (copied_salt != NULL) {</span>
+<span class="lineNum">     591 </span><span class="lineNoCov">              0 :                 memset(copied_salt, '\0', salt_len);</span>
+<span class="lineNum">     592 </span>                :         }
+<span class="lineNum">     593 </span>                : 
+<span class="lineNum">     594 </span><span class="lineNoCov">              0 :         return buffer;</span>
+<span class="lineNum">     595 </span>                : }
+<span class="lineNum">     596 </span>                : 
+<span class="lineNum">     597 </span>                : 
+<a name="598"><span class="lineNum">     598 </span>                : /* This entry point is equivalent to the `crypt' function in Unix</a>
+<span class="lineNum">     599 </span>                :    libcs.  */
+<span class="lineNum">     600 </span><span class="lineNoCov">              0 : char * php_sha256_crypt(const char *key, const char *salt)</span>
+<span class="lineNum">     601 </span>                : {
+<span class="lineNum">     602 </span>                :         /* We don't want to have an arbitrary limit in the size of the
+<span class="lineNum">     603 </span>                :         password.  We can compute an upper bound for the size of the
+<span class="lineNum">     604 </span>                :         result in advance and so we can prepare the buffer we pass to
+<span class="lineNum">     605 </span>                :         `sha256_crypt_r'.  */
+<span class="lineNum">     606 </span>                :         static char *buffer;
+<span class="lineNum">     607 </span>                :         static int buflen;
+<span class="lineNum">     608 </span>                :         int needed = (sizeof(sha256_salt_prefix) - 1
+<span class="lineNum">     609 </span>                :                         + sizeof(sha256_rounds_prefix) + 9 + 1
+<span class="lineNum">     610 </span><span class="lineNoCov">              0 :                         + strlen(salt) + 1 + 43 + 1);</span>
+<span class="lineNum">     611 </span>                : 
+<span class="lineNum">     612 </span><span class="lineNoCov">              0 :         if (buflen &lt; needed) {</span>
+<span class="lineNum">     613 </span><span class="lineNoCov">              0 :                 char *new_buffer = (char *) realloc(buffer, needed);</span>
+<span class="lineNum">     614 </span><span class="lineNoCov">              0 :                 if (new_buffer == NULL) {</span>
+<span class="lineNum">     615 </span><span class="lineNoCov">              0 :                         return NULL;</span>
+<span class="lineNum">     616 </span>                :                 }
+<span class="lineNum">     617 </span>                : 
+<span class="lineNum">     618 </span><span class="lineNoCov">              0 :                 buffer = new_buffer;</span>
+<span class="lineNum">     619 </span><span class="lineNoCov">              0 :                 buflen = needed;</span>
+<span class="lineNum">     620 </span>                :         }
+<span class="lineNum">     621 </span>                : 
+<span class="lineNum">     622 </span><span class="lineNoCov">              0 :         return php_sha256_crypt_r(key, salt, buffer, buflen);</span>
+<span class="lineNum">     623 </span>                : }
+<span class="lineNum">     624 </span>                : 
+<span class="lineNum">     625 </span>                : 
+<span class="lineNum">     626 </span>                : #ifdef TEST
+<span class="lineNum">     627 </span>                : static const struct
+<span class="lineNum">     628 </span>                : {
+<span class="lineNum">     629 </span>                :         const char *input;
+<span class="lineNum">     630 </span>                :         const char result[32];
+<span class="lineNum">     631 </span>                : } tests[] =
+<span class="lineNum">     632 </span>                :         {
+<span class="lineNum">     633 </span>                :         /* Test vectors from FIPS 180-2: appendix B.1.  */
+<span class="lineNum">     634 </span>                :         { &quot;abc&quot;,
+<span class="lineNum">     635 </span>                :         &quot;\xba\x78\x16\xbf\x8f\x01\xcf\xea\x41\x41\x40\xde\x5d\xae\x22\x23&quot;
+<span class="lineNum">     636 </span>                :         &quot;\xb0\x03\x61\xa3\x96\x17\x7a\x9c\xb4\x10\xff\x61\xf2\x00\x15\xad&quot; },
+<span class="lineNum">     637 </span>                :         /* Test vectors from FIPS 180-2: appendix B.2.  */
+<span class="lineNum">     638 </span>                :         { &quot;abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq&quot;,
+<span class="lineNum">     639 </span>                :         &quot;\x24\x8d\x6a\x61\xd2\x06\x38\xb8\xe5\xc0\x26\x93\x0c\x3e\x60\x39&quot;
+<span class="lineNum">     640 </span>                :         &quot;\xa3\x3c\xe4\x59\x64\xff\x21\x67\xf6\xec\xed\xd4\x19\xdb\x06\xc1&quot; },
+<span class="lineNum">     641 </span>                :         /* Test vectors from the NESSIE project.  */
+<span class="lineNum">     642 </span>                :         { &quot;&quot;,
+<span class="lineNum">     643 </span>                :         &quot;\xe3\xb0\xc4\x42\x98\xfc\x1c\x14\x9a\xfb\xf4\xc8\x99\x6f\xb9\x24&quot;
+<span class="lineNum">     644 </span>                :         &quot;\x27\xae\x41\xe4\x64\x9b\x93\x4c\xa4\x95\x99\x1b\x78\x52\xb8\x55&quot; },
+<span class="lineNum">     645 </span>                :         { &quot;a&quot;,
+<span class="lineNum">     646 </span>                :         &quot;\xca\x97\x81\x12\xca\x1b\xbd\xca\xfa\xc2\x31\xb3\x9a\x23\xdc\x4d&quot;
+<span class="lineNum">     647 </span>                :         &quot;\xa7\x86\xef\xf8\x14\x7c\x4e\x72\xb9\x80\x77\x85\xaf\xee\x48\xbb&quot; },
+<span class="lineNum">     648 </span>                :         { &quot;message digest&quot;,
+<span class="lineNum">     649 </span>                :         &quot;\xf7\x84\x6f\x55\xcf\x23\xe1\x4e\xeb\xea\xb5\xb4\xe1\x55\x0c\xad&quot;
+<span class="lineNum">     650 </span>                :         &quot;\x5b\x50\x9e\x33\x48\xfb\xc4\xef\xa3\xa1\x41\x3d\x39\x3c\xb6\x50&quot; },
+<span class="lineNum">     651 </span>                :         { &quot;abcdefghijklmnopqrstuvwxyz&quot;,
+<span class="lineNum">     652 </span>                :         &quot;\x71\xc4\x80\xdf\x93\xd6\xae\x2f\x1e\xfa\xd1\x44\x7c\x66\xc9\x52&quot;
+<span class="lineNum">     653 </span>                :         &quot;\x5e\x31\x62\x18\xcf\x51\xfc\x8d\x9e\xd8\x32\xf2\xda\xf1\x8b\x73&quot; },
+<span class="lineNum">     654 </span>                :         { &quot;abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq&quot;,
+<span class="lineNum">     655 </span>                :         &quot;\x24\x8d\x6a\x61\xd2\x06\x38\xb8\xe5\xc0\x26\x93\x0c\x3e\x60\x39&quot;
+<span class="lineNum">     656 </span>                :         &quot;\xa3\x3c\xe4\x59\x64\xff\x21\x67\xf6\xec\xed\xd4\x19\xdb\x06\xc1&quot; },
+<span class="lineNum">     657 </span>                :         { &quot;ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789&quot;,
+<span class="lineNum">     658 </span>                :         &quot;\xdb\x4b\xfc\xbd\x4d\xa0\xcd\x85\xa6\x0c\x3c\x37\xd3\xfb\xd8\x80&quot;
+<span class="lineNum">     659 </span>                :         &quot;\x5c\x77\xf1\x5f\xc6\xb1\xfd\xfe\x61\x4e\xe0\xa7\xc8\xfd\xb4\xc0&quot; },
+<span class="lineNum">     660 </span>                :         { &quot;123456789012345678901234567890123456789012345678901234567890&quot;
+<span class="lineNum">     661 </span>                :         &quot;12345678901234567890&quot;,
+<span class="lineNum">     662 </span>                :         &quot;\xf3\x71\xbc\x4a\x31\x1f\x2b\x00\x9e\xef\x95\x2d\xd8\x3c\xa8\x0e&quot;
+<span class="lineNum">     663 </span>                :         &quot;\x2b\x60\x02\x6c\x8e\x93\x55\x92\xd0\xf9\xc3\x08\x45\x3c\x81\x3e&quot; }
+<span class="lineNum">     664 </span>                :   };
+<span class="lineNum">     665 </span>                : #define ntests (sizeof (tests) / sizeof (tests[0]))
+<span class="lineNum">     666 </span>                : 
+<span class="lineNum">     667 </span>                : 
+<span class="lineNum">     668 </span>                : static const struct
+<span class="lineNum">     669 </span>                : {
+<span class="lineNum">     670 </span>                :         const char *salt;
+<span class="lineNum">     671 </span>                :         const char *input;
+<span class="lineNum">     672 </span>                :         const char *expected;
+<span class="lineNum">     673 </span>                : } tests2[] =
+<span class="lineNum">     674 </span>                : {
+<span class="lineNum">     675 </span>                :         { &quot;$5$saltstring&quot;, &quot;Hello world!&quot;,
+<span class="lineNum">     676 </span>                :         &quot;$5$saltstring$5B8vYYiY.CVt1RlTTf8KbXBH3hsxY/GNooZaBBGWEc5&quot; },
+<span class="lineNum">     677 </span>                :         { &quot;$5$rounds=10000$saltstringsaltstring&quot;, &quot;Hello world!&quot;,
+<span class="lineNum">     678 </span>                :         &quot;$5$rounds=10000$saltstringsaltst$3xv.VbSHBb41AL9AvLeujZkZRBAwqFMz2.&quot;
+<span class="lineNum">     679 </span>                :         &quot;opqey6IcA&quot; },
+<span class="lineNum">     680 </span>                :         { &quot;$5$rounds=5000$toolongsaltstring&quot;, &quot;This is just a test&quot;,
+<span class="lineNum">     681 </span>                :         &quot;$5$rounds=5000$toolongsaltstrin$Un/5jzAHMgOGZ5.mWJpuVolil07guHPvOW8&quot;
+<span class="lineNum">     682 </span>                :         &quot;mGRcvxa5&quot; },
+<span class="lineNum">     683 </span>                :         { &quot;$5$rounds=1400$anotherlongsaltstring&quot;,
+<span class="lineNum">     684 </span>                :         &quot;a very much longer text to encrypt.  This one even stretches over more&quot;
+<span class="lineNum">     685 </span>                :         &quot;than one line.&quot;,
+<span class="lineNum">     686 </span>                :         &quot;$5$rounds=1400$anotherlongsalts$Rx.j8H.h8HjEDGomFU8bDkXm3XIUnzyxf12&quot;
+<span class="lineNum">     687 </span>                :         &quot;oP84Bnq1&quot; },
+<span class="lineNum">     688 </span>                :         { &quot;$5$rounds=77777$short&quot;,
+<span class="lineNum">     689 </span>                :         &quot;we have a short salt string but not a short password&quot;,
+<span class="lineNum">     690 </span>                :         &quot;$5$rounds=77777$short$JiO1O3ZpDAxGJeaDIuqCoEFysAe1mZNJRs3pw0KQRd/&quot; },
+<span class="lineNum">     691 </span>                :         { &quot;$5$rounds=123456$asaltof16chars..&quot;, &quot;a short string&quot;,
+<span class="lineNum">     692 </span>                :         &quot;$5$rounds=123456$asaltof16chars..$gP3VQ/6X7UUEW3HkBn2w1/Ptq2jxPyzV/&quot;
+<span class="lineNum">     693 </span>                :         &quot;cZKmF/wJvD&quot; },
+<span class="lineNum">     694 </span>                :         { &quot;$5$rounds=10$roundstoolow&quot;, &quot;the minimum number is still observed&quot;,
+<span class="lineNum">     695 </span>                :         &quot;$5$rounds=1000$roundstoolow$yfvwcWrQ8l/K0DAWyuPMDNHpIVlTQebY9l/gL97&quot;
+<span class="lineNum">     696 </span>                :         &quot;2bIC&quot; },
+<span class="lineNum">     697 </span>                : };
+<span class="lineNum">     698 </span>                : #define ntests2 (sizeof (tests2) / sizeof (tests2[0]))
+<span class="lineNum">     699 </span>                : 
+<span class="lineNum">     700 </span>                : 
+<span class="lineNum">     701 </span>                : int main(void) {
+<span class="lineNum">     702 </span>                :         struct sha256_ctx ctx;
+<span class="lineNum">     703 </span>                :         char sum[32];
+<span class="lineNum">     704 </span>                :         int result = 0;
+<span class="lineNum">     705 </span>                :         int cnt, i;
+<span class="lineNum">     706 </span>                :         char buf[1000];
+<span class="lineNum">     707 </span>                :         static const char expected[32] =
+<span class="lineNum">     708 </span>                :         &quot;\xcd\xc7\x6e\x5c\x99\x14\xfb\x92\x81\xa1\xc7\xe2\x84\xd7\x3e\x67&quot;
+<span class="lineNum">     709 </span>                :         &quot;\xf1\x80\x9a\x48\xa4\x97\x20\x0e\x04\x6d\x39\xcc\xc7\x11\x2c\xd0&quot;;
+<span class="lineNum">     710 </span>                : 
+<span class="lineNum">     711 </span>                :         for (cnt = 0; cnt &lt; (int) ntests; ++cnt) {
+<span class="lineNum">     712 </span>                :                 sha256_init_ctx(&amp;ctx);
+<span class="lineNum">     713 </span>                :                 sha256_process_bytes(tests[cnt].input, strlen(tests[cnt].input), &amp;ctx);
+<span class="lineNum">     714 </span>                :                 sha256_finish_ctx(&amp;ctx, sum);
+<span class="lineNum">     715 </span>                :                 if (memcmp(tests[cnt].result, sum, 32) != 0) {
+<span class="lineNum">     716 </span>                :                         printf(&quot;test %d run %d failed\n&quot;, cnt, 1);
+<span class="lineNum">     717 </span>                :                         result = 1;
+<span class="lineNum">     718 </span>                :                 }
+<span class="lineNum">     719 </span>                : 
+<span class="lineNum">     720 </span>                :                 sha256_init_ctx(&amp;ctx);
+<span class="lineNum">     721 </span>                :                 for (i = 0; tests[cnt].input[i] != '\0'; ++i) {
+<span class="lineNum">     722 </span>                :                         sha256_process_bytes(&amp;tests[cnt].input[i], 1, &amp;ctx);
+<span class="lineNum">     723 </span>                :                 }
+<span class="lineNum">     724 </span>                :                 sha256_finish_ctx(&amp;ctx, sum);
+<span class="lineNum">     725 </span>                :                 if (memcmp(tests[cnt].result, sum, 32) != 0) {
+<span class="lineNum">     726 </span>                :                         printf(&quot;test %d run %d failed\n&quot;, cnt, 2);
+<span class="lineNum">     727 </span>                :                         result = 1;
+<span class="lineNum">     728 </span>                :                 }
+<span class="lineNum">     729 </span>                :         }
+<span class="lineNum">     730 </span>                : 
+<span class="lineNum">     731 </span>                :         /* Test vector from FIPS 180-2: appendix B.3.  */
+<span class="lineNum">     732 </span>                : 
+<span class="lineNum">     733 </span>                :         memset(buf, 'a', sizeof(buf));
+<span class="lineNum">     734 </span>                :         sha256_init_ctx(&amp;ctx);
+<span class="lineNum">     735 </span>                :         for (i = 0; i &lt; 1000; ++i) {
+<span class="lineNum">     736 </span>                :                 sha256_process_bytes (buf, sizeof (buf), &amp;ctx);
+<span class="lineNum">     737 </span>                :         }
+<span class="lineNum">     738 </span>                : 
+<span class="lineNum">     739 </span>                :         sha256_finish_ctx(&amp;ctx, sum);
+<span class="lineNum">     740 </span>                : 
+<span class="lineNum">     741 </span>                :         if (memcmp(expected, sum, 32) != 0) {
+<span class="lineNum">     742 </span>                :                 printf(&quot;test %d failed\n&quot;, cnt);
+<span class="lineNum">     743 </span>                :                 result = 1;
+<span class="lineNum">     744 </span>                :         }
+<span class="lineNum">     745 </span>                : 
+<span class="lineNum">     746 </span>                :         for (cnt = 0; cnt &lt; ntests2; ++cnt) {
+<span class="lineNum">     747 </span>                :                 char *cp = php_sha256_crypt(tests2[cnt].input, tests2[cnt].salt);
+<span class="lineNum">     748 </span>                :                 if (strcmp(cp, tests2[cnt].expected) != 0) {
+<span class="lineNum">     749 </span>                :                         printf(&quot;test %d: expected \&quot;%s\&quot;, got \&quot;%s\&quot;\n&quot;, cnt, tests2[cnt].expected, cp);
+<span class="lineNum">     750 </span>                :                         result = 1;
+<span class="lineNum">     751 </span>                :                 }
+<span class="lineNum">     752 </span>                :         }
+<span class="lineNum">     753 </span>                : 
+<span class="lineNum">     754 </span>                :         if (result == 0)
+<span class="lineNum">     755 </span>                :         puts(&quot;all tests OK&quot;);
+<span class="lineNum">     756 </span>                : 
+<span class="lineNum">     757 </span>                :         return result;
+<span class="lineNum">     758 </span>                : }
+<span class="lineNum">     759 </span>                : #endif
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

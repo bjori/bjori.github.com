@@ -1,0 +1,597 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - Zend/zend_closures.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../index.html">directory</a> - <a href="index.html">Zend</a> - zend_closures.c (source / <a href="zend_closures.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">234</td>
+          <td class="headerCovTableEntry">21</td>
+          <td class="headerCovTableEntryLo">9.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">22</td>
+          <td class="headerCovTableEntry">1</td>
+          <td class="headerCovTableEntryLo">4.5 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | Zend Engine                                                          |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1998-2012 Zend Technologies Ltd. (http://www.zend.com) |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 2.00 of the Zend license,     |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        | 
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.zend.com/license/2_00.txt.                                |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the Zend license and are unable to  |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@zend.com so we can mail you a copy immediately.              |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Authors: Christian Seiler &lt;chris_se@gmx.net&gt;                         |
+<span class="lineNum">      16 </span>                :    |          Dmitry Stogov &lt;dmitry@zend.com&gt;                             |
+<span class="lineNum">      17 </span>                :    |          Marcus Boerger &lt;helly@php.net&gt;                              |
+<span class="lineNum">      18 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      19 </span>                : */
+<span class="lineNum">      20 </span>                : 
+<span class="lineNum">      21 </span>                : /* $Id$ */
+<span class="lineNum">      22 </span>                : 
+<span class="lineNum">      23 </span>                : #include &quot;zend.h&quot;
+<span class="lineNum">      24 </span>                : #include &quot;zend_API.h&quot;
+<span class="lineNum">      25 </span>                : #include &quot;zend_closures.h&quot;
+<span class="lineNum">      26 </span>                : #include &quot;zend_exceptions.h&quot;
+<span class="lineNum">      27 </span>                : #include &quot;zend_interfaces.h&quot;
+<span class="lineNum">      28 </span>                : #include &quot;zend_objects.h&quot;
+<span class="lineNum">      29 </span>                : #include &quot;zend_objects_API.h&quot;
+<span class="lineNum">      30 </span>                : #include &quot;zend_globals.h&quot;
+<span class="lineNum">      31 </span>                : 
+<span class="lineNum">      32 </span>                : #define ZEND_CLOSURE_PRINT_NAME &quot;Closure object&quot;
+<span class="lineNum">      33 </span>                : 
+<span class="lineNum">      34 </span>                : #define ZEND_CLOSURE_PROPERTY_ERROR() \
+<span class="lineNum">      35 </span>                :         zend_error(E_RECOVERABLE_ERROR, &quot;Closure object cannot have properties&quot;)
+<span class="lineNum">      36 </span>                : 
+<span class="lineNum">      37 </span>                : typedef struct _zend_closure {
+<span class="lineNum">      38 </span>                :         zend_object    std;
+<span class="lineNum">      39 </span>                :         zend_function  func;
+<span class="lineNum">      40 </span>                :         zval          *this_ptr;
+<span class="lineNum">      41 </span>                :         HashTable     *debug_info;
+<span class="lineNum">      42 </span>                : } zend_closure;
+<span class="lineNum">      43 </span>                : 
+<span class="lineNum">      44 </span>                : /* non-static since it needs to be referenced */
+<span class="lineNum">      45 </span>                : ZEND_API zend_class_entry *zend_ce_closure;
+<a name="46"><span class="lineNum">      46 </span>                : static zend_object_handlers closure_handlers;</a>
+<span class="lineNum">      47 </span>                : 
+<span class="lineNum">      48 </span><span class="lineNoCov">              0 : ZEND_METHOD(Closure, __invoke) /* {{{ */</span>
+<span class="lineNum">      49 </span>                : {
+<span class="lineNum">      50 </span><span class="lineNoCov">              0 :         zend_function *func = EG(current_execute_data)-&gt;function_state.function;</span>
+<span class="lineNum">      51 </span>                :         zval ***arguments;
+<span class="lineNum">      52 </span><span class="lineNoCov">              0 :         zval *closure_result_ptr = NULL;</span>
+<span class="lineNum">      53 </span>                : 
+<span class="lineNum">      54 </span><span class="lineNoCov">              0 :         arguments = emalloc(sizeof(zval**) * ZEND_NUM_ARGS());</span>
+<span class="lineNum">      55 </span><span class="lineNoCov">              0 :         if (zend_get_parameters_array_ex(ZEND_NUM_ARGS(), arguments) == FAILURE) {</span>
+<span class="lineNum">      56 </span><span class="lineNoCov">              0 :                 efree(arguments);</span>
+<span class="lineNum">      57 </span><span class="lineNoCov">              0 :                 zend_error(E_RECOVERABLE_ERROR, &quot;Cannot get arguments for calling closure&quot;);</span>
+<span class="lineNum">      58 </span><span class="lineNoCov">              0 :                 RETVAL_FALSE;</span>
+<span class="lineNum">      59 </span><span class="lineNoCov">              0 :         } else if (call_user_function_ex(CG(function_table), NULL, this_ptr, &amp;closure_result_ptr, ZEND_NUM_ARGS(), arguments, 1, NULL TSRMLS_CC) == FAILURE) {</span>
+<span class="lineNum">      60 </span><span class="lineNoCov">              0 :                 RETVAL_FALSE;</span>
+<span class="lineNum">      61 </span><span class="lineNoCov">              0 :         } else if (closure_result_ptr) {</span>
+<span class="lineNum">      62 </span><span class="lineNoCov">              0 :                 if (Z_ISREF_P(closure_result_ptr) &amp;&amp; return_value_ptr) {</span>
+<span class="lineNum">      63 </span><span class="lineNoCov">              0 :                         if (return_value) {</span>
+<span class="lineNum">      64 </span><span class="lineNoCov">              0 :                                 zval_ptr_dtor(&amp;return_value);</span>
+<span class="lineNum">      65 </span>                :                         }
+<span class="lineNum">      66 </span><span class="lineNoCov">              0 :                         *return_value_ptr = closure_result_ptr;</span>
+<span class="lineNum">      67 </span>                :                 } else {
+<span class="lineNum">      68 </span><span class="lineNoCov">              0 :                         RETVAL_ZVAL(closure_result_ptr, 1, 1);</span>
+<span class="lineNum">      69 </span>                :                 }
+<span class="lineNum">      70 </span>                :         }
+<span class="lineNum">      71 </span><span class="lineNoCov">              0 :         efree(arguments);</span>
+<span class="lineNum">      72 </span>                : 
+<span class="lineNum">      73 </span>                :         /* destruct the function also, then - we have allocated it in get_method */
+<span class="lineNum">      74 </span><span class="lineNoCov">              0 :         efree((char*)func-&gt;internal_function.function_name);</span>
+<span class="lineNum">      75 </span><span class="lineNoCov">              0 :         efree(func);</span>
+<span class="lineNum">      76 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">      77 </span>                : /* }}} */
+<span class="lineNum">      78 </span>                : 
+<a name="79"><span class="lineNum">      79 </span>                : /* {{{ proto Closure Closure::bind(Closure $old, object $to [, mixed $scope = &quot;static&quot; ] )</a>
+<span class="lineNum">      80 </span>                :    Create a closure from another one and bind to another object and scope */
+<span class="lineNum">      81 </span><span class="lineNoCov">              0 : ZEND_METHOD(Closure, bind) /* {{{ */</span>
+<span class="lineNum">      82 </span>                : {
+<span class="lineNum">      83 </span><span class="lineNoCov">              0 :         zval *newthis, *zclosure, *scope_arg = NULL;</span>
+<span class="lineNum">      84 </span>                :         zend_closure *closure;
+<span class="lineNum">      85 </span>                :         zend_class_entry *ce, **ce_p;
+<span class="lineNum">      86 </span>                : 
+<span class="lineNum">      87 </span><span class="lineNoCov">              0 :         if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), &quot;Oo!|z&quot;, &amp;zclosure, zend_ce_closure, &amp;newthis, &amp;scope_arg) == FAILURE) {</span>
+<span class="lineNum">      88 </span><span class="lineNoCov">              0 :                 RETURN_NULL();</span>
+<span class="lineNum">      89 </span>                :         }
+<span class="lineNum">      90 </span>                : 
+<span class="lineNum">      91 </span><span class="lineNoCov">              0 :         closure = (zend_closure *)zend_object_store_get_object(zclosure TSRMLS_CC);     </span>
+<span class="lineNum">      92 </span>                : 
+<span class="lineNum">      93 </span><span class="lineNoCov">              0 :         if ((newthis != NULL) &amp;&amp; (closure-&gt;func.common.fn_flags &amp; ZEND_ACC_STATIC)) {</span>
+<span class="lineNum">      94 </span><span class="lineNoCov">              0 :                 zend_error(E_WARNING, &quot;Cannot bind an instance to a static closure&quot;);</span>
+<span class="lineNum">      95 </span>                :         }
+<span class="lineNum">      96 </span>                : 
+<span class="lineNum">      97 </span><span class="lineNoCov">              0 :         if (scope_arg != NULL) { /* scope argument was given */</span>
+<span class="lineNum">      98 </span><span class="lineNoCov">              0 :                 if (IS_ZEND_STD_OBJECT(*scope_arg)) {</span>
+<span class="lineNum">      99 </span><span class="lineNoCov">              0 :                         ce = Z_OBJCE_P(scope_arg);</span>
+<span class="lineNum">     100 </span><span class="lineNoCov">              0 :                 } else if (Z_TYPE_P(scope_arg) == IS_NULL) {</span>
+<span class="lineNum">     101 </span><span class="lineNoCov">              0 :                         ce = NULL;</span>
+<span class="lineNum">     102 </span>                :                 } else {
+<span class="lineNum">     103 </span>                :                         char *class_name;
+<span class="lineNum">     104 </span>                :                         int class_name_len;
+<span class="lineNum">     105 </span>                :                         zval tmp_zval;
+<span class="lineNum">     106 </span><span class="lineNoCov">              0 :                         INIT_ZVAL(tmp_zval);</span>
+<span class="lineNum">     107 </span>                : 
+<span class="lineNum">     108 </span><span class="lineNoCov">              0 :                         if (Z_TYPE_P(scope_arg) == IS_STRING) {</span>
+<span class="lineNum">     109 </span><span class="lineNoCov">              0 :                                 class_name = Z_STRVAL_P(scope_arg);</span>
+<span class="lineNum">     110 </span><span class="lineNoCov">              0 :                                 class_name_len = Z_STRLEN_P(scope_arg);</span>
+<span class="lineNum">     111 </span>                :                         } else {
+<span class="lineNum">     112 </span><span class="lineNoCov">              0 :                                 tmp_zval = *scope_arg;</span>
+<span class="lineNum">     113 </span>                :                                 zval_copy_ctor(&amp;tmp_zval);
+<span class="lineNum">     114 </span><span class="lineNoCov">              0 :                                 convert_to_string(&amp;tmp_zval);</span>
+<span class="lineNum">     115 </span><span class="lineNoCov">              0 :                                 class_name = Z_STRVAL(tmp_zval);</span>
+<span class="lineNum">     116 </span><span class="lineNoCov">              0 :                                 class_name_len = Z_STRLEN(tmp_zval);</span>
+<span class="lineNum">     117 </span>                :                         }
+<span class="lineNum">     118 </span>                : 
+<span class="lineNum">     119 </span><span class="lineNoCov">              0 :                         if ((class_name_len == sizeof(&quot;static&quot;) - 1) &amp;&amp;</span>
+<span class="lineNum">     120 </span><span class="lineNoCov">              0 :                                 (memcmp(&quot;static&quot;, class_name, sizeof(&quot;static&quot;) - 1) == 0)) {</span>
+<span class="lineNum">     121 </span><span class="lineNoCov">              0 :                                 ce = closure-&gt;func.common.scope;</span>
+<span class="lineNum">     122 </span>                :                         }
+<span class="lineNum">     123 </span><span class="lineNoCov">              0 :                         else if (zend_lookup_class_ex(class_name, class_name_len, NULL, 1, &amp;ce_p TSRMLS_CC) == FAILURE) {</span>
+<span class="lineNum">     124 </span><span class="lineNoCov">              0 :                                 zend_error(E_WARNING, &quot;Class '%s' not found&quot;, class_name);</span>
+<span class="lineNum">     125 </span>                :                                 zval_dtor(&amp;tmp_zval);
+<span class="lineNum">     126 </span><span class="lineNoCov">              0 :                                 RETURN_NULL();</span>
+<span class="lineNum">     127 </span>                :                         } else {
+<span class="lineNum">     128 </span><span class="lineNoCov">              0 :                                 ce = *ce_p;</span>
+<span class="lineNum">     129 </span>                :                         }
+<span class="lineNum">     130 </span>                :                         zval_dtor(&amp;tmp_zval);
+<span class="lineNum">     131 </span>                :                 }
+<span class="lineNum">     132 </span>                :         } else { /* scope argument not given; do not change the scope by default */
+<span class="lineNum">     133 </span><span class="lineNoCov">              0 :                 ce = closure-&gt;func.common.scope;</span>
+<span class="lineNum">     134 </span>                :         }
+<span class="lineNum">     135 </span>                : 
+<span class="lineNum">     136 </span><span class="lineNoCov">              0 :         zend_create_closure(return_value, &amp;closure-&gt;func, ce, newthis TSRMLS_CC);</span>
+<span class="lineNum">     137 </span>                : }
+<a name="138"><span class="lineNum">     138 </span>                : /* }}} */</a>
+<span class="lineNum">     139 </span>                : 
+<span class="lineNum">     140 </span><span class="lineNoCov">              0 : static zend_function *zend_closure_get_constructor(zval *object TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     141 </span>                : {
+<span class="lineNum">     142 </span><span class="lineNoCov">              0 :         zend_error(E_RECOVERABLE_ERROR, &quot;Instantiation of 'Closure' is not allowed&quot;);</span>
+<span class="lineNum">     143 </span><span class="lineNoCov">              0 :         return NULL;</span>
+<span class="lineNum">     144 </span>                : }
+<a name="145"><span class="lineNum">     145 </span>                : /* }}} */</a>
+<span class="lineNum">     146 </span>                : 
+<span class="lineNum">     147 </span><span class="lineNoCov">              0 : static int zend_closure_compare_objects(zval *o1, zval *o2 TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     148 </span>                : {
+<span class="lineNum">     149 </span><span class="lineNoCov">              0 :         return (Z_OBJ_HANDLE_P(o1) != Z_OBJ_HANDLE_P(o2));</span>
+<span class="lineNum">     150 </span>                : }
+<a name="151"><span class="lineNum">     151 </span>                : /* }}} */</a>
+<span class="lineNum">     152 </span>                : 
+<span class="lineNum">     153 </span><span class="lineNoCov">              0 : ZEND_API zend_function *zend_get_closure_invoke_method(zval *obj TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     154 </span>                : {
+<span class="lineNum">     155 </span><span class="lineNoCov">              0 :         zend_closure *closure = (zend_closure *)zend_object_store_get_object(obj TSRMLS_CC);    </span>
+<span class="lineNum">     156 </span><span class="lineNoCov">              0 :         zend_function *invoke = (zend_function*)emalloc(sizeof(zend_function));</span>
+<span class="lineNum">     157 </span>                : 
+<span class="lineNum">     158 </span><span class="lineNoCov">              0 :         invoke-&gt;common = closure-&gt;func.common;</span>
+<span class="lineNum">     159 </span><span class="lineNoCov">              0 :         invoke-&gt;type = ZEND_INTERNAL_FUNCTION;</span>
+<span class="lineNum">     160 </span><span class="lineNoCov">              0 :         invoke-&gt;internal_function.fn_flags = ZEND_ACC_PUBLIC | ZEND_ACC_CALL_VIA_HANDLER | (closure-&gt;func.common.fn_flags &amp; ZEND_ACC_RETURN_REFERENCE);</span>
+<span class="lineNum">     161 </span><span class="lineNoCov">              0 :         invoke-&gt;internal_function.handler = ZEND_MN(Closure___invoke);</span>
+<span class="lineNum">     162 </span><span class="lineNoCov">              0 :         invoke-&gt;internal_function.module = 0;</span>
+<span class="lineNum">     163 </span><span class="lineNoCov">              0 :         invoke-&gt;internal_function.scope = zend_ce_closure;</span>
+<span class="lineNum">     164 </span><span class="lineNoCov">              0 :         invoke-&gt;internal_function.function_name = estrndup(ZEND_INVOKE_FUNC_NAME, sizeof(ZEND_INVOKE_FUNC_NAME)-1);</span>
+<span class="lineNum">     165 </span><span class="lineNoCov">              0 :         return invoke;</span>
+<span class="lineNum">     166 </span>                : }
+<a name="167"><span class="lineNum">     167 </span>                : /* }}} */</a>
+<span class="lineNum">     168 </span>                : 
+<span class="lineNum">     169 </span><span class="lineNoCov">              0 : ZEND_API const zend_function *zend_get_closure_method_def(zval *obj TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     170 </span>                : {
+<span class="lineNum">     171 </span><span class="lineNoCov">              0 :         zend_closure *closure = (zend_closure *)zend_object_store_get_object(obj TSRMLS_CC);    </span>
+<span class="lineNum">     172 </span><span class="lineNoCov">              0 :         return &amp;closure-&gt;func;</span>
+<span class="lineNum">     173 </span>                : }
+<a name="174"><span class="lineNum">     174 </span>                : /* }}} */</a>
+<span class="lineNum">     175 </span>                : 
+<span class="lineNum">     176 </span><span class="lineNoCov">              0 : ZEND_API zval* zend_get_closure_this_ptr(zval *obj TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     177 </span>                : {
+<span class="lineNum">     178 </span><span class="lineNoCov">              0 :         zend_closure *closure = (zend_closure *)zend_object_store_get_object(obj TSRMLS_CC);    </span>
+<span class="lineNum">     179 </span><span class="lineNoCov">              0 :         return closure-&gt;this_ptr;</span>
+<span class="lineNum">     180 </span>                : }
+<a name="181"><span class="lineNum">     181 </span>                : /* }}} */</a>
+<span class="lineNum">     182 </span>                : 
+<span class="lineNum">     183 </span><span class="lineNoCov">              0 : static zend_function *zend_closure_get_method(zval **object_ptr, char *method_name, int method_len, const zend_literal *key TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     184 </span>                : {
+<span class="lineNum">     185 </span>                :         char *lc_name;
+<span class="lineNum">     186 </span>                :         ALLOCA_FLAG(use_heap)
+<span class="lineNum">     187 </span>                : 
+<span class="lineNum">     188 </span><span class="lineNoCov">              0 :         lc_name = do_alloca(method_len + 1, use_heap);</span>
+<span class="lineNum">     189 </span><span class="lineNoCov">              0 :         zend_str_tolower_copy(lc_name, method_name, method_len);</span>
+<span class="lineNum">     190 </span><span class="lineNoCov">              0 :         if ((method_len == sizeof(ZEND_INVOKE_FUNC_NAME)-1) &amp;&amp;</span>
+<span class="lineNum">     191 </span><span class="lineNoCov">              0 :                 memcmp(lc_name, ZEND_INVOKE_FUNC_NAME, sizeof(ZEND_INVOKE_FUNC_NAME)-1) == 0</span>
+<span class="lineNum">     192 </span>                :         ) {
+<span class="lineNum">     193 </span><span class="lineNoCov">              0 :                 free_alloca(lc_name, use_heap);</span>
+<span class="lineNum">     194 </span><span class="lineNoCov">              0 :                 return zend_get_closure_invoke_method(*object_ptr TSRMLS_CC);</span>
+<span class="lineNum">     195 </span>                :         }
+<span class="lineNum">     196 </span><span class="lineNoCov">              0 :         free_alloca(lc_name, use_heap);</span>
+<span class="lineNum">     197 </span><span class="lineNoCov">              0 :         return std_object_handlers.get_method(object_ptr, method_name, method_len, key TSRMLS_CC);</span>
+<span class="lineNum">     198 </span>                : }
+<a name="199"><span class="lineNum">     199 </span>                : /* }}} */</a>
+<span class="lineNum">     200 </span>                : 
+<span class="lineNum">     201 </span><span class="lineNoCov">              0 : static zval *zend_closure_read_property(zval *object, zval *member, int type, const zend_literal *key TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     202 </span>                : {
+<span class="lineNum">     203 </span><span class="lineNoCov">              0 :         ZEND_CLOSURE_PROPERTY_ERROR();</span>
+<span class="lineNum">     204 </span>                :         Z_ADDREF(EG(uninitialized_zval));
+<span class="lineNum">     205 </span><span class="lineNoCov">              0 :         return &amp;EG(uninitialized_zval);</span>
+<span class="lineNum">     206 </span>                : }
+<a name="207"><span class="lineNum">     207 </span>                : /* }}} */</a>
+<span class="lineNum">     208 </span>                : 
+<span class="lineNum">     209 </span><span class="lineNoCov">              0 : static void zend_closure_write_property(zval *object, zval *member, zval *value, const zend_literal *key TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     210 </span>                : {
+<span class="lineNum">     211 </span><span class="lineNoCov">              0 :         ZEND_CLOSURE_PROPERTY_ERROR();</span>
+<span class="lineNum">     212 </span><span class="lineNoCov">              0 : }</span>
+<a name="213"><span class="lineNum">     213 </span>                : /* }}} */</a>
+<span class="lineNum">     214 </span>                : 
+<span class="lineNum">     215 </span><span class="lineNoCov">              0 : static zval **zend_closure_get_property_ptr_ptr(zval *object, zval *member, const zend_literal *key TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     216 </span>                : {
+<span class="lineNum">     217 </span><span class="lineNoCov">              0 :         ZEND_CLOSURE_PROPERTY_ERROR();</span>
+<span class="lineNum">     218 </span><span class="lineNoCov">              0 :         return NULL;</span>
+<span class="lineNum">     219 </span>                : }
+<a name="220"><span class="lineNum">     220 </span>                : /* }}} */</a>
+<span class="lineNum">     221 </span>                : 
+<span class="lineNum">     222 </span><span class="lineNoCov">              0 : static int zend_closure_has_property(zval *object, zval *member, int has_set_exists, const zend_literal *key TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     223 </span>                : {
+<span class="lineNum">     224 </span><span class="lineNoCov">              0 :         if (has_set_exists != 2) {</span>
+<span class="lineNum">     225 </span><span class="lineNoCov">              0 :                 ZEND_CLOSURE_PROPERTY_ERROR();</span>
+<span class="lineNum">     226 </span>                :         }
+<span class="lineNum">     227 </span><span class="lineNoCov">              0 :         return 0;</span>
+<span class="lineNum">     228 </span>                : }
+<a name="229"><span class="lineNum">     229 </span>                : /* }}} */</a>
+<span class="lineNum">     230 </span>                : 
+<span class="lineNum">     231 </span><span class="lineNoCov">              0 : static void zend_closure_unset_property(zval *object, zval *member, const zend_literal *key TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     232 </span>                : {
+<span class="lineNum">     233 </span><span class="lineNoCov">              0 :         ZEND_CLOSURE_PROPERTY_ERROR();</span>
+<span class="lineNum">     234 </span><span class="lineNoCov">              0 : }</span>
+<a name="235"><span class="lineNum">     235 </span>                : /* }}} */</a>
+<span class="lineNum">     236 </span>                : 
+<span class="lineNum">     237 </span><span class="lineNoCov">              0 : static void zend_closure_free_storage(void *object TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     238 </span>                : {
+<span class="lineNum">     239 </span><span class="lineNoCov">              0 :         zend_closure *closure = (zend_closure *)object;</span>
+<span class="lineNum">     240 </span>                : 
+<span class="lineNum">     241 </span><span class="lineNoCov">              0 :         zend_object_std_dtor(&amp;closure-&gt;std TSRMLS_CC);</span>
+<span class="lineNum">     242 </span>                : 
+<span class="lineNum">     243 </span><span class="lineNoCov">              0 :         if (closure-&gt;func.type == ZEND_USER_FUNCTION) {</span>
+<span class="lineNum">     244 </span><span class="lineNoCov">              0 :                 zend_execute_data *ex = EG(current_execute_data);</span>
+<span class="lineNum">     245 </span><span class="lineNoCov">              0 :                 while (ex) {</span>
+<span class="lineNum">     246 </span><span class="lineNoCov">              0 :                         if (ex-&gt;op_array == &amp;closure-&gt;func.op_array) {</span>
+<span class="lineNum">     247 </span><span class="lineNoCov">              0 :                                 zend_error(E_ERROR, &quot;Cannot destroy active lambda function&quot;);</span>
+<span class="lineNum">     248 </span>                :                         }
+<span class="lineNum">     249 </span><span class="lineNoCov">              0 :                         ex = ex-&gt;prev_execute_data;</span>
+<span class="lineNum">     250 </span>                :                 }
+<span class="lineNum">     251 </span><span class="lineNoCov">              0 :                 destroy_op_array(&amp;closure-&gt;func.op_array TSRMLS_CC);</span>
+<span class="lineNum">     252 </span>                :         }
+<span class="lineNum">     253 </span>                : 
+<span class="lineNum">     254 </span><span class="lineNoCov">              0 :         if (closure-&gt;debug_info != NULL) {</span>
+<span class="lineNum">     255 </span><span class="lineNoCov">              0 :                 zend_hash_destroy(closure-&gt;debug_info);</span>
+<span class="lineNum">     256 </span><span class="lineNoCov">              0 :                 efree(closure-&gt;debug_info);</span>
+<span class="lineNum">     257 </span>                :         }
+<span class="lineNum">     258 </span>                : 
+<span class="lineNum">     259 </span><span class="lineNoCov">              0 :         if (closure-&gt;this_ptr) {</span>
+<span class="lineNum">     260 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;closure-&gt;this_ptr);</span>
+<span class="lineNum">     261 </span>                :         }
+<span class="lineNum">     262 </span>                : 
+<span class="lineNum">     263 </span><span class="lineNoCov">              0 :         efree(closure);</span>
+<span class="lineNum">     264 </span><span class="lineNoCov">              0 : }</span>
+<a name="265"><span class="lineNum">     265 </span>                : /* }}} */</a>
+<span class="lineNum">     266 </span>                : 
+<span class="lineNum">     267 </span><span class="lineNoCov">              0 : static zend_object_value zend_closure_new(zend_class_entry *class_type TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     268 </span>                : {
+<span class="lineNum">     269 </span>                :         zend_closure *closure;
+<span class="lineNum">     270 </span>                :         zend_object_value object;
+<span class="lineNum">     271 </span>                : 
+<span class="lineNum">     272 </span><span class="lineNoCov">              0 :         closure = emalloc(sizeof(zend_closure));</span>
+<span class="lineNum">     273 </span><span class="lineNoCov">              0 :         memset(closure, 0, sizeof(zend_closure));</span>
+<span class="lineNum">     274 </span>                : 
+<span class="lineNum">     275 </span><span class="lineNoCov">              0 :         zend_object_std_init(&amp;closure-&gt;std, class_type TSRMLS_CC);</span>
+<span class="lineNum">     276 </span>                : 
+<span class="lineNum">     277 </span><span class="lineNoCov">              0 :         object.handle = zend_objects_store_put(closure, (zend_objects_store_dtor_t)zend_objects_destroy_object, (zend_objects_free_object_storage_t) zend_closure_free_storage, NULL TSRMLS_CC);</span>
+<span class="lineNum">     278 </span><span class="lineNoCov">              0 :         object.handlers = &amp;closure_handlers;</span>
+<span class="lineNum">     279 </span>                : 
+<span class="lineNum">     280 </span><span class="lineNoCov">              0 :         return object;</span>
+<span class="lineNum">     281 </span>                : }
+<a name="282"><span class="lineNum">     282 </span>                : /* }}} */</a>
+<span class="lineNum">     283 </span>                : 
+<span class="lineNum">     284 </span><span class="lineNoCov">              0 : static zend_object_value zend_closure_clone(zval *zobject TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     285 </span>                : {
+<span class="lineNum">     286 </span><span class="lineNoCov">              0 :         zend_closure *closure = (zend_closure *)zend_object_store_get_object(zobject TSRMLS_CC);</span>
+<span class="lineNum">     287 </span>                :         zval result;
+<span class="lineNum">     288 </span>                : 
+<span class="lineNum">     289 </span><span class="lineNoCov">              0 :         zend_create_closure(&amp;result, &amp;closure-&gt;func, closure-&gt;func.common.scope, closure-&gt;this_ptr TSRMLS_CC);</span>
+<span class="lineNum">     290 </span><span class="lineNoCov">              0 :         return Z_OBJVAL(result);</span>
+<span class="lineNum">     291 </span>                : }
+<span class="lineNum">     292 </span>                : /* }}} */
+<a name="293"><span class="lineNum">     293 </span>                : </a>
+<span class="lineNum">     294 </span>                : 
+<span class="lineNum">     295 </span><span class="lineNoCov">              0 : int zend_closure_get_closure(zval *obj, zend_class_entry **ce_ptr, zend_function **fptr_ptr, zval **zobj_ptr TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     296 </span>                : {
+<span class="lineNum">     297 </span>                :         zend_closure *closure;
+<span class="lineNum">     298 </span>                : 
+<span class="lineNum">     299 </span><span class="lineNoCov">              0 :         if (Z_TYPE_P(obj) != IS_OBJECT) {</span>
+<span class="lineNum">     300 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">     301 </span>                :         }
+<span class="lineNum">     302 </span>                : 
+<span class="lineNum">     303 </span><span class="lineNoCov">              0 :         closure = (zend_closure *)zend_object_store_get_object(obj TSRMLS_CC);</span>
+<span class="lineNum">     304 </span><span class="lineNoCov">              0 :         *fptr_ptr = &amp;closure-&gt;func;</span>
+<span class="lineNum">     305 </span>                : 
+<span class="lineNum">     306 </span><span class="lineNoCov">              0 :         if (closure-&gt;this_ptr) {</span>
+<span class="lineNum">     307 </span><span class="lineNoCov">              0 :                 if (zobj_ptr) {</span>
+<span class="lineNum">     308 </span><span class="lineNoCov">              0 :                         *zobj_ptr = closure-&gt;this_ptr;</span>
+<span class="lineNum">     309 </span>                :                 }
+<span class="lineNum">     310 </span><span class="lineNoCov">              0 :                 *ce_ptr = Z_OBJCE_P(closure-&gt;this_ptr);</span>
+<span class="lineNum">     311 </span>                :         } else {
+<span class="lineNum">     312 </span><span class="lineNoCov">              0 :                 if (zobj_ptr) {</span>
+<span class="lineNum">     313 </span><span class="lineNoCov">              0 :                         *zobj_ptr = NULL;</span>
+<span class="lineNum">     314 </span>                :                 }
+<span class="lineNum">     315 </span><span class="lineNoCov">              0 :                 *ce_ptr = closure-&gt;func.common.scope;</span>
+<span class="lineNum">     316 </span>                :         }
+<span class="lineNum">     317 </span><span class="lineNoCov">              0 :         return SUCCESS;</span>
+<span class="lineNum">     318 </span>                : }
+<a name="319"><span class="lineNum">     319 </span>                : /* }}} */</a>
+<span class="lineNum">     320 </span>                : 
+<span class="lineNum">     321 </span><span class="lineNoCov">              0 : static HashTable *zend_closure_get_debug_info(zval *object, int *is_temp TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     322 </span>                : {
+<span class="lineNum">     323 </span><span class="lineNoCov">              0 :         zend_closure *closure = (zend_closure *)zend_object_store_get_object(object TSRMLS_CC);</span>
+<span class="lineNum">     324 </span>                :         zval *val;
+<span class="lineNum">     325 </span><span class="lineNoCov">              0 :         struct _zend_arg_info *arg_info = closure-&gt;func.common.arg_info;</span>
+<span class="lineNum">     326 </span>                : 
+<span class="lineNum">     327 </span><span class="lineNoCov">              0 :         *is_temp = 0;</span>
+<span class="lineNum">     328 </span>                : 
+<span class="lineNum">     329 </span><span class="lineNoCov">              0 :         if (closure-&gt;debug_info == NULL) {</span>
+<span class="lineNum">     330 </span><span class="lineNoCov">              0 :                 ALLOC_HASHTABLE(closure-&gt;debug_info);</span>
+<span class="lineNum">     331 </span><span class="lineNoCov">              0 :                 zend_hash_init(closure-&gt;debug_info, 1, NULL, ZVAL_PTR_DTOR, 0);</span>
+<span class="lineNum">     332 </span>                :         }
+<span class="lineNum">     333 </span><span class="lineNoCov">              0 :         if (closure-&gt;debug_info-&gt;nApplyCount == 0) {</span>
+<span class="lineNum">     334 </span><span class="lineNoCov">              0 :                 if (closure-&gt;func.type == ZEND_USER_FUNCTION &amp;&amp; closure-&gt;func.op_array.static_variables) {</span>
+<span class="lineNum">     335 </span><span class="lineNoCov">              0 :                         HashTable *static_variables = closure-&gt;func.op_array.static_variables;</span>
+<span class="lineNum">     336 </span><span class="lineNoCov">              0 :                         MAKE_STD_ZVAL(val);</span>
+<span class="lineNum">     337 </span><span class="lineNoCov">              0 :                         array_init(val);</span>
+<span class="lineNum">     338 </span><span class="lineNoCov">              0 :                         zend_hash_copy(Z_ARRVAL_P(val), static_variables, (copy_ctor_func_t)zval_add_ref, NULL, sizeof(zval*));</span>
+<span class="lineNum">     339 </span><span class="lineNoCov">              0 :                         zend_hash_update(closure-&gt;debug_info, &quot;static&quot;, sizeof(&quot;static&quot;), (void *) &amp;val, sizeof(zval *), NULL);</span>
+<span class="lineNum">     340 </span>                :                 }
+<span class="lineNum">     341 </span>                : 
+<span class="lineNum">     342 </span><span class="lineNoCov">              0 :                 if (closure-&gt;this_ptr) {</span>
+<span class="lineNum">     343 </span><span class="lineNoCov">              0 :                         Z_ADDREF_P(closure-&gt;this_ptr);</span>
+<span class="lineNum">     344 </span><span class="lineNoCov">              0 :                         zend_symtable_update(closure-&gt;debug_info, &quot;this&quot;, sizeof(&quot;this&quot;), (void *) &amp;closure-&gt;this_ptr, sizeof(zval *), NULL);</span>
+<span class="lineNum">     345 </span>                :                 }
+<span class="lineNum">     346 </span>                : 
+<span class="lineNum">     347 </span><span class="lineNoCov">              0 :                 if (arg_info) {</span>
+<span class="lineNum">     348 </span><span class="lineNoCov">              0 :                         zend_uint i, required = closure-&gt;func.common.required_num_args;</span>
+<span class="lineNum">     349 </span>                : 
+<span class="lineNum">     350 </span><span class="lineNoCov">              0 :                         MAKE_STD_ZVAL(val);</span>
+<span class="lineNum">     351 </span><span class="lineNoCov">              0 :                         array_init(val);</span>
+<span class="lineNum">     352 </span>                : 
+<span class="lineNum">     353 </span><span class="lineNoCov">              0 :                         for (i = 0; i &lt; closure-&gt;func.common.num_args; i++) {</span>
+<span class="lineNum">     354 </span>                :                                 char *name, *info;
+<span class="lineNum">     355 </span>                :                                 int name_len, info_len;
+<span class="lineNum">     356 </span><span class="lineNoCov">              0 :                                 if (arg_info-&gt;name) {</span>
+<span class="lineNum">     357 </span><span class="lineNoCov">              0 :                                         name_len = zend_spprintf(&amp;name, 0, &quot;%s$%s&quot;,</span>
+<span class="lineNum">     358 </span><span class="lineNoCov">              0 :                                                                         arg_info-&gt;pass_by_reference ? &quot;&amp;&quot; : &quot;&quot;,</span>
+<span class="lineNum">     359 </span>                :                                                                         arg_info-&gt;name);
+<span class="lineNum">     360 </span>                :                                 } else {
+<span class="lineNum">     361 </span><span class="lineNoCov">              0 :                                         name_len = zend_spprintf(&amp;name, 0, &quot;%s$param%d&quot;,</span>
+<span class="lineNum">     362 </span><span class="lineNoCov">              0 :                                                                         arg_info-&gt;pass_by_reference ? &quot;&amp;&quot; : &quot;&quot;,</span>
+<span class="lineNum">     363 </span>                :                                                                         i + 1);
+<span class="lineNum">     364 </span>                :                                 }
+<span class="lineNum">     365 </span><span class="lineNoCov">              0 :                                 info_len = zend_spprintf(&amp;info, 0, &quot;%s&quot;,</span>
+<span class="lineNum">     366 </span>                :                                                                 i &gt;= required ? &quot;&lt;optional&gt;&quot; : &quot;&lt;required&gt;&quot;);
+<span class="lineNum">     367 </span><span class="lineNoCov">              0 :                                 add_assoc_stringl_ex(val, name, name_len + 1, info, info_len, 0);</span>
+<span class="lineNum">     368 </span><span class="lineNoCov">              0 :                                 efree(name);</span>
+<span class="lineNum">     369 </span><span class="lineNoCov">              0 :                                 arg_info++;</span>
+<span class="lineNum">     370 </span>                :                         }
+<span class="lineNum">     371 </span><span class="lineNoCov">              0 :                         zend_hash_update(closure-&gt;debug_info, &quot;parameter&quot;, sizeof(&quot;parameter&quot;), (void *) &amp;val, sizeof(zval *), NULL);</span>
+<span class="lineNum">     372 </span>                :                 }
+<span class="lineNum">     373 </span>                :         }
+<span class="lineNum">     374 </span>                : 
+<span class="lineNum">     375 </span><span class="lineNoCov">              0 :         return closure-&gt;debug_info;</span>
+<span class="lineNum">     376 </span>                : }
+<a name="377"><span class="lineNum">     377 </span>                : /* }}} */</a>
+<span class="lineNum">     378 </span>                : 
+<span class="lineNum">     379 </span><span class="lineNoCov">              0 : static HashTable *zend_closure_get_gc(zval *obj, zval ***table, int *n TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     380 </span>                : {
+<span class="lineNum">     381 </span><span class="lineNoCov">              0 :         zend_closure *closure = (zend_closure *)zend_object_store_get_object(obj TSRMLS_CC);    </span>
+<span class="lineNum">     382 </span>                : 
+<span class="lineNum">     383 </span><span class="lineNoCov">              0 :         *table = closure-&gt;this_ptr ? &amp;closure-&gt;this_ptr : NULL;</span>
+<span class="lineNum">     384 </span><span class="lineNoCov">              0 :         *n = closure-&gt;this_ptr ? 1 : 0;</span>
+<span class="lineNum">     385 </span><span class="lineNoCov">              0 :         return (closure-&gt;func.type == ZEND_USER_FUNCTION) ?</span>
+<span class="lineNum">     386 </span>                :                 closure-&gt;func.op_array.static_variables : NULL;
+<span class="lineNum">     387 </span>                : }
+<span class="lineNum">     388 </span>                : /* }}} */
+<span class="lineNum">     389 </span>                : 
+<a name="390"><span class="lineNum">     390 </span>                : /* {{{ proto Closure::__construct()</a>
+<span class="lineNum">     391 </span>                :    Private constructor preventing instantiation */
+<span class="lineNum">     392 </span><span class="lineNoCov">              0 : ZEND_METHOD(Closure, __construct)</span>
+<span class="lineNum">     393 </span>                : {
+<span class="lineNum">     394 </span><span class="lineNoCov">              0 :         zend_error(E_RECOVERABLE_ERROR, &quot;Instantiation of 'Closure' is not allowed&quot;);</span>
+<span class="lineNum">     395 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     396 </span>                : /* }}} */
+<span class="lineNum">     397 </span>                : 
+<span class="lineNum">     398 </span>                : ZEND_BEGIN_ARG_INFO_EX(arginfo_closure_bindto, 0, 0, 1)
+<span class="lineNum">     399 </span>                :         ZEND_ARG_INFO(0, newthis)
+<span class="lineNum">     400 </span>                :         ZEND_ARG_INFO(0, newscope)
+<span class="lineNum">     401 </span>                : ZEND_END_ARG_INFO()
+<span class="lineNum">     402 </span>                : 
+<span class="lineNum">     403 </span>                : ZEND_BEGIN_ARG_INFO_EX(arginfo_closure_bind, 0, 0, 2)
+<span class="lineNum">     404 </span>                :         ZEND_ARG_INFO(0, closure)
+<span class="lineNum">     405 </span>                :         ZEND_ARG_INFO(0, newthis)
+<span class="lineNum">     406 </span>                :         ZEND_ARG_INFO(0, newscope)
+<span class="lineNum">     407 </span>                : ZEND_END_ARG_INFO()
+<span class="lineNum">     408 </span>                : 
+<span class="lineNum">     409 </span>                : static const zend_function_entry closure_functions[] = {
+<span class="lineNum">     410 </span>                :         ZEND_ME(Closure, __construct, NULL, ZEND_ACC_PRIVATE)
+<span class="lineNum">     411 </span>                :         ZEND_ME(Closure, bind, arginfo_closure_bind, ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
+<span class="lineNum">     412 </span>                :         ZEND_MALIAS(Closure, bindTo, bind, arginfo_closure_bindto, ZEND_ACC_PUBLIC)
+<span class="lineNum">     413 </span>                :         {NULL, NULL, NULL}
+<a name="414"><span class="lineNum">     414 </span>                : };</a>
+<span class="lineNum">     415 </span>                : 
+<span class="lineNum">     416 </span><span class="lineCov">             48 : void zend_register_closure_ce(TSRMLS_D) /* {{{ */</span>
+<span class="lineNum">     417 </span>                : {
+<span class="lineNum">     418 </span>                :         zend_class_entry ce;
+<span class="lineNum">     419 </span>                : 
+<span class="lineNum">     420 </span><span class="lineCov">             48 :         INIT_CLASS_ENTRY(ce, &quot;Closure&quot;, closure_functions);</span>
+<span class="lineNum">     421 </span><span class="lineCov">             48 :         zend_ce_closure = zend_register_internal_class(&amp;ce TSRMLS_CC);</span>
+<span class="lineNum">     422 </span><span class="lineCov">             48 :         zend_ce_closure-&gt;ce_flags |= ZEND_ACC_FINAL_CLASS;</span>
+<span class="lineNum">     423 </span><span class="lineCov">             48 :         zend_ce_closure-&gt;create_object = zend_closure_new;</span>
+<span class="lineNum">     424 </span><span class="lineCov">             48 :         zend_ce_closure-&gt;serialize = zend_class_serialize_deny;</span>
+<span class="lineNum">     425 </span><span class="lineCov">             48 :         zend_ce_closure-&gt;unserialize = zend_class_unserialize_deny;</span>
+<span class="lineNum">     426 </span>                : 
+<span class="lineNum">     427 </span><span class="lineCov">             48 :         memcpy(&amp;closure_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));</span>
+<span class="lineNum">     428 </span><span class="lineCov">             48 :         closure_handlers.get_constructor = zend_closure_get_constructor;</span>
+<span class="lineNum">     429 </span><span class="lineCov">             48 :         closure_handlers.get_method = zend_closure_get_method;</span>
+<span class="lineNum">     430 </span><span class="lineCov">             48 :         closure_handlers.write_property = zend_closure_write_property;</span>
+<span class="lineNum">     431 </span><span class="lineCov">             48 :         closure_handlers.read_property = zend_closure_read_property;</span>
+<span class="lineNum">     432 </span><span class="lineCov">             48 :         closure_handlers.get_property_ptr_ptr = zend_closure_get_property_ptr_ptr;</span>
+<span class="lineNum">     433 </span><span class="lineCov">             48 :         closure_handlers.has_property = zend_closure_has_property;</span>
+<span class="lineNum">     434 </span><span class="lineCov">             48 :         closure_handlers.unset_property = zend_closure_unset_property;</span>
+<span class="lineNum">     435 </span><span class="lineCov">             48 :         closure_handlers.compare_objects = zend_closure_compare_objects;</span>
+<span class="lineNum">     436 </span><span class="lineCov">             48 :         closure_handlers.clone_obj = zend_closure_clone;</span>
+<span class="lineNum">     437 </span><span class="lineCov">             48 :         closure_handlers.get_debug_info = zend_closure_get_debug_info;</span>
+<span class="lineNum">     438 </span><span class="lineCov">             48 :         closure_handlers.get_closure = zend_closure_get_closure;</span>
+<span class="lineNum">     439 </span><span class="lineCov">             48 :         closure_handlers.get_gc = zend_closure_get_gc;</span>
+<span class="lineNum">     440 </span><span class="lineCov">             48 : }</span>
+<a name="441"><span class="lineNum">     441 </span>                : /* }}} */</a>
+<span class="lineNum">     442 </span>                : 
+<span class="lineNum">     443 </span><span class="lineNoCov">              0 : ZEND_API void zend_create_closure(zval *res, zend_function *func, zend_class_entry *scope, zval *this_ptr TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     444 </span>                : {
+<span class="lineNum">     445 </span>                :         zend_closure *closure;
+<span class="lineNum">     446 </span>                : 
+<span class="lineNum">     447 </span><span class="lineNoCov">              0 :         object_init_ex(res, zend_ce_closure);</span>
+<span class="lineNum">     448 </span>                : 
+<span class="lineNum">     449 </span><span class="lineNoCov">              0 :         closure = (zend_closure *)zend_object_store_get_object(res TSRMLS_CC);</span>
+<span class="lineNum">     450 </span>                : 
+<span class="lineNum">     451 </span><span class="lineNoCov">              0 :         closure-&gt;func = *func;</span>
+<span class="lineNum">     452 </span><span class="lineNoCov">              0 :         closure-&gt;func.common.prototype = NULL;</span>
+<span class="lineNum">     453 </span>                : 
+<span class="lineNum">     454 </span><span class="lineNoCov">              0 :         if ((scope == NULL) &amp;&amp; (this_ptr != NULL)) {</span>
+<span class="lineNum">     455 </span>                :                 /* use dummy scope if we're binding an object without specifying a scope */
+<span class="lineNum">     456 </span>                :                 /* maybe it would be better to create one for this purpose */
+<span class="lineNum">     457 </span><span class="lineNoCov">              0 :                 scope = zend_ce_closure;</span>
+<span class="lineNum">     458 </span>                :         }
+<span class="lineNum">     459 </span>                : 
+<span class="lineNum">     460 </span><span class="lineNoCov">              0 :         if (closure-&gt;func.type == ZEND_USER_FUNCTION) {</span>
+<span class="lineNum">     461 </span><span class="lineNoCov">              0 :                 if (closure-&gt;func.op_array.static_variables) {</span>
+<span class="lineNum">     462 </span><span class="lineNoCov">              0 :                         HashTable *static_variables = closure-&gt;func.op_array.static_variables;</span>
+<span class="lineNum">     463 </span>                : 
+<span class="lineNum">     464 </span><span class="lineNoCov">              0 :                         ALLOC_HASHTABLE(closure-&gt;func.op_array.static_variables);</span>
+<span class="lineNum">     465 </span><span class="lineNoCov">              0 :                         zend_hash_init(closure-&gt;func.op_array.static_variables, zend_hash_num_elements(static_variables), NULL, ZVAL_PTR_DTOR, 0);</span>
+<span class="lineNum">     466 </span><span class="lineNoCov">              0 :                         zend_hash_apply_with_arguments(static_variables TSRMLS_CC, (apply_func_args_t)zval_copy_static_var, 1, closure-&gt;func.op_array.static_variables);</span>
+<span class="lineNum">     467 </span>                :                 }
+<span class="lineNum">     468 </span><span class="lineNoCov">              0 :                 closure-&gt;func.op_array.run_time_cache = NULL;</span>
+<span class="lineNum">     469 </span><span class="lineNoCov">              0 :                 (*closure-&gt;func.op_array.refcount)++;</span>
+<span class="lineNum">     470 </span>                :         } else {
+<span class="lineNum">     471 </span>                :                 /* verify that we aren't binding internal function to a wrong scope */
+<span class="lineNum">     472 </span><span class="lineNoCov">              0 :                 if(func-&gt;common.scope != NULL) {</span>
+<span class="lineNum">     473 </span><span class="lineNoCov">              0 :                         if(scope &amp;&amp; !instanceof_function(scope, func-&gt;common.scope TSRMLS_CC)) {</span>
+<span class="lineNum">     474 </span><span class="lineNoCov">              0 :                                 zend_error(E_WARNING, &quot;Cannot bind function %s::%s to scope class %s&quot;, func-&gt;common.scope-&gt;name, func-&gt;common.function_name, scope-&gt;name);</span>
+<span class="lineNum">     475 </span><span class="lineNoCov">              0 :                                 scope = NULL;</span>
+<span class="lineNum">     476 </span>                :                         }
+<span class="lineNum">     477 </span><span class="lineNoCov">              0 :                         if(scope &amp;&amp; this_ptr &amp;&amp; (func-&gt;common.fn_flags &amp; ZEND_ACC_STATIC) == 0 &amp;&amp; </span>
+<span class="lineNum">     478 </span><span class="lineNoCov">              0 :                                         !instanceof_function(Z_OBJCE_P(this_ptr), closure-&gt;func.common.scope TSRMLS_CC)) {</span>
+<span class="lineNum">     479 </span><span class="lineNoCov">              0 :                                 zend_error(E_WARNING, &quot;Cannot bind function %s::%s to object of class %s&quot;, func-&gt;common.scope-&gt;name, func-&gt;common.function_name, Z_OBJCE_P(this_ptr)-&gt;name);</span>
+<span class="lineNum">     480 </span><span class="lineNoCov">              0 :                                 scope = NULL;</span>
+<span class="lineNum">     481 </span><span class="lineNoCov">              0 :                                 this_ptr = NULL;</span>
+<span class="lineNum">     482 </span>                :                         }
+<span class="lineNum">     483 </span>                :                 } else {
+<span class="lineNum">     484 </span>                :                         /* if it's a free function, we won't set scope &amp; this since they're meaningless */
+<span class="lineNum">     485 </span><span class="lineNoCov">              0 :                         this_ptr = NULL;</span>
+<span class="lineNum">     486 </span><span class="lineNoCov">              0 :                         scope = NULL;</span>
+<span class="lineNum">     487 </span>                :                 }
+<span class="lineNum">     488 </span>                :         }
+<span class="lineNum">     489 </span>                : 
+<span class="lineNum">     490 </span>                :         /* Invariants:
+<span class="lineNum">     491 </span>                :          * If the closure is unscoped, it has no bound object.
+<span class="lineNum">     492 </span>                :          * The the closure is scoped, it's either static or it's bound */
+<span class="lineNum">     493 </span><span class="lineNoCov">              0 :         closure-&gt;func.common.scope = scope;</span>
+<span class="lineNum">     494 </span><span class="lineNoCov">              0 :         if (scope) {</span>
+<span class="lineNum">     495 </span><span class="lineNoCov">              0 :                 closure-&gt;func.common.fn_flags |= ZEND_ACC_PUBLIC;</span>
+<span class="lineNum">     496 </span><span class="lineNoCov">              0 :                 if (this_ptr &amp;&amp; (closure-&gt;func.common.fn_flags &amp; ZEND_ACC_STATIC) == 0) {</span>
+<span class="lineNum">     497 </span><span class="lineNoCov">              0 :                         closure-&gt;this_ptr = this_ptr;</span>
+<span class="lineNum">     498 </span>                :                         Z_ADDREF_P(this_ptr);
+<span class="lineNum">     499 </span>                :                 } else {
+<span class="lineNum">     500 </span><span class="lineNoCov">              0 :                         closure-&gt;func.common.fn_flags |= ZEND_ACC_STATIC;</span>
+<span class="lineNum">     501 </span><span class="lineNoCov">              0 :                         closure-&gt;this_ptr = NULL;</span>
+<span class="lineNum">     502 </span>                :                 }
+<span class="lineNum">     503 </span>                :         } else {
+<span class="lineNum">     504 </span><span class="lineNoCov">              0 :                 closure-&gt;this_ptr = NULL;</span>
+<span class="lineNum">     505 </span>                :         }
+<span class="lineNum">     506 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     507 </span>                : /* }}} */
+<span class="lineNum">     508 </span>                : 
+<span class="lineNum">     509 </span>                : /*
+<span class="lineNum">     510 </span>                :  * Local variables:
+<span class="lineNum">     511 </span>                :  * tab-width: 4
+<span class="lineNum">     512 </span>                :  * c-basic-offset: 4
+<span class="lineNum">     513 </span>                :  * indent-tabs-mode: t
+<span class="lineNum">     514 </span>                :  * End:
+<span class="lineNum">     515 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

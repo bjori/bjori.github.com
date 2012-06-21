@@ -1,0 +1,182 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - main/php_content_types.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../index.html">directory</a> - <a href="index.html">main</a> - php_content_types.c (source / <a href="php_content_types.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">20</td>
+          <td class="headerCovTableEntry">8</td>
+          <td class="headerCovTableEntryMed">40.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">3</td>
+          <td class="headerCovTableEntry">2</td>
+          <td class="headerCovTableEntryLo">66.7 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Author:                                                              |
+<span class="lineNum">      16 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      17 </span>                : */
+<span class="lineNum">      18 </span>                : 
+<span class="lineNum">      19 </span>                : /* $Id$ */
+<span class="lineNum">      20 </span>                : 
+<span class="lineNum">      21 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">      22 </span>                : #include &quot;SAPI.h&quot;
+<span class="lineNum">      23 </span>                : #include &quot;rfc1867.h&quot;
+<span class="lineNum">      24 </span>                : 
+<span class="lineNum">      25 </span>                : #include &quot;php_content_types.h&quot;
+<span class="lineNum">      26 </span>                : 
+<span class="lineNum">      27 </span>                : /* {{{ php_post_entries[]
+<span class="lineNum">      28 </span>                :  */
+<span class="lineNum">      29 </span>                : static sapi_post_entry php_post_entries[] = {
+<span class="lineNum">      30 </span>                :         { DEFAULT_POST_CONTENT_TYPE, sizeof(DEFAULT_POST_CONTENT_TYPE)-1, sapi_read_standard_form_data, php_std_post_handler },
+<span class="lineNum">      31 </span>                :         { MULTIPART_CONTENT_TYPE,    sizeof(MULTIPART_CONTENT_TYPE)-1,    NULL,                         rfc1867_post_handler },
+<span class="lineNum">      32 </span>                :         { NULL, 0, NULL, NULL }
+<span class="lineNum">      33 </span>                : };
+<span class="lineNum">      34 </span>                : /* }}} */
+<span class="lineNum">      35 </span>                : 
+<a name="36"><span class="lineNum">      36 </span>                : /* {{{ SAPI_POST_READER_FUNC</a>
+<span class="lineNum">      37 </span>                :  */
+<span class="lineNum">      38 </span><span class="lineNoCov">              0 : SAPI_API SAPI_POST_READER_FUNC(php_default_post_reader)</span>
+<span class="lineNum">      39 </span>                : {
+<span class="lineNum">      40 </span>                :         char *data;
+<span class="lineNum">      41 </span>                :         int length;
+<span class="lineNum">      42 </span>                : 
+<span class="lineNum">      43 </span>                :         /* $HTTP_RAW_POST_DATA registration */
+<span class="lineNum">      44 </span><span class="lineNoCov">              0 :         if (!strcmp(SG(request_info).request_method, &quot;POST&quot;)) {</span>
+<span class="lineNum">      45 </span><span class="lineNoCov">              0 :                 if (NULL == SG(request_info).post_entry) {</span>
+<span class="lineNum">      46 </span>                :                         /* no post handler registered, so we just swallow the data */
+<span class="lineNum">      47 </span><span class="lineNoCov">              0 :                         sapi_read_standard_form_data(TSRMLS_C);</span>
+<span class="lineNum">      48 </span>                :                 }
+<span class="lineNum">      49 </span>                : 
+<span class="lineNum">      50 </span>                :                 /* For unknown content types we create HTTP_RAW_POST_DATA even if always_populate_raw_post_data off,
+<span class="lineNum">      51 </span>                :                  * this is in-effecient, but we need to keep doing it for BC reasons (for now) */
+<span class="lineNum">      52 </span><span class="lineNoCov">              0 :                 if ((PG(always_populate_raw_post_data) || NULL == SG(request_info).post_entry) &amp;&amp; SG(request_info).post_data) {</span>
+<span class="lineNum">      53 </span><span class="lineNoCov">              0 :                         length = SG(request_info).post_data_length;</span>
+<span class="lineNum">      54 </span><span class="lineNoCov">              0 :                         data = estrndup(SG(request_info).post_data, length);</span>
+<span class="lineNum">      55 </span><span class="lineNoCov">              0 :                         SET_VAR_STRINGL(&quot;HTTP_RAW_POST_DATA&quot;, data, length);</span>
+<span class="lineNum">      56 </span>                :                 }
+<span class="lineNum">      57 </span>                :         }
+<span class="lineNum">      58 </span>                : 
+<span class="lineNum">      59 </span>                :         /* for php://input stream:
+<span class="lineNum">      60 </span>                :          some post handlers modify the content of request_info.post_data
+<span class="lineNum">      61 </span>                :          so for now we need a copy for the php://input stream
+<span class="lineNum">      62 </span>                :          in the long run post handlers should be changed to not touch
+<span class="lineNum">      63 </span>                :          request_info.post_data for memory preservation reasons
+<span class="lineNum">      64 </span>                :         */
+<span class="lineNum">      65 </span><span class="lineNoCov">              0 :         if (SG(request_info).post_data) {</span>
+<span class="lineNum">      66 </span><span class="lineNoCov">              0 :                 SG(request_info).raw_post_data = estrndup(SG(request_info).post_data, SG(request_info).post_data_length);</span>
+<span class="lineNum">      67 </span><span class="lineNoCov">              0 :                 SG(request_info).raw_post_data_length = SG(request_info).post_data_length;</span>
+<span class="lineNum">      68 </span>                :         }
+<span class="lineNum">      69 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">      70 </span>                : /* }}} */
+<span class="lineNum">      71 </span>                : 
+<a name="72"><span class="lineNum">      72 </span>                : /* {{{ php_startup_sapi_content_types</a>
+<span class="lineNum">      73 </span>                :  */
+<span class="lineNum">      74 </span><span class="lineCov">             48 : int php_startup_sapi_content_types(TSRMLS_D)</span>
+<span class="lineNum">      75 </span>                : {
+<span class="lineNum">      76 </span><span class="lineCov">             48 :         sapi_register_default_post_reader(php_default_post_reader TSRMLS_CC);</span>
+<span class="lineNum">      77 </span><span class="lineCov">             48 :         sapi_register_treat_data(php_default_treat_data TSRMLS_CC);</span>
+<span class="lineNum">      78 </span><span class="lineCov">             48 :         sapi_register_input_filter(php_default_input_filter, NULL TSRMLS_CC);</span>
+<span class="lineNum">      79 </span><span class="lineCov">             48 :         return SUCCESS;</span>
+<span class="lineNum">      80 </span>                : }
+<span class="lineNum">      81 </span>                : /* }}} */
+<span class="lineNum">      82 </span>                : 
+<a name="83"><span class="lineNum">      83 </span>                : /* {{{ php_setup_sapi_content_types</a>
+<span class="lineNum">      84 </span>                :  */
+<span class="lineNum">      85 </span><span class="lineCov">             48 : int php_setup_sapi_content_types(TSRMLS_D)</span>
+<span class="lineNum">      86 </span>                : {
+<span class="lineNum">      87 </span><span class="lineCov">             48 :         sapi_register_post_entries(php_post_entries TSRMLS_CC);</span>
+<span class="lineNum">      88 </span>                : 
+<span class="lineNum">      89 </span><span class="lineCov">             48 :         return SUCCESS;</span>
+<span class="lineNum">      90 </span>                : }
+<span class="lineNum">      91 </span>                : /* }}} */
+<span class="lineNum">      92 </span>                : 
+<span class="lineNum">      93 </span>                : /*
+<span class="lineNum">      94 </span>                :  * Local variables:
+<span class="lineNum">      95 </span>                :  * tab-width: 4
+<span class="lineNum">      96 </span>                :  * c-basic-offset: 4
+<span class="lineNum">      97 </span>                :  * End:
+<span class="lineNum">      98 </span>                :  * vim600: sw=4 ts=4 fdm=marker
+<span class="lineNum">      99 </span>                :  * vim&lt;600: sw=4 ts=4
+<span class="lineNum">     100 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

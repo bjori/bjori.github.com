@@ -1,0 +1,168 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - main/php_ticks.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../index.html">directory</a> - <a href="index.html">main</a> - php_ticks.c (source / <a href="php_ticks.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">26</td>
+          <td class="headerCovTableEntry">9</td>
+          <td class="headerCovTableEntryMed">34.6 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">8</td>
+          <td class="headerCovTableEntry">3</td>
+          <td class="headerCovTableEntryLo">37.5 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Author: Stig Bakken &lt;ssb@php.net&gt;                                    |
+<span class="lineNum">      16 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      17 </span>                : */
+<span class="lineNum">      18 </span>                : 
+<span class="lineNum">      19 </span>                : /* $Id$ */
+<span class="lineNum">      20 </span>                : 
+<span class="lineNum">      21 </span>                : #include &quot;php.h&quot;
+<a name="22"><span class="lineNum">      22 </span>                : #include &quot;php_ticks.h&quot;</a>
+<span class="lineNum">      23 </span>                : 
+<span class="lineNum">      24 </span><span class="lineCov">             48 : int php_startup_ticks(TSRMLS_D)</span>
+<span class="lineNum">      25 </span>                : {
+<span class="lineNum">      26 </span><span class="lineCov">             48 :         zend_llist_init(&amp;PG(tick_functions), sizeof(void(*)(int)), NULL, 1);</span>
+<span class="lineNum">      27 </span><span class="lineCov">             48 :         return SUCCESS;</span>
+<a name="28"><span class="lineNum">      28 </span>                : }</a>
+<span class="lineNum">      29 </span>                : 
+<span class="lineNum">      30 </span><span class="lineCov">             48 : void php_deactivate_ticks(TSRMLS_D)</span>
+<span class="lineNum">      31 </span>                : {
+<span class="lineNum">      32 </span><span class="lineCov">             48 :         zend_llist_clean(&amp;PG(tick_functions));</span>
+<a name="33"><span class="lineNum">      33 </span><span class="lineCov">             48 : }</span></a>
+<span class="lineNum">      34 </span>                : 
+<span class="lineNum">      35 </span><span class="lineCov">             48 : void php_shutdown_ticks(TSRMLS_D)</span>
+<span class="lineNum">      36 </span>                : {
+<span class="lineNum">      37 </span><span class="lineCov">             48 :         zend_llist_destroy(&amp;PG(tick_functions));</span>
+<a name="38"><span class="lineNum">      38 </span><span class="lineCov">             48 : }</span></a>
+<span class="lineNum">      39 </span>                : 
+<span class="lineNum">      40 </span><span class="lineNoCov">              0 : static int php_compare_tick_functions(void *elem1, void *elem2)</span>
+<span class="lineNum">      41 </span>                : {
+<span class="lineNum">      42 </span>                :         void(*func1)(int);
+<span class="lineNum">      43 </span>                :         void(*func2)(int);
+<span class="lineNum">      44 </span><span class="lineNoCov">              0 :         memcpy(&amp;func1, elem1, sizeof(void(*)(int)));</span>
+<span class="lineNum">      45 </span><span class="lineNoCov">              0 :         memcpy(&amp;func2, elem2, sizeof(void(*)(int)));</span>
+<span class="lineNum">      46 </span><span class="lineNoCov">              0 :         return (func1 == func2);</span>
+<a name="47"><span class="lineNum">      47 </span>                : }</a>
+<span class="lineNum">      48 </span>                : 
+<span class="lineNum">      49 </span><span class="lineNoCov">              0 : PHPAPI void php_add_tick_function(void (*func)(int))</span>
+<span class="lineNum">      50 </span>                : {
+<span class="lineNum">      51 </span>                :         TSRMLS_FETCH();
+<span class="lineNum">      52 </span>                : 
+<span class="lineNum">      53 </span><span class="lineNoCov">              0 :         zend_llist_add_element(&amp;PG(tick_functions), (void *)&amp;func);</span>
+<a name="54"><span class="lineNum">      54 </span><span class="lineNoCov">              0 : }</span></a>
+<span class="lineNum">      55 </span>                : 
+<span class="lineNum">      56 </span><span class="lineNoCov">              0 : PHPAPI void php_remove_tick_function(void (*func)(int))</span>
+<span class="lineNum">      57 </span>                : {
+<span class="lineNum">      58 </span>                :         TSRMLS_FETCH();
+<span class="lineNum">      59 </span>                : 
+<span class="lineNum">      60 </span><span class="lineNoCov">              0 :         zend_llist_del_element(&amp;PG(tick_functions), (void *)func,</span>
+<span class="lineNum">      61 </span>                :                                                    (int(*)(void*, void*))php_compare_tick_functions);
+<a name="62"><span class="lineNum">      62 </span><span class="lineNoCov">              0 : }</span></a>
+<span class="lineNum">      63 </span>                : 
+<span class="lineNum">      64 </span><span class="lineNoCov">              0 : static void php_tick_iterator(void *data, void *arg TSRMLS_DC)</span>
+<span class="lineNum">      65 </span>                : {
+<span class="lineNum">      66 </span>                :         void (*func)(int);
+<span class="lineNum">      67 </span>                : 
+<span class="lineNum">      68 </span><span class="lineNoCov">              0 :         memcpy(&amp;func, data, sizeof(void(*)(int)));</span>
+<span class="lineNum">      69 </span><span class="lineNoCov">              0 :         func(*((int *)arg));</span>
+<a name="70"><span class="lineNum">      70 </span><span class="lineNoCov">              0 : }</span></a>
+<span class="lineNum">      71 </span>                : 
+<span class="lineNum">      72 </span><span class="lineNoCov">              0 : void php_run_ticks(int count)</span>
+<span class="lineNum">      73 </span>                : {
+<span class="lineNum">      74 </span>                :         TSRMLS_FETCH();
+<span class="lineNum">      75 </span>                : 
+<span class="lineNum">      76 </span><span class="lineNoCov">              0 :         zend_llist_apply_with_argument(&amp;PG(tick_functions), (llist_apply_with_arg_func_t) php_tick_iterator, &amp;count TSRMLS_CC);</span>
+<span class="lineNum">      77 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">      78 </span>                : 
+<span class="lineNum">      79 </span>                : /*
+<span class="lineNum">      80 </span>                :  * Local variables:
+<span class="lineNum">      81 </span>                :  * tab-width: 4
+<span class="lineNum">      82 </span>                :  * c-basic-offset: 4
+<span class="lineNum">      83 </span>                :  * End:
+<span class="lineNum">      84 </span>                :  * vim600: sw=4 ts=4 fdm=marker
+<span class="lineNum">      85 </span>                :  * vim&lt;600: sw=4 ts=4
+<span class="lineNum">      86 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

@@ -1,0 +1,440 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - main/mergesort.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../index.html">directory</a> - <a href="index.html">main</a> - mergesort.c (source / <a href="mergesort.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">137</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">3</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*-</a>
+<span class="lineNum">       2 </span>                :  * Copyright (c) 1992, 1993
+<span class="lineNum">       3 </span>                :  *      The Regents of the University of California.  All rights reserved.
+<span class="lineNum">       4 </span>                :  *
+<span class="lineNum">       5 </span>                :  * This code is derived from software contributed to Berkeley by
+<span class="lineNum">       6 </span>                :  * Peter McIlroy.
+<span class="lineNum">       7 </span>                :  *
+<span class="lineNum">       8 </span>                :  * Redistribution and use in source and binary forms, with or without
+<span class="lineNum">       9 </span>                :  * modification, are permitted provided that the following conditions
+<span class="lineNum">      10 </span>                :  * are met:
+<span class="lineNum">      11 </span>                :  * 1. Redistributions of source code must retain the above copyright
+<span class="lineNum">      12 </span>                :  *    notice, this list of conditions and the following disclaimer.
+<span class="lineNum">      13 </span>                :  * 2. Redistributions in binary form must reproduce the above copyright
+<span class="lineNum">      14 </span>                :  *    notice, this list of conditions and the following disclaimer in the
+<span class="lineNum">      15 </span>                :  *    documentation and/or other materials provided with the distribution.
+<span class="lineNum">      16 </span>                :  * 3. All advertising materials mentioning features or use of this software
+<span class="lineNum">      17 </span>                :  *    must display the following acknowledgement:
+<span class="lineNum">      18 </span>                :  *      This product includes software developed by the University of
+<span class="lineNum">      19 </span>                :  *      California, Berkeley and its contributors.
+<span class="lineNum">      20 </span>                :  * 4. Neither the name of the University nor the names of its contributors
+<span class="lineNum">      21 </span>                :  *    may be used to endorse or promote products derived from this software
+<span class="lineNum">      22 </span>                :  *    without specific prior written permission.
+<span class="lineNum">      23 </span>                :  *
+<span class="lineNum">      24 </span>                :  * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+<span class="lineNum">      25 </span>                :  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+<span class="lineNum">      26 </span>                :  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+<span class="lineNum">      27 </span>                :  * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+<span class="lineNum">      28 </span>                :  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+<span class="lineNum">      29 </span>                :  * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+<span class="lineNum">      30 </span>                :  * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+<span class="lineNum">      31 </span>                :  * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+<span class="lineNum">      32 </span>                :  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+<span class="lineNum">      33 </span>                :  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+<span class="lineNum">      34 </span>                :  * SUCH DAMAGE.
+<span class="lineNum">      35 </span>                :  */
+<span class="lineNum">      36 </span>                : 
+<span class="lineNum">      37 </span>                : /* $Id$ */
+<span class="lineNum">      38 </span>                : 
+<span class="lineNum">      39 </span>                : #if defined(LIBC_SCCS) &amp;&amp; !defined(lint)
+<span class="lineNum">      40 </span>                : static char sccsid[] = &quot;@(#)merge.c        8.2 (Berkeley) 2/14/94&quot;;
+<span class="lineNum">      41 </span>                : #endif /* LIBC_SCCS and not lint */
+<span class="lineNum">      42 </span>                : 
+<span class="lineNum">      43 </span>                : /*
+<span class="lineNum">      44 </span>                :  * Hybrid exponential search/linear search merge sort with hybrid
+<span class="lineNum">      45 </span>                :  * natural/pairwise first pass.  Requires about .3% more comparisons
+<span class="lineNum">      46 </span>                :  * for random data than LSMS with pairwise first pass alone.
+<span class="lineNum">      47 </span>                :  * It works for objects as small as two bytes.
+<span class="lineNum">      48 </span>                :  */
+<span class="lineNum">      49 </span>                : 
+<span class="lineNum">      50 </span>                : #define NATURAL
+<span class="lineNum">      51 </span>                : #define THRESHOLD 16    /* Best choice for natural merge cut-off. */
+<span class="lineNum">      52 </span>                : 
+<span class="lineNum">      53 </span>                : /* #define NATURAL to get hybrid natural merge.
+<span class="lineNum">      54 </span>                :  * (The default is pairwise merging.)
+<span class="lineNum">      55 </span>                :  */
+<span class="lineNum">      56 </span>                : 
+<span class="lineNum">      57 </span>                : #include &lt;sys/types.h&gt;
+<span class="lineNum">      58 </span>                : 
+<span class="lineNum">      59 </span>                : #include &lt;errno.h&gt;
+<span class="lineNum">      60 </span>                : #include &lt;stdlib.h&gt;
+<span class="lineNum">      61 </span>                : #include &lt;string.h&gt;
+<span class="lineNum">      62 </span>                : 
+<span class="lineNum">      63 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">      64 </span>                : 
+<span class="lineNum">      65 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">      66 </span>                : #include &lt;winsock2.h&gt; /* Includes definition for u_char */
+<span class="lineNum">      67 </span>                : #endif
+<span class="lineNum">      68 </span>                : 
+<span class="lineNum">      69 </span>                : static void setup(u_char *list1, u_char *list2, size_t n, size_t size, int (*cmp)(const void *, const void * TSRMLS_DC) TSRMLS_DC);
+<span class="lineNum">      70 </span>                : static void insertionsort(u_char *a, size_t n, size_t size, int (*cmp)(const void *, const void * TSRMLS_DC) TSRMLS_DC);
+<span class="lineNum">      71 </span>                : 
+<span class="lineNum">      72 </span>                : #define ISIZE sizeof(int)
+<span class="lineNum">      73 </span>                : #define PSIZE sizeof(u_char *)
+<span class="lineNum">      74 </span>                : #define ICOPY_LIST(src, dst, last)                              \
+<span class="lineNum">      75 </span>                :         do                                                      \
+<span class="lineNum">      76 </span>                :         *(int*)dst = *(int*)src, src += ISIZE, dst += ISIZE;    \
+<span class="lineNum">      77 </span>                :         while(src &lt; last)
+<span class="lineNum">      78 </span>                : #define ICOPY_ELT(src, dst, i)                                  \
+<span class="lineNum">      79 </span>                :         do                                                      \
+<span class="lineNum">      80 </span>                :         *(int*) dst = *(int*) src, src += ISIZE, dst += ISIZE;  \
+<span class="lineNum">      81 </span>                :         while (i -= ISIZE)
+<span class="lineNum">      82 </span>                : 
+<span class="lineNum">      83 </span>                : #define CCOPY_LIST(src, dst, last)              \
+<span class="lineNum">      84 </span>                :         do                                      \
+<span class="lineNum">      85 </span>                :                 *dst++ = *src++;                \
+<span class="lineNum">      86 </span>                :         while (src &lt; last)
+<span class="lineNum">      87 </span>                : #define CCOPY_ELT(src, dst, i)                  \
+<span class="lineNum">      88 </span>                :         do                                      \
+<span class="lineNum">      89 </span>                :                 *dst++ = *src++;                \
+<span class="lineNum">      90 </span>                :         while (i -= 1)
+<span class="lineNum">      91 </span>                : 
+<span class="lineNum">      92 </span>                : /*
+<span class="lineNum">      93 </span>                :  * Find the next possible pointer head.  (Trickery for forcing an array
+<span class="lineNum">      94 </span>                :  * to do double duty as a linked list when objects do not align with word
+<span class="lineNum">      95 </span>                :  * boundaries.
+<span class="lineNum">      96 </span>                :  */
+<span class="lineNum">      97 </span>                : /* Assumption: PSIZE is a power of 2. */
+<span class="lineNum">      98 </span>                : #define EVAL(p) (u_char **)                                             \
+<span class="lineNum">      99 </span>                :         ((u_char *)0 +                                                  \
+<span class="lineNum">     100 </span>                :             (((u_char *)p + PSIZE - 1 - (u_char *) 0) &amp; ~(PSIZE - 1)))
+<span class="lineNum">     101 </span>                : 
+<span class="lineNum">     102 </span>                : /* {{{ php_mergesort
+<a name="103"><span class="lineNum">     103 </span>                :  * Arguments are as for qsort.</a>
+<span class="lineNum">     104 </span>                :  */
+<span class="lineNum">     105 </span><span class="lineNoCov">              0 : PHPAPI int php_mergesort(void *base, size_t nmemb, size_t size, int (*cmp)(const void *, const void * TSRMLS_DC) TSRMLS_DC)</span>
+<span class="lineNum">     106 </span>                : {
+<span class="lineNum">     107 </span>                :         register unsigned int i;
+<span class="lineNum">     108 </span>                :         register int sense;
+<span class="lineNum">     109 </span>                :         int big, iflag;
+<span class="lineNum">     110 </span>                :         register u_char *f1, *f2, *t, *b, *tp2, *q, *l1, *l2;
+<span class="lineNum">     111 </span>                :         u_char *list2, *list1, *p2, *p, *last, **p1;
+<span class="lineNum">     112 </span>                : 
+<span class="lineNum">     113 </span><span class="lineNoCov">              0 :         if (size &lt; PSIZE / 2) {              /* Pointers must fit into 2 * size. */</span>
+<span class="lineNum">     114 </span><span class="lineNoCov">              0 :                 errno = EINVAL;</span>
+<span class="lineNum">     115 </span><span class="lineNoCov">              0 :                 return (-1);</span>
+<span class="lineNum">     116 </span>                :         }
+<span class="lineNum">     117 </span>                : 
+<span class="lineNum">     118 </span><span class="lineNoCov">              0 :         if (nmemb == 0)</span>
+<span class="lineNum">     119 </span><span class="lineNoCov">              0 :                 return (0);</span>
+<span class="lineNum">     120 </span>                : 
+<span class="lineNum">     121 </span>                :         /*
+<span class="lineNum">     122 </span>                :          * XXX
+<span class="lineNum">     123 </span>                :          * Stupid subtraction for the Cray.
+<span class="lineNum">     124 </span>                :          */
+<span class="lineNum">     125 </span><span class="lineNoCov">              0 :         iflag = 0;</span>
+<span class="lineNum">     126 </span><span class="lineNoCov">              0 :         if (!(size % ISIZE) &amp;&amp; !(((char *)base - (char *)0) % ISIZE))</span>
+<span class="lineNum">     127 </span><span class="lineNoCov">              0 :                 iflag = 1;</span>
+<span class="lineNum">     128 </span>                : 
+<span class="lineNum">     129 </span><span class="lineNoCov">              0 :         if ((list2 = malloc(nmemb * size + PSIZE)) == NULL)</span>
+<span class="lineNum">     130 </span><span class="lineNoCov">              0 :                 return (-1);</span>
+<span class="lineNum">     131 </span>                : 
+<span class="lineNum">     132 </span><span class="lineNoCov">              0 :         list1 = base;</span>
+<span class="lineNum">     133 </span><span class="lineNoCov">              0 :         setup(list1, list2, nmemb, size, cmp TSRMLS_CC);</span>
+<span class="lineNum">     134 </span><span class="lineNoCov">              0 :         last = list2 + nmemb * size;</span>
+<span class="lineNum">     135 </span><span class="lineNoCov">              0 :         i = big = 0;</span>
+<span class="lineNum">     136 </span><span class="lineNoCov">              0 :         while (*EVAL(list2) != last) {</span>
+<span class="lineNum">     137 </span><span class="lineNoCov">              0 :             l2 = list1;</span>
+<span class="lineNum">     138 </span><span class="lineNoCov">              0 :             p1 = EVAL(list1);</span>
+<span class="lineNum">     139 </span><span class="lineNoCov">              0 :             for (tp2 = p2 = list2; p2 != last; p1 = EVAL(l2)) {</span>
+<span class="lineNum">     140 </span><span class="lineNoCov">              0 :                 p2 = *EVAL(p2);</span>
+<span class="lineNum">     141 </span><span class="lineNoCov">              0 :                 f1 = l2;</span>
+<span class="lineNum">     142 </span><span class="lineNoCov">              0 :                 f2 = l1 = list1 + (p2 - list2);</span>
+<span class="lineNum">     143 </span><span class="lineNoCov">              0 :                 if (p2 != last)</span>
+<span class="lineNum">     144 </span><span class="lineNoCov">              0 :                         p2 = *EVAL(p2);</span>
+<span class="lineNum">     145 </span><span class="lineNoCov">              0 :                 l2 = list1 + (p2 - list2);</span>
+<span class="lineNum">     146 </span><span class="lineNoCov">              0 :                 while (f1 &lt; l1 &amp;&amp; f2 &lt; l2) {</span>
+<span class="lineNum">     147 </span><span class="lineNoCov">              0 :                         if ((*cmp)(f1, f2 TSRMLS_CC) &lt;= 0) {</span>
+<span class="lineNum">     148 </span><span class="lineNoCov">              0 :                                 q = f2;</span>
+<span class="lineNum">     149 </span><span class="lineNoCov">              0 :                                 b = f1, t = l1;</span>
+<span class="lineNum">     150 </span><span class="lineNoCov">              0 :                                 sense = -1;</span>
+<span class="lineNum">     151 </span>                :                         } else {
+<span class="lineNum">     152 </span><span class="lineNoCov">              0 :                                 q = f1;</span>
+<span class="lineNum">     153 </span><span class="lineNoCov">              0 :                                 b = f2, t = l2;</span>
+<span class="lineNum">     154 </span><span class="lineNoCov">              0 :                                 sense = 0;</span>
+<span class="lineNum">     155 </span>                :                         }
+<span class="lineNum">     156 </span><span class="lineNoCov">              0 :                         if (!big) {     /* here i = 0 */</span>
+<span class="lineNum">     157 </span><span class="lineNoCov">              0 :                                 while ((b += size) &lt; t &amp;&amp; cmp(q, b TSRMLS_CC) &gt;sense)</span>
+<span class="lineNum">     158 </span><span class="lineNoCov">              0 :                                         if (++i == 6) {</span>
+<span class="lineNum">     159 </span><span class="lineNoCov">              0 :                                                 big = 1;</span>
+<span class="lineNum">     160 </span><span class="lineNoCov">              0 :                                                 goto EXPONENTIAL;</span>
+<span class="lineNum">     161 </span>                :                                         }
+<span class="lineNum">     162 </span>                :                         } else {
+<span class="lineNum">     163 </span><span class="lineNoCov">              0 : EXPONENTIAL:                    for (i = size; ; i &lt;&lt;= 1)</span>
+<span class="lineNum">     164 </span><span class="lineNoCov">              0 :                                         if ((p = (b + i)) &gt;= t) {</span>
+<span class="lineNum">     165 </span><span class="lineNoCov">              0 :                                                 if ((p = t - size) &gt; b &amp;&amp;</span>
+<span class="lineNum">     166 </span><span class="lineNoCov">              0 :                                                     (*cmp)(q, p TSRMLS_CC) &lt;= sense)</span>
+<span class="lineNum">     167 </span><span class="lineNoCov">              0 :                                                         t = p;</span>
+<span class="lineNum">     168 </span>                :                                                 else
+<span class="lineNum">     169 </span><span class="lineNoCov">              0 :                                                         b = p;</span>
+<span class="lineNum">     170 </span>                :                                                 break;
+<span class="lineNum">     171 </span><span class="lineNoCov">              0 :                                         } else if ((*cmp)(q, p TSRMLS_CC) &lt;= sense) {</span>
+<span class="lineNum">     172 </span><span class="lineNoCov">              0 :                                                 t = p;</span>
+<span class="lineNum">     173 </span><span class="lineNoCov">              0 :                                                 if (i == size)</span>
+<span class="lineNum">     174 </span><span class="lineNoCov">              0 :                                                         big = 0;</span>
+<span class="lineNum">     175 </span><span class="lineNoCov">              0 :                                                 goto FASTCASE;</span>
+<span class="lineNum">     176 </span>                :                                         } else
+<span class="lineNum">     177 </span><span class="lineNoCov">              0 :                                                 b = p;</span>
+<span class="lineNum">     178 </span><span class="lineNoCov">              0 :                                 while (t &gt; b+size) {</span>
+<span class="lineNum">     179 </span><span class="lineNoCov">              0 :                                         i = (((t - b) / size) &gt;&gt; 1) * size;</span>
+<span class="lineNum">     180 </span><span class="lineNoCov">              0 :                                         if ((*cmp)(q, p = b + i TSRMLS_CC) &lt;= sense)</span>
+<span class="lineNum">     181 </span><span class="lineNoCov">              0 :                                                 t = p;</span>
+<span class="lineNum">     182 </span>                :                                         else
+<span class="lineNum">     183 </span><span class="lineNoCov">              0 :                                                 b = p;</span>
+<span class="lineNum">     184 </span>                :                                 }
+<span class="lineNum">     185 </span><span class="lineNoCov">              0 :                                 goto COPY;</span>
+<span class="lineNum">     186 </span><span class="lineNoCov">              0 : FASTCASE:                       while (i &gt; size)</span>
+<span class="lineNum">     187 </span><span class="lineNoCov">              0 :                                         if ((*cmp)(q,</span>
+<span class="lineNum">     188 </span><span class="lineNoCov">              0 :                                                 p = b + (i &gt;&gt;= 1) TSRMLS_CC) &lt;= sense)</span>
+<span class="lineNum">     189 </span><span class="lineNoCov">              0 :                                                 t = p;</span>
+<span class="lineNum">     190 </span>                :                                         else
+<span class="lineNum">     191 </span><span class="lineNoCov">              0 :                                                 b = p;</span>
+<span class="lineNum">     192 </span><span class="lineNoCov">              0 : COPY:                           b = t;</span>
+<span class="lineNum">     193 </span>                :                         }
+<span class="lineNum">     194 </span><span class="lineNoCov">              0 :                         i = size;</span>
+<span class="lineNum">     195 </span><span class="lineNoCov">              0 :                         if (q == f1) {</span>
+<span class="lineNum">     196 </span><span class="lineNoCov">              0 :                                 if (iflag) {</span>
+<span class="lineNum">     197 </span><span class="lineNoCov">              0 :                                         ICOPY_LIST(f2, tp2, b);</span>
+<span class="lineNum">     198 </span><span class="lineNoCov">              0 :                                         ICOPY_ELT(f1, tp2, i);</span>
+<span class="lineNum">     199 </span>                :                                 } else {
+<span class="lineNum">     200 </span><span class="lineNoCov">              0 :                                         CCOPY_LIST(f2, tp2, b);</span>
+<span class="lineNum">     201 </span><span class="lineNoCov">              0 :                                         CCOPY_ELT(f1, tp2, i);</span>
+<span class="lineNum">     202 </span>                :                                 }
+<span class="lineNum">     203 </span>                :                         } else {
+<span class="lineNum">     204 </span><span class="lineNoCov">              0 :                                 if (iflag) {</span>
+<span class="lineNum">     205 </span><span class="lineNoCov">              0 :                                         ICOPY_LIST(f1, tp2, b);</span>
+<span class="lineNum">     206 </span><span class="lineNoCov">              0 :                                         ICOPY_ELT(f2, tp2, i);</span>
+<span class="lineNum">     207 </span>                :                                 } else {
+<span class="lineNum">     208 </span><span class="lineNoCov">              0 :                                         CCOPY_LIST(f1, tp2, b);</span>
+<span class="lineNum">     209 </span><span class="lineNoCov">              0 :                                         CCOPY_ELT(f2, tp2, i);</span>
+<span class="lineNum">     210 </span>                :                                 }
+<span class="lineNum">     211 </span>                :                         }
+<span class="lineNum">     212 </span>                :                 }
+<span class="lineNum">     213 </span><span class="lineNoCov">              0 :                 if (f2 &lt; l2) {</span>
+<span class="lineNum">     214 </span><span class="lineNoCov">              0 :                         if (iflag)</span>
+<span class="lineNum">     215 </span><span class="lineNoCov">              0 :                                 ICOPY_LIST(f2, tp2, l2);</span>
+<span class="lineNum">     216 </span>                :                         else
+<span class="lineNum">     217 </span><span class="lineNoCov">              0 :                                 CCOPY_LIST(f2, tp2, l2);</span>
+<span class="lineNum">     218 </span><span class="lineNoCov">              0 :                 } else if (f1 &lt; l1) {</span>
+<span class="lineNum">     219 </span><span class="lineNoCov">              0 :                         if (iflag)</span>
+<span class="lineNum">     220 </span><span class="lineNoCov">              0 :                                 ICOPY_LIST(f1, tp2, l1);</span>
+<span class="lineNum">     221 </span>                :                         else
+<span class="lineNum">     222 </span><span class="lineNoCov">              0 :                                 CCOPY_LIST(f1, tp2, l1);</span>
+<span class="lineNum">     223 </span>                :                 }
+<span class="lineNum">     224 </span><span class="lineNoCov">              0 :                 *p1 = l2;</span>
+<span class="lineNum">     225 </span>                :             }
+<span class="lineNum">     226 </span><span class="lineNoCov">              0 :             tp2 = list1;        /* swap list1, list2 */</span>
+<span class="lineNum">     227 </span><span class="lineNoCov">              0 :             list1 = list2;</span>
+<span class="lineNum">     228 </span><span class="lineNoCov">              0 :             list2 = tp2;</span>
+<span class="lineNum">     229 </span><span class="lineNoCov">              0 :             last = list2 + nmemb*size;</span>
+<span class="lineNum">     230 </span>                :         }
+<span class="lineNum">     231 </span><span class="lineNoCov">              0 :         if (base == list2) {</span>
+<span class="lineNum">     232 </span><span class="lineNoCov">              0 :                 memmove(list2, list1, nmemb*size);</span>
+<span class="lineNum">     233 </span><span class="lineNoCov">              0 :                 list2 = list1;</span>
+<span class="lineNum">     234 </span>                :         }
+<span class="lineNum">     235 </span><span class="lineNoCov">              0 :         free(list2);</span>
+<span class="lineNum">     236 </span><span class="lineNoCov">              0 :         return (0);</span>
+<span class="lineNum">     237 </span>                : }
+<span class="lineNum">     238 </span>                : /* }}} */
+<span class="lineNum">     239 </span>                : 
+<span class="lineNum">     240 </span>                : #define swap(a, b) {                                    \
+<span class="lineNum">     241 </span>                :                 s = b;                                  \
+<span class="lineNum">     242 </span>                :                 i = size;                               \
+<span class="lineNum">     243 </span>                :                 do {                                    \
+<span class="lineNum">     244 </span>                :                         tmp = *a; *a++ = *s; *s++ = tmp; \
+<span class="lineNum">     245 </span>                :                 } while (--i);                          \
+<span class="lineNum">     246 </span>                :                 a -= size;                              \
+<span class="lineNum">     247 </span>                :         }
+<span class="lineNum">     248 </span>                : #define reverse(bot, top) {                             \
+<span class="lineNum">     249 </span>                :         s = top;                                        \
+<span class="lineNum">     250 </span>                :         do {                                            \
+<span class="lineNum">     251 </span>                :                 i = size;                               \
+<span class="lineNum">     252 </span>                :                 do {                                    \
+<span class="lineNum">     253 </span>                :                         tmp = *bot; *bot++ = *s; *s++ = tmp; \
+<span class="lineNum">     254 </span>                :                 } while (--i);                          \
+<span class="lineNum">     255 </span>                :                 s -= size2;                             \
+<span class="lineNum">     256 </span>                :         } while(bot &lt; s);                            \
+<span class="lineNum">     257 </span>                : }
+<span class="lineNum">     258 </span>                : 
+<span class="lineNum">     259 </span>                : /* {{{ setup
+<span class="lineNum">     260 </span>                :  * Optional hybrid natural/pairwise first pass.  Eats up list1 in runs of
+<span class="lineNum">     261 </span>                :  * increasing order, list2 in a corresponding linked list.  Checks for runs
+<span class="lineNum">     262 </span>                :  * when THRESHOLD/2 pairs compare with same sense.  (Only used when NATURAL
+<a name="263"><span class="lineNum">     263 </span>                :  * is defined.  Otherwise simple pairwise merging is used.)</a>
+<span class="lineNum">     264 </span>                :  */
+<span class="lineNum">     265 </span><span class="lineNoCov">              0 : static void setup(u_char *list1, u_char *list2, size_t n, size_t size, int (*cmp)(const void *, const void * TSRMLS_DC) TSRMLS_DC)</span>
+<span class="lineNum">     266 </span>                : {
+<span class="lineNum">     267 </span>                :         int i, length, size2, tmp, sense;
+<span class="lineNum">     268 </span>                :         u_char *f1, *f2, *s, *l2, *last, *p2;
+<span class="lineNum">     269 </span>                : 
+<span class="lineNum">     270 </span><span class="lineNoCov">              0 :         size2 = size*2;</span>
+<span class="lineNum">     271 </span><span class="lineNoCov">              0 :         if (n &lt;= 5) {</span>
+<span class="lineNum">     272 </span><span class="lineNoCov">              0 :                 insertionsort(list1, n, size, cmp TSRMLS_CC);</span>
+<span class="lineNum">     273 </span><span class="lineNoCov">              0 :                 *EVAL(list2) = (u_char*) list2 + n*size;</span>
+<span class="lineNum">     274 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     275 </span>                :         }
+<span class="lineNum">     276 </span>                :         /*
+<span class="lineNum">     277 </span>                :          * Avoid running pointers out of bounds; limit n to evens
+<span class="lineNum">     278 </span>                :          * for simplicity.
+<span class="lineNum">     279 </span>                :          */
+<span class="lineNum">     280 </span><span class="lineNoCov">              0 :         i = 4 + (n &amp; 1);</span>
+<span class="lineNum">     281 </span><span class="lineNoCov">              0 :         insertionsort(list1 + (n - i) * size, i, size, cmp TSRMLS_CC);</span>
+<span class="lineNum">     282 </span><span class="lineNoCov">              0 :         last = list1 + size * (n - i);</span>
+<span class="lineNum">     283 </span><span class="lineNoCov">              0 :         *EVAL(list2 + (last - list1)) = list2 + n * size;</span>
+<span class="lineNum">     284 </span>                : 
+<span class="lineNum">     285 </span>                : #ifdef NATURAL
+<span class="lineNum">     286 </span><span class="lineNoCov">              0 :         p2 = list2;</span>
+<span class="lineNum">     287 </span><span class="lineNoCov">              0 :         f1 = list1;</span>
+<span class="lineNum">     288 </span><span class="lineNoCov">              0 :         sense = (cmp(f1, f1 + size TSRMLS_CC) &gt; 0);</span>
+<span class="lineNum">     289 </span><span class="lineNoCov">              0 :         for (; f1 &lt; last; sense = !sense) {</span>
+<span class="lineNum">     290 </span><span class="lineNoCov">              0 :                 length = 2;</span>
+<span class="lineNum">     291 </span>                :                                         /* Find pairs with same sense. */
+<span class="lineNum">     292 </span><span class="lineNoCov">              0 :                 for (f2 = f1 + size2; f2 &lt; last; f2 += size2) {</span>
+<span class="lineNum">     293 </span><span class="lineNoCov">              0 :                         if ((cmp(f2, f2+ size TSRMLS_CC) &gt; 0) != sense)</span>
+<span class="lineNum">     294 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     295 </span><span class="lineNoCov">              0 :                         length += 2;</span>
+<span class="lineNum">     296 </span>                :                 }
+<span class="lineNum">     297 </span><span class="lineNoCov">              0 :                 if (length &lt; THRESHOLD) {            /* Pairwise merge */</span>
+<span class="lineNum">     298 </span>                :                         do {
+<span class="lineNum">     299 </span><span class="lineNoCov">              0 :                                 p2 = *EVAL(p2) = f1 + size2 - list1 + list2;</span>
+<span class="lineNum">     300 </span><span class="lineNoCov">              0 :                                 if (sense &gt; 0)</span>
+<span class="lineNum">     301 </span><span class="lineNoCov">              0 :                                         swap (f1, f1 + size);</span>
+<span class="lineNum">     302 </span><span class="lineNoCov">              0 :                         } while ((f1 += size2) &lt; f2);</span>
+<span class="lineNum">     303 </span>                :                 } else {                                /* Natural merge */
+<span class="lineNum">     304 </span><span class="lineNoCov">              0 :                         l2 = f2;</span>
+<span class="lineNum">     305 </span><span class="lineNoCov">              0 :                         for (f2 = f1 + size2; f2 &lt; l2; f2 += size2) {</span>
+<span class="lineNum">     306 </span><span class="lineNoCov">              0 :                                 if ((cmp(f2-size, f2 TSRMLS_CC) &gt; 0) != sense) {</span>
+<span class="lineNum">     307 </span><span class="lineNoCov">              0 :                                         p2 = *EVAL(p2) = f2 - list1 + list2;</span>
+<span class="lineNum">     308 </span><span class="lineNoCov">              0 :                                         if (sense &gt; 0)</span>
+<span class="lineNum">     309 </span><span class="lineNoCov">              0 :                                                 reverse(f1, f2-size);</span>
+<span class="lineNum">     310 </span><span class="lineNoCov">              0 :                                         f1 = f2;</span>
+<span class="lineNum">     311 </span>                :                                 }
+<span class="lineNum">     312 </span>                :                         }
+<span class="lineNum">     313 </span><span class="lineNoCov">              0 :                         if (sense &gt; 0)</span>
+<span class="lineNum">     314 </span><span class="lineNoCov">              0 :                                 reverse (f1, f2-size);</span>
+<span class="lineNum">     315 </span><span class="lineNoCov">              0 :                         f1 = f2;</span>
+<span class="lineNum">     316 </span><span class="lineNoCov">              0 :                         if (f2 &lt; last || cmp(f2 - size, f2 TSRMLS_CC) &gt; 0)</span>
+<span class="lineNum">     317 </span><span class="lineNoCov">              0 :                                 p2 = *EVAL(p2) = f2 - list1 + list2;</span>
+<span class="lineNum">     318 </span>                :                         else
+<span class="lineNum">     319 </span><span class="lineNoCov">              0 :                                 p2 = *EVAL(p2) = list2 + n*size;</span>
+<span class="lineNum">     320 </span>                :                 }
+<span class="lineNum">     321 </span>                :         }
+<span class="lineNum">     322 </span>                : #else           /* pairwise merge only. */
+<span class="lineNum">     323 </span>                :         for (f1 = list1, p2 = list2; f1 &lt; last; f1 += size2) {
+<span class="lineNum">     324 </span>                :                 p2 = *EVAL(p2) = p2 + size2;
+<span class="lineNum">     325 </span>                :                 if (cmp (f1, f1 + size TSRMLS_CC) &gt; 0)
+<span class="lineNum">     326 </span>                :                         swap(f1, f1 + size);
+<span class="lineNum">     327 </span>                :         }
+<span class="lineNum">     328 </span>                : #endif /* NATURAL */
+<span class="lineNum">     329 </span>                : }
+<span class="lineNum">     330 </span>                : /* }}} */
+<span class="lineNum">     331 </span>                : 
+<span class="lineNum">     332 </span>                : /* {{{ insertionsort
+<span class="lineNum">     333 </span>                :  * This is to avoid out-of-bounds addresses in sorting the
+<a name="334"><span class="lineNum">     334 </span>                :  * last 4 elements.</a>
+<span class="lineNum">     335 </span>                :  */
+<span class="lineNum">     336 </span><span class="lineNoCov">              0 : static void insertionsort(u_char *a, size_t n, size_t size, int (*cmp)(const void *, const void * TSRMLS_DC) TSRMLS_DC)</span>
+<span class="lineNum">     337 </span>                : {
+<span class="lineNum">     338 </span>                :         u_char *ai, *s, *t, *u, tmp;
+<span class="lineNum">     339 </span>                :         int i;
+<span class="lineNum">     340 </span>                : 
+<span class="lineNum">     341 </span><span class="lineNoCov">              0 :         for (ai = a+size; --n &gt;= 1; ai += size)</span>
+<span class="lineNum">     342 </span><span class="lineNoCov">              0 :                 for (t = ai; t &gt; a; t -= size) {</span>
+<span class="lineNum">     343 </span><span class="lineNoCov">              0 :                         u = t - size;</span>
+<span class="lineNum">     344 </span><span class="lineNoCov">              0 :                         if (cmp(u, t TSRMLS_CC) &lt;= 0)</span>
+<span class="lineNum">     345 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     346 </span><span class="lineNoCov">              0 :                         swap(u, t);</span>
+<span class="lineNum">     347 </span>                :                 }
+<span class="lineNum">     348 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     349 </span>                : /* }}} */
+<span class="lineNum">     350 </span>                : 
+<span class="lineNum">     351 </span>                : /*
+<span class="lineNum">     352 </span>                :  * Local variables:
+<span class="lineNum">     353 </span>                :  * tab-width: 4
+<span class="lineNum">     354 </span>                :  * c-basic-offset: 4
+<span class="lineNum">     355 </span>                :  * End:
+<span class="lineNum">     356 </span>                :  * vim600: fdm=marker
+<span class="lineNum">     357 </span>                :  * vim: noet sw=4 ts=4
+<span class="lineNum">     358 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

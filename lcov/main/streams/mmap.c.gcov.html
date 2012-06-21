@@ -1,0 +1,157 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - main/streams/mmap.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../index.html">directory</a> - <a href="index.html">main/streams</a> - mmap.c (source / <a href="mmap.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">21</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">3</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :   +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :   | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :   +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :   | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :   +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :   | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :   | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :   | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :   | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :   | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :   | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :   | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :   +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :   | Author: Wez Furlong &lt;wez@thebrainroom.com&gt;                           |
+<span class="lineNum">      16 </span>                :   +----------------------------------------------------------------------+
+<span class="lineNum">      17 </span>                : */
+<span class="lineNum">      18 </span>                : 
+<span class="lineNum">      19 </span>                : /* $Id$ */
+<span class="lineNum">      20 </span>                : 
+<span class="lineNum">      21 </span>                : /* Memory Mapping interface for streams */
+<span class="lineNum">      22 </span>                : #include &quot;php.h&quot;
+<a name="23"><span class="lineNum">      23 </span>                : #include &quot;php_streams_int.h&quot;</a>
+<span class="lineNum">      24 </span>                : 
+<span class="lineNum">      25 </span><span class="lineNoCov">              0 : PHPAPI char *_php_stream_mmap_range(php_stream *stream, size_t offset, size_t length, php_stream_mmap_operation_t mode, size_t *mapped_len TSRMLS_DC)</span>
+<span class="lineNum">      26 </span>                : {
+<span class="lineNum">      27 </span>                :         php_stream_mmap_range range;
+<span class="lineNum">      28 </span>                :         
+<span class="lineNum">      29 </span><span class="lineNoCov">              0 :         range.offset = offset;</span>
+<span class="lineNum">      30 </span><span class="lineNoCov">              0 :         range.length = length;</span>
+<span class="lineNum">      31 </span><span class="lineNoCov">              0 :         range.mode = mode;</span>
+<span class="lineNum">      32 </span><span class="lineNoCov">              0 :         range.mapped = NULL;</span>
+<span class="lineNum">      33 </span>                : 
+<span class="lineNum">      34 </span>                :         /* For now, we impose an arbitrary limit to avoid
+<span class="lineNum">      35 </span>                :          * runaway swapping when large files are passed thru. */
+<span class="lineNum">      36 </span><span class="lineNoCov">              0 :         if (length &gt; 4 * 1024 * 1024) {</span>
+<span class="lineNum">      37 </span><span class="lineNoCov">              0 :                 return NULL;</span>
+<span class="lineNum">      38 </span>                :         }
+<span class="lineNum">      39 </span>                :         
+<span class="lineNum">      40 </span><span class="lineNoCov">              0 :         if (PHP_STREAM_OPTION_RETURN_OK == php_stream_set_option(stream, PHP_STREAM_OPTION_MMAP_API, PHP_STREAM_MMAP_MAP_RANGE, &amp;range)) {</span>
+<span class="lineNum">      41 </span><span class="lineNoCov">              0 :                 if (mapped_len) {</span>
+<span class="lineNum">      42 </span><span class="lineNoCov">              0 :                         *mapped_len = range.length;</span>
+<span class="lineNum">      43 </span>                :                 }
+<span class="lineNum">      44 </span><span class="lineNoCov">              0 :                 return range.mapped;</span>
+<span class="lineNum">      45 </span>                :         }
+<span class="lineNum">      46 </span><span class="lineNoCov">              0 :         return NULL;</span>
+<a name="47"><span class="lineNum">      47 </span>                : }</a>
+<span class="lineNum">      48 </span>                : 
+<span class="lineNum">      49 </span><span class="lineNoCov">              0 : PHPAPI int _php_stream_mmap_unmap(php_stream *stream TSRMLS_DC)</span>
+<span class="lineNum">      50 </span>                : {
+<span class="lineNum">      51 </span><span class="lineNoCov">              0 :         return php_stream_set_option(stream, PHP_STREAM_OPTION_MMAP_API, PHP_STREAM_MMAP_UNMAP, NULL) == PHP_STREAM_OPTION_RETURN_OK ? 1 : 0;</span>
+<a name="52"><span class="lineNum">      52 </span>                : }</a>
+<span class="lineNum">      53 </span>                : 
+<span class="lineNum">      54 </span><span class="lineNoCov">              0 : PHPAPI int _php_stream_mmap_unmap_ex(php_stream *stream, off_t readden TSRMLS_DC)</span>
+<span class="lineNum">      55 </span>                : {
+<span class="lineNum">      56 </span><span class="lineNoCov">              0 :         int ret = 1;</span>
+<span class="lineNum">      57 </span>                : 
+<span class="lineNum">      58 </span><span class="lineNoCov">              0 :         if (php_stream_seek(stream, readden, SEEK_CUR) != 0) {</span>
+<span class="lineNum">      59 </span><span class="lineNoCov">              0 :                 ret = 0;</span>
+<span class="lineNum">      60 </span>                :         }
+<span class="lineNum">      61 </span><span class="lineNoCov">              0 :         if (php_stream_mmap_unmap(stream) == 0) {</span>
+<span class="lineNum">      62 </span><span class="lineNoCov">              0 :                 ret = 0;</span>
+<span class="lineNum">      63 </span>                :         }
+<span class="lineNum">      64 </span>                : 
+<span class="lineNum">      65 </span><span class="lineNoCov">              0 :         return ret;</span>
+<span class="lineNum">      66 </span>                : }
+<span class="lineNum">      67 </span>                : 
+<span class="lineNum">      68 </span>                : /*
+<span class="lineNum">      69 </span>                :  * Local variables:
+<span class="lineNum">      70 </span>                :  * tab-width: 4
+<span class="lineNum">      71 </span>                :  * c-basic-offset: 4
+<span class="lineNum">      72 </span>                :  * End:
+<span class="lineNum">      73 </span>                :  * vim600: noet sw=4 ts=4 fdm=marker
+<span class="lineNum">      74 </span>                :  * vim&lt;600: noet sw=4 ts=4
+<span class="lineNum">      75 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

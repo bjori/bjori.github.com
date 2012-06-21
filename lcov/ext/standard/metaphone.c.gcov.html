@@ -1,0 +1,562 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - ext/standard/metaphone.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../index.html">directory</a> - <a href="index.html">ext/standard</a> - metaphone.c (source / <a href="metaphone.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">154</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">3</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Author: Thies C. Arntzen &lt;thies@thieso.net&gt;                          |
+<span class="lineNum">      16 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      17 </span>                : */
+<span class="lineNum">      18 </span>                : 
+<span class="lineNum">      19 </span>                : /* $Id$ */
+<span class="lineNum">      20 </span>                : 
+<span class="lineNum">      21 </span>                : /*
+<span class="lineNum">      22 </span>                :         Based on CPANs &quot;Text-Metaphone-1.96&quot; by Michael G Schwern &lt;schwern@pobox.com&gt; 
+<span class="lineNum">      23 </span>                : */
+<span class="lineNum">      24 </span>                : 
+<span class="lineNum">      25 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">      26 </span>                : #include &quot;php_metaphone.h&quot;
+<span class="lineNum">      27 </span>                : 
+<span class="lineNum">      28 </span>                : static int metaphone(unsigned char *word, int word_len, long max_phonemes, char **phoned_word, int traditional);
+<span class="lineNum">      29 </span>                : 
+<a name="30"><span class="lineNum">      30 </span>                : /* {{{ proto string metaphone(string text[, int phones])</a>
+<span class="lineNum">      31 </span>                :    Break english phrases down into their phonemes */
+<span class="lineNum">      32 </span><span class="lineNoCov">              0 : PHP_FUNCTION(metaphone)</span>
+<span class="lineNum">      33 </span>                : {
+<span class="lineNum">      34 </span>                :         char *str;
+<span class="lineNum">      35 </span><span class="lineNoCov">              0 :         char *result = 0;</span>
+<span class="lineNum">      36 </span>                :         int str_len;
+<span class="lineNum">      37 </span><span class="lineNoCov">              0 :         long phones = 0;</span>
+<span class="lineNum">      38 </span>                : 
+<span class="lineNum">      39 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;s|l&quot;, &amp;str, &amp;str_len,</span>
+<span class="lineNum">      40 </span>                :                                                           &amp;phones) == FAILURE) {
+<span class="lineNum">      41 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">      42 </span>                :         }
+<span class="lineNum">      43 </span>                : 
+<span class="lineNum">      44 </span><span class="lineNoCov">              0 :         if (metaphone((unsigned char *)str, str_len, phones, &amp;result, 1) == 0) {</span>
+<span class="lineNum">      45 </span><span class="lineNoCov">              0 :                 RETVAL_STRING(result, 0);</span>
+<span class="lineNum">      46 </span>                :         } else {
+<span class="lineNum">      47 </span><span class="lineNoCov">              0 :                 if (result) {</span>
+<span class="lineNum">      48 </span><span class="lineNoCov">              0 :                         efree(result);</span>
+<span class="lineNum">      49 </span>                :                 }
+<span class="lineNum">      50 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">      51 </span>                :         }
+<span class="lineNum">      52 </span>                : }
+<span class="lineNum">      53 </span>                : /* }}} */
+<span class="lineNum">      54 </span>                : 
+<span class="lineNum">      55 </span>                : /* 
+<span class="lineNum">      56 </span>                :    this is now the original code by Michael G Schwern:
+<span class="lineNum">      57 </span>                :    i've changed it just a slightly bit (use emalloc, 
+<span class="lineNum">      58 </span>                :    get rid of includes etc) 
+<span class="lineNum">      59 </span>                :         - thies - 13.09.1999
+<span class="lineNum">      60 </span>                : */
+<span class="lineNum">      61 </span>                : 
+<span class="lineNum">      62 </span>                : /*-----------------------------  */
+<span class="lineNum">      63 </span>                : /* this used to be &quot;metaphone.h&quot; */
+<span class="lineNum">      64 </span>                : /*-----------------------------  */
+<span class="lineNum">      65 </span>                : 
+<span class="lineNum">      66 </span>                : /* Special encodings */
+<span class="lineNum">      67 </span>                : #define  SH     'X'
+<span class="lineNum">      68 </span>                : #define  TH             '0'
+<span class="lineNum">      69 </span>                : 
+<span class="lineNum">      70 </span>                : /*-----------------------------  */
+<span class="lineNum">      71 </span>                : /* end of &quot;metaphone.h&quot;          */
+<span class="lineNum">      72 </span>                : /*-----------------------------  */
+<span class="lineNum">      73 </span>                : 
+<span class="lineNum">      74 </span>                : /*----------------------------- */
+<span class="lineNum">      75 </span>                : /* this used to be &quot;metachar.h&quot; */
+<span class="lineNum">      76 </span>                : /*----------------------------- */
+<span class="lineNum">      77 </span>                : 
+<span class="lineNum">      78 </span>                : /* Metachar.h ... little bits about characters for metaphone */
+<span class="lineNum">      79 </span>                : /*-- Character encoding array &amp; accessing macros --*/
+<span class="lineNum">      80 </span>                : /* Stolen directly out of the book... */
+<span class="lineNum">      81 </span>                : char _codes[26] =
+<span class="lineNum">      82 </span>                : {
+<span class="lineNum">      83 </span>                :         1, 16, 4, 16, 9, 2, 4, 16, 9, 2, 0, 2, 2, 2, 1, 4, 0, 2, 4, 4, 1, 0, 0, 0, 8, 0
+<span class="lineNum">      84 </span>                : /*  a  b c  d e f g  h i j k l m n o p q r s t u v w x y z */
+<span class="lineNum">      85 </span>                : };
+<span class="lineNum">      86 </span>                : 
+<span class="lineNum">      87 </span>                : 
+<span class="lineNum">      88 </span>                : #define ENCODE(c) (isalpha(c) ? _codes[((toupper(c)) - 'A')] : 0)
+<span class="lineNum">      89 </span>                : 
+<span class="lineNum">      90 </span>                : #define isvowel(c)  (ENCODE(c) &amp; 1)         /* AEIOU */
+<span class="lineNum">      91 </span>                : 
+<span class="lineNum">      92 </span>                : /* These letters are passed through unchanged */
+<span class="lineNum">      93 </span>                : #define NOCHANGE(c) (ENCODE(c) &amp; 2)         /* FJMNR */
+<span class="lineNum">      94 </span>                : 
+<span class="lineNum">      95 </span>                : /* These form dipthongs when preceding H */
+<span class="lineNum">      96 </span>                : #define AFFECTH(c)  (ENCODE(c) &amp; 4)         /* CGPST */
+<span class="lineNum">      97 </span>                : 
+<span class="lineNum">      98 </span>                : /* These make C and G soft */
+<span class="lineNum">      99 </span>                : #define MAKESOFT(c) (ENCODE(c) &amp; 8)         /* EIY */
+<span class="lineNum">     100 </span>                : 
+<span class="lineNum">     101 </span>                : /* These prevent GH from becoming F */
+<span class="lineNum">     102 </span>                : #define NOGHTOF(c)  (ENCODE(c) &amp; 16)        /* BDH */
+<span class="lineNum">     103 </span>                : 
+<span class="lineNum">     104 </span>                : /*----------------------------- */
+<span class="lineNum">     105 </span>                : /* end of &quot;metachar.h&quot;          */
+<span class="lineNum">     106 </span>                : /*----------------------------- */
+<span class="lineNum">     107 </span>                : 
+<span class="lineNum">     108 </span>                : /* I suppose I could have been using a character pointer instead of
+<span class="lineNum">     109 </span>                :  * accesssing the array directly... */
+<span class="lineNum">     110 </span>                : 
+<span class="lineNum">     111 </span>                : /* Look at the next letter in the word */
+<span class="lineNum">     112 </span>                : #define Next_Letter (toupper(word[w_idx+1]))
+<span class="lineNum">     113 </span>                : /* Look at the current letter in the word */
+<span class="lineNum">     114 </span>                : #define Curr_Letter (toupper(word[w_idx]))
+<span class="lineNum">     115 </span>                : /* Go N letters back. */
+<span class="lineNum">     116 </span>                : #define Look_Back_Letter(n)     (w_idx &gt;= n ? toupper(word[w_idx-n]) : '\0')
+<span class="lineNum">     117 </span>                : /* Previous letter.  I dunno, should this return null on failure? */
+<span class="lineNum">     118 </span>                : #define Prev_Letter (Look_Back_Letter(1))
+<span class="lineNum">     119 </span>                : /* Look two letters down.  It makes sure you don't walk off the string. */
+<span class="lineNum">     120 </span>                : #define After_Next_Letter       (Next_Letter != '\0' ? toupper(word[w_idx+2]) \
+<span class="lineNum">     121 </span>                :                                                                                              : '\0')
+<span class="lineNum">     122 </span>                : #define Look_Ahead_Letter(n) (toupper(Lookahead(word+w_idx, n)))
+<span class="lineNum">     123 </span>                : 
+<span class="lineNum">     124 </span>                : 
+<a name="125"><span class="lineNum">     125 </span>                : /* Allows us to safely look ahead an arbitrary # of letters */</a>
+<span class="lineNum">     126 </span>                : /* I probably could have just used strlen... */
+<span class="lineNum">     127 </span><span class="lineNoCov">              0 : static char Lookahead(char *word, int how_far)</span>
+<span class="lineNum">     128 </span>                : {
+<span class="lineNum">     129 </span><span class="lineNoCov">              0 :         char letter_ahead = '\0';       /* null by default */</span>
+<span class="lineNum">     130 </span>                :         int idx;
+<span class="lineNum">     131 </span><span class="lineNoCov">              0 :         for (idx = 0; word[idx] != '\0' &amp;&amp; idx &lt; how_far; idx++);</span>
+<span class="lineNum">     132 </span>                :         /* Edge forward in the string... */
+<span class="lineNum">     133 </span>                : 
+<span class="lineNum">     134 </span><span class="lineNoCov">              0 :         letter_ahead = word[idx];       /* idx will be either == to how_far or</span>
+<span class="lineNum">     135 </span>                :                                                                  * at the end of the string
+<span class="lineNum">     136 </span>                :                                                                  */
+<span class="lineNum">     137 </span><span class="lineNoCov">              0 :         return letter_ahead;</span>
+<span class="lineNum">     138 </span>                : }
+<span class="lineNum">     139 </span>                : 
+<span class="lineNum">     140 </span>                : 
+<span class="lineNum">     141 </span>                : /* phonize one letter
+<span class="lineNum">     142 </span>                :  * We don't know the buffers size in advance. On way to solve this is to just
+<span class="lineNum">     143 </span>                :  * re-allocate the buffer size. We're using an extra of 2 characters (this
+<span class="lineNum">     144 </span>                :  * could be one though; or more too). */
+<span class="lineNum">     145 </span>                : #define Phonize(c)      { \
+<span class="lineNum">     146 </span>                :                                                 if (p_idx &gt;= max_buffer_len) { \
+<span class="lineNum">     147 </span>                :                                                         *phoned_word = safe_erealloc(*phoned_word, 2, sizeof(char), max_buffer_len); \
+<span class="lineNum">     148 </span>                :                                                         max_buffer_len += 2; \
+<span class="lineNum">     149 </span>                :                                                 } \
+<span class="lineNum">     150 </span>                :                                                 (*phoned_word)[p_idx++] = c; \
+<span class="lineNum">     151 </span>                :                                         }
+<span class="lineNum">     152 </span>                : /* Slap a null character on the end of the phoned word */
+<span class="lineNum">     153 </span>                : #define End_Phoned_Word { \
+<span class="lineNum">     154 </span>                :                                                         if (p_idx == max_buffer_len) { \
+<span class="lineNum">     155 </span>                :                                                                 *phoned_word = safe_erealloc(*phoned_word, 1, sizeof(char), max_buffer_len); \
+<span class="lineNum">     156 </span>                :                                                         } \
+<span class="lineNum">     157 </span>                :                                                         (*phoned_word)[p_idx] = '\0'; \
+<span class="lineNum">     158 </span>                :                                                 }
+<span class="lineNum">     159 </span>                : /* How long is the phoned word? */
+<span class="lineNum">     160 </span>                : #define Phone_Len       (p_idx)
+<span class="lineNum">     161 </span>                : 
+<span class="lineNum">     162 </span>                : /* Note is a letter is a 'break' in the word */
+<span class="lineNum">     163 </span>                : #define Isbreak(c)  (!isalpha(c))
+<span class="lineNum">     164 </span>                : 
+<a name="165"><span class="lineNum">     165 </span>                : /* {{{ metaphone</a>
+<span class="lineNum">     166 </span>                :  */
+<span class="lineNum">     167 </span><span class="lineNoCov">              0 : static int metaphone(unsigned char *word, int word_len, long max_phonemes, char **phoned_word, int traditional)</span>
+<span class="lineNum">     168 </span>                : {
+<span class="lineNum">     169 </span><span class="lineNoCov">              0 :         int w_idx = 0;                          /* point in the phonization we're at. */</span>
+<span class="lineNum">     170 </span><span class="lineNoCov">              0 :         int p_idx = 0;                          /* end of the phoned phrase */</span>
+<span class="lineNum">     171 </span><span class="lineNoCov">              0 :         int max_buffer_len = 0;         /* maximum length of the destination buffer */</span>
+<span class="lineNum">     172 </span>                : 
+<span class="lineNum">     173 </span>                : /*-- Parameter checks --*/
+<span class="lineNum">     174 </span>                :         /* Negative phoneme length is meaningless */
+<span class="lineNum">     175 </span>                : 
+<span class="lineNum">     176 </span><span class="lineNoCov">              0 :         if (max_phonemes &lt; 0)</span>
+<span class="lineNum">     177 </span><span class="lineNoCov">              0 :                 return -1;</span>
+<span class="lineNum">     178 </span>                : 
+<span class="lineNum">     179 </span>                :         /* Empty/null string is meaningless */
+<span class="lineNum">     180 </span>                :         /* Overly paranoid */
+<span class="lineNum">     181 </span>                :         /* assert(word != NULL &amp;&amp; word[0] != '\0'); */
+<span class="lineNum">     182 </span>                : 
+<span class="lineNum">     183 </span><span class="lineNoCov">              0 :         if (word == NULL)</span>
+<span class="lineNum">     184 </span><span class="lineNoCov">              0 :                 return -1;</span>
+<span class="lineNum">     185 </span>                : 
+<span class="lineNum">     186 </span>                : /*-- Allocate memory for our phoned_phrase --*/
+<span class="lineNum">     187 </span><span class="lineNoCov">              0 :         if (max_phonemes == 0) {        /* Assume largest possible */</span>
+<span class="lineNum">     188 </span><span class="lineNoCov">              0 :                 max_buffer_len = word_len;</span>
+<span class="lineNum">     189 </span><span class="lineNoCov">              0 :                 *phoned_word = safe_emalloc(sizeof(char), word_len, 1);</span>
+<span class="lineNum">     190 </span>                :         } else {
+<span class="lineNum">     191 </span><span class="lineNoCov">              0 :                 max_buffer_len = max_phonemes;</span>
+<span class="lineNum">     192 </span><span class="lineNoCov">              0 :                 *phoned_word = safe_emalloc(sizeof(char), max_phonemes, 1);</span>
+<span class="lineNum">     193 </span>                :         }
+<span class="lineNum">     194 </span>                : 
+<span class="lineNum">     195 </span>                : 
+<span class="lineNum">     196 </span>                : /*-- The first phoneme has to be processed specially. --*/
+<span class="lineNum">     197 </span>                :         /* Find our first letter */
+<span class="lineNum">     198 </span><span class="lineNoCov">              0 :         for (; !isalpha(Curr_Letter); w_idx++) {</span>
+<span class="lineNum">     199 </span>                :                 /* On the off chance we were given nothing but crap... */
+<span class="lineNum">     200 </span><span class="lineNoCov">              0 :                 if (Curr_Letter == '\0') {</span>
+<span class="lineNum">     201 </span><span class="lineNoCov">              0 :                         End_Phoned_Word</span>
+<span class="lineNum">     202 </span><span class="lineNoCov">              0 :                                 return SUCCESS; /* For testing */</span>
+<span class="lineNum">     203 </span>                :                 }
+<span class="lineNum">     204 </span>                :         }
+<span class="lineNum">     205 </span>                : 
+<span class="lineNum">     206 </span><span class="lineNoCov">              0 :         switch (Curr_Letter) {</span>
+<span class="lineNum">     207 </span>                :                 /* AE becomes E */
+<span class="lineNum">     208 </span>                :         case 'A':
+<span class="lineNum">     209 </span><span class="lineNoCov">              0 :                 if (Next_Letter == 'E') {</span>
+<span class="lineNum">     210 </span><span class="lineNoCov">              0 :                         Phonize('E');</span>
+<span class="lineNum">     211 </span><span class="lineNoCov">              0 :                         w_idx += 2;</span>
+<span class="lineNum">     212 </span>                :                 }
+<span class="lineNum">     213 </span>                :                 /* Remember, preserve vowels at the beginning */
+<span class="lineNum">     214 </span>                :                 else {
+<span class="lineNum">     215 </span><span class="lineNoCov">              0 :                         Phonize('A');</span>
+<span class="lineNum">     216 </span><span class="lineNoCov">              0 :                         w_idx++;</span>
+<span class="lineNum">     217 </span>                :                 }
+<span class="lineNum">     218 </span><span class="lineNoCov">              0 :                 break;</span>
+<span class="lineNum">     219 </span>                :                 /* [GKP]N becomes N */
+<span class="lineNum">     220 </span>                :         case 'G':
+<span class="lineNum">     221 </span>                :         case 'K':
+<span class="lineNum">     222 </span>                :         case 'P':
+<span class="lineNum">     223 </span><span class="lineNoCov">              0 :                 if (Next_Letter == 'N') {</span>
+<span class="lineNum">     224 </span><span class="lineNoCov">              0 :                         Phonize('N');</span>
+<span class="lineNum">     225 </span><span class="lineNoCov">              0 :                         w_idx += 2;</span>
+<span class="lineNum">     226 </span>                :                 }
+<span class="lineNum">     227 </span><span class="lineNoCov">              0 :                 break;</span>
+<span class="lineNum">     228 </span>                :                 /* WH becomes W, 
+<span class="lineNum">     229 </span>                :                    WR becomes R 
+<span class="lineNum">     230 </span>                :                    W if followed by a vowel */
+<span class="lineNum">     231 </span>                :         case 'W':
+<span class="lineNum">     232 </span><span class="lineNoCov">              0 :                 if (Next_Letter == 'R') {</span>
+<span class="lineNum">     233 </span><span class="lineNoCov">              0 :                         Phonize(Next_Letter);</span>
+<span class="lineNum">     234 </span><span class="lineNoCov">              0 :                         w_idx += 2;</span>
+<span class="lineNum">     235 </span><span class="lineNoCov">              0 :                 } else if (Next_Letter == 'H' || isvowel(Next_Letter)) {</span>
+<span class="lineNum">     236 </span><span class="lineNoCov">              0 :                         Phonize('W');</span>
+<span class="lineNum">     237 </span><span class="lineNoCov">              0 :                         w_idx += 2;</span>
+<span class="lineNum">     238 </span>                :                 }
+<span class="lineNum">     239 </span>                :                 /* else ignore */
+<span class="lineNum">     240 </span><span class="lineNoCov">              0 :                 break;</span>
+<span class="lineNum">     241 </span>                :                 /* X becomes S */
+<span class="lineNum">     242 </span>                :         case 'X':
+<span class="lineNum">     243 </span><span class="lineNoCov">              0 :                 Phonize('S');</span>
+<span class="lineNum">     244 </span><span class="lineNoCov">              0 :                 w_idx++;</span>
+<span class="lineNum">     245 </span><span class="lineNoCov">              0 :                 break;</span>
+<span class="lineNum">     246 </span>                :                 /* Vowels are kept */
+<span class="lineNum">     247 </span>                :                 /* We did A already
+<span class="lineNum">     248 </span>                :                    case 'A':
+<span class="lineNum">     249 </span>                :                    case 'a':
+<span class="lineNum">     250 </span>                :                  */
+<span class="lineNum">     251 </span>                :         case 'E':
+<span class="lineNum">     252 </span>                :         case 'I':
+<span class="lineNum">     253 </span>                :         case 'O':
+<span class="lineNum">     254 </span>                :         case 'U':
+<span class="lineNum">     255 </span><span class="lineNoCov">              0 :                 Phonize(Curr_Letter);</span>
+<span class="lineNum">     256 </span><span class="lineNoCov">              0 :                 w_idx++;</span>
+<span class="lineNum">     257 </span>                :                 break;
+<span class="lineNum">     258 </span>                :         default:
+<span class="lineNum">     259 </span>                :                 /* do nothing */
+<span class="lineNum">     260 </span>                :                 break;
+<span class="lineNum">     261 </span>                :         }
+<span class="lineNum">     262 </span>                : 
+<span class="lineNum">     263 </span>                : 
+<span class="lineNum">     264 </span>                : 
+<span class="lineNum">     265 </span>                :         /* On to the metaphoning */
+<span class="lineNum">     266 </span><span class="lineNoCov">              0 :         for (; Curr_Letter != '\0' &amp;&amp;</span>
+<span class="lineNum">     267 </span><span class="lineNoCov">              0 :                  (max_phonemes == 0 || Phone_Len &lt; max_phonemes);</span>
+<span class="lineNum">     268 </span><span class="lineNoCov">              0 :                  w_idx++) {</span>
+<span class="lineNum">     269 </span>                :                 /* How many letters to skip because an eariler encoding handled     
+<span class="lineNum">     270 </span>                :                  * multiple letters */
+<span class="lineNum">     271 </span><span class="lineNoCov">              0 :                 unsigned short int skip_letter = 0;</span>
+<span class="lineNum">     272 </span>                : 
+<span class="lineNum">     273 </span>                : 
+<span class="lineNum">     274 </span>                :                 /* THOUGHT:  It would be nice if, rather than having things like...
+<span class="lineNum">     275 </span>                :                  * well, SCI.  For SCI you encode the S, then have to remember
+<span class="lineNum">     276 </span>                :                  * to skip the C.  So the phonome SCI invades both S and C.  It would
+<span class="lineNum">     277 </span>                :                  * be better, IMHO, to skip the C from the S part of the encoding.
+<span class="lineNum">     278 </span>                :                  * Hell, I'm trying it.
+<span class="lineNum">     279 </span>                :                  */
+<span class="lineNum">     280 </span>                : 
+<span class="lineNum">     281 </span>                :                 /* Ignore non-alphas */
+<span class="lineNum">     282 </span><span class="lineNoCov">              0 :                 if (!isalpha(Curr_Letter))</span>
+<span class="lineNum">     283 </span><span class="lineNoCov">              0 :                         continue;</span>
+<span class="lineNum">     284 </span>                : 
+<span class="lineNum">     285 </span>                :                 /* Drop duplicates, except CC */
+<span class="lineNum">     286 </span><span class="lineNoCov">              0 :                 if (Curr_Letter == Prev_Letter &amp;&amp;</span>
+<span class="lineNum">     287 </span><span class="lineNoCov">              0 :                         Curr_Letter != 'C')</span>
+<span class="lineNum">     288 </span><span class="lineNoCov">              0 :                         continue;</span>
+<span class="lineNum">     289 </span>                : 
+<span class="lineNum">     290 </span><span class="lineNoCov">              0 :                 switch (Curr_Letter) {</span>
+<span class="lineNum">     291 </span>                :                         /* B -&gt; B unless in MB */
+<span class="lineNum">     292 </span>                :                 case 'B':
+<span class="lineNum">     293 </span><span class="lineNoCov">              0 :                         if (Prev_Letter != 'M')</span>
+<span class="lineNum">     294 </span><span class="lineNoCov">              0 :                                 Phonize('B');</span>
+<span class="lineNum">     295 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     296 </span>                :                         /* 'sh' if -CIA- or -CH, but not SCH, except SCHW.
+<span class="lineNum">     297 </span>                :                          * (SCHW is handled in S)
+<span class="lineNum">     298 </span>                :                          *  S if -CI-, -CE- or -CY-
+<span class="lineNum">     299 </span>                :                          *  dropped if -SCI-, SCE-, -SCY- (handed in S)
+<span class="lineNum">     300 </span>                :                          *  else K
+<span class="lineNum">     301 </span>                :                          */
+<span class="lineNum">     302 </span>                :                 case 'C':
+<span class="lineNum">     303 </span><span class="lineNoCov">              0 :                         if (MAKESOFT(Next_Letter)) {    /* C[IEY] */</span>
+<span class="lineNum">     304 </span><span class="lineNoCov">              0 :                                 if (After_Next_Letter == 'A' &amp;&amp;</span>
+<span class="lineNum">     305 </span><span class="lineNoCov">              0 :                                         Next_Letter == 'I') {   /* CIA */</span>
+<span class="lineNum">     306 </span><span class="lineNoCov">              0 :                                         Phonize(SH);</span>
+<span class="lineNum">     307 </span>                :                                 }
+<span class="lineNum">     308 </span>                :                                 /* SC[IEY] */
+<span class="lineNum">     309 </span><span class="lineNoCov">              0 :                                 else if (Prev_Letter == 'S') {</span>
+<span class="lineNum">     310 </span>                :                                         /* Dropped */
+<span class="lineNum">     311 </span>                :                                 } else {
+<span class="lineNum">     312 </span><span class="lineNoCov">              0 :                                         Phonize('S');</span>
+<span class="lineNum">     313 </span>                :                                 }
+<span class="lineNum">     314 </span><span class="lineNoCov">              0 :                         } else if (Next_Letter == 'H') {</span>
+<span class="lineNum">     315 </span><span class="lineNoCov">              0 :                                 if ((!traditional) &amp;&amp; (After_Next_Letter == 'R' || Prev_Letter == 'S')) {       /* Christ, School */</span>
+<span class="lineNum">     316 </span><span class="lineNoCov">              0 :                                         Phonize('K');</span>
+<span class="lineNum">     317 </span>                :                                 } else {
+<span class="lineNum">     318 </span><span class="lineNoCov">              0 :                                         Phonize(SH);</span>
+<span class="lineNum">     319 </span>                :                                 }
+<span class="lineNum">     320 </span><span class="lineNoCov">              0 :                                 skip_letter++;</span>
+<span class="lineNum">     321 </span>                :                         } else {
+<span class="lineNum">     322 </span><span class="lineNoCov">              0 :                                 Phonize('K');</span>
+<span class="lineNum">     323 </span>                :                         }
+<span class="lineNum">     324 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     325 </span>                :                         /* J if in -DGE-, -DGI- or -DGY-
+<span class="lineNum">     326 </span>                :                          * else T
+<span class="lineNum">     327 </span>                :                          */
+<span class="lineNum">     328 </span>                :                 case 'D':
+<span class="lineNum">     329 </span><span class="lineNoCov">              0 :                         if (Next_Letter == 'G' &amp;&amp;</span>
+<span class="lineNum">     330 </span><span class="lineNoCov">              0 :                                 MAKESOFT(After_Next_Letter)) {</span>
+<span class="lineNum">     331 </span><span class="lineNoCov">              0 :                                 Phonize('J');</span>
+<span class="lineNum">     332 </span><span class="lineNoCov">              0 :                                 skip_letter++;</span>
+<span class="lineNum">     333 </span>                :                         } else
+<span class="lineNum">     334 </span><span class="lineNoCov">              0 :                                 Phonize('T');</span>
+<span class="lineNum">     335 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     336 </span>                :                         /* F if in -GH and not B--GH, D--GH, -H--GH, -H---GH
+<span class="lineNum">     337 </span>                :                          * else dropped if -GNED, -GN, 
+<span class="lineNum">     338 </span>                :                          * else dropped if -DGE-, -DGI- or -DGY- (handled in D)
+<span class="lineNum">     339 </span>                :                          * else J if in -GE-, -GI, -GY and not GG
+<span class="lineNum">     340 </span>                :                          * else K
+<span class="lineNum">     341 </span>                :                          */
+<span class="lineNum">     342 </span>                :                 case 'G':
+<span class="lineNum">     343 </span><span class="lineNoCov">              0 :                         if (Next_Letter == 'H') {</span>
+<span class="lineNum">     344 </span><span class="lineNoCov">              0 :                                 if (!(NOGHTOF(Look_Back_Letter(3)) ||</span>
+<span class="lineNum">     345 </span><span class="lineNoCov">              0 :                                           Look_Back_Letter(4) == 'H')) {</span>
+<span class="lineNum">     346 </span><span class="lineNoCov">              0 :                                         Phonize('F');</span>
+<span class="lineNum">     347 </span><span class="lineNoCov">              0 :                                         skip_letter++;</span>
+<span class="lineNum">     348 </span>                :                                 } else {
+<span class="lineNum">     349 </span>                :                                         /* silent */
+<span class="lineNum">     350 </span>                :                                 }
+<span class="lineNum">     351 </span><span class="lineNoCov">              0 :                         } else if (Next_Letter == 'N') {</span>
+<span class="lineNum">     352 </span><span class="lineNoCov">              0 :                                 if (Isbreak(After_Next_Letter) ||</span>
+<span class="lineNum">     353 </span><span class="lineNoCov">              0 :                                         (After_Next_Letter == 'E' &amp;&amp;</span>
+<span class="lineNum">     354 </span><span class="lineNoCov">              0 :                                          Look_Ahead_Letter(3) == 'D')) {</span>
+<span class="lineNum">     355 </span>                :                                         /* dropped */
+<span class="lineNum">     356 </span>                :                                 } else
+<span class="lineNum">     357 </span><span class="lineNoCov">              0 :                                         Phonize('K');</span>
+<span class="lineNum">     358 </span><span class="lineNoCov">              0 :                         } else if (MAKESOFT(Next_Letter) &amp;&amp;</span>
+<span class="lineNum">     359 </span><span class="lineNoCov">              0 :                                            Prev_Letter != 'G') {</span>
+<span class="lineNum">     360 </span><span class="lineNoCov">              0 :                                 Phonize('J');</span>
+<span class="lineNum">     361 </span>                :                         } else {
+<span class="lineNum">     362 </span><span class="lineNoCov">              0 :                                 Phonize('K');</span>
+<span class="lineNum">     363 </span>                :                         }
+<span class="lineNum">     364 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     365 </span>                :                         /* H if before a vowel and not after C,G,P,S,T */
+<span class="lineNum">     366 </span>                :                 case 'H':
+<span class="lineNum">     367 </span><span class="lineNoCov">              0 :                         if (isvowel(Next_Letter) &amp;&amp;</span>
+<span class="lineNum">     368 </span><span class="lineNoCov">              0 :                                 !AFFECTH(Prev_Letter))</span>
+<span class="lineNum">     369 </span><span class="lineNoCov">              0 :                                 Phonize('H');</span>
+<span class="lineNum">     370 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     371 </span>                :                         /* dropped if after C
+<span class="lineNum">     372 </span>                :                          * else K
+<span class="lineNum">     373 </span>                :                          */
+<span class="lineNum">     374 </span>                :                 case 'K':
+<span class="lineNum">     375 </span><span class="lineNoCov">              0 :                         if (Prev_Letter != 'C')</span>
+<span class="lineNum">     376 </span><span class="lineNoCov">              0 :                                 Phonize('K');</span>
+<span class="lineNum">     377 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     378 </span>                :                         /* F if before H
+<span class="lineNum">     379 </span>                :                          * else P
+<span class="lineNum">     380 </span>                :                          */
+<span class="lineNum">     381 </span>                :                 case 'P':
+<span class="lineNum">     382 </span><span class="lineNoCov">              0 :                         if (Next_Letter == 'H') {</span>
+<span class="lineNum">     383 </span><span class="lineNoCov">              0 :                                 Phonize('F');</span>
+<span class="lineNum">     384 </span>                :                         } else {
+<span class="lineNum">     385 </span><span class="lineNoCov">              0 :                                 Phonize('P');</span>
+<span class="lineNum">     386 </span>                :                         }
+<span class="lineNum">     387 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     388 </span>                :                         /* K
+<span class="lineNum">     389 </span>                :                          */
+<span class="lineNum">     390 </span>                :                 case 'Q':
+<span class="lineNum">     391 </span><span class="lineNoCov">              0 :                         Phonize('K');</span>
+<span class="lineNum">     392 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     393 </span>                :                         /* 'sh' in -SH-, -SIO- or -SIA- or -SCHW-
+<span class="lineNum">     394 </span>                :                          * else S
+<span class="lineNum">     395 </span>                :                          */
+<span class="lineNum">     396 </span>                :                 case 'S':
+<span class="lineNum">     397 </span><span class="lineNoCov">              0 :                         if (Next_Letter == 'I' &amp;&amp;</span>
+<span class="lineNum">     398 </span><span class="lineNoCov">              0 :                                 (After_Next_Letter == 'O' ||</span>
+<span class="lineNum">     399 </span><span class="lineNoCov">              0 :                                  After_Next_Letter == 'A')) {</span>
+<span class="lineNum">     400 </span><span class="lineNoCov">              0 :                                 Phonize(SH);</span>
+<span class="lineNum">     401 </span><span class="lineNoCov">              0 :                         } else if (Next_Letter == 'H') {</span>
+<span class="lineNum">     402 </span><span class="lineNoCov">              0 :                                 Phonize(SH);</span>
+<span class="lineNum">     403 </span><span class="lineNoCov">              0 :                                 skip_letter++;</span>
+<span class="lineNum">     404 </span><span class="lineNoCov">              0 :                         } else if ((!traditional) &amp;&amp; (Next_Letter == 'C' &amp;&amp; Look_Ahead_Letter(2) == 'H' &amp;&amp; Look_Ahead_Letter(3) == 'W')) {</span>
+<span class="lineNum">     405 </span><span class="lineNoCov">              0 :                                 Phonize(SH);</span>
+<span class="lineNum">     406 </span><span class="lineNoCov">              0 :                                 skip_letter += 2;</span>
+<span class="lineNum">     407 </span>                :                         } else {
+<span class="lineNum">     408 </span><span class="lineNoCov">              0 :                                 Phonize('S');</span>
+<span class="lineNum">     409 </span>                :                         }
+<span class="lineNum">     410 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     411 </span>                :                         /* 'sh' in -TIA- or -TIO-
+<span class="lineNum">     412 </span>                :                          * else 'th' before H
+<span class="lineNum">     413 </span>                :                          * else T
+<span class="lineNum">     414 </span>                :                          */
+<span class="lineNum">     415 </span>                :                 case 'T':
+<span class="lineNum">     416 </span><span class="lineNoCov">              0 :                         if (Next_Letter == 'I' &amp;&amp;</span>
+<span class="lineNum">     417 </span><span class="lineNoCov">              0 :                                 (After_Next_Letter == 'O' ||</span>
+<span class="lineNum">     418 </span><span class="lineNoCov">              0 :                                  After_Next_Letter == 'A')) {</span>
+<span class="lineNum">     419 </span><span class="lineNoCov">              0 :                                 Phonize(SH);</span>
+<span class="lineNum">     420 </span><span class="lineNoCov">              0 :                         } else if (Next_Letter == 'H') {</span>
+<span class="lineNum">     421 </span><span class="lineNoCov">              0 :                                 Phonize(TH);</span>
+<span class="lineNum">     422 </span><span class="lineNoCov">              0 :                                 skip_letter++;</span>
+<span class="lineNum">     423 </span><span class="lineNoCov">              0 :                         } else if (!(Next_Letter == 'C' &amp;&amp; After_Next_Letter == 'H')) {</span>
+<span class="lineNum">     424 </span><span class="lineNoCov">              0 :                                 Phonize('T');</span>
+<span class="lineNum">     425 </span>                :                         }
+<span class="lineNum">     426 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     427 </span>                :                         /* F */
+<span class="lineNum">     428 </span>                :                 case 'V':
+<span class="lineNum">     429 </span><span class="lineNoCov">              0 :                         Phonize('F');</span>
+<span class="lineNum">     430 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     431 </span>                :                         /* W before a vowel, else dropped */
+<span class="lineNum">     432 </span>                :                 case 'W':
+<span class="lineNum">     433 </span><span class="lineNoCov">              0 :                         if (isvowel(Next_Letter))</span>
+<span class="lineNum">     434 </span><span class="lineNoCov">              0 :                                 Phonize('W');</span>
+<span class="lineNum">     435 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     436 </span>                :                         /* KS */
+<span class="lineNum">     437 </span>                :                 case 'X':
+<span class="lineNum">     438 </span><span class="lineNoCov">              0 :                         Phonize('K');</span>
+<span class="lineNum">     439 </span><span class="lineNoCov">              0 :                         Phonize('S');</span>
+<span class="lineNum">     440 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     441 </span>                :                         /* Y if followed by a vowel */
+<span class="lineNum">     442 </span>                :                 case 'Y':
+<span class="lineNum">     443 </span><span class="lineNoCov">              0 :                         if (isvowel(Next_Letter))</span>
+<span class="lineNum">     444 </span><span class="lineNoCov">              0 :                                 Phonize('Y');</span>
+<span class="lineNum">     445 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     446 </span>                :                         /* S */
+<span class="lineNum">     447 </span>                :                 case 'Z':
+<span class="lineNum">     448 </span><span class="lineNoCov">              0 :                         Phonize('S');</span>
+<span class="lineNum">     449 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     450 </span>                :                         /* No transformation */
+<span class="lineNum">     451 </span>                :                 case 'F':
+<span class="lineNum">     452 </span>                :                 case 'J':
+<span class="lineNum">     453 </span>                :                 case 'L':
+<span class="lineNum">     454 </span>                :                 case 'M':
+<span class="lineNum">     455 </span>                :                 case 'N':
+<span class="lineNum">     456 </span>                :                 case 'R':
+<span class="lineNum">     457 </span><span class="lineNoCov">              0 :                         Phonize(Curr_Letter);</span>
+<span class="lineNum">     458 </span>                :                         break;
+<span class="lineNum">     459 </span>                :                 default:
+<span class="lineNum">     460 </span>                :                         /* nothing */
+<span class="lineNum">     461 </span>                :                         break;
+<span class="lineNum">     462 </span>                :                 }                                               /* END SWITCH */
+<span class="lineNum">     463 </span>                : 
+<span class="lineNum">     464 </span><span class="lineNoCov">              0 :                 w_idx += skip_letter;</span>
+<span class="lineNum">     465 </span>                :         }                                                       /* END FOR */
+<span class="lineNum">     466 </span>                : 
+<span class="lineNum">     467 </span><span class="lineNoCov">              0 :         End_Phoned_Word;</span>
+<span class="lineNum">     468 </span>                : 
+<span class="lineNum">     469 </span><span class="lineNoCov">              0 :         return 0;</span>
+<span class="lineNum">     470 </span>                : }                                                               /* END metaphone */
+<span class="lineNum">     471 </span>                : /* }}} */
+<span class="lineNum">     472 </span>                : 
+<span class="lineNum">     473 </span>                : /*
+<span class="lineNum">     474 </span>                :  * Local variables:
+<span class="lineNum">     475 </span>                :  * tab-width: 4
+<span class="lineNum">     476 </span>                :  * c-basic-offset: 4
+<span class="lineNum">     477 </span>                :  * End:
+<span class="lineNum">     478 </span>                :  * vim600: sw=4 ts=4 fdm=marker
+<span class="lineNum">     479 </span>                :  * vim&lt;600: sw=4 ts=4
+<span class="lineNum">     480 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

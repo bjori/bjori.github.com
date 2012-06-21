@@ -1,0 +1,223 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - ext/standard/fsock.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../index.html">directory</a> - <a href="index.html">ext/standard</a> - fsock.c (source / <a href="fsock.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">52</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">3</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Authors: Paul Panotzki - Bunyip Information Systems                  |
+<span class="lineNum">      16 </span>                :    |          Jim Winstead &lt;jimw@php.net&gt;                                 |
+<span class="lineNum">      17 </span>                :    |          Sascha Schumann &lt;sascha@schumann.cx&gt;                        |
+<span class="lineNum">      18 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      19 </span>                : */
+<span class="lineNum">      20 </span>                : 
+<span class="lineNum">      21 </span>                : /* $Id$ */
+<span class="lineNum">      22 </span>                : 
+<span class="lineNum">      23 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">      24 </span>                : #include &quot;php_globals.h&quot;
+<span class="lineNum">      25 </span>                : #include &lt;stdlib.h&gt;
+<span class="lineNum">      26 </span>                : #include &lt;stddef.h&gt;
+<span class="lineNum">      27 </span>                : #include &quot;php_network.h&quot;
+<span class="lineNum">      28 </span>                : #include &quot;file.h&quot;
+<span class="lineNum">      29 </span>                : 
+<a name="30"><span class="lineNum">      30 </span>                : /* {{{ php_fsockopen() */</a>
+<span class="lineNum">      31 </span>                : 
+<span class="lineNum">      32 </span><span class="lineNoCov">              0 : static void php_fsockopen_stream(INTERNAL_FUNCTION_PARAMETERS, int persistent)</span>
+<span class="lineNum">      33 </span>                : {
+<span class="lineNum">      34 </span>                :         char *host;
+<span class="lineNum">      35 </span>                :         int host_len;
+<span class="lineNum">      36 </span><span class="lineNoCov">              0 :         long port = -1;</span>
+<span class="lineNum">      37 </span><span class="lineNoCov">              0 :         zval *zerrno = NULL, *zerrstr = NULL;</span>
+<span class="lineNum">      38 </span><span class="lineNoCov">              0 :         double timeout = FG(default_socket_timeout);</span>
+<span class="lineNum">      39 </span>                :         unsigned long conv;
+<span class="lineNum">      40 </span>                :         struct timeval tv;
+<span class="lineNum">      41 </span><span class="lineNoCov">              0 :         char *hashkey = NULL;</span>
+<span class="lineNum">      42 </span><span class="lineNoCov">              0 :         php_stream *stream = NULL;</span>
+<span class="lineNum">      43 </span>                :         int err;
+<span class="lineNum">      44 </span><span class="lineNoCov">              0 :         char *hostname = NULL;</span>
+<span class="lineNum">      45 </span>                :         long hostname_len;
+<span class="lineNum">      46 </span><span class="lineNoCov">              0 :         char *errstr = NULL;</span>
+<span class="lineNum">      47 </span>                : 
+<span class="lineNum">      48 </span><span class="lineNoCov">              0 :         RETVAL_FALSE;</span>
+<span class="lineNum">      49 </span>                :         
+<span class="lineNum">      50 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;s|lzzd&quot;, &amp;host, &amp;host_len, &amp;port, &amp;zerrno, &amp;zerrstr, &amp;timeout) == FAILURE) {</span>
+<span class="lineNum">      51 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">      52 </span>                :         }
+<span class="lineNum">      53 </span>                : 
+<span class="lineNum">      54 </span><span class="lineNoCov">              0 :         if (persistent) {</span>
+<span class="lineNum">      55 </span><span class="lineNoCov">              0 :                 spprintf(&amp;hashkey, 0, &quot;pfsockopen__%s:%ld&quot;, host, port);</span>
+<span class="lineNum">      56 </span>                :         }
+<span class="lineNum">      57 </span>                : 
+<span class="lineNum">      58 </span><span class="lineNoCov">              0 :         if (port &gt; 0) {</span>
+<span class="lineNum">      59 </span><span class="lineNoCov">              0 :                 hostname_len = spprintf(&amp;hostname, 0, &quot;%s:%ld&quot;, host, port);</span>
+<span class="lineNum">      60 </span>                :         } else {
+<span class="lineNum">      61 </span><span class="lineNoCov">              0 :                 hostname_len = host_len;</span>
+<span class="lineNum">      62 </span><span class="lineNoCov">              0 :                 hostname = host;</span>
+<span class="lineNum">      63 </span>                :         }
+<span class="lineNum">      64 </span>                :         
+<span class="lineNum">      65 </span>                :         /* prepare the timeout value for use */
+<span class="lineNum">      66 </span><span class="lineNoCov">              0 :         conv = (unsigned long) (timeout * 1000000.0);</span>
+<span class="lineNum">      67 </span><span class="lineNoCov">              0 :         tv.tv_sec = conv / 1000000;</span>
+<span class="lineNum">      68 </span><span class="lineNoCov">              0 :         tv.tv_usec = conv % 1000000;</span>
+<span class="lineNum">      69 </span>                : 
+<span class="lineNum">      70 </span><span class="lineNoCov">              0 :         if (zerrno)     {</span>
+<span class="lineNum">      71 </span><span class="lineNoCov">              0 :                 zval_dtor(zerrno);</span>
+<span class="lineNum">      72 </span><span class="lineNoCov">              0 :                 ZVAL_LONG(zerrno, 0);</span>
+<span class="lineNum">      73 </span>                :         }
+<span class="lineNum">      74 </span><span class="lineNoCov">              0 :         if (zerrstr) {</span>
+<span class="lineNum">      75 </span><span class="lineNoCov">              0 :                 zval_dtor(zerrstr);</span>
+<span class="lineNum">      76 </span><span class="lineNoCov">              0 :                 ZVAL_STRING(zerrstr, &quot;&quot;, 1);</span>
+<span class="lineNum">      77 </span>                :         }
+<span class="lineNum">      78 </span>                : 
+<span class="lineNum">      79 </span><span class="lineNoCov">              0 :         stream = php_stream_xport_create(hostname, hostname_len, REPORT_ERRORS,</span>
+<span class="lineNum">      80 </span>                :                         STREAM_XPORT_CLIENT | STREAM_XPORT_CONNECT, hashkey, &amp;tv, NULL, &amp;errstr, &amp;err);
+<span class="lineNum">      81 </span>                : 
+<span class="lineNum">      82 </span><span class="lineNoCov">              0 :         if (port &gt; 0) {</span>
+<span class="lineNum">      83 </span><span class="lineNoCov">              0 :                 efree(hostname);</span>
+<span class="lineNum">      84 </span>                :         }
+<span class="lineNum">      85 </span><span class="lineNoCov">              0 :         if (stream == NULL) {</span>
+<span class="lineNum">      86 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;unable to connect to %s:%ld (%s)&quot;, host, port, errstr == NULL ? &quot;Unknown error&quot; : errstr);</span>
+<span class="lineNum">      87 </span>                :         }
+<span class="lineNum">      88 </span>                : 
+<span class="lineNum">      89 </span><span class="lineNoCov">              0 :         if (hashkey) {</span>
+<span class="lineNum">      90 </span><span class="lineNoCov">              0 :                 efree(hashkey);</span>
+<span class="lineNum">      91 </span>                :         }
+<span class="lineNum">      92 </span>                :         
+<span class="lineNum">      93 </span><span class="lineNoCov">              0 :         if (stream == NULL)     {</span>
+<span class="lineNum">      94 </span><span class="lineNoCov">              0 :                 if (zerrno) {</span>
+<span class="lineNum">      95 </span><span class="lineNoCov">              0 :                         zval_dtor(zerrno);</span>
+<span class="lineNum">      96 </span><span class="lineNoCov">              0 :                         ZVAL_LONG(zerrno, err);</span>
+<span class="lineNum">      97 </span>                :                 }
+<span class="lineNum">      98 </span><span class="lineNoCov">              0 :                 if (zerrstr &amp;&amp; errstr) {</span>
+<span class="lineNum">      99 </span>                :                         /* no need to dup; we need to efree buf anyway */
+<span class="lineNum">     100 </span><span class="lineNoCov">              0 :                         zval_dtor(zerrstr);</span>
+<span class="lineNum">     101 </span><span class="lineNoCov">              0 :                         ZVAL_STRING(zerrstr, errstr, 0);</span>
+<span class="lineNum">     102 </span>                :                 }
+<span class="lineNum">     103 </span><span class="lineNoCov">              0 :                 else if (!zerrstr &amp;&amp; errstr) {</span>
+<span class="lineNum">     104 </span><span class="lineNoCov">              0 :                         efree(errstr);</span>
+<span class="lineNum">     105 </span>                :                 } 
+<span class="lineNum">     106 </span>                : 
+<span class="lineNum">     107 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     108 </span>                :         }
+<span class="lineNum">     109 </span>                : 
+<span class="lineNum">     110 </span><span class="lineNoCov">              0 :         if (errstr) {</span>
+<span class="lineNum">     111 </span><span class="lineNoCov">              0 :                 efree(errstr);</span>
+<span class="lineNum">     112 </span>                :         }
+<span class="lineNum">     113 </span>                :                 
+<span class="lineNum">     114 </span><span class="lineNoCov">              0 :         php_stream_to_zval(stream, return_value);</span>
+<span class="lineNum">     115 </span>                : }
+<span class="lineNum">     116 </span>                : 
+<span class="lineNum">     117 </span>                : /* }}} */
+<span class="lineNum">     118 </span>                : 
+<a name="119"><span class="lineNum">     119 </span>                : /* {{{ proto resource fsockopen(string hostname, int port [, int errno [, string errstr [, float timeout]]])</a>
+<span class="lineNum">     120 </span>                :    Open Internet or Unix domain socket connection */
+<span class="lineNum">     121 </span><span class="lineNoCov">              0 : PHP_FUNCTION(fsockopen)</span>
+<span class="lineNum">     122 </span>                : {
+<span class="lineNum">     123 </span><span class="lineNoCov">              0 :         php_fsockopen_stream(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0);</span>
+<span class="lineNum">     124 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     125 </span>                : /* }}} */
+<a name="126"><span class="lineNum">     126 </span>                : /* {{{ proto resource pfsockopen(string hostname, int port [, int errno [, string errstr [, float timeout]]])</a>
+<span class="lineNum">     127 </span>                :    Open persistent Internet or Unix domain socket connection */
+<span class="lineNum">     128 </span><span class="lineNoCov">              0 : PHP_FUNCTION(pfsockopen)</span>
+<span class="lineNum">     129 </span>                : {
+<span class="lineNum">     130 </span><span class="lineNoCov">              0 :         php_fsockopen_stream(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1);</span>
+<span class="lineNum">     131 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     132 </span>                : /* }}} */
+<span class="lineNum">     133 </span>                : 
+<span class="lineNum">     134 </span>                : /*
+<span class="lineNum">     135 </span>                :  * Local variables:
+<span class="lineNum">     136 </span>                :  * tab-width: 4
+<span class="lineNum">     137 </span>                :  * c-basic-offset: 4
+<span class="lineNum">     138 </span>                :  * End:
+<span class="lineNum">     139 </span>                :  * vim600: sw=4 ts=4 fdm=marker
+<span class="lineNum">     140 </span>                :  * vim&lt;600: sw=4 ts=4
+<span class="lineNum">     141 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

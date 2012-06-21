@@ -1,0 +1,627 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - ext/standard/browscap.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../index.html">directory</a> - <a href="index.html">ext/standard</a> - browscap.c (source / <a href="browscap.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">248</td>
+          <td class="headerCovTableEntry">18</td>
+          <td class="headerCovTableEntryLo">7.3 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">12</td>
+          <td class="headerCovTableEntry">5</td>
+          <td class="headerCovTableEntryLo">41.7 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Author: Zeev Suraski &lt;zeev@zend.com&gt;                                 |
+<span class="lineNum">      16 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      17 </span>                :  */
+<span class="lineNum">      18 </span>                : 
+<span class="lineNum">      19 </span>                : /* $Id$ */
+<span class="lineNum">      20 </span>                : 
+<span class="lineNum">      21 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">      22 </span>                : #include &quot;php_browscap.h&quot;
+<span class="lineNum">      23 </span>                : #include &quot;php_ini.h&quot;
+<span class="lineNum">      24 </span>                : #include &quot;php_string.h&quot;
+<span class="lineNum">      25 </span>                : #include &quot;ext/pcre/php_pcre.h&quot;
+<span class="lineNum">      26 </span>                : 
+<span class="lineNum">      27 </span>                : #include &quot;zend_ini_scanner.h&quot;
+<span class="lineNum">      28 </span>                : #include &quot;zend_globals.h&quot;
+<span class="lineNum">      29 </span>                : 
+<span class="lineNum">      30 </span>                : typedef struct {
+<span class="lineNum">      31 </span>                :         HashTable *htab;
+<span class="lineNum">      32 </span>                :         zval *current_section;
+<span class="lineNum">      33 </span>                :         char *current_section_name;
+<span class="lineNum">      34 </span>                :         char filename[MAXPATHLEN];
+<span class="lineNum">      35 </span>                : } browser_data;
+<span class="lineNum">      36 </span>                : 
+<span class="lineNum">      37 </span>                : /* browser data defined in startup phase, eagerly loaded in MINIT */
+<span class="lineNum">      38 </span>                : static browser_data global_bdata = {0};
+<span class="lineNum">      39 </span>                : 
+<span class="lineNum">      40 </span>                : /* browser data defined in activation phase, lazily loaded in get_browser.
+<span class="lineNum">      41 </span>                :  * Per request and per thread, if applicable */
+<span class="lineNum">      42 </span>                : ZEND_BEGIN_MODULE_GLOBALS(browscap)
+<span class="lineNum">      43 </span>                :         browser_data activation_bdata;
+<span class="lineNum">      44 </span>                : ZEND_END_MODULE_GLOBALS(browscap)
+<span class="lineNum">      45 </span>                : 
+<span class="lineNum">      46 </span>                : ZEND_DECLARE_MODULE_GLOBALS(browscap);
+<span class="lineNum">      47 </span>                : 
+<span class="lineNum">      48 </span>                : #ifdef ZTS
+<span class="lineNum">      49 </span>                : #define BROWSCAP_G(v)   TSRMG(browscap_globals_id, zend_browscap_globals *, v)
+<span class="lineNum">      50 </span>                : #else
+<span class="lineNum">      51 </span>                : #define BROWSCAP_G(v)   (browscap_globals.v)
+<span class="lineNum">      52 </span>                : #endif
+<span class="lineNum">      53 </span>                : 
+<span class="lineNum">      54 </span>                : #define DEFAULT_SECTION_NAME &quot;Default Browser Capability Settings&quot;
+<span class="lineNum">      55 </span>                : 
+<a name="56"><span class="lineNum">      56 </span>                : /* OBJECTS_FIXME: This whole extension needs going through. The use of objects looks pretty broken here */</a>
+<span class="lineNum">      57 </span>                : 
+<span class="lineNum">      58 </span><span class="lineNoCov">              0 : static void browscap_entry_dtor_request(zval **zvalue) /* {{{ */</span>
+<span class="lineNum">      59 </span>                : {
+<span class="lineNum">      60 </span><span class="lineNoCov">              0 :         if (Z_TYPE_PP(zvalue) == IS_ARRAY) {</span>
+<span class="lineNum">      61 </span><span class="lineNoCov">              0 :                 zend_hash_destroy(Z_ARRVAL_PP(zvalue));</span>
+<span class="lineNum">      62 </span><span class="lineNoCov">              0 :                 efree(Z_ARRVAL_PP(zvalue));</span>
+<span class="lineNum">      63 </span><span class="lineNoCov">              0 :         } else if (Z_TYPE_PP(zvalue) == IS_STRING) {</span>
+<span class="lineNum">      64 </span><span class="lineNoCov">              0 :                 if (Z_STRVAL_PP(zvalue)) {</span>
+<span class="lineNum">      65 </span><span class="lineNoCov">              0 :                         efree(Z_STRVAL_PP(zvalue));</span>
+<span class="lineNum">      66 </span>                :                 }
+<span class="lineNum">      67 </span>                :         }
+<span class="lineNum">      68 </span><span class="lineNoCov">              0 :         efree(*zvalue);</span>
+<span class="lineNum">      69 </span><span class="lineNoCov">              0 : }</span>
+<a name="70"><span class="lineNum">      70 </span>                : /* }}} */</a>
+<span class="lineNum">      71 </span>                : 
+<span class="lineNum">      72 </span><span class="lineNoCov">              0 : static void browscap_entry_dtor_persistent(zval **zvalue) /* {{{ */ {</span>
+<span class="lineNum">      73 </span><span class="lineNoCov">              0 :         if (Z_TYPE_PP(zvalue) == IS_ARRAY) {</span>
+<span class="lineNum">      74 </span><span class="lineNoCov">              0 :                 zend_hash_destroy(Z_ARRVAL_PP(zvalue));</span>
+<span class="lineNum">      75 </span><span class="lineNoCov">              0 :                 free(Z_ARRVAL_PP(zvalue));</span>
+<span class="lineNum">      76 </span><span class="lineNoCov">              0 :         } else if (Z_TYPE_PP(zvalue) == IS_STRING) {</span>
+<span class="lineNum">      77 </span><span class="lineNoCov">              0 :                 if (Z_STRVAL_PP(zvalue)) {</span>
+<span class="lineNum">      78 </span><span class="lineNoCov">              0 :                         free(Z_STRVAL_PP(zvalue));</span>
+<span class="lineNum">      79 </span>                :                 }
+<span class="lineNum">      80 </span>                :         }
+<span class="lineNum">      81 </span><span class="lineNoCov">              0 :         free(*zvalue);</span>
+<span class="lineNum">      82 </span><span class="lineNoCov">              0 : }</span>
+<a name="83"><span class="lineNum">      83 </span>                : /* }}} */</a>
+<span class="lineNum">      84 </span>                : 
+<span class="lineNum">      85 </span><span class="lineNoCov">              0 : static void convert_browscap_pattern(zval *pattern, int persistent) /* {{{ */</span>
+<span class="lineNum">      86 </span>                : {
+<span class="lineNum">      87 </span><span class="lineNoCov">              0 :         int i, j=0;</span>
+<span class="lineNum">      88 </span>                :         char *t;
+<span class="lineNum">      89 </span>                : 
+<span class="lineNum">      90 </span><span class="lineNoCov">              0 :         php_strtolower(Z_STRVAL_P(pattern), Z_STRLEN_P(pattern));</span>
+<span class="lineNum">      91 </span>                : 
+<span class="lineNum">      92 </span><span class="lineNoCov">              0 :         t = (char *) safe_pemalloc(Z_STRLEN_P(pattern), 2, 5, persistent);</span>
+<span class="lineNum">      93 </span>                : 
+<span class="lineNum">      94 </span><span class="lineNoCov">              0 :         t[j++] = '\xA7'; /* section sign */</span>
+<span class="lineNum">      95 </span><span class="lineNoCov">              0 :         t[j++] = '^';</span>
+<span class="lineNum">      96 </span>                : 
+<span class="lineNum">      97 </span><span class="lineNoCov">              0 :         for (i=0; i&lt;Z_STRLEN_P(pattern); i++, j++) {</span>
+<span class="lineNum">      98 </span><span class="lineNoCov">              0 :                 switch (Z_STRVAL_P(pattern)[i]) {</span>
+<span class="lineNum">      99 </span>                :                         case '?':
+<span class="lineNum">     100 </span><span class="lineNoCov">              0 :                                 t[j] = '.';</span>
+<span class="lineNum">     101 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     102 </span>                :                         case '*':
+<span class="lineNum">     103 </span><span class="lineNoCov">              0 :                                 t[j++] = '.';</span>
+<span class="lineNum">     104 </span><span class="lineNoCov">              0 :                                 t[j] = '*';</span>
+<span class="lineNum">     105 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     106 </span>                :                         case '.':
+<span class="lineNum">     107 </span><span class="lineNoCov">              0 :                                 t[j++] = '\\';</span>
+<span class="lineNum">     108 </span><span class="lineNoCov">              0 :                                 t[j] = '.';</span>
+<span class="lineNum">     109 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     110 </span>                :                         case '\\':
+<span class="lineNum">     111 </span><span class="lineNoCov">              0 :                                 t[j++] = '\\';</span>
+<span class="lineNum">     112 </span><span class="lineNoCov">              0 :                                 t[j] = '\\';</span>
+<span class="lineNum">     113 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     114 </span>                :                         case '(':
+<span class="lineNum">     115 </span><span class="lineNoCov">              0 :                                 t[j++] = '\\';</span>
+<span class="lineNum">     116 </span><span class="lineNoCov">              0 :                                 t[j] = '(';</span>
+<span class="lineNum">     117 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     118 </span>                :                         case ')':
+<span class="lineNum">     119 </span><span class="lineNoCov">              0 :                                 t[j++] = '\\';</span>
+<span class="lineNum">     120 </span><span class="lineNoCov">              0 :                                 t[j] = ')';</span>
+<span class="lineNum">     121 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     122 </span>                :                         case '\xA7':
+<span class="lineNum">     123 </span><span class="lineNoCov">              0 :                                 t[j++] = '\\';</span>
+<span class="lineNum">     124 </span><span class="lineNoCov">              0 :                                 t[j] = '\xA7';</span>
+<span class="lineNum">     125 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     126 </span>                :                         default:
+<span class="lineNum">     127 </span><span class="lineNoCov">              0 :                                 t[j] = Z_STRVAL_P(pattern)[i];</span>
+<span class="lineNum">     128 </span>                :                                 break;
+<span class="lineNum">     129 </span>                :                 }
+<span class="lineNum">     130 </span>                :         }
+<span class="lineNum">     131 </span>                : 
+<span class="lineNum">     132 </span><span class="lineNoCov">              0 :         t[j++] = '$';</span>
+<span class="lineNum">     133 </span><span class="lineNoCov">              0 :         t[j++] = '\xA7';</span>
+<span class="lineNum">     134 </span>                : 
+<span class="lineNum">     135 </span><span class="lineNoCov">              0 :         t[j]=0;</span>
+<span class="lineNum">     136 </span><span class="lineNoCov">              0 :         Z_STRVAL_P(pattern) = t;</span>
+<span class="lineNum">     137 </span><span class="lineNoCov">              0 :         Z_STRLEN_P(pattern) = j;</span>
+<span class="lineNum">     138 </span><span class="lineNoCov">              0 : }</span>
+<a name="139"><span class="lineNum">     139 </span>                : /* }}} */</a>
+<span class="lineNum">     140 </span>                : 
+<span class="lineNum">     141 </span><span class="lineNoCov">              0 : static void php_browscap_parser_cb(zval *arg1, zval *arg2, zval *arg3, int callback_type, void *arg TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     142 </span>                : {
+<span class="lineNum">     143 </span><span class="lineNoCov">              0 :         browser_data *bdata = arg;</span>
+<span class="lineNum">     144 </span><span class="lineNoCov">              0 :         int persistent = bdata-&gt;htab-&gt;persistent;</span>
+<span class="lineNum">     145 </span>                :         
+<span class="lineNum">     146 </span><span class="lineNoCov">              0 :         if (!arg1) {</span>
+<span class="lineNum">     147 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     148 </span>                :         }
+<span class="lineNum">     149 </span>                : 
+<span class="lineNum">     150 </span><span class="lineNoCov">              0 :         switch (callback_type) {</span>
+<span class="lineNum">     151 </span>                :                 case ZEND_INI_PARSER_ENTRY:
+<span class="lineNum">     152 </span><span class="lineNoCov">              0 :                         if (bdata-&gt;current_section &amp;&amp; arg2) {</span>
+<span class="lineNum">     153 </span>                :                                 zval *new_property;
+<span class="lineNum">     154 </span>                :                                 char *new_key;
+<span class="lineNum">     155 </span>                : 
+<span class="lineNum">     156 </span>                :                                 /* parent entry can not be same as current section -&gt; causes infinite loop! */
+<span class="lineNum">     157 </span><span class="lineNoCov">              0 :                                 if (!strcasecmp(Z_STRVAL_P(arg1), &quot;parent&quot;) &amp;&amp; </span>
+<span class="lineNum">     158 </span><span class="lineNoCov">              0 :                                         bdata-&gt;current_section_name != NULL &amp;&amp;</span>
+<span class="lineNum">     159 </span><span class="lineNoCov">              0 :                                         !strcasecmp(bdata-&gt;current_section_name, Z_STRVAL_P(arg2))</span>
+<span class="lineNum">     160 </span>                :                                 ) {
+<span class="lineNum">     161 </span><span class="lineNoCov">              0 :                                         zend_error(E_CORE_ERROR, &quot;Invalid browscap ini file: &quot;</span>
+<span class="lineNum">     162 </span>                :                                                 &quot;'Parent' value cannot be same as the section name: %s &quot;
+<span class="lineNum">     163 </span>                :                                                 &quot;(in file %s)&quot;, bdata-&gt;current_section_name, INI_STR(&quot;browscap&quot;));
+<span class="lineNum">     164 </span><span class="lineNoCov">              0 :                                         return;</span>
+<span class="lineNum">     165 </span>                :                                 }
+<span class="lineNum">     166 </span>                : 
+<span class="lineNum">     167 </span><span class="lineNoCov">              0 :                                 new_property = (zval *) pemalloc(sizeof(zval), persistent);</span>
+<span class="lineNum">     168 </span><span class="lineNoCov">              0 :                                 INIT_PZVAL(new_property);</span>
+<span class="lineNum">     169 </span><span class="lineNoCov">              0 :                                 Z_TYPE_P(new_property) = IS_STRING;</span>
+<span class="lineNum">     170 </span>                : 
+<span class="lineNum">     171 </span>                :                                 /* Set proper value for true/false settings */
+<span class="lineNum">     172 </span><span class="lineNoCov">              0 :                                 if ((Z_STRLEN_P(arg2) == 2 &amp;&amp; !strncasecmp(Z_STRVAL_P(arg2), &quot;on&quot;, sizeof(&quot;on&quot;) - 1)) ||</span>
+<span class="lineNum">     173 </span><span class="lineNoCov">              0 :                                         (Z_STRLEN_P(arg2) == 3 &amp;&amp; !strncasecmp(Z_STRVAL_P(arg2), &quot;yes&quot;, sizeof(&quot;yes&quot;) - 1)) ||</span>
+<span class="lineNum">     174 </span><span class="lineNoCov">              0 :                                         (Z_STRLEN_P(arg2) == 4 &amp;&amp; !strncasecmp(Z_STRVAL_P(arg2), &quot;true&quot;, sizeof(&quot;true&quot;) - 1))</span>
+<span class="lineNum">     175 </span>                :                                 ) {
+<span class="lineNum">     176 </span><span class="lineNoCov">              0 :                                         Z_STRVAL_P(new_property) = pestrndup(&quot;1&quot;, 1, persistent);</span>
+<span class="lineNum">     177 </span><span class="lineNoCov">              0 :                                         Z_STRLEN_P(new_property) = 1;</span>
+<span class="lineNum">     178 </span><span class="lineNoCov">              0 :                                 } else if (</span>
+<span class="lineNum">     179 </span><span class="lineNoCov">              0 :                                         (Z_STRLEN_P(arg2) == 2 &amp;&amp; !strncasecmp(Z_STRVAL_P(arg2), &quot;no&quot;, sizeof(&quot;no&quot;) - 1)) ||</span>
+<span class="lineNum">     180 </span><span class="lineNoCov">              0 :                                         (Z_STRLEN_P(arg2) == 3 &amp;&amp; !strncasecmp(Z_STRVAL_P(arg2), &quot;off&quot;, sizeof(&quot;off&quot;) - 1)) ||</span>
+<span class="lineNum">     181 </span><span class="lineNoCov">              0 :                                         (Z_STRLEN_P(arg2) == 4 &amp;&amp; !strncasecmp(Z_STRVAL_P(arg2), &quot;none&quot;, sizeof(&quot;none&quot;) - 1)) ||</span>
+<span class="lineNum">     182 </span><span class="lineNoCov">              0 :                                         (Z_STRLEN_P(arg2) == 5 &amp;&amp; !strncasecmp(Z_STRVAL_P(arg2), &quot;false&quot;, sizeof(&quot;false&quot;) - 1))</span>
+<span class="lineNum">     183 </span>                :                                 ) {
+<span class="lineNum">     184 </span><span class="lineNoCov">              0 :                                         Z_STRVAL_P(new_property) = pestrndup(&quot;&quot;, 0, persistent);</span>
+<span class="lineNum">     185 </span><span class="lineNoCov">              0 :                                         Z_STRLEN_P(new_property) = 0;</span>
+<span class="lineNum">     186 </span>                :                                 } else { /* Other than true/false setting */
+<span class="lineNum">     187 </span><span class="lineNoCov">              0 :                                         Z_STRVAL_P(new_property) = pestrndup(Z_STRVAL_P(arg2),</span>
+<span class="lineNum">     188 </span>                :                                                         Z_STRLEN_P(arg2), persistent);
+<span class="lineNum">     189 </span><span class="lineNoCov">              0 :                                         Z_STRLEN_P(new_property) = Z_STRLEN_P(arg2);</span>
+<span class="lineNum">     190 </span>                :                                 }
+<span class="lineNum">     191 </span><span class="lineNoCov">              0 :                                 new_key = pestrndup(Z_STRVAL_P(arg1), Z_STRLEN_P(arg1), persistent);</span>
+<span class="lineNum">     192 </span><span class="lineNoCov">              0 :                                 zend_str_tolower(new_key, Z_STRLEN_P(arg1));</span>
+<span class="lineNum">     193 </span><span class="lineNoCov">              0 :                                 zend_hash_update(Z_ARRVAL_P(bdata-&gt;current_section), new_key, Z_STRLEN_P(arg1) + 1, &amp;new_property, sizeof(zval *), NULL);</span>
+<span class="lineNum">     194 </span><span class="lineNoCov">              0 :                                 pefree(new_key, persistent);</span>
+<span class="lineNum">     195 </span>                :                         }
+<span class="lineNum">     196 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     197 </span>                :                 case ZEND_INI_PARSER_SECTION: {
+<span class="lineNum">     198 </span>                :                                 zval *processed;
+<span class="lineNum">     199 </span>                :                                 zval *unprocessed;
+<span class="lineNum">     200 </span>                :                                 HashTable *section_properties;
+<span class="lineNum">     201 </span>                : 
+<span class="lineNum">     202 </span>                :                                 /*printf(&quot;'%s' (%d)\n&quot;,$1.value.str.val,$1.value.str.len + 1);*/
+<span class="lineNum">     203 </span><span class="lineNoCov">              0 :                                 bdata-&gt;current_section = (zval *) pemalloc(sizeof(zval), persistent);</span>
+<span class="lineNum">     204 </span><span class="lineNoCov">              0 :                                 INIT_PZVAL(bdata-&gt;current_section);</span>
+<span class="lineNum">     205 </span><span class="lineNoCov">              0 :                                 processed = (zval *) pemalloc(sizeof(zval), persistent);</span>
+<span class="lineNum">     206 </span><span class="lineNoCov">              0 :                                 INIT_PZVAL(processed);</span>
+<span class="lineNum">     207 </span><span class="lineNoCov">              0 :                                 unprocessed = (zval *) pemalloc(sizeof(zval), persistent);</span>
+<span class="lineNum">     208 </span><span class="lineNoCov">              0 :                                 INIT_PZVAL(unprocessed);</span>
+<span class="lineNum">     209 </span>                : 
+<span class="lineNum">     210 </span><span class="lineNoCov">              0 :                                 section_properties = (HashTable *) pemalloc(sizeof(HashTable), persistent);</span>
+<span class="lineNum">     211 </span><span class="lineNoCov">              0 :                                 zend_hash_init(section_properties, 0, NULL,</span>
+<span class="lineNum">     212 </span>                :                                                 (dtor_func_t) (persistent?browscap_entry_dtor_persistent
+<span class="lineNum">     213 </span>                :                                                                                                  :browscap_entry_dtor_request),
+<span class="lineNum">     214 </span>                :                                                 persistent);
+<span class="lineNum">     215 </span><span class="lineNoCov">              0 :                                 Z_ARRVAL_P(bdata-&gt;current_section) = section_properties;</span>
+<span class="lineNum">     216 </span><span class="lineNoCov">              0 :                                 Z_TYPE_P(bdata-&gt;current_section) = IS_ARRAY;</span>
+<span class="lineNum">     217 </span><span class="lineNoCov">              0 :                                 if (bdata-&gt;current_section_name) {</span>
+<span class="lineNum">     218 </span><span class="lineNoCov">              0 :                                         pefree(bdata-&gt;current_section_name, persistent);</span>
+<span class="lineNum">     219 </span>                :                                 }
+<span class="lineNum">     220 </span><span class="lineNoCov">              0 :                                 bdata-&gt;current_section_name = pestrndup(Z_STRVAL_P(arg1),</span>
+<span class="lineNum">     221 </span>                :                                                 Z_STRLEN_P(arg1), persistent);
+<span class="lineNum">     222 </span>                : 
+<span class="lineNum">     223 </span><span class="lineNoCov">              0 :                                 zend_hash_update(bdata-&gt;htab, Z_STRVAL_P(arg1), Z_STRLEN_P(arg1) + 1, (void *) &amp;bdata-&gt;current_section, sizeof(zval *), NULL);</span>
+<span class="lineNum">     224 </span>                : 
+<span class="lineNum">     225 </span><span class="lineNoCov">              0 :                                 Z_STRVAL_P(processed) = Z_STRVAL_P(arg1);</span>
+<span class="lineNum">     226 </span><span class="lineNoCov">              0 :                                 Z_STRLEN_P(processed) = Z_STRLEN_P(arg1);</span>
+<span class="lineNum">     227 </span><span class="lineNoCov">              0 :                                 Z_TYPE_P(processed) = IS_STRING;</span>
+<span class="lineNum">     228 </span><span class="lineNoCov">              0 :                                 Z_STRVAL_P(unprocessed) = Z_STRVAL_P(arg1);</span>
+<span class="lineNum">     229 </span><span class="lineNoCov">              0 :                                 Z_STRLEN_P(unprocessed) = Z_STRLEN_P(arg1);</span>
+<span class="lineNum">     230 </span><span class="lineNoCov">              0 :                                 Z_TYPE_P(unprocessed) = IS_STRING;</span>
+<span class="lineNum">     231 </span><span class="lineNoCov">              0 :                                 Z_STRVAL_P(unprocessed) = pestrndup(Z_STRVAL_P(unprocessed), Z_STRLEN_P(unprocessed), persistent);</span>
+<span class="lineNum">     232 </span>                : 
+<span class="lineNum">     233 </span><span class="lineNoCov">              0 :                                 convert_browscap_pattern(processed, persistent);</span>
+<span class="lineNum">     234 </span><span class="lineNoCov">              0 :                                 zend_hash_update(section_properties, &quot;browser_name_regex&quot;, sizeof(&quot;browser_name_regex&quot;), (void *) &amp;processed, sizeof(zval *), NULL);</span>
+<span class="lineNum">     235 </span><span class="lineNoCov">              0 :                                 zend_hash_update(section_properties, &quot;browser_name_pattern&quot;, sizeof(&quot;browser_name_pattern&quot;), (void *) &amp;unprocessed, sizeof(zval *), NULL);</span>
+<span class="lineNum">     236 </span>                :                         }
+<span class="lineNum">     237 </span>                :                         break;
+<span class="lineNum">     238 </span>                :         }
+<span class="lineNum">     239 </span>                : }
+<a name="240"><span class="lineNum">     240 </span>                : /* }}} */</a>
+<span class="lineNum">     241 </span>                : 
+<span class="lineNum">     242 </span><span class="lineNoCov">              0 : static int browscap_read_file(char *filename, browser_data *browdata, int persistent TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     243 </span>                : {
+<span class="lineNum">     244 </span><span class="lineNoCov">              0 :         zend_file_handle fh = {0};</span>
+<span class="lineNum">     245 </span>                :         
+<span class="lineNum">     246 </span><span class="lineNoCov">              0 :         if (filename == NULL || filename[0] == '\0') {</span>
+<span class="lineNum">     247 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">     248 </span>                :         }
+<span class="lineNum">     249 </span>                :         
+<span class="lineNum">     250 </span><span class="lineNoCov">              0 :         browdata-&gt;htab = pemalloc(sizeof *browdata-&gt;htab, persistent);</span>
+<span class="lineNum">     251 </span><span class="lineNoCov">              0 :         if (browdata-&gt;htab == NULL) {</span>
+<span class="lineNum">     252 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">     253 </span>                :         }
+<span class="lineNum">     254 </span>                : 
+<span class="lineNum">     255 </span><span class="lineNoCov">              0 :         if (zend_hash_init_ex(browdata-&gt;htab, 0, NULL,</span>
+<span class="lineNum">     256 </span>                :                         (dtor_func_t) (persistent?browscap_entry_dtor_persistent
+<span class="lineNum">     257 </span>                :                                                                          :browscap_entry_dtor_request),
+<span class="lineNum">     258 </span>                :                         persistent, 0) == FAILURE) {
+<span class="lineNum">     259 </span><span class="lineNoCov">              0 :                 pefree(browdata-&gt;htab, persistent);</span>
+<span class="lineNum">     260 </span><span class="lineNoCov">              0 :                 browdata-&gt;htab = NULL;</span>
+<span class="lineNum">     261 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">     262 </span>                :         }
+<span class="lineNum">     263 </span>                : 
+<span class="lineNum">     264 </span><span class="lineNoCov">              0 :         fh.handle.fp = VCWD_FOPEN(filename, &quot;r&quot;);</span>
+<span class="lineNum">     265 </span><span class="lineNoCov">              0 :         fh.opened_path = NULL;</span>
+<span class="lineNum">     266 </span><span class="lineNoCov">              0 :         fh.free_filename = 0;</span>
+<span class="lineNum">     267 </span><span class="lineNoCov">              0 :         if (!fh.handle.fp) {</span>
+<span class="lineNum">     268 </span><span class="lineNoCov">              0 :                 zend_hash_destroy(browdata-&gt;htab);</span>
+<span class="lineNum">     269 </span><span class="lineNoCov">              0 :                 pefree(browdata-&gt;htab, persistent);</span>
+<span class="lineNum">     270 </span><span class="lineNoCov">              0 :                 browdata-&gt;htab = NULL;</span>
+<span class="lineNum">     271 </span><span class="lineNoCov">              0 :                 zend_error(E_CORE_WARNING, &quot;Cannot open '%s' for reading&quot;, filename);</span>
+<span class="lineNum">     272 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">     273 </span>                :         }
+<span class="lineNum">     274 </span><span class="lineNoCov">              0 :         fh.filename = filename;</span>
+<span class="lineNum">     275 </span><span class="lineNoCov">              0 :         Z_TYPE(fh) = ZEND_HANDLE_FP;</span>
+<span class="lineNum">     276 </span><span class="lineNoCov">              0 :         browdata-&gt;current_section_name = NULL;</span>
+<span class="lineNum">     277 </span><span class="lineNoCov">              0 :         zend_parse_ini_file(&amp;fh, 1, ZEND_INI_SCANNER_RAW,</span>
+<span class="lineNum">     278 </span>                :                         (zend_ini_parser_cb_t) php_browscap_parser_cb, browdata TSRMLS_CC);
+<span class="lineNum">     279 </span><span class="lineNoCov">              0 :         if (browdata-&gt;current_section_name != NULL) {</span>
+<span class="lineNum">     280 </span><span class="lineNoCov">              0 :                 pefree(browdata-&gt;current_section_name, persistent);</span>
+<span class="lineNum">     281 </span><span class="lineNoCov">              0 :                 browdata-&gt;current_section_name = NULL;</span>
+<span class="lineNum">     282 </span>                :         }
+<span class="lineNum">     283 </span>                :         
+<span class="lineNum">     284 </span><span class="lineNoCov">              0 :         return SUCCESS;</span>
+<span class="lineNum">     285 </span>                : }
+<span class="lineNum">     286 </span>                : /* }}} */
+<span class="lineNum">     287 </span>                : 
+<span class="lineNum">     288 </span>                : #ifdef ZTS
+<span class="lineNum">     289 </span>                : static void browscap_globals_ctor(zend_browscap_globals *browscap_globals TSRMLS_DC) /* {{{ */
+<span class="lineNum">     290 </span>                : {
+<span class="lineNum">     291 </span>                :         browscap_globals-&gt;activation_bdata.htab = NULL;
+<span class="lineNum">     292 </span>                :         browscap_globals-&gt;activation_bdata.current_section = NULL;
+<span class="lineNum">     293 </span>                :         browscap_globals-&gt;activation_bdata.current_section_name = NULL;
+<span class="lineNum">     294 </span>                :         browscap_globals-&gt;activation_bdata.filename[0] = '\0';
+<span class="lineNum">     295 </span>                : }
+<span class="lineNum">     296 </span>                : /* }}} */
+<a name="297"><span class="lineNum">     297 </span>                : #endif</a>
+<span class="lineNum">     298 </span>                : 
+<span class="lineNum">     299 </span><span class="lineCov">             48 : static void browscap_bdata_dtor(browser_data *bdata, int persistent TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     300 </span>                : {
+<span class="lineNum">     301 </span><span class="lineCov">             48 :         if (bdata-&gt;htab != NULL) {</span>
+<span class="lineNum">     302 </span><span class="lineNoCov">              0 :                 zend_hash_destroy(bdata-&gt;htab);</span>
+<span class="lineNum">     303 </span><span class="lineNoCov">              0 :                 pefree(bdata-&gt;htab, persistent);</span>
+<span class="lineNum">     304 </span><span class="lineNoCov">              0 :                 bdata-&gt;htab = NULL;</span>
+<span class="lineNum">     305 </span>                :         }
+<span class="lineNum">     306 </span><span class="lineCov">             48 :         bdata-&gt;filename[0] = '\0';</span>
+<span class="lineNum">     307 </span>                :         /* current_section_* are only used during parsing */
+<span class="lineNum">     308 </span><span class="lineCov">             48 : }</span>
+<span class="lineNum">     309 </span>                : /* }}} */
+<span class="lineNum">     310 </span>                : 
+<a name="311"><span class="lineNum">     311 </span>                : /* {{{ PHP_INI_MH</a>
+<span class="lineNum">     312 </span>                :  */
+<span class="lineNum">     313 </span><span class="lineCov">             48 : PHP_INI_MH(OnChangeBrowscap)</span>
+<span class="lineNum">     314 </span>                : {
+<span class="lineNum">     315 </span><span class="lineCov">             48 :         if (stage == PHP_INI_STAGE_STARTUP) {</span>
+<span class="lineNum">     316 </span>                :                 /* value handled in browscap.c's MINIT */
+<span class="lineNum">     317 </span><span class="lineCov">             48 :                 return SUCCESS;</span>
+<span class="lineNum">     318 </span><span class="lineNoCov">              0 :         } else if (stage == PHP_INI_STAGE_ACTIVATE) {</span>
+<span class="lineNum">     319 </span><span class="lineNoCov">              0 :                 browser_data *bdata = &amp;BROWSCAP_G(activation_bdata);</span>
+<span class="lineNum">     320 </span><span class="lineNoCov">              0 :                 if (bdata-&gt;filename[0] != '\0') {</span>
+<span class="lineNum">     321 </span><span class="lineNoCov">              0 :                         browscap_bdata_dtor(bdata, 0 TSRMLS_CC);</span>
+<span class="lineNum">     322 </span>                :                 }
+<span class="lineNum">     323 </span><span class="lineNoCov">              0 :                 if (VCWD_REALPATH(new_value, bdata-&gt;filename) == NULL) {</span>
+<span class="lineNum">     324 </span><span class="lineNoCov">              0 :                         return FAILURE;</span>
+<span class="lineNum">     325 </span>                :                 }
+<span class="lineNum">     326 </span><span class="lineNoCov">              0 :                 return SUCCESS;</span>
+<span class="lineNum">     327 </span>                :         }
+<span class="lineNum">     328 </span>                :         
+<span class="lineNum">     329 </span><span class="lineNoCov">              0 :         return FAILURE;</span>
+<span class="lineNum">     330 </span>                : }
+<a name="331"><span class="lineNum">     331 </span>                : /* }}} */</a>
+<span class="lineNum">     332 </span>                : 
+<span class="lineNum">     333 </span><span class="lineCov">             48 : PHP_MINIT_FUNCTION(browscap) /* {{{ */</span>
+<span class="lineNum">     334 </span>                : {
+<span class="lineNum">     335 </span><span class="lineCov">             48 :         char *browscap = INI_STR(&quot;browscap&quot;);</span>
+<span class="lineNum">     336 </span>                : 
+<span class="lineNum">     337 </span>                : #ifdef ZTS
+<span class="lineNum">     338 </span>                :         ts_allocate_id(&amp;browscap_globals_id, sizeof(browser_data),
+<span class="lineNum">     339 </span>                :                 browscap_globals_ctor, NULL);
+<span class="lineNum">     340 </span>                : #endif
+<span class="lineNum">     341 </span>                :         /* ctor call not really needed for non-ZTS */
+<span class="lineNum">     342 </span>                : 
+<span class="lineNum">     343 </span><span class="lineCov">             48 :         if (browscap &amp;&amp; browscap[0]) {</span>
+<span class="lineNum">     344 </span><span class="lineNoCov">              0 :                 if (browscap_read_file(browscap, &amp;global_bdata, 1 TSRMLS_CC) == FAILURE) {</span>
+<span class="lineNum">     345 </span><span class="lineNoCov">              0 :                         return FAILURE;</span>
+<span class="lineNum">     346 </span>                :                 }
+<span class="lineNum">     347 </span>                :         }
+<span class="lineNum">     348 </span>                : 
+<span class="lineNum">     349 </span><span class="lineCov">             48 :         return SUCCESS;</span>
+<span class="lineNum">     350 </span>                : }
+<a name="351"><span class="lineNum">     351 </span>                : /* }}} */</a>
+<span class="lineNum">     352 </span>                : 
+<span class="lineNum">     353 </span><span class="lineCov">             48 : PHP_RSHUTDOWN_FUNCTION(browscap) /* {{{ */</span>
+<span class="lineNum">     354 </span>                : {
+<span class="lineNum">     355 </span><span class="lineCov">             48 :         browser_data *bdata = &amp;BROWSCAP_G(activation_bdata);</span>
+<span class="lineNum">     356 </span><span class="lineCov">             48 :         if (bdata-&gt;filename[0] != '\0') {</span>
+<span class="lineNum">     357 </span><span class="lineNoCov">              0 :                 browscap_bdata_dtor(bdata, 0 TSRMLS_CC);</span>
+<span class="lineNum">     358 </span>                :         }
+<span class="lineNum">     359 </span>                :         
+<span class="lineNum">     360 </span><span class="lineCov">             48 :         return SUCCESS;</span>
+<span class="lineNum">     361 </span>                : }
+<a name="362"><span class="lineNum">     362 </span>                : /* }}} */</a>
+<span class="lineNum">     363 </span>                : 
+<span class="lineNum">     364 </span><span class="lineCov">             48 : PHP_MSHUTDOWN_FUNCTION(browscap) /* {{{ */</span>
+<span class="lineNum">     365 </span>                : {
+<span class="lineNum">     366 </span><span class="lineCov">             48 :         browscap_bdata_dtor(&amp;global_bdata, 1 TSRMLS_CC);</span>
+<span class="lineNum">     367 </span>                :         
+<span class="lineNum">     368 </span><span class="lineCov">             48 :         return SUCCESS;</span>
+<span class="lineNum">     369 </span>                : }
+<a name="370"><span class="lineNum">     370 </span>                : /* }}} */</a>
+<span class="lineNum">     371 </span>                : 
+<span class="lineNum">     372 </span><span class="lineNoCov">              0 : static int browser_reg_compare(zval **browser TSRMLS_DC, int num_args, va_list args, zend_hash_key *key) /* {{{ */</span>
+<span class="lineNum">     373 </span>                : {
+<span class="lineNum">     374 </span>                :         zval **browser_regex, **previous_match;
+<span class="lineNum">     375 </span>                :         pcre *re;
+<span class="lineNum">     376 </span>                :         int re_options;
+<span class="lineNum">     377 </span>                :         pcre_extra *re_extra;
+<span class="lineNum">     378 </span><span class="lineNoCov">              0 :         char *lookup_browser_name = va_arg(args, char *);</span>
+<span class="lineNum">     379 </span><span class="lineNoCov">              0 :         int lookup_browser_length = va_arg(args, int);</span>
+<span class="lineNum">     380 </span><span class="lineNoCov">              0 :         zval **found_browser_entry = va_arg(args, zval **);</span>
+<span class="lineNum">     381 </span>                : 
+<span class="lineNum">     382 </span>                :         /* See if we have an exact match, if so, we're done... */
+<span class="lineNum">     383 </span><span class="lineNoCov">              0 :         if (*found_browser_entry) {</span>
+<span class="lineNum">     384 </span><span class="lineNoCov">              0 :                 if (zend_hash_find(Z_ARRVAL_PP(found_browser_entry), &quot;browser_name_pattern&quot;, sizeof(&quot;browser_name_pattern&quot;), (void**) &amp;previous_match) == FAILURE) {</span>
+<span class="lineNum">     385 </span><span class="lineNoCov">              0 :                         return 0;</span>
+<span class="lineNum">     386 </span>                :                 }
+<span class="lineNum">     387 </span><span class="lineNoCov">              0 :                 else if (!strcasecmp(Z_STRVAL_PP(previous_match), lookup_browser_name)) {</span>
+<span class="lineNum">     388 </span><span class="lineNoCov">              0 :                         return 0;</span>
+<span class="lineNum">     389 </span>                :                 }
+<span class="lineNum">     390 </span>                :         }
+<span class="lineNum">     391 </span>                : 
+<span class="lineNum">     392 </span><span class="lineNoCov">              0 :         if (zend_hash_find(Z_ARRVAL_PP(browser), &quot;browser_name_regex&quot;, sizeof(&quot;browser_name_regex&quot;), (void **) &amp;browser_regex) == FAILURE) {</span>
+<span class="lineNum">     393 </span><span class="lineNoCov">              0 :                 return 0;</span>
+<span class="lineNum">     394 </span>                :         }
+<span class="lineNum">     395 </span>                : 
+<span class="lineNum">     396 </span><span class="lineNoCov">              0 :         re = pcre_get_compiled_regex(Z_STRVAL_PP(browser_regex), &amp;re_extra, &amp;re_options TSRMLS_CC);</span>
+<span class="lineNum">     397 </span><span class="lineNoCov">              0 :         if (re == NULL) {</span>
+<span class="lineNum">     398 </span><span class="lineNoCov">              0 :                 return 0;</span>
+<span class="lineNum">     399 </span>                :         }
+<span class="lineNum">     400 </span>                : 
+<span class="lineNum">     401 </span><span class="lineNoCov">              0 :         if (pcre_exec(re, re_extra, lookup_browser_name, lookup_browser_length, 0, re_options, NULL, 0) == 0) {</span>
+<span class="lineNum">     402 </span>                :                 /* If we've found a possible browser, we need to do a comparison of the
+<span class="lineNum">     403 </span>                :                    number of characters changed in the user agent being checked versus
+<span class="lineNum">     404 </span>                :                    the previous match found and the current match. */
+<span class="lineNum">     405 </span><span class="lineNoCov">              0 :                 if (*found_browser_entry) {</span>
+<span class="lineNum">     406 </span><span class="lineNoCov">              0 :                         int i, prev_len = 0, curr_len = 0, ua_len;</span>
+<span class="lineNum">     407 </span>                :                         zval **current_match;
+<span class="lineNum">     408 </span>                : 
+<span class="lineNum">     409 </span><span class="lineNoCov">              0 :                         if (zend_hash_find(Z_ARRVAL_PP(browser), &quot;browser_name_pattern&quot;, sizeof(&quot;browser_name_pattern&quot;), (void**) &amp;current_match) == FAILURE) {</span>
+<span class="lineNum">     410 </span><span class="lineNoCov">              0 :                                 return 0;</span>
+<span class="lineNum">     411 </span>                :                         }
+<span class="lineNum">     412 </span>                : 
+<span class="lineNum">     413 </span><span class="lineNoCov">              0 :                         ua_len = lookup_browser_length;</span>
+<span class="lineNum">     414 </span>                : 
+<span class="lineNum">     415 </span><span class="lineNoCov">              0 :                         for (i = 0; i &lt; Z_STRLEN_PP(previous_match); i++) {</span>
+<span class="lineNum">     416 </span><span class="lineNoCov">              0 :                                 switch (Z_STRVAL_PP(previous_match)[i]) {</span>
+<span class="lineNum">     417 </span>                :                                         case '?':
+<span class="lineNum">     418 </span>                :                                         case '*':
+<span class="lineNum">     419 </span>                :                                                 /* do nothing, ignore these characters in the count */
+<span class="lineNum">     420 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">     421 </span>                : 
+<span class="lineNum">     422 </span>                :                                         default:
+<span class="lineNum">     423 </span><span class="lineNoCov">              0 :                                                 ++prev_len;</span>
+<span class="lineNum">     424 </span>                :                                 }
+<span class="lineNum">     425 </span>                :                         }
+<span class="lineNum">     426 </span>                : 
+<span class="lineNum">     427 </span><span class="lineNoCov">              0 :                         for (i = 0; i &lt; Z_STRLEN_PP(current_match); i++) {</span>
+<span class="lineNum">     428 </span><span class="lineNoCov">              0 :                                 switch (Z_STRVAL_PP(current_match)[i]) {</span>
+<span class="lineNum">     429 </span>                :                                         case '?':
+<span class="lineNum">     430 </span>                :                                         case '*':
+<span class="lineNum">     431 </span>                :                                                 /* do nothing, ignore these characters in the count */
+<span class="lineNum">     432 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">     433 </span>                : 
+<span class="lineNum">     434 </span>                :                                         default:
+<span class="lineNum">     435 </span><span class="lineNoCov">              0 :                                                 ++curr_len;</span>
+<span class="lineNum">     436 </span>                :                                 }
+<span class="lineNum">     437 </span>                :                         }
+<span class="lineNum">     438 </span>                : 
+<span class="lineNum">     439 </span>                :                         /* Pick which browser pattern replaces the least amount of
+<span class="lineNum">     440 </span>                :                            characters when compared to the original user agent string... */
+<span class="lineNum">     441 </span><span class="lineNoCov">              0 :                         if (ua_len - prev_len &gt; ua_len - curr_len) {</span>
+<span class="lineNum">     442 </span><span class="lineNoCov">              0 :                                 *found_browser_entry = *browser;</span>
+<span class="lineNum">     443 </span>                :                         }
+<span class="lineNum">     444 </span>                :                 }
+<span class="lineNum">     445 </span>                :                 else {
+<span class="lineNum">     446 </span><span class="lineNoCov">              0 :                         *found_browser_entry = *browser;</span>
+<span class="lineNum">     447 </span>                :                 }
+<span class="lineNum">     448 </span>                :         }
+<span class="lineNum">     449 </span>                : 
+<span class="lineNum">     450 </span><span class="lineNoCov">              0 :         return 0;</span>
+<span class="lineNum">     451 </span>                : }
+<span class="lineNum">     452 </span>                : /* }}} */
+<span class="lineNum">     453 </span>                : 
+<a name="454"><span class="lineNum">     454 </span>                : /* {{{ proto mixed get_browser([string browser_name [, bool return_array]])</a>
+<span class="lineNum">     455 </span>                :    Get information about the capabilities of a browser. If browser_name is omitted or null, HTTP_USER_AGENT is used. Returns an object by default; if return_array is true, returns an array. */
+<span class="lineNum">     456 </span><span class="lineNoCov">              0 : PHP_FUNCTION(get_browser)</span>
+<span class="lineNum">     457 </span>                : {
+<span class="lineNum">     458 </span><span class="lineNoCov">              0 :         char *agent_name = NULL;</span>
+<span class="lineNum">     459 </span><span class="lineNoCov">              0 :         int agent_name_len = 0;</span>
+<span class="lineNum">     460 </span><span class="lineNoCov">              0 :         zend_bool return_array = 0;</span>
+<span class="lineNum">     461 </span>                :         zval **agent, **z_agent_name, **http_user_agent;
+<span class="lineNum">     462 </span>                :         zval *found_browser_entry, *tmp_copy;
+<span class="lineNum">     463 </span>                :         char *lookup_browser_name;
+<span class="lineNum">     464 </span>                :         browser_data *bdata;
+<span class="lineNum">     465 </span>                : 
+<span class="lineNum">     466 </span><span class="lineNoCov">              0 :         if (BROWSCAP_G(activation_bdata).filename[0] != '\0') {</span>
+<span class="lineNum">     467 </span><span class="lineNoCov">              0 :                 bdata = &amp;BROWSCAP_G(activation_bdata);</span>
+<span class="lineNum">     468 </span><span class="lineNoCov">              0 :                 if (bdata-&gt;htab == NULL) { /* not initialized yet */</span>
+<span class="lineNum">     469 </span><span class="lineNoCov">              0 :                         if (browscap_read_file(bdata-&gt;filename, bdata, 0 TSRMLS_CC) == FAILURE) {</span>
+<span class="lineNum">     470 </span><span class="lineNoCov">              0 :                                 RETURN_FALSE;</span>
+<span class="lineNum">     471 </span>                :                         }
+<span class="lineNum">     472 </span>                :                 }
+<span class="lineNum">     473 </span>                :         } else {
+<span class="lineNum">     474 </span><span class="lineNoCov">              0 :                 if (!global_bdata.htab) {</span>
+<span class="lineNum">     475 </span><span class="lineNoCov">              0 :                         php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;browscap ini directive not set&quot;);</span>
+<span class="lineNum">     476 </span><span class="lineNoCov">              0 :                         RETURN_FALSE;</span>
+<span class="lineNum">     477 </span>                :                 }
+<span class="lineNum">     478 </span><span class="lineNoCov">              0 :                 bdata = &amp;global_bdata;</span>
+<span class="lineNum">     479 </span>                :         }
+<span class="lineNum">     480 </span>                : 
+<span class="lineNum">     481 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;|s!b&quot;, &amp;agent_name, &amp;agent_name_len, &amp;return_array) == FAILURE) {</span>
+<span class="lineNum">     482 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     483 </span>                :         }
+<span class="lineNum">     484 </span>                : 
+<span class="lineNum">     485 </span><span class="lineNoCov">              0 :         if (agent_name == NULL) {</span>
+<span class="lineNum">     486 </span><span class="lineNoCov">              0 :                 zend_is_auto_global(&quot;_SERVER&quot;, sizeof(&quot;_SERVER&quot;) - 1 TSRMLS_CC);</span>
+<span class="lineNum">     487 </span><span class="lineNoCov">              0 :                 if (!PG(http_globals)[TRACK_VARS_SERVER] ||</span>
+<span class="lineNum">     488 </span><span class="lineNoCov">              0 :                         zend_hash_find(HASH_OF(PG(http_globals)[TRACK_VARS_SERVER]), &quot;HTTP_USER_AGENT&quot;, sizeof(&quot;HTTP_USER_AGENT&quot;), (void **) &amp;http_user_agent) == FAILURE</span>
+<span class="lineNum">     489 </span>                :                 ) {
+<span class="lineNum">     490 </span><span class="lineNoCov">              0 :                         php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;HTTP_USER_AGENT variable is not set, cannot determine user agent name&quot;);</span>
+<span class="lineNum">     491 </span><span class="lineNoCov">              0 :                         RETURN_FALSE;</span>
+<span class="lineNum">     492 </span>                :                 }
+<span class="lineNum">     493 </span><span class="lineNoCov">              0 :                 agent_name = Z_STRVAL_PP(http_user_agent);</span>
+<span class="lineNum">     494 </span><span class="lineNoCov">              0 :                 agent_name_len = Z_STRLEN_PP(http_user_agent);</span>
+<span class="lineNum">     495 </span>                :         }
+<span class="lineNum">     496 </span>                : 
+<span class="lineNum">     497 </span><span class="lineNoCov">              0 :         lookup_browser_name = estrndup(agent_name, agent_name_len);</span>
+<span class="lineNum">     498 </span><span class="lineNoCov">              0 :         php_strtolower(lookup_browser_name, agent_name_len);</span>
+<span class="lineNum">     499 </span>                : 
+<span class="lineNum">     500 </span><span class="lineNoCov">              0 :         if (zend_hash_find(bdata-&gt;htab, lookup_browser_name, agent_name_len + 1, (void **) &amp;agent) == FAILURE) {</span>
+<span class="lineNum">     501 </span><span class="lineNoCov">              0 :                 found_browser_entry = NULL;</span>
+<span class="lineNum">     502 </span><span class="lineNoCov">              0 :                 zend_hash_apply_with_arguments(bdata-&gt;htab TSRMLS_CC, (apply_func_args_t) browser_reg_compare, 3, lookup_browser_name, agent_name_len, &amp;found_browser_entry);</span>
+<span class="lineNum">     503 </span>                : 
+<span class="lineNum">     504 </span><span class="lineNoCov">              0 :                 if (found_browser_entry) {</span>
+<span class="lineNum">     505 </span><span class="lineNoCov">              0 :                         agent = &amp;found_browser_entry;</span>
+<span class="lineNum">     506 </span><span class="lineNoCov">              0 :                 } else if (zend_hash_find(bdata-&gt;htab, DEFAULT_SECTION_NAME, sizeof(DEFAULT_SECTION_NAME), (void **) &amp;agent) == FAILURE) {</span>
+<span class="lineNum">     507 </span><span class="lineNoCov">              0 :                         efree(lookup_browser_name);</span>
+<span class="lineNum">     508 </span><span class="lineNoCov">              0 :                         RETURN_FALSE;</span>
+<span class="lineNum">     509 </span>                :                 }
+<span class="lineNum">     510 </span>                :         }
+<span class="lineNum">     511 </span>                : 
+<span class="lineNum">     512 </span><span class="lineNoCov">              0 :         if (return_array) {</span>
+<span class="lineNum">     513 </span><span class="lineNoCov">              0 :                 array_init(return_value);</span>
+<span class="lineNum">     514 </span><span class="lineNoCov">              0 :                 zend_hash_copy(Z_ARRVAL_P(return_value), Z_ARRVAL_PP(agent), (copy_ctor_func_t) zval_add_ref, (void *) &amp;tmp_copy, sizeof(zval *));</span>
+<span class="lineNum">     515 </span>                :         }
+<span class="lineNum">     516 </span>                :         else {
+<span class="lineNum">     517 </span><span class="lineNoCov">              0 :                 object_init(return_value);</span>
+<span class="lineNum">     518 </span><span class="lineNoCov">              0 :                 zend_hash_copy(Z_OBJPROP_P(return_value), Z_ARRVAL_PP(agent), (copy_ctor_func_t) zval_add_ref, (void *) &amp;tmp_copy, sizeof(zval *));</span>
+<span class="lineNum">     519 </span>                :         }
+<span class="lineNum">     520 </span>                : 
+<span class="lineNum">     521 </span><span class="lineNoCov">              0 :         while (zend_hash_find(Z_ARRVAL_PP(agent), &quot;parent&quot;, sizeof(&quot;parent&quot;), (void **) &amp;z_agent_name) == SUCCESS) {</span>
+<span class="lineNum">     522 </span><span class="lineNoCov">              0 :                 if (zend_hash_find(bdata-&gt;htab, Z_STRVAL_PP(z_agent_name), Z_STRLEN_PP(z_agent_name) + 1, (void **)&amp;agent) == FAILURE) {</span>
+<span class="lineNum">     523 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     524 </span>                :                 }
+<span class="lineNum">     525 </span>                : 
+<span class="lineNum">     526 </span><span class="lineNoCov">              0 :                 if (return_array) {</span>
+<span class="lineNum">     527 </span><span class="lineNoCov">              0 :                         zend_hash_merge(Z_ARRVAL_P(return_value), Z_ARRVAL_PP(agent), (copy_ctor_func_t) zval_add_ref, (void *) &amp;tmp_copy, sizeof(zval *), 0);</span>
+<span class="lineNum">     528 </span>                :                 }
+<span class="lineNum">     529 </span>                :                 else {
+<span class="lineNum">     530 </span><span class="lineNoCov">              0 :                         zend_hash_merge(Z_OBJPROP_P(return_value), Z_ARRVAL_PP(agent), (copy_ctor_func_t) zval_add_ref, (void *) &amp;tmp_copy, sizeof(zval *), 0);</span>
+<span class="lineNum">     531 </span>                :                 }
+<span class="lineNum">     532 </span>                :         }
+<span class="lineNum">     533 </span>                : 
+<span class="lineNum">     534 </span><span class="lineNoCov">              0 :         efree(lookup_browser_name);</span>
+<span class="lineNum">     535 </span>                : }
+<span class="lineNum">     536 </span>                : /* }}} */
+<span class="lineNum">     537 </span>                : 
+<span class="lineNum">     538 </span>                : /*
+<span class="lineNum">     539 </span>                :  * Local variables:
+<span class="lineNum">     540 </span>                :  * tab-width: 4
+<span class="lineNum">     541 </span>                :  * c-basic-offset: 4
+<span class="lineNum">     542 </span>                :  * End:
+<span class="lineNum">     543 </span>                :  * vim600: sw=4 ts=4 fdm=marker
+<span class="lineNum">     544 </span>                :  * vim&lt;600: sw=4 ts=4
+<span class="lineNum">     545 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

@@ -1,0 +1,733 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - ext/mongo/util/pool.c</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../../index.html">directory</a> - <a href="index.html">ext/mongo/util</a> - pool.c (source / <a href="pool.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">301</td>
+          <td class="headerCovTableEntry">184</td>
+          <td class="headerCovTableEntryHi">61.1 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">27</td>
+          <td class="headerCovTableEntry">19</td>
+          <td class="headerCovTableEntryLo">70.4 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : // pool.c</a>
+<span class="lineNum">       2 </span>                : /**
+<span class="lineNum">       3 </span>                :  *  Copyright 2009-2011 10gen, Inc.
+<span class="lineNum">       4 </span>                :  *
+<span class="lineNum">       5 </span>                :  *  Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+<span class="lineNum">       6 </span>                :  *  you may not use this file except in compliance with the License.
+<span class="lineNum">       7 </span>                :  *  You may obtain a copy of the License at
+<span class="lineNum">       8 </span>                :  *
+<span class="lineNum">       9 </span>                :  *  http://www.apache.org/licenses/LICENSE-2.0
+<span class="lineNum">      10 </span>                :  *
+<span class="lineNum">      11 </span>                :  *  Unless required by applicable law or agreed to in writing, software
+<span class="lineNum">      12 </span>                :  *  distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+<span class="lineNum">      13 </span>                :  *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+<span class="lineNum">      14 </span>                :  *  See the License for the specific language governing permissions and
+<span class="lineNum">      15 </span>                :  *  limitations under the License.
+<span class="lineNum">      16 </span>                :  */
+<span class="lineNum">      17 </span>                : 
+<span class="lineNum">      18 </span>                : #include &lt;php.h&gt;
+<span class="lineNum">      19 </span>                : 
+<span class="lineNum">      20 </span>                : #ifndef WIN32
+<span class="lineNum">      21 </span>                : #include &lt;pthread.h&gt;
+<span class="lineNum">      22 </span>                : #include &lt;unistd.h&gt;
+<span class="lineNum">      23 </span>                : #include &lt;sys/types.h&gt;
+<span class="lineNum">      24 </span>                : #endif
+<span class="lineNum">      25 </span>                : 
+<span class="lineNum">      26 </span>                : #include &quot;../php_mongo.h&quot;
+<span class="lineNum">      27 </span>                : #include &quot;hash.h&quot;
+<span class="lineNum">      28 </span>                : #include &quot;pool.h&quot;
+<span class="lineNum">      29 </span>                : #include &quot;connect.h&quot;
+<span class="lineNum">      30 </span>                : #include &quot;server.h&quot;
+<span class="lineNum">      31 </span>                : #include &quot;log.h&quot;
+<span class="lineNum">      32 </span>                : #include &quot;rs.h&quot;
+<span class="lineNum">      33 </span>                : 
+<span class="lineNum">      34 </span>                : ZEND_EXTERN_MODULE_GLOBALS(mongo);
+<span class="lineNum">      35 </span>                : 
+<span class="lineNum">      36 </span>                : zend_class_entry *mongo_ce_Pool;
+<span class="lineNum">      37 </span>                : 
+<span class="lineNum">      38 </span>                : extern int le_pconnection;
+<span class="lineNum">      39 </span>                : 
+<span class="lineNum">      40 </span>                : #if WIN32
+<span class="lineNum">      41 </span>                : HANDLE pool_mutex;
+<span class="lineNum">      42 </span>                : #else
+<span class="lineNum">      43 </span>                : static pthread_mutex_t pool_mutex = PTHREAD_MUTEX_INITIALIZER;
+<span class="lineNum">      44 </span>                : #endif
+<span class="lineNum">      45 </span>                : 
+<span class="lineNum">      46 </span>                : /**
+<span class="lineNum">      47 </span>                :  * When there's a failure on a connection, we try pinging mongod on another
+<span class="lineNum">      48 </span>                :  * connection. If that ping fails, we assume that the server bounced or similar
+<span class="lineNum">      49 </span>                :  * and close all connections.  If we get a successful ping response, we assume
+<span class="lineNum">      50 </span>                :  * just our socket went bad and leave the other connections open.
+<span class="lineNum">      51 </span>                :  */
+<a name="52"><span class="lineNum">      52 </span>                : static void get_other_conn(mongo_server *server, mongo_server *other, stack_monitor *monitor);</a>
+<span class="lineNum">      53 </span>                : 
+<span class="lineNum">      54 </span><span class="lineCov">             73 : int mongo_util_pool_init(mongo_server *server, time_t timeout TSRMLS_DC) {</span>
+<span class="lineNum">      55 </span>                :   stack_monitor *monitor;
+<span class="lineNum">      56 </span>                : 
+<span class="lineNum">      57 </span><span class="lineCov">             73 :   if ((monitor = mongo_util_pool__get_monitor(server TSRMLS_CC)) == 0) {</span>
+<span class="lineNum">      58 </span><span class="lineNoCov">              0 :     return FAILURE;</span>
+<span class="lineNum">      59 </span>                :   }
+<span class="lineNum">      60 </span><span class="lineCov">             73 :   if (timeout) {</span>
+<span class="lineNum">      61 </span><span class="lineCov">              1 :     monitor-&gt;timeout = timeout;</span>
+<span class="lineNum">      62 </span>                :   }
+<span class="lineNum">      63 </span>                : 
+<span class="lineNum">      64 </span>                :   // TODO: do something to num.remaining
+<span class="lineNum">      65 </span>                : 
+<span class="lineNum">      66 </span>                :   // TODO: initialize pool to a certain size?
+<span class="lineNum">      67 </span><span class="lineCov">             73 :   return SUCCESS;</span>
+<a name="68"><span class="lineNum">      68 </span>                : }</a>
+<span class="lineNum">      69 </span>                : 
+<span class="lineNum">      70 </span><span class="lineCov">           4693 : int mongo_util_pool_refresh(mongo_server *server, time_t timeout TSRMLS_DC) {</span>
+<span class="lineNum">      71 </span><span class="lineCov">           4693 :   if (server-&gt;connected) {</span>
+<span class="lineNum">      72 </span><span class="lineCov">           4692 :     return SUCCESS;</span>
+<span class="lineNum">      73 </span>                :   }
+<span class="lineNum">      74 </span>                : 
+<span class="lineNum">      75 </span>                :   // make sure we're disconnected before reconnecting
+<span class="lineNum">      76 </span><span class="lineCov">              1 :   mongo_util_pool_close(server, CHECK_CONNS TSRMLS_CC);</span>
+<span class="lineNum">      77 </span>                : 
+<span class="lineNum">      78 </span><span class="lineCov">              1 :   if (mongo_util_pool_init(server, timeout TSRMLS_CC) == FAILURE) {</span>
+<span class="lineNum">      79 </span><span class="lineNoCov">              0 :     return FAILURE;</span>
+<span class="lineNum">      80 </span>                :   }
+<span class="lineNum">      81 </span>                : 
+<span class="lineNum">      82 </span><span class="lineCov">              1 :   if (mongo_util_pool_get(server, 0 TSRMLS_CC) == FAILURE) {</span>
+<span class="lineNum">      83 </span><span class="lineCov">              1 :     return FAILURE;</span>
+<span class="lineNum">      84 </span>                :   }
+<span class="lineNum">      85 </span>                : 
+<span class="lineNum">      86 </span>                :   // if we get here, we successfully reconnected
+<span class="lineNum">      87 </span><span class="lineNoCov">              0 :   return SUCCESS;</span>
+<a name="88"><span class="lineNum">      88 </span>                : }</a>
+<span class="lineNum">      89 </span>                : 
+<span class="lineNum">      90 </span><span class="lineCov">             67 : int mongo_util_pool_get(mongo_server *server, zval *errmsg TSRMLS_DC) {</span>
+<span class="lineNum">      91 </span>                :   stack_monitor *monitor;
+<span class="lineNum">      92 </span>                : 
+<span class="lineNum">      93 </span><span class="lineCov">             67 :   if ((monitor = mongo_util_pool__get_monitor(server TSRMLS_CC)) == 0) {</span>
+<span class="lineNum">      94 </span><span class="lineNoCov">              0 :     return FAILURE;</span>
+<span class="lineNum">      95 </span>                :   }
+<span class="lineNum">      96 </span>                : 
+<span class="lineNum">      97 </span>                :   // store the owner of the link
+<span class="lineNum">      98 </span><span class="lineCov">             67 :   server-&gt;owner = getpid();</span>
+<span class="lineNum">      99 </span>                : 
+<span class="lineNum">     100 </span><span class="lineCov">             67 :   mongo_log(MONGO_LOG_POOL, MONGO_LOG_FINE TSRMLS_CC, &quot;%s: pool get (%p)&quot;, server-&gt;label, monitor);</span>
+<span class="lineNum">     101 </span>                : 
+<span class="lineNum">     102 </span>                :   // get connection from pool or create new
+<span class="lineNum">     103 </span><span class="lineCov">            121 :   if (mongo_util_pool__stack_pop(monitor, server TSRMLS_CC) == SUCCESS ||</span>
+<span class="lineNum">     104 </span><span class="lineCov">             54 :       mongo_util_pool__connect(monitor, server, errmsg TSRMLS_CC) == SUCCESS) {</span>
+<span class="lineNum">     105 </span><span class="lineCov">             59 :     mongo_util_pool__add_server_ptr(monitor, server);</span>
+<span class="lineNum">     106 </span><span class="lineCov">             59 :     return SUCCESS;</span>
+<span class="lineNum">     107 </span>                :   }
+<span class="lineNum">     108 </span>                : 
+<span class="lineNum">     109 </span><span class="lineCov">              8 :   return FAILURE;</span>
+<a name="110"><span class="lineNum">     110 </span>                : }</a>
+<span class="lineNum">     111 </span>                : 
+<span class="lineNum">     112 </span><span class="lineCov">             74 : void mongo_util_pool_done(mongo_server *server TSRMLS_DC) {</span>
+<span class="lineNum">     113 </span>                :   stack_monitor *monitor;
+<span class="lineNum">     114 </span>                : 
+<span class="lineNum">     115 </span><span class="lineCov">             74 :   if ((monitor = mongo_util_pool__get_monitor(server TSRMLS_CC)) == 0) {</span>
+<span class="lineNum">     116 </span>                :     // if we couldn't push this, close the connection
+<span class="lineNum">     117 </span><span class="lineNoCov">              0 :     mongo_util_disconnect(server TSRMLS_CC);</span>
+<span class="lineNum">     118 </span><span class="lineNoCov">              0 :     return;</span>
+<span class="lineNum">     119 </span>                :   }
+<span class="lineNum">     120 </span>                : 
+<span class="lineNum">     121 </span><span class="lineCov">             74 :   mongo_log(MONGO_LOG_POOL, MONGO_LOG_FINE TSRMLS_CC, &quot;%s: pool done (%p)&quot;, server-&gt;label, monitor);</span>
+<span class="lineNum">     122 </span>                : 
+<span class="lineNum">     123 </span>                :   // clean up reference to server (nothing needs to be freed)
+<span class="lineNum">     124 </span><span class="lineCov">             74 :   mongo_util_pool__rm_server_ptr(monitor, server);</span>
+<span class="lineNum">     125 </span>                : 
+<span class="lineNum">     126 </span>                :   // if this is disconnected, do not add it to the pool
+<span class="lineNum">     127 </span><span class="lineCov">             74 :   if (server-&gt;connected) {</span>
+<span class="lineNum">     128 </span><span class="lineCov">             59 :     mongo_util_pool__stack_push(monitor, server TSRMLS_CC);</span>
+<span class="lineNum">     129 </span>                :   }
+<a name="130"><span class="lineNum">     130 </span>                : }</a>
+<span class="lineNum">     131 </span>                : 
+<span class="lineNum">     132 </span><span class="lineNoCov">              0 : void mongo_util_pool_remove(mongo_server *server TSRMLS_DC) {</span>
+<span class="lineNum">     133 </span>                :   stack_monitor *monitor;
+<span class="lineNum">     134 </span>                : 
+<span class="lineNum">     135 </span><span class="lineNoCov">              0 :   if ((monitor = mongo_util_pool__get_monitor(server TSRMLS_CC)) == 0) {</span>
+<span class="lineNum">     136 </span>                :     // if we couldn't push this, close the connection
+<span class="lineNum">     137 </span><span class="lineNoCov">              0 :     mongo_util_disconnect(server TSRMLS_CC);</span>
+<span class="lineNum">     138 </span><span class="lineNoCov">              0 :     return;</span>
+<span class="lineNum">     139 </span>                :   }
+<span class="lineNum">     140 </span>                : 
+<span class="lineNum">     141 </span><span class="lineNoCov">              0 :   mongo_log(MONGO_LOG_POOL, MONGO_LOG_FINE TSRMLS_CC, &quot;%s: pool remove (%p)&quot;, server-&gt;label, monitor);</span>
+<span class="lineNum">     142 </span>                : 
+<span class="lineNum">     143 </span>                :   // clean up reference to server (nothing needs to be freed)
+<span class="lineNum">     144 </span><span class="lineNoCov">              0 :   mongo_util_pool__rm_server_ptr(monitor, server);</span>
+<a name="145"><span class="lineNum">     145 </span>                : }</a>
+<span class="lineNum">     146 </span>                : 
+<span class="lineNum">     147 </span><span class="lineCov">              1 : void mongo_util_pool_close(mongo_server *server, int check_conns TSRMLS_DC) {</span>
+<span class="lineNum">     148 </span>                :   stack_monitor *monitor;
+<span class="lineNum">     149 </span>                : 
+<span class="lineNum">     150 </span><span class="lineCov">              1 :   if ((monitor = mongo_util_pool__get_monitor(server TSRMLS_CC)) == 0) {</span>
+<span class="lineNum">     151 </span><span class="lineNoCov">              0 :     mongo_util_disconnect(server TSRMLS_CC);</span>
+<span class="lineNum">     152 </span><span class="lineNoCov">              0 :     return;</span>
+<span class="lineNum">     153 </span>                :   }
+<span class="lineNum">     154 </span>                : 
+<span class="lineNum">     155 </span><span class="lineCov">              1 :   mongo_log(MONGO_LOG_POOL, MONGO_LOG_FINE TSRMLS_CC, &quot;%s: pool close (%p)&quot;, server-&gt;label, monitor);</span>
+<span class="lineNum">     156 </span>                : 
+<span class="lineNum">     157 </span><span class="lineCov">              1 :   mongo_util_pool__disconnect(monitor, server TSRMLS_CC);</span>
+<span class="lineNum">     158 </span>                : 
+<span class="lineNum">     159 </span>                :   // clean up reference to server (nothing needs to be freed)
+<span class="lineNum">     160 </span><span class="lineCov">              1 :   mongo_util_pool__rm_server_ptr(monitor, server);</span>
+<a name="161"><span class="lineNum">     161 </span>                : }</a>
+<span class="lineNum">     162 </span>                : 
+<span class="lineNum">     163 </span><span class="lineNoCov">              0 : static void get_other_conn(mongo_server *server, mongo_server *other, stack_monitor *monitor) {</span>
+<span class="lineNum">     164 </span><span class="lineNoCov">              0 :   mongo_server *current = 0;</span>
+<span class="lineNum">     165 </span><span class="lineNoCov">              0 :   stack_node *node = 0;</span>
+<span class="lineNum">     166 </span>                : 
+<span class="lineNum">     167 </span><span class="lineNoCov">              0 :   LOCK(pool);</span>
+<span class="lineNum">     168 </span>                : 
+<span class="lineNum">     169 </span>                :   // look through pool conns
+<span class="lineNum">     170 </span><span class="lineNoCov">              0 :   node = monitor-&gt;top;</span>
+<span class="lineNum">     171 </span><span class="lineNoCov">              0 :   if (node) {</span>
+<span class="lineNum">     172 </span><span class="lineNoCov">              0 :     other-&gt;connected = 1;</span>
+<span class="lineNum">     173 </span><span class="lineNoCov">              0 :     other-&gt;socket = node-&gt;socket;</span>
+<span class="lineNum">     174 </span>                : 
+<span class="lineNum">     175 </span><span class="lineNoCov">              0 :     UNLOCK(pool);</span>
+<span class="lineNum">     176 </span><span class="lineNoCov">              0 :     return;</span>
+<span class="lineNum">     177 </span>                :   }
+<span class="lineNum">     178 </span>                : 
+<span class="lineNum">     179 </span>                :   // look through in-use conns
+<span class="lineNum">     180 </span><span class="lineNoCov">              0 :   current = monitor-&gt;servers;</span>
+<span class="lineNum">     181 </span><span class="lineNoCov">              0 :   while (current) {</span>
+<span class="lineNum">     182 </span><span class="lineNoCov">              0 :     if (current != server) {</span>
+<span class="lineNum">     183 </span><span class="lineNoCov">              0 :       other-&gt;connected = 1;</span>
+<span class="lineNum">     184 </span><span class="lineNoCov">              0 :       other-&gt;socket = current-&gt;socket;</span>
+<span class="lineNum">     185 </span>                : 
+<span class="lineNum">     186 </span><span class="lineNoCov">              0 :       UNLOCK(pool);</span>
+<span class="lineNum">     187 </span><span class="lineNoCov">              0 :       return;</span>
+<span class="lineNum">     188 </span>                :     }
+<span class="lineNum">     189 </span>                : 
+<span class="lineNum">     190 </span><span class="lineNoCov">              0 :     current = current-&gt;next_in_pool;</span>
+<span class="lineNum">     191 </span>                :   }
+<span class="lineNum">     192 </span>                : 
+<span class="lineNum">     193 </span><span class="lineNoCov">              0 :   UNLOCK(pool);</span>
+<span class="lineNum">     194 </span>                : 
+<span class="lineNum">     195 </span><span class="lineNoCov">              0 :   other-&gt;connected = 0;</span>
+<span class="lineNum">     196 </span><span class="lineNoCov">              0 :   other-&gt;socket = 0;</span>
+<a name="197"><span class="lineNum">     197 </span>                : }</a>
+<span class="lineNum">     198 </span>                : 
+<span class="lineNum">     199 </span><span class="lineCov">              1 : int mongo_util_pool_failed(mongo_server *server TSRMLS_DC) {</span>
+<span class="lineNum">     200 </span>                :   stack_monitor *monitor;
+<span class="lineNum">     201 </span>                :   zval *errmsg;
+<span class="lineNum">     202 </span>                : 
+<span class="lineNum">     203 </span><span class="lineCov">              1 :   if ((monitor = mongo_util_pool__get_monitor(server TSRMLS_CC)) == 0) {</span>
+<span class="lineNum">     204 </span><span class="lineNoCov">              0 :     mongo_util_disconnect(server TSRMLS_CC);</span>
+<span class="lineNum">     205 </span><span class="lineNoCov">              0 :     return FAILURE;</span>
+<span class="lineNum">     206 </span>                :   }
+<span class="lineNum">     207 </span>                : 
+<span class="lineNum">     208 </span><span class="lineCov">              1 :   mongo_log(MONGO_LOG_POOL, MONGO_LOG_FINE TSRMLS_CC, &quot;%s: pool fail (%p)&quot;, server-&gt;label, monitor);</span>
+<span class="lineNum">     209 </span>                : 
+<span class="lineNum">     210 </span><span class="lineCov">              1 :   mongo_util_pool__close_connections(monitor TSRMLS_CC);</span>
+<span class="lineNum">     211 </span>                :   // just to be sure
+<span class="lineNum">     212 </span><span class="lineCov">              1 :   mongo_util_pool__disconnect(monitor, server TSRMLS_CC);</span>
+<span class="lineNum">     213 </span>                : 
+<span class="lineNum">     214 </span><span class="lineCov">              1 :   MAKE_STD_ZVAL(errmsg);</span>
+<span class="lineNum">     215 </span><span class="lineCov">              1 :   ZVAL_NULL(errmsg);</span>
+<span class="lineNum">     216 </span>                : 
+<span class="lineNum">     217 </span>                :   // if we cannot reconnect, we'll assume that this server is down
+<span class="lineNum">     218 </span><span class="lineCov">              1 :   if (mongo_util_pool__connect(monitor, server, errmsg TSRMLS_CC) == FAILURE) {</span>
+<span class="lineNum">     219 </span><span class="lineNoCov">              0 :     mongo_util_server_down(server TSRMLS_CC);</span>
+<span class="lineNum">     220 </span><span class="lineNoCov">              0 :     zval_ptr_dtor(&amp;errmsg);</span>
+<span class="lineNum">     221 </span><span class="lineNoCov">              0 :     return FAILURE;</span>
+<span class="lineNum">     222 </span>                :   }
+<span class="lineNum">     223 </span>                : 
+<span class="lineNum">     224 </span><span class="lineCov">              1 :   zval_ptr_dtor(&amp;errmsg);</span>
+<span class="lineNum">     225 </span><span class="lineCov">              1 :   return SUCCESS;</span>
+<a name="226"><span class="lineNum">     226 </span>                : }</a>
+<span class="lineNum">     227 </span>                : 
+<span class="lineNum">     228 </span><span class="lineCov">             46 : void mongo_util_pool_shutdown(zend_rsrc_list_entry *rsrc TSRMLS_DC) {</span>
+<span class="lineNum">     229 </span><span class="lineCov">             46 :   stack_monitor *monitor = 0;</span>
+<span class="lineNum">     230 </span>                : 
+<span class="lineNum">     231 </span><span class="lineCov">             46 :   if (!rsrc || !rsrc-&gt;ptr) {</span>
+<span class="lineNum">     232 </span><span class="lineNoCov">              0 :     return;</span>
+<span class="lineNum">     233 </span>                :   }
+<span class="lineNum">     234 </span>                : 
+<span class="lineNum">     235 </span><span class="lineCov">             46 :   monitor = (stack_monitor*)rsrc-&gt;ptr;</span>
+<span class="lineNum">     236 </span><span class="lineCov">             46 :   mongo_util_pool__close_connections(monitor TSRMLS_CC);</span>
+<span class="lineNum">     237 </span><span class="lineCov">             46 :   pefree(monitor, 1);</span>
+<span class="lineNum">     238 </span><span class="lineCov">             46 :   rsrc-&gt;ptr = 0;</span>
+<a name="239"><span class="lineNum">     239 </span>                : }</a>
+<span class="lineNum">     240 </span>                : 
+<span class="lineNum">     241 </span><span class="lineCov">            160 : int mongo_util_pool__stack_pop(stack_monitor *monitor, mongo_server *server TSRMLS_DC) {</span>
+<span class="lineNum">     242 </span>                :   stack_node *node;
+<span class="lineNum">     243 </span>                : 
+<span class="lineNum">     244 </span><span class="lineCov">            160 :   LOCK(pool);</span>
+<span class="lineNum">     245 </span>                : 
+<span class="lineNum">     246 </span><span class="lineCov">            160 :   node = monitor-&gt;top;</span>
+<span class="lineNum">     247 </span>                : 
+<span class="lineNum">     248 </span>                :   // check that monitor-&gt;pop != NULL and pop stack
+<span class="lineNum">     249 </span><span class="lineCov">            160 :   if (!node) {</span>
+<span class="lineNum">     250 </span><span class="lineCov">            101 :     UNLOCK(pool);</span>
+<span class="lineNum">     251 </span>                : 
+<span class="lineNum">     252 </span><span class="lineCov">            101 :     server-&gt;connected = 0;</span>
+<span class="lineNum">     253 </span><span class="lineCov">            101 :     return FAILURE;</span>
+<span class="lineNum">     254 </span>                :   }
+<span class="lineNum">     255 </span>                : 
+<span class="lineNum">     256 </span><span class="lineCov">             59 :   monitor-&gt;top = node-&gt;next;</span>
+<span class="lineNum">     257 </span><span class="lineCov">             59 :   monitor-&gt;num.in_pool--;</span>
+<span class="lineNum">     258 </span>                : 
+<span class="lineNum">     259 </span>                :   // theoretically, all servers in the pool should be connected
+<span class="lineNum">     260 </span><span class="lineCov">             59 :   server-&gt;connected = 1;</span>
+<span class="lineNum">     261 </span><span class="lineCov">             59 :   server-&gt;socket = node-&gt;socket;</span>
+<span class="lineNum">     262 </span>                : 
+<span class="lineNum">     263 </span><span class="lineCov">             59 :   pefree(node, 1);</span>
+<span class="lineNum">     264 </span>                : 
+<span class="lineNum">     265 </span><span class="lineCov">             59 :   UNLOCK(pool);</span>
+<span class="lineNum">     266 </span>                : 
+<span class="lineNum">     267 </span>                :   // label is not set when stack_clear calls this
+<span class="lineNum">     268 </span><span class="lineCov">             59 :   if (server-&gt;label) {</span>
+<span class="lineNum">     269 </span><span class="lineCov">             13 :     mongo_log(MONGO_LOG_POOL, MONGO_LOG_FINE TSRMLS_CC, &quot;%s: found in pool (%p)&quot;, server-&gt;label, monitor);</span>
+<span class="lineNum">     270 </span>                :   }
+<span class="lineNum">     271 </span>                : 
+<span class="lineNum">     272 </span><span class="lineCov">             59 :   return SUCCESS;</span>
+<a name="273"><span class="lineNum">     273 </span>                : }</a>
+<span class="lineNum">     274 </span>                : 
+<span class="lineNum">     275 </span><span class="lineCov">             59 : void mongo_util_pool__stack_push(stack_monitor *monitor, mongo_server *server TSRMLS_DC) {</span>
+<span class="lineNum">     276 </span>                :   stack_node *node;
+<span class="lineNum">     277 </span>                : 
+<span class="lineNum">     278 </span><span class="lineCov">             59 :   if (!server-&gt;connected) {</span>
+<span class="lineNum">     279 </span><span class="lineNoCov">              0 :     return;</span>
+<span class="lineNum">     280 </span>                :   }
+<span class="lineNum">     281 </span>                : 
+<span class="lineNum">     282 </span><span class="lineCov">             59 :   LOCK(pool);</span>
+<span class="lineNum">     283 </span>                : 
+<span class="lineNum">     284 </span><span class="lineCov">             59 :   node = (stack_node*)pemalloc(sizeof(stack_node), 1);</span>
+<span class="lineNum">     285 </span>                : 
+<span class="lineNum">     286 </span><span class="lineCov">             59 :   node-&gt;socket = server-&gt;socket;</span>
+<span class="lineNum">     287 </span>                : 
+<span class="lineNum">     288 </span><span class="lineCov">             59 :   node-&gt;next = monitor-&gt;top;</span>
+<span class="lineNum">     289 </span><span class="lineCov">             59 :   monitor-&gt;top = node;</span>
+<span class="lineNum">     290 </span>                : 
+<span class="lineNum">     291 </span><span class="lineCov">             59 :   monitor-&gt;num.in_pool++;</span>
+<span class="lineNum">     292 </span><span class="lineCov">             59 :   server-&gt;connected = 0;</span>
+<span class="lineNum">     293 </span>                : 
+<span class="lineNum">     294 </span>                :   // don't keep more than MAX_POOL_SIZE connections around
+<span class="lineNum">     295 </span><span class="lineCov">             59 :   node = monitor-&gt;top;</span>
+<span class="lineNum">     296 </span><span class="lineCov">             59 :   if (monitor-&gt;num.in_pool &gt; MAX_POOL_SIZE) {</span>
+<span class="lineNum">     297 </span><span class="lineNoCov">              0 :     int count = 0, removed = 0;</span>
+<span class="lineNum">     298 </span>                :     stack_node *next;
+<span class="lineNum">     299 </span>                : 
+<span class="lineNum">     300 </span><span class="lineNoCov">              0 :     mongo_log(MONGO_LOG_POOL, MONGO_LOG_INFO TSRMLS_CC, &quot;%s: trimming pool from %d to %d (%p)&quot;,</span>
+<span class="lineNum">     301 </span>                :               server-&gt;label, monitor-&gt;num.in_pool, MAX_POOL_SIZE, monitor);
+<span class="lineNum">     302 </span>                : 
+<span class="lineNum">     303 </span><span class="lineNoCov">              0 :     while (node &amp;&amp; count &lt; MAX_POOL_SIZE-1) {</span>
+<span class="lineNum">     304 </span><span class="lineNoCov">              0 :       node = node-&gt;next;</span>
+<span class="lineNum">     305 </span><span class="lineNoCov">              0 :       count++;</span>
+<span class="lineNum">     306 </span>                :     }
+<span class="lineNum">     307 </span>                : 
+<span class="lineNum">     308 </span><span class="lineNoCov">              0 :     if (count &lt; (MAX_POOL_SIZE-1) || !node) {</span>
+<span class="lineNum">     309 </span><span class="lineNoCov">              0 :       mongo_log(MONGO_LOG_POOL, MONGO_LOG_WARNING TSRMLS_CC, &quot;%s: BAD POOL SIZE: %d, actually %d (%p)&quot;,</span>
+<span class="lineNum">     310 </span>                :                 server-&gt;label, monitor-&gt;num.in_pool, count, monitor);
+<span class="lineNum">     311 </span><span class="lineNoCov">              0 :       UNLOCK(pool);</span>
+<span class="lineNum">     312 </span><span class="lineNoCov">              0 :       return;</span>
+<span class="lineNum">     313 </span>                :     }
+<span class="lineNum">     314 </span>                : 
+<span class="lineNum">     315 </span><span class="lineNoCov">              0 :     next = node-&gt;next;</span>
+<span class="lineNum">     316 </span><span class="lineNoCov">              0 :     node-&gt;next = 0;</span>
+<span class="lineNum">     317 </span><span class="lineNoCov">              0 :     node = next;</span>
+<span class="lineNum">     318 </span>                : 
+<span class="lineNum">     319 </span>                :     // get rid of old connections
+<span class="lineNum">     320 </span><span class="lineNoCov">              0 :     while (node) {</span>
+<span class="lineNum">     321 </span><span class="lineNoCov">              0 :       next = node-&gt;next;</span>
+<span class="lineNum">     322 </span>                : 
+<span class="lineNum">     323 </span><span class="lineNoCov">              0 :       MONGO_UTIL_DISCONNECT(node-&gt;socket);</span>
+<span class="lineNum">     324 </span><span class="lineNoCov">              0 :       monitor-&gt;num.remaining++;</span>
+<span class="lineNum">     325 </span><span class="lineNoCov">              0 :       free(node);</span>
+<span class="lineNum">     326 </span>                : 
+<span class="lineNum">     327 </span><span class="lineNoCov">              0 :       node = next;</span>
+<span class="lineNum">     328 </span><span class="lineNoCov">              0 :       monitor-&gt;num.in_pool--;</span>
+<span class="lineNum">     329 </span><span class="lineNoCov">              0 :       removed++;</span>
+<span class="lineNum">     330 </span>                :     }
+<span class="lineNum">     331 </span>                : 
+<span class="lineNum">     332 </span><span class="lineNoCov">              0 :     mongo_log(MONGO_LOG_POOL, MONGO_LOG_INFO TSRMLS_CC, &quot;%s: trimmed pool by %d (%p)&quot;,</span>
+<span class="lineNum">     333 </span>                :               server-&gt;label, removed, monitor);
+<span class="lineNum">     334 </span>                :   }
+<span class="lineNum">     335 </span>                : 
+<span class="lineNum">     336 </span><span class="lineCov">             59 :   UNLOCK(pool);</span>
+<a name="337"><span class="lineNum">     337 </span>                : }</a>
+<span class="lineNum">     338 </span>                : 
+<span class="lineNum">     339 </span><span class="lineCov">             47 : void mongo_util_pool__stack_clear(stack_monitor *monitor TSRMLS_DC) {</span>
+<span class="lineNum">     340 </span>                :   // holder for popping sockets
+<span class="lineNum">     341 </span>                :   mongo_server temp;
+<span class="lineNum">     342 </span><span class="lineCov">             47 :   temp.label = 0;</span>
+<span class="lineNum">     343 </span><span class="lineCov">             47 :   temp.owner = getpid();</span>
+<span class="lineNum">     344 </span>                : 
+<span class="lineNum">     345 </span><span class="lineCov">            140 :   while (mongo_util_pool__stack_pop(monitor, &amp;temp TSRMLS_CC) == SUCCESS) {</span>
+<span class="lineNum">     346 </span><span class="lineCov">             46 :     mongo_util_pool__disconnect(monitor, &amp;temp TSRMLS_CC);</span>
+<span class="lineNum">     347 </span>                :   }
+<span class="lineNum">     348 </span><span class="lineCov">             47 :   monitor-&gt;top = 0;</span>
+<span class="lineNum">     349 </span><span class="lineCov">             47 : }</span>
+<a name="350"><span class="lineNum">     350 </span>                : </a>
+<span class="lineNum">     351 </span>                : 
+<span class="lineNum">     352 </span><span class="lineCov">             59 : void mongo_util_pool__add_server_ptr(stack_monitor *monitor, mongo_server *server) {</span>
+<span class="lineNum">     353 </span>                :   mongo_server *list, *current;
+<span class="lineNum">     354 </span>                : 
+<span class="lineNum">     355 </span><span class="lineCov">             59 :   LOCK(pool);</span>
+<span class="lineNum">     356 </span>                : 
+<span class="lineNum">     357 </span><span class="lineCov">             59 :   current = monitor-&gt;servers;</span>
+<span class="lineNum">     358 </span><span class="lineCov">            130 :   while (current) {</span>
+<span class="lineNum">     359 </span>                :     // we are reconnecting using a server already in monitor-&gt;servers.  We don't
+<span class="lineNum">     360 </span>                :     // want to add it again or we'll end up with an infinite loop
+<span class="lineNum">     361 </span><span class="lineCov">             12 :     if (current == server) {</span>
+<span class="lineNum">     362 </span><span class="lineNoCov">              0 :       UNLOCK(pool);</span>
+<span class="lineNum">     363 </span><span class="lineNoCov">              0 :       return;</span>
+<span class="lineNum">     364 </span>                :     }
+<span class="lineNum">     365 </span><span class="lineCov">             12 :     current = current-&gt;next_in_pool;</span>
+<span class="lineNum">     366 </span>                :   }
+<span class="lineNum">     367 </span>                : 
+<span class="lineNum">     368 </span><span class="lineCov">             59 :   list = monitor-&gt;servers;</span>
+<span class="lineNum">     369 </span><span class="lineCov">             59 :   server-&gt;next_in_pool = list;</span>
+<span class="lineNum">     370 </span>                : 
+<span class="lineNum">     371 </span><span class="lineCov">             59 :   monitor-&gt;servers = server;</span>
+<span class="lineNum">     372 </span><span class="lineCov">             59 :   monitor-&gt;num.in_use++;</span>
+<span class="lineNum">     373 </span>                : 
+<span class="lineNum">     374 </span><span class="lineCov">             59 :   UNLOCK(pool);</span>
+<a name="375"><span class="lineNum">     375 </span>                : }</a>
+<span class="lineNum">     376 </span>                : 
+<span class="lineNum">     377 </span><span class="lineCov">             75 : void mongo_util_pool__rm_server_ptr(stack_monitor *monitor, mongo_server *server) {</span>
+<span class="lineNum">     378 </span>                :   mongo_server *next, *prev, *current;
+<span class="lineNum">     379 </span>                : 
+<span class="lineNum">     380 </span><span class="lineCov">             75 :   LOCK(pool);</span>
+<span class="lineNum">     381 </span>                : 
+<span class="lineNum">     382 </span><span class="lineCov">             75 :   next = server-&gt;next_in_pool;</span>
+<span class="lineNum">     383 </span><span class="lineCov">             75 :   server-&gt;next_in_pool = 0;</span>
+<span class="lineNum">     384 </span>                : 
+<span class="lineNum">     385 </span><span class="lineCov">             75 :   if (monitor-&gt;servers == 0) {</span>
+<span class="lineNum">     386 </span><span class="lineCov">             11 :     UNLOCK(pool);</span>
+<span class="lineNum">     387 </span><span class="lineCov">             11 :     return;</span>
+<span class="lineNum">     388 </span>                :   }
+<span class="lineNum">     389 </span>                : 
+<span class="lineNum">     390 </span><span class="lineCov">             64 :   if (monitor-&gt;servers == server) {</span>
+<span class="lineNum">     391 </span><span class="lineCov">             50 :     monitor-&gt;servers = next;</span>
+<span class="lineNum">     392 </span><span class="lineCov">             50 :     monitor-&gt;num.in_use--;</span>
+<span class="lineNum">     393 </span>                : 
+<span class="lineNum">     394 </span><span class="lineCov">             50 :     UNLOCK(pool);</span>
+<span class="lineNum">     395 </span><span class="lineCov">             50 :     return;</span>
+<span class="lineNum">     396 </span>                :   }
+<span class="lineNum">     397 </span>                : 
+<span class="lineNum">     398 </span><span class="lineCov">             14 :   prev = monitor-&gt;servers;</span>
+<span class="lineNum">     399 </span><span class="lineCov">             14 :   current = monitor-&gt;servers-&gt;next_in_pool;</span>
+<span class="lineNum">     400 </span><span class="lineCov">             29 :   while (current &amp;&amp; current != server) {</span>
+<span class="lineNum">     401 </span><span class="lineCov">              1 :     prev = current;</span>
+<span class="lineNum">     402 </span><span class="lineCov">              1 :     current = current-&gt;next_in_pool;</span>
+<span class="lineNum">     403 </span>                :   }
+<span class="lineNum">     404 </span>                : 
+<span class="lineNum">     405 </span><span class="lineCov">             14 :   if (current == server) {</span>
+<span class="lineNum">     406 </span><span class="lineCov">              8 :     prev-&gt;next_in_pool = next;</span>
+<span class="lineNum">     407 </span><span class="lineCov">              8 :     monitor-&gt;num.in_use--;</span>
+<span class="lineNum">     408 </span>                :   }
+<span class="lineNum">     409 </span>                : 
+<span class="lineNum">     410 </span><span class="lineCov">             14 :   UNLOCK(pool);</span>
+<a name="411"><span class="lineNum">     411 </span>                : }</a>
+<span class="lineNum">     412 </span>                : 
+<span class="lineNum">     413 </span><span class="lineCov">             47 : void mongo_util_pool__close_connections(stack_monitor *monitor TSRMLS_DC) {</span>
+<span class="lineNum">     414 </span>                :   mongo_server *current;
+<span class="lineNum">     415 </span>                : 
+<span class="lineNum">     416 </span><span class="lineCov">             47 :   LOCK(pool);</span>
+<span class="lineNum">     417 </span>                : 
+<span class="lineNum">     418 </span>                :   // close all open connections
+<span class="lineNum">     419 </span><span class="lineCov">             47 :   current = monitor-&gt;servers;</span>
+<span class="lineNum">     420 </span><span class="lineCov">             95 :   while (current) {</span>
+<span class="lineNum">     421 </span><span class="lineCov">              1 :     mongo_util_pool__disconnect(monitor, current TSRMLS_CC);</span>
+<span class="lineNum">     422 </span><span class="lineCov">              1 :     monitor-&gt;num.in_use--;</span>
+<span class="lineNum">     423 </span><span class="lineCov">              1 :     current = current-&gt;next_in_pool;</span>
+<span class="lineNum">     424 </span>                :   }
+<span class="lineNum">     425 </span><span class="lineCov">             47 :   monitor-&gt;servers = 0;</span>
+<span class="lineNum">     426 </span>                : 
+<span class="lineNum">     427 </span><span class="lineCov">             47 :   UNLOCK(pool);</span>
+<span class="lineNum">     428 </span>                : 
+<span class="lineNum">     429 </span>                :   // remove any connections from the stack
+<span class="lineNum">     430 </span><span class="lineCov">             47 :   mongo_util_pool__stack_clear(monitor TSRMLS_CC);</span>
+<a name="431"><span class="lineNum">     431 </span><span class="lineCov">             47 : }</span></a>
+<span class="lineNum">     432 </span>                : 
+<span class="lineNum">     433 </span><span class="lineCov">             49 : void mongo_util_pool__disconnect(stack_monitor *monitor, mongo_server *server TSRMLS_DC) {</span>
+<span class="lineNum">     434 </span><span class="lineCov">             49 :   int was_connected = server-&gt;connected;</span>
+<span class="lineNum">     435 </span>                : 
+<span class="lineNum">     436 </span>                :   // kill any cursor associated with this connection before deleting it
+<span class="lineNum">     437 </span><span class="lineCov">             49 :   mongo_cursor_free_le(server, MONGO_SERVER TSRMLS_CC);</span>
+<span class="lineNum">     438 </span>                : 
+<span class="lineNum">     439 </span><span class="lineCov">             49 :   mongo_util_disconnect(server TSRMLS_CC);</span>
+<span class="lineNum">     440 </span>                : 
+<span class="lineNum">     441 </span><span class="lineCov">             96 :   if (was_connected &amp;&amp;</span>
+<span class="lineNum">     442 </span><span class="lineCov">             47 :       (monitor-&gt;num.remaining &lt; -1 || monitor-&gt;num.remaining &gt; 0)) {</span>
+<span class="lineNum">     443 </span><span class="lineCov">             47 :     monitor-&gt;num.remaining++;</span>
+<span class="lineNum">     444 </span>                :   }
+<a name="445"><span class="lineNum">     445 </span><span class="lineCov">             49 : }</span></a>
+<span class="lineNum">     446 </span>                : 
+<span class="lineNum">     447 </span><span class="lineCov">            216 : stack_monitor *mongo_util_pool__get_monitor(mongo_server *server TSRMLS_DC) {</span>
+<span class="lineNum">     448 </span><span class="lineCov">            216 :   zend_rsrc_list_entry *le = 0;</span>
+<span class="lineNum">     449 </span>                :   char *id;
+<span class="lineNum">     450 </span>                :   size_t len;
+<span class="lineNum">     451 </span>                : 
+<span class="lineNum">     452 </span><span class="lineCov">            216 :   if ((len = mongo_util_pool__get_id(server, &amp;id TSRMLS_CC)) == FAILURE) {</span>
+<span class="lineNum">     453 </span><span class="lineNoCov">              0 :     return 0;</span>
+<span class="lineNum">     454 </span>                :   }
+<span class="lineNum">     455 </span>                : 
+<span class="lineNum">     456 </span><span class="lineCov">            216 :   LOCK(pool);</span>
+<span class="lineNum">     457 </span>                : 
+<span class="lineNum">     458 </span><span class="lineCov">            216 :   if (zend_hash_find(&amp;EG(persistent_list), id, len+1, (void**)&amp;le) == FAILURE) {</span>
+<span class="lineNum">     459 </span>                :     zend_rsrc_list_entry nle;
+<span class="lineNum">     460 </span>                :     stack_monitor *monitor;
+<span class="lineNum">     461 </span>                : 
+<span class="lineNum">     462 </span><span class="lineCov">             46 :     monitor = (stack_monitor*)pemalloc(sizeof(stack_monitor), 1);</span>
+<span class="lineNum">     463 </span><span class="lineCov">             46 :     memset(monitor, 0, sizeof(stack_monitor));</span>
+<span class="lineNum">     464 </span>                : 
+<span class="lineNum">     465 </span>                :     // set pool size
+<span class="lineNum">     466 </span><span class="lineCov">             46 :     monitor-&gt;num.total = monitor-&gt;num.remaining = MonGlo(pool_size);</span>
+<span class="lineNum">     467 </span>                : 
+<span class="lineNum">     468 </span>                :     // registering this links it to the dtor (mongo_util_pool_shutdown) so that
+<span class="lineNum">     469 </span>                :     // it can be auto-cleaned-up on shutdown
+<span class="lineNum">     470 </span><span class="lineCov">             46 :     nle.ptr = monitor;</span>
+<span class="lineNum">     471 </span><span class="lineCov">             46 :     nle.type = le_pconnection;</span>
+<span class="lineNum">     472 </span><span class="lineCov">             46 :     nle.refcount = 1;</span>
+<span class="lineNum">     473 </span><span class="lineCov">             46 :     zend_hash_add(&amp;EG(persistent_list), id, len+1, &amp;nle, sizeof(zend_rsrc_list_entry), NULL);</span>
+<span class="lineNum">     474 </span>                : 
+<span class="lineNum">     475 </span><span class="lineCov">             46 :     UNLOCK(pool);</span>
+<span class="lineNum">     476 </span>                : 
+<span class="lineNum">     477 </span><span class="lineCov">             46 :     efree(id);</span>
+<span class="lineNum">     478 </span><span class="lineCov">             46 :     return monitor;</span>
+<span class="lineNum">     479 </span>                :   }
+<span class="lineNum">     480 </span>                : 
+<span class="lineNum">     481 </span><span class="lineCov">            170 :   UNLOCK(pool);</span>
+<span class="lineNum">     482 </span>                : 
+<span class="lineNum">     483 </span><span class="lineCov">            170 :   efree(id);</span>
+<span class="lineNum">     484 </span><span class="lineCov">            170 :   return le-&gt;ptr;</span>
+<a name="485"><span class="lineNum">     485 </span>                : }</a>
+<span class="lineNum">     486 </span>                : 
+<span class="lineNum">     487 </span><span class="lineCov">            216 : size_t mongo_util_pool__get_id(mongo_server *server, char **id TSRMLS_DC) {</span>
+<span class="lineNum">     488 </span>                :   size_t len;
+<span class="lineNum">     489 </span>                : 
+<span class="lineNum">     490 </span><span class="lineCov">            216 :   if (!server) {</span>
+<span class="lineNum">     491 </span><span class="lineNoCov">              0 :     return FAILURE;</span>
+<span class="lineNum">     492 </span>                :   }
+<span class="lineNum">     493 </span>                : 
+<span class="lineNum">     494 </span><span class="lineCov">            864 :   len = spprintf(id, 0, &quot;%s:%d.%s.%s.%s.%d&quot;, server-&gt;host, server-&gt;port,</span>
+<span class="lineNum">     495 </span><span class="lineCov">            216 :                  server-&gt;db ? server-&gt;db : &quot;&quot;,</span>
+<span class="lineNum">     496 </span><span class="lineCov">            216 :                  server-&gt;username ? server-&gt;username : &quot;&quot;,</span>
+<span class="lineNum">     497 </span><span class="lineCov">            216 :                  server-&gt;password ? server-&gt;password : &quot;&quot;,</span>
+<span class="lineNum">     498 </span>                :                  getpid());
+<span class="lineNum">     499 </span>                : 
+<span class="lineNum">     500 </span><span class="lineCov">            216 :   return len;</span>
+<a name="501"><span class="lineNum">     501 </span>                : }</a>
+<span class="lineNum">     502 </span>                : 
+<span class="lineNum">     503 </span><span class="lineCov">             55 : int mongo_util_pool__timeout(stack_monitor *monitor) {</span>
+<span class="lineNum">     504 </span><span class="lineCov">             55 :   int remaining, timeout = monitor-&gt;timeout;</span>
+<span class="lineNum">     505 </span>                : 
+<span class="lineNum">     506 </span>                :   // timeout = -1 returns immediately, so we don't sleep forever if no pool
+<span class="lineNum">     507 </span>                :   // connections become available
+<span class="lineNum">     508 </span>                : 
+<span class="lineNum">     509 </span><span class="lineCov">             55 :   LOCK(pool);</span>
+<span class="lineNum">     510 </span><span class="lineCov">             55 :   remaining = monitor-&gt;num.remaining;</span>
+<span class="lineNum">     511 </span><span class="lineCov">             55 :   UNLOCK(pool);</span>
+<span class="lineNum">     512 </span>                : 
+<span class="lineNum">     513 </span><span class="lineCov">            110 :   while (timeout &gt; 0 &amp;&amp; remaining == 0) {</span>
+<span class="lineNum">     514 </span>                : #ifdef WIN32
+<span class="lineNum">     515 </span>                :     // windows sleep takes milliseconds
+<span class="lineNum">     516 </span>                :     Sleep(10);
+<span class="lineNum">     517 </span>                : #else
+<span class="lineNum">     518 </span>                :     {
+<span class="lineNum">     519 </span>                :       // usleep is deprecated
+<span class="lineNum">     520 </span>                :       struct timespec wait;
+<span class="lineNum">     521 </span>                : 
+<span class="lineNum">     522 </span><span class="lineNoCov">              0 :       wait.tv_sec = 0;</span>
+<span class="lineNum">     523 </span><span class="lineNoCov">              0 :       wait.tv_nsec = 10000000;</span>
+<span class="lineNum">     524 </span>                : 
+<span class="lineNum">     525 </span><span class="lineNoCov">              0 :       nanosleep(&amp;wait, 0);</span>
+<span class="lineNum">     526 </span>                :     }
+<span class="lineNum">     527 </span>                : #endif
+<span class="lineNum">     528 </span><span class="lineNoCov">              0 :     timeout -= 10;</span>
+<span class="lineNum">     529 </span><span class="lineNoCov">              0 :     monitor-&gt;waiting += 10;</span>
+<span class="lineNum">     530 </span>                : 
+<span class="lineNum">     531 </span><span class="lineNoCov">              0 :     LOCK(pool);</span>
+<span class="lineNum">     532 </span><span class="lineNoCov">              0 :     remaining = monitor-&gt;num.remaining;</span>
+<span class="lineNum">     533 </span><span class="lineNoCov">              0 :     UNLOCK(pool);</span>
+<span class="lineNum">     534 </span>                :   }
+<span class="lineNum">     535 </span>                : 
+<span class="lineNum">     536 </span><span class="lineCov">             55 :   return remaining != 0 ? SUCCESS : FAILURE;</span>
+<a name="537"><span class="lineNum">     537 </span>                : }</a>
+<span class="lineNum">     538 </span>                : 
+<span class="lineNum">     539 </span><span class="lineCov">             55 : int mongo_util_pool__connect(stack_monitor *monitor, mongo_server *server, zval *errmsg TSRMLS_DC) {</span>
+<span class="lineNum">     540 </span><span class="lineCov">             55 :   mongo_log(MONGO_LOG_POOL, MONGO_LOG_FINE TSRMLS_CC, &quot;%s: pool connect (%p)&quot;, server-&gt;label, monitor);</span>
+<span class="lineNum">     541 </span>                : 
+<span class="lineNum">     542 </span><span class="lineCov">             55 :   if (mongo_util_pool__timeout(monitor) == FAILURE) {</span>
+<span class="lineNum">     543 </span><span class="lineNoCov">              0 :     if (errmsg) {</span>
+<span class="lineNum">     544 </span><span class="lineNoCov">              0 :       ZVAL_STRING(errmsg, &quot;no more connections in pool&quot;, 1);</span>
+<span class="lineNum">     545 </span>                :     }
+<span class="lineNum">     546 </span><span class="lineNoCov">              0 :     return FAILURE;</span>
+<span class="lineNum">     547 </span>                :   }
+<span class="lineNum">     548 </span>                : 
+<span class="lineNum">     549 </span><span class="lineCov">             55 :   if (mongo_util_connect(server, monitor-&gt;timeout, errmsg TSRMLS_CC) == FAILURE) {</span>
+<span class="lineNum">     550 </span><span class="lineCov">              6 :     server-&gt;connected = 0;</span>
+<span class="lineNum">     551 </span><span class="lineCov">              6 :     return FAILURE;</span>
+<span class="lineNum">     552 </span>                :   }
+<span class="lineNum">     553 </span>                : 
+<span class="lineNum">     554 </span>                :   // authenticate, if necessary
+<span class="lineNum">     555 </span><span class="lineCov">             49 :   if (mongo_util_connect_authenticate(server, errmsg TSRMLS_CC) == FAILURE) {</span>
+<span class="lineNum">     556 </span><span class="lineCov">              2 :     mongo_util_disconnect(server TSRMLS_CC);</span>
+<span class="lineNum">     557 </span><span class="lineCov">              2 :     return FAILURE;</span>
+<span class="lineNum">     558 </span>                :   }
+<span class="lineNum">     559 </span>                : 
+<span class="lineNum">     560 </span><span class="lineCov">             47 :   monitor-&gt;num.remaining--;</span>
+<span class="lineNum">     561 </span><span class="lineCov">             47 :   if (monitor-&gt;num.total &gt; 0 &amp;&amp; monitor-&gt;num.remaining &lt; 0) {</span>
+<span class="lineNum">     562 </span><span class="lineNoCov">              0 :     monitor-&gt;num.remaining = 0;</span>
+<span class="lineNum">     563 </span>                :   }
+<span class="lineNum">     564 </span>                : 
+<span class="lineNum">     565 </span><span class="lineCov">             47 :   server-&gt;connected = 1;</span>
+<span class="lineNum">     566 </span><span class="lineCov">             47 :   return SUCCESS;</span>
+<span class="lineNum">     567 </span>                : }
+<span class="lineNum">     568 </span>                : 
+<span class="lineNum">     569 </span>                : static zend_function_entry MongoPool_methods[] = {
+<span class="lineNum">     570 </span>                :   PHP_ME(MongoPool, info, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
+<span class="lineNum">     571 </span>                :   PHP_ME(MongoPool, setSize, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
+<span class="lineNum">     572 </span>                :   PHP_ME(MongoPool, getSize, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
+<span class="lineNum">     573 </span>                :   {NULL, NULL, NULL}
+<a name="574"><span class="lineNum">     574 </span>                : };</a>
+<span class="lineNum">     575 </span>                : 
+<span class="lineNum">     576 </span><span class="lineCov">             48 : void mongo_init_MongoPool(TSRMLS_D) {</span>
+<span class="lineNum">     577 </span>                :   zend_class_entry ce;
+<span class="lineNum">     578 </span>                : 
+<span class="lineNum">     579 </span><span class="lineCov">             48 :   INIT_CLASS_ENTRY(ce, &quot;MongoPool&quot;, MongoPool_methods);</span>
+<span class="lineNum">     580 </span><span class="lineCov">             48 :   mongo_ce_Pool = zend_register_internal_class(&amp;ce TSRMLS_CC);</span>
+<a name="581"><span class="lineNum">     581 </span><span class="lineCov">             48 : }</span></a>
+<span class="lineNum">     582 </span>                : 
+<span class="lineNum">     583 </span><span class="lineNoCov">              0 : PHP_METHOD(MongoPool, setSize) {</span>
+<span class="lineNum">     584 </span><span class="lineNoCov">              0 :   long size = -1, old = -1;</span>
+<span class="lineNum">     585 </span>                : 
+<span class="lineNum">     586 </span><span class="lineNoCov">              0 :   if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;l&quot;, &amp;size) == FAILURE) {</span>
+<span class="lineNum">     587 </span><span class="lineNoCov">              0 :     RETURN_FALSE;</span>
+<span class="lineNum">     588 </span>                :   }
+<span class="lineNum">     589 </span>                : 
+<span class="lineNum">     590 </span><span class="lineNoCov">              0 :   old = MonGlo(pool_size);</span>
+<span class="lineNum">     591 </span><span class="lineNoCov">              0 :   MonGlo(pool_size) = size;</span>
+<span class="lineNum">     592 </span><span class="lineNoCov">              0 :   RETURN_LONG(old);</span>
+<a name="593"><span class="lineNum">     593 </span>                : }</a>
+<span class="lineNum">     594 </span>                : 
+<span class="lineNum">     595 </span><span class="lineNoCov">              0 : PHP_METHOD(MongoPool, getSize) {</span>
+<span class="lineNum">     596 </span><span class="lineNoCov">              0 :   RETURN_LONG(MonGlo(pool_size));</span>
+<a name="597"><span class="lineNum">     597 </span>                : }</a>
+<span class="lineNum">     598 </span>                : 
+<span class="lineNum">     599 </span><span class="lineNoCov">              0 : PHP_METHOD(MongoPool, info) {</span>
+<span class="lineNum">     600 </span>                :   HashPosition pointer;
+<span class="lineNum">     601 </span>                :   zend_rsrc_list_entry *le;
+<span class="lineNum">     602 </span>                : 
+<span class="lineNum">     603 </span><span class="lineNoCov">              0 :   array_init(return_value);</span>
+<span class="lineNum">     604 </span>                : 
+<span class="lineNum">     605 </span><span class="lineNoCov">              0 :   for (zend_hash_internal_pointer_reset_ex(&amp;EG(persistent_list), &amp;pointer);</span>
+<span class="lineNum">     606 </span><span class="lineNoCov">              0 :        zend_hash_get_current_data_ex(&amp;EG(persistent_list), (void**) &amp;le, &amp;pointer) == SUCCESS;</span>
+<span class="lineNum">     607 </span><span class="lineNoCov">              0 :        zend_hash_move_forward_ex(&amp;EG(persistent_list), &amp;pointer)) {</span>
+<span class="lineNum">     608 </span>                :     zval *m;
+<span class="lineNum">     609 </span>                :     char *key;
+<span class="lineNum">     610 </span>                :     unsigned int key_len;
+<span class="lineNum">     611 </span>                :     unsigned long index;
+<span class="lineNum">     612 </span>                :     stack_monitor *monitor;
+<span class="lineNum">     613 </span>                : 
+<span class="lineNum">     614 </span><span class="lineNoCov">              0 :     if (!le || le-&gt;type != le_pconnection) {</span>
+<span class="lineNum">     615 </span><span class="lineNoCov">              0 :       continue;</span>
+<span class="lineNum">     616 </span>                :     }
+<span class="lineNum">     617 </span>                : 
+<span class="lineNum">     618 </span><span class="lineNoCov">              0 :     monitor = (stack_monitor*)le-&gt;ptr;</span>
+<span class="lineNum">     619 </span>                : 
+<span class="lineNum">     620 </span><span class="lineNoCov">              0 :     MAKE_STD_ZVAL(m);</span>
+<span class="lineNum">     621 </span><span class="lineNoCov">              0 :     array_init(m);</span>
+<span class="lineNum">     622 </span>                : 
+<span class="lineNum">     623 </span><span class="lineNoCov">              0 :     add_assoc_long(m, &quot;in use&quot;, monitor-&gt;num.in_use);</span>
+<span class="lineNum">     624 </span><span class="lineNoCov">              0 :     add_assoc_long(m, &quot;in pool&quot;, monitor-&gt;num.in_pool);</span>
+<span class="lineNum">     625 </span><span class="lineNoCov">              0 :     add_assoc_long(m, &quot;remaining&quot;, monitor-&gt;num.remaining);</span>
+<span class="lineNum">     626 </span><span class="lineNoCov">              0 :     add_assoc_long(m, &quot;total&quot;, monitor-&gt;num.total);</span>
+<span class="lineNum">     627 </span><span class="lineNoCov">              0 :     add_assoc_long(m, &quot;timeout&quot;, monitor-&gt;timeout);</span>
+<span class="lineNum">     628 </span><span class="lineNoCov">              0 :     add_assoc_long(m, &quot;waiting&quot;, monitor-&gt;waiting);</span>
+<span class="lineNum">     629 </span>                : 
+<span class="lineNum">     630 </span><span class="lineNoCov">              0 :     if (zend_hash_get_current_key_ex(&amp;EG(persistent_list), &amp;key, &amp;key_len, &amp;index, 0, &amp;pointer) == HASH_KEY_IS_STRING) {</span>
+<span class="lineNum">     631 </span><span class="lineNoCov">              0 :       add_assoc_zval(return_value, key, m);</span>
+<span class="lineNum">     632 </span>                :     }
+<span class="lineNum">     633 </span>                :     else {
+<span class="lineNum">     634 </span><span class="lineNoCov">              0 :       add_index_zval(return_value, index, m);</span>
+<span class="lineNum">     635 </span>                :     }
+<span class="lineNum">     636 </span>                :   }
+<span class="lineNum">     637 </span>                : 
+<span class="lineNum">     638 </span>                :   // return_value is returned
+<a name="639"><span class="lineNum">     639 </span><span class="lineNoCov">              0 : }</span></a>
+<span class="lineNum">     640 </span>                : 
+<span class="lineNum">     641 </span><span class="lineNoCov">              0 : PHP_METHOD(Mongo, setPoolSize) {</span>
+<span class="lineNum">     642 </span><span class="lineNoCov">              0 :   MONGO_METHOD_BASE(MongoPool, setSize)(1, return_value, NULL, 0, 0 TSRMLS_CC);</span>
+<a name="643"><span class="lineNum">     643 </span><span class="lineNoCov">              0 : }</span></a>
+<span class="lineNum">     644 </span>                : 
+<span class="lineNum">     645 </span><span class="lineNoCov">              0 : PHP_METHOD(Mongo, getPoolSize) {</span>
+<span class="lineNum">     646 </span><span class="lineNoCov">              0 :   MONGO_METHOD_BASE(MongoPool, getSize)(1, return_value, NULL, 0, 0 TSRMLS_CC);</span>
+<a name="647"><span class="lineNum">     647 </span><span class="lineNoCov">              0 : }</span></a>
+<span class="lineNum">     648 </span>                : 
+<span class="lineNum">     649 </span><span class="lineNoCov">              0 : PHP_METHOD(Mongo, poolDebug) {</span>
+<span class="lineNum">     650 </span><span class="lineNoCov">              0 :   MONGO_METHOD_BASE(MongoPool, info)(1, return_value, NULL, 0, 0 TSRMLS_CC);</span>
+<span class="lineNum">     651 </span><span class="lineNoCov">              0 : }</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

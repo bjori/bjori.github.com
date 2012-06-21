@@ -1,0 +1,405 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - ext/standard/assert.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../index.html">directory</a> - <a href="index.html">ext/standard</a> - assert.c (source / <a href="assert.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">133</td>
+          <td class="headerCovTableEntry">25</td>
+          <td class="headerCovTableEntryMed">18.8 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">8</td>
+          <td class="headerCovTableEntry">5</td>
+          <td class="headerCovTableEntryLo">62.5 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Author: Thies C. Arntzen &lt;thies@thieso.net&gt;                          |
+<span class="lineNum">      16 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      17 </span>                : */
+<span class="lineNum">      18 </span>                : 
+<span class="lineNum">      19 </span>                : /* $Id$ */
+<span class="lineNum">      20 </span>                : 
+<span class="lineNum">      21 </span>                : /* {{{ includes */
+<span class="lineNum">      22 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">      23 </span>                : #include &quot;php_assert.h&quot;
+<span class="lineNum">      24 </span>                : #include &quot;php_ini.h&quot;
+<span class="lineNum">      25 </span>                : /* }}} */
+<span class="lineNum">      26 </span>                : 
+<span class="lineNum">      27 </span>                : ZEND_BEGIN_MODULE_GLOBALS(assert)
+<span class="lineNum">      28 </span>                :         long active;
+<span class="lineNum">      29 </span>                :         long bail;
+<span class="lineNum">      30 </span>                :         long warning;
+<span class="lineNum">      31 </span>                :         long quiet_eval;
+<span class="lineNum">      32 </span>                :         zval *callback;
+<span class="lineNum">      33 </span>                :         char *cb;
+<span class="lineNum">      34 </span>                : ZEND_END_MODULE_GLOBALS(assert)
+<span class="lineNum">      35 </span>                : 
+<span class="lineNum">      36 </span>                : ZEND_DECLARE_MODULE_GLOBALS(assert)
+<span class="lineNum">      37 </span>                : 
+<span class="lineNum">      38 </span>                : #ifdef ZTS
+<span class="lineNum">      39 </span>                : #define ASSERTG(v) TSRMG(assert_globals_id, zend_assert_globals *, v)
+<span class="lineNum">      40 </span>                : #else
+<span class="lineNum">      41 </span>                : #define ASSERTG(v) (assert_globals.v)
+<span class="lineNum">      42 </span>                : #endif
+<span class="lineNum">      43 </span>                : 
+<span class="lineNum">      44 </span>                : #define SAFE_STRING(s) ((s)?(s):&quot;&quot;)
+<span class="lineNum">      45 </span>                : 
+<span class="lineNum">      46 </span>                : enum {
+<span class="lineNum">      47 </span>                :         ASSERT_ACTIVE=1,
+<span class="lineNum">      48 </span>                :         ASSERT_CALLBACK,
+<span class="lineNum">      49 </span>                :         ASSERT_BAIL,
+<span class="lineNum">      50 </span>                :         ASSERT_WARNING,
+<span class="lineNum">      51 </span>                :         ASSERT_QUIET_EVAL
+<a name="52"><span class="lineNum">      52 </span>                : };</a>
+<span class="lineNum">      53 </span>                : 
+<span class="lineNum">      54 </span><span class="lineCov">             48 : static PHP_INI_MH(OnChangeCallback) /* {{{ */</span>
+<span class="lineNum">      55 </span>                : {
+<span class="lineNum">      56 </span><span class="lineCov">             48 :         if (EG(in_execution)) {</span>
+<span class="lineNum">      57 </span><span class="lineNoCov">              0 :                 if (ASSERTG(callback)) {</span>
+<span class="lineNum">      58 </span><span class="lineNoCov">              0 :                         zval_ptr_dtor(&amp;ASSERTG(callback));</span>
+<span class="lineNum">      59 </span><span class="lineNoCov">              0 :                         ASSERTG(callback) = NULL;</span>
+<span class="lineNum">      60 </span>                :                 }
+<span class="lineNum">      61 </span><span class="lineNoCov">              0 :                 if (new_value &amp;&amp; (ASSERTG(callback) || new_value_length)) {</span>
+<span class="lineNum">      62 </span><span class="lineNoCov">              0 :                         MAKE_STD_ZVAL(ASSERTG(callback));</span>
+<span class="lineNum">      63 </span><span class="lineNoCov">              0 :                         ZVAL_STRINGL(ASSERTG(callback), new_value, new_value_length, 1);</span>
+<span class="lineNum">      64 </span>                :                 }
+<span class="lineNum">      65 </span>                :         } else {
+<span class="lineNum">      66 </span><span class="lineCov">             48 :                 if (ASSERTG(cb)) {</span>
+<span class="lineNum">      67 </span><span class="lineNoCov">              0 :                         pefree(ASSERTG(cb), 1);</span>
+<span class="lineNum">      68 </span>                :                 }
+<span class="lineNum">      69 </span><span class="lineCov">             48 :                 if (new_value &amp;&amp; new_value_length) {</span>
+<span class="lineNum">      70 </span><span class="lineNoCov">              0 :                         ASSERTG(cb) = pemalloc(new_value_length + 1, 1);</span>
+<span class="lineNum">      71 </span><span class="lineNoCov">              0 :                         memcpy(ASSERTG(cb), new_value, new_value_length);</span>
+<span class="lineNum">      72 </span><span class="lineNoCov">              0 :                         ASSERTG(cb)[new_value_length] = '\0';</span>
+<span class="lineNum">      73 </span>                :                 } else {
+<span class="lineNum">      74 </span><span class="lineCov">             48 :                         ASSERTG(cb) = NULL;</span>
+<span class="lineNum">      75 </span>                :                 }
+<span class="lineNum">      76 </span>                :         }
+<span class="lineNum">      77 </span><span class="lineCov">             48 :         return SUCCESS;</span>
+<span class="lineNum">      78 </span>                : }
+<span class="lineNum">      79 </span>                : /* }}} */
+<span class="lineNum">      80 </span>                : 
+<span class="lineNum">      81 </span>                : PHP_INI_BEGIN()
+<span class="lineNum">      82 </span>                :          STD_PHP_INI_ENTRY(&quot;assert.active&quot;,           &quot;1&quot;,  PHP_INI_ALL,    OnUpdateLong,           active,                         zend_assert_globals,            assert_globals)
+<span class="lineNum">      83 </span>                :          STD_PHP_INI_ENTRY(&quot;assert.bail&quot;,             &quot;0&quot;,  PHP_INI_ALL,    OnUpdateLong,           bail,                           zend_assert_globals,            assert_globals)
+<span class="lineNum">      84 </span>                :          STD_PHP_INI_ENTRY(&quot;assert.warning&quot;,  &quot;1&quot;,  PHP_INI_ALL,    OnUpdateLong,           warning,                        zend_assert_globals,            assert_globals)
+<span class="lineNum">      85 </span>                :          PHP_INI_ENTRY(&quot;assert.callback&quot;,             NULL,   PHP_INI_ALL,    OnChangeCallback)
+<span class="lineNum">      86 </span>                :          STD_PHP_INI_ENTRY(&quot;assert.quiet_eval&quot;, &quot;0&quot;,        PHP_INI_ALL,    OnUpdateLong,           quiet_eval,                     zend_assert_globals,            assert_globals)
+<a name="87"><span class="lineNum">      87 </span>                : PHP_INI_END()</a>
+<span class="lineNum">      88 </span>                : 
+<span class="lineNum">      89 </span><span class="lineCov">             48 : static void php_assert_init_globals(zend_assert_globals *assert_globals_p TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">      90 </span>                : {
+<span class="lineNum">      91 </span><span class="lineCov">             48 :         assert_globals_p-&gt;callback = NULL;</span>
+<span class="lineNum">      92 </span><span class="lineCov">             48 :         assert_globals_p-&gt;cb = NULL;</span>
+<span class="lineNum">      93 </span><span class="lineCov">             48 : }</span>
+<a name="94"><span class="lineNum">      94 </span>                : /* }}} */</a>
+<span class="lineNum">      95 </span>                : 
+<span class="lineNum">      96 </span><span class="lineCov">             48 : PHP_MINIT_FUNCTION(assert) /* {{{ */</span>
+<span class="lineNum">      97 </span>                : {
+<span class="lineNum">      98 </span><span class="lineCov">             48 :         ZEND_INIT_MODULE_GLOBALS(assert, php_assert_init_globals, NULL);</span>
+<span class="lineNum">      99 </span>                : 
+<span class="lineNum">     100 </span><span class="lineCov">             48 :         REGISTER_INI_ENTRIES();</span>
+<span class="lineNum">     101 </span>                : 
+<span class="lineNum">     102 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;ASSERT_ACTIVE&quot;, ASSERT_ACTIVE, CONST_CS|CONST_PERSISTENT);</span>
+<span class="lineNum">     103 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;ASSERT_CALLBACK&quot;, ASSERT_CALLBACK, CONST_CS|CONST_PERSISTENT);</span>
+<span class="lineNum">     104 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;ASSERT_BAIL&quot;, ASSERT_BAIL, CONST_CS|CONST_PERSISTENT);</span>
+<span class="lineNum">     105 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;ASSERT_WARNING&quot;, ASSERT_WARNING, CONST_CS|CONST_PERSISTENT);</span>
+<span class="lineNum">     106 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;ASSERT_QUIET_EVAL&quot;, ASSERT_QUIET_EVAL, CONST_CS|CONST_PERSISTENT);</span>
+<span class="lineNum">     107 </span>                : 
+<span class="lineNum">     108 </span><span class="lineCov">             48 :         return SUCCESS;</span>
+<span class="lineNum">     109 </span>                : }
+<a name="110"><span class="lineNum">     110 </span>                : /* }}} */</a>
+<span class="lineNum">     111 </span>                : 
+<span class="lineNum">     112 </span><span class="lineCov">             48 : PHP_MSHUTDOWN_FUNCTION(assert) /* {{{ */</span>
+<span class="lineNum">     113 </span>                : {
+<span class="lineNum">     114 </span><span class="lineCov">             48 :         if (ASSERTG(cb)) {</span>
+<span class="lineNum">     115 </span><span class="lineNoCov">              0 :                 pefree(ASSERTG(cb), 1);</span>
+<span class="lineNum">     116 </span><span class="lineNoCov">              0 :                 ASSERTG(cb) = NULL;</span>
+<span class="lineNum">     117 </span>                :         }
+<span class="lineNum">     118 </span><span class="lineCov">             48 :         return SUCCESS;</span>
+<span class="lineNum">     119 </span>                : }
+<a name="120"><span class="lineNum">     120 </span>                : /* }}} */</a>
+<span class="lineNum">     121 </span>                : 
+<span class="lineNum">     122 </span><span class="lineCov">             48 : PHP_RSHUTDOWN_FUNCTION(assert) /* {{{ */</span>
+<span class="lineNum">     123 </span>                : {
+<span class="lineNum">     124 </span><span class="lineCov">             48 :         if (ASSERTG(callback)) {</span>
+<span class="lineNum">     125 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;ASSERTG(callback));</span>
+<span class="lineNum">     126 </span><span class="lineNoCov">              0 :                 ASSERTG(callback) = NULL;</span>
+<span class="lineNum">     127 </span>                :         }
+<span class="lineNum">     128 </span>                : 
+<span class="lineNum">     129 </span><span class="lineCov">             48 :         return SUCCESS;</span>
+<span class="lineNum">     130 </span>                : }
+<a name="131"><span class="lineNum">     131 </span>                : /* }}} */</a>
+<span class="lineNum">     132 </span>                : 
+<span class="lineNum">     133 </span><span class="lineNoCov">              0 : PHP_MINFO_FUNCTION(assert) /* {{{ */</span>
+<span class="lineNum">     134 </span>                : {
+<span class="lineNum">     135 </span><span class="lineNoCov">              0 :         DISPLAY_INI_ENTRIES();</span>
+<span class="lineNum">     136 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     137 </span>                : /* }}} */
+<span class="lineNum">     138 </span>                : 
+<a name="139"><span class="lineNum">     139 </span>                : /* {{{ proto int assert(string|bool assertion)</a>
+<span class="lineNum">     140 </span>                :    Checks if assertion is false */
+<span class="lineNum">     141 </span><span class="lineNoCov">              0 : PHP_FUNCTION(assert)</span>
+<span class="lineNum">     142 </span>                : {
+<span class="lineNum">     143 </span>                :         zval **assertion;
+<span class="lineNum">     144 </span>                :         int val;
+<span class="lineNum">     145 </span><span class="lineNoCov">              0 :         char *myeval = NULL;</span>
+<span class="lineNum">     146 </span>                :         char *compiled_string_description;
+<span class="lineNum">     147 </span>                : 
+<span class="lineNum">     148 </span><span class="lineNoCov">              0 :         if (! ASSERTG(active)) {</span>
+<span class="lineNum">     149 </span><span class="lineNoCov">              0 :                 RETURN_TRUE;</span>
+<span class="lineNum">     150 </span>                :         }
+<span class="lineNum">     151 </span>                : 
+<span class="lineNum">     152 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;Z&quot;, &amp;assertion) == FAILURE) {</span>
+<span class="lineNum">     153 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     154 </span>                :         }
+<span class="lineNum">     155 </span>                : 
+<span class="lineNum">     156 </span><span class="lineNoCov">              0 :         if (Z_TYPE_PP(assertion) == IS_STRING) {</span>
+<span class="lineNum">     157 </span>                :                 zval retval;
+<span class="lineNum">     158 </span><span class="lineNoCov">              0 :                 int old_error_reporting = 0; /* shut up gcc! */</span>
+<span class="lineNum">     159 </span>                : 
+<span class="lineNum">     160 </span><span class="lineNoCov">              0 :                 myeval = Z_STRVAL_PP(assertion);</span>
+<span class="lineNum">     161 </span>                : 
+<span class="lineNum">     162 </span><span class="lineNoCov">              0 :                 if (ASSERTG(quiet_eval)) {</span>
+<span class="lineNum">     163 </span><span class="lineNoCov">              0 :                         old_error_reporting = EG(error_reporting);</span>
+<span class="lineNum">     164 </span><span class="lineNoCov">              0 :                         EG(error_reporting) = 0;</span>
+<span class="lineNum">     165 </span>                :                 }
+<span class="lineNum">     166 </span>                : 
+<span class="lineNum">     167 </span><span class="lineNoCov">              0 :                 compiled_string_description = zend_make_compiled_string_description(&quot;assert code&quot; TSRMLS_CC);</span>
+<span class="lineNum">     168 </span><span class="lineNoCov">              0 :                 if (zend_eval_stringl(myeval, Z_STRLEN_PP(assertion), &amp;retval, compiled_string_description TSRMLS_CC) == FAILURE) {</span>
+<span class="lineNum">     169 </span><span class="lineNoCov">              0 :                         efree(compiled_string_description);</span>
+<span class="lineNum">     170 </span><span class="lineNoCov">              0 :                         php_error_docref(NULL TSRMLS_CC, E_RECOVERABLE_ERROR, &quot;Failure evaluating code: %s%s&quot;, PHP_EOL, myeval);</span>
+<span class="lineNum">     171 </span><span class="lineNoCov">              0 :                         if (ASSERTG(bail)) {</span>
+<span class="lineNum">     172 </span><span class="lineNoCov">              0 :                                 zend_bailout();</span>
+<span class="lineNum">     173 </span>                :                         }
+<span class="lineNum">     174 </span><span class="lineNoCov">              0 :                         RETURN_FALSE;</span>
+<span class="lineNum">     175 </span>                :                 }
+<span class="lineNum">     176 </span><span class="lineNoCov">              0 :                 efree(compiled_string_description);</span>
+<span class="lineNum">     177 </span>                : 
+<span class="lineNum">     178 </span><span class="lineNoCov">              0 :                 if (ASSERTG(quiet_eval)) {</span>
+<span class="lineNum">     179 </span><span class="lineNoCov">              0 :                         EG(error_reporting) = old_error_reporting;</span>
+<span class="lineNum">     180 </span>                :                 }
+<span class="lineNum">     181 </span>                : 
+<span class="lineNum">     182 </span><span class="lineNoCov">              0 :                 convert_to_boolean(&amp;retval);</span>
+<span class="lineNum">     183 </span><span class="lineNoCov">              0 :                 val = Z_LVAL(retval);</span>
+<span class="lineNum">     184 </span>                :         } else {
+<span class="lineNum">     185 </span><span class="lineNoCov">              0 :                 convert_to_boolean_ex(assertion);</span>
+<span class="lineNum">     186 </span><span class="lineNoCov">              0 :                 val = Z_LVAL_PP(assertion);</span>
+<span class="lineNum">     187 </span>                :         }
+<span class="lineNum">     188 </span>                : 
+<span class="lineNum">     189 </span><span class="lineNoCov">              0 :         if (val) {</span>
+<span class="lineNum">     190 </span><span class="lineNoCov">              0 :                 RETURN_TRUE;</span>
+<span class="lineNum">     191 </span>                :         }
+<span class="lineNum">     192 </span>                : 
+<span class="lineNum">     193 </span><span class="lineNoCov">              0 :         if (!ASSERTG(callback) &amp;&amp; ASSERTG(cb)) {</span>
+<span class="lineNum">     194 </span><span class="lineNoCov">              0 :                 MAKE_STD_ZVAL(ASSERTG(callback));</span>
+<span class="lineNum">     195 </span><span class="lineNoCov">              0 :                 ZVAL_STRING(ASSERTG(callback), ASSERTG(cb), 1);</span>
+<span class="lineNum">     196 </span>                :         }
+<span class="lineNum">     197 </span>                : 
+<span class="lineNum">     198 </span><span class="lineNoCov">              0 :         if (ASSERTG(callback)) {</span>
+<span class="lineNum">     199 </span>                :                 zval *args[3];
+<span class="lineNum">     200 </span>                :                 zval *retval;
+<span class="lineNum">     201 </span>                :                 int i;
+<span class="lineNum">     202 </span><span class="lineNoCov">              0 :                 uint lineno = zend_get_executed_lineno(TSRMLS_C);</span>
+<span class="lineNum">     203 </span><span class="lineNoCov">              0 :                 const char *filename = zend_get_executed_filename(TSRMLS_C);</span>
+<span class="lineNum">     204 </span>                : 
+<span class="lineNum">     205 </span><span class="lineNoCov">              0 :                 MAKE_STD_ZVAL(args[0]);</span>
+<span class="lineNum">     206 </span><span class="lineNoCov">              0 :                 MAKE_STD_ZVAL(args[1]);</span>
+<span class="lineNum">     207 </span><span class="lineNoCov">              0 :                 MAKE_STD_ZVAL(args[2]);</span>
+<span class="lineNum">     208 </span>                : 
+<span class="lineNum">     209 </span><span class="lineNoCov">              0 :                 ZVAL_STRING(args[0], SAFE_STRING(filename), 1);</span>
+<span class="lineNum">     210 </span><span class="lineNoCov">              0 :                 ZVAL_LONG (args[1], lineno);</span>
+<span class="lineNum">     211 </span><span class="lineNoCov">              0 :                 ZVAL_STRING(args[2], SAFE_STRING(myeval), 1);</span>
+<span class="lineNum">     212 </span>                : 
+<span class="lineNum">     213 </span><span class="lineNoCov">              0 :                 MAKE_STD_ZVAL(retval);</span>
+<span class="lineNum">     214 </span><span class="lineNoCov">              0 :                 ZVAL_FALSE(retval);</span>
+<span class="lineNum">     215 </span>                : 
+<span class="lineNum">     216 </span>                :                 /* XXX do we want to check for error here? */
+<span class="lineNum">     217 </span><span class="lineNoCov">              0 :                 call_user_function(CG(function_table), NULL, ASSERTG(callback), retval, 3, args TSRMLS_CC);</span>
+<span class="lineNum">     218 </span>                : 
+<span class="lineNum">     219 </span><span class="lineNoCov">              0 :                 for (i = 0; i &lt;= 2; i++) {</span>
+<span class="lineNum">     220 </span><span class="lineNoCov">              0 :                         zval_ptr_dtor(&amp;(args[i]));</span>
+<span class="lineNum">     221 </span>                :                 }
+<span class="lineNum">     222 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;retval);</span>
+<span class="lineNum">     223 </span>                :         }
+<span class="lineNum">     224 </span>                : 
+<span class="lineNum">     225 </span><span class="lineNoCov">              0 :         if (ASSERTG(warning)) {</span>
+<span class="lineNum">     226 </span><span class="lineNoCov">              0 :                 if (myeval) {</span>
+<span class="lineNum">     227 </span><span class="lineNoCov">              0 :                         php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Assertion \&quot;%s\&quot; failed&quot;, myeval);</span>
+<span class="lineNum">     228 </span>                :                 } else {
+<span class="lineNum">     229 </span><span class="lineNoCov">              0 :                         php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Assertion failed&quot;);</span>
+<span class="lineNum">     230 </span>                :                 }
+<span class="lineNum">     231 </span>                :         }
+<span class="lineNum">     232 </span>                : 
+<span class="lineNum">     233 </span><span class="lineNoCov">              0 :         if (ASSERTG(bail)) {</span>
+<span class="lineNum">     234 </span><span class="lineNoCov">              0 :                 zend_bailout();</span>
+<span class="lineNum">     235 </span>                :         }
+<span class="lineNum">     236 </span>                : }
+<span class="lineNum">     237 </span>                : /* }}} */
+<span class="lineNum">     238 </span>                : 
+<a name="239"><span class="lineNum">     239 </span>                : /* {{{ proto mixed assert_options(int what [, mixed value])</a>
+<span class="lineNum">     240 </span>                :    Set/get the various assert flags */
+<span class="lineNum">     241 </span><span class="lineNoCov">              0 : PHP_FUNCTION(assert_options)</span>
+<span class="lineNum">     242 </span>                : {
+<span class="lineNum">     243 </span><span class="lineNoCov">              0 :         zval **value = NULL;</span>
+<span class="lineNum">     244 </span>                :         long what;
+<span class="lineNum">     245 </span>                :         int oldint;
+<span class="lineNum">     246 </span><span class="lineNoCov">              0 :         int ac = ZEND_NUM_ARGS();</span>
+<span class="lineNum">     247 </span>                : 
+<span class="lineNum">     248 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ac TSRMLS_CC, &quot;l|Z&quot;, &amp;what, &amp;value) == FAILURE) {</span>
+<span class="lineNum">     249 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     250 </span>                :         }
+<span class="lineNum">     251 </span>                : 
+<span class="lineNum">     252 </span><span class="lineNoCov">              0 :         switch (what) {</span>
+<span class="lineNum">     253 </span>                :         case ASSERT_ACTIVE:
+<span class="lineNum">     254 </span><span class="lineNoCov">              0 :                 oldint = ASSERTG(active);</span>
+<span class="lineNum">     255 </span><span class="lineNoCov">              0 :                 if (ac == 2) {</span>
+<span class="lineNum">     256 </span><span class="lineNoCov">              0 :                         convert_to_string_ex(value);</span>
+<span class="lineNum">     257 </span><span class="lineNoCov">              0 :                         zend_alter_ini_entry_ex(&quot;assert.active&quot;, sizeof(&quot;assert.active&quot;), Z_STRVAL_PP(value), Z_STRLEN_PP(value), PHP_INI_USER, PHP_INI_STAGE_RUNTIME, 0 TSRMLS_CC);</span>
+<span class="lineNum">     258 </span>                :                 }
+<span class="lineNum">     259 </span><span class="lineNoCov">              0 :                 RETURN_LONG(oldint);</span>
+<span class="lineNum">     260 </span>                :                 break;
+<span class="lineNum">     261 </span>                : 
+<span class="lineNum">     262 </span>                :         case ASSERT_BAIL:
+<span class="lineNum">     263 </span><span class="lineNoCov">              0 :                 oldint = ASSERTG(bail);</span>
+<span class="lineNum">     264 </span><span class="lineNoCov">              0 :                 if (ac == 2) {</span>
+<span class="lineNum">     265 </span><span class="lineNoCov">              0 :                         convert_to_string_ex(value);</span>
+<span class="lineNum">     266 </span><span class="lineNoCov">              0 :                         zend_alter_ini_entry_ex(&quot;assert.bail&quot;, sizeof(&quot;assert.bail&quot;), Z_STRVAL_PP(value), Z_STRLEN_PP(value), PHP_INI_USER, PHP_INI_STAGE_RUNTIME, 0 TSRMLS_CC);</span>
+<span class="lineNum">     267 </span>                :                 }
+<span class="lineNum">     268 </span><span class="lineNoCov">              0 :                 RETURN_LONG(oldint);</span>
+<span class="lineNum">     269 </span>                :                 break;
+<span class="lineNum">     270 </span>                : 
+<span class="lineNum">     271 </span>                :         case ASSERT_QUIET_EVAL:
+<span class="lineNum">     272 </span><span class="lineNoCov">              0 :                 oldint = ASSERTG(quiet_eval);</span>
+<span class="lineNum">     273 </span><span class="lineNoCov">              0 :                 if (ac == 2) {</span>
+<span class="lineNum">     274 </span><span class="lineNoCov">              0 :                         convert_to_string_ex(value);</span>
+<span class="lineNum">     275 </span><span class="lineNoCov">              0 :                         zend_alter_ini_entry_ex(&quot;assert.quiet_eval&quot;, sizeof(&quot;assert.quiet_eval&quot;), Z_STRVAL_PP(value), Z_STRLEN_PP(value), PHP_INI_USER, PHP_INI_STAGE_RUNTIME, 0 TSRMLS_CC);</span>
+<span class="lineNum">     276 </span>                :                 }
+<span class="lineNum">     277 </span><span class="lineNoCov">              0 :                 RETURN_LONG(oldint);</span>
+<span class="lineNum">     278 </span>                :                 break;
+<span class="lineNum">     279 </span>                : 
+<span class="lineNum">     280 </span>                :         case ASSERT_WARNING:
+<span class="lineNum">     281 </span><span class="lineNoCov">              0 :                 oldint = ASSERTG(warning);</span>
+<span class="lineNum">     282 </span><span class="lineNoCov">              0 :                 if (ac == 2) {</span>
+<span class="lineNum">     283 </span><span class="lineNoCov">              0 :                         convert_to_string_ex(value);</span>
+<span class="lineNum">     284 </span><span class="lineNoCov">              0 :                         zend_alter_ini_entry_ex(&quot;assert.warning&quot;, sizeof(&quot;assert.warning&quot;), Z_STRVAL_PP(value), Z_STRLEN_PP(value), PHP_INI_USER, PHP_INI_STAGE_RUNTIME, 0 TSRMLS_CC);</span>
+<span class="lineNum">     285 </span>                :                 }
+<span class="lineNum">     286 </span><span class="lineNoCov">              0 :                 RETURN_LONG(oldint);</span>
+<span class="lineNum">     287 </span>                :                 break;
+<span class="lineNum">     288 </span>                : 
+<span class="lineNum">     289 </span>                :         case ASSERT_CALLBACK:
+<span class="lineNum">     290 </span><span class="lineNoCov">              0 :                 if (ASSERTG(callback) != NULL) {</span>
+<span class="lineNum">     291 </span><span class="lineNoCov">              0 :                         RETVAL_ZVAL(ASSERTG(callback), 1, 0);</span>
+<span class="lineNum">     292 </span><span class="lineNoCov">              0 :                 } else if (ASSERTG(cb)) {</span>
+<span class="lineNum">     293 </span><span class="lineNoCov">              0 :                         RETVAL_STRING(ASSERTG(cb), 1);</span>
+<span class="lineNum">     294 </span>                :                 } else {
+<span class="lineNum">     295 </span><span class="lineNoCov">              0 :                         RETVAL_NULL();</span>
+<span class="lineNum">     296 </span>                :                 }
+<span class="lineNum">     297 </span><span class="lineNoCov">              0 :                 if (ac == 2) {</span>
+<span class="lineNum">     298 </span><span class="lineNoCov">              0 :                         if (ASSERTG(callback)) {</span>
+<span class="lineNum">     299 </span><span class="lineNoCov">              0 :                                 zval_ptr_dtor(&amp;ASSERTG(callback));</span>
+<span class="lineNum">     300 </span>                :                         }
+<span class="lineNum">     301 </span><span class="lineNoCov">              0 :                         ASSERTG(callback) = *value;</span>
+<span class="lineNum">     302 </span><span class="lineNoCov">              0 :                         zval_add_ref(value);</span>
+<span class="lineNum">     303 </span>                :                 }
+<span class="lineNum">     304 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     305 </span>                :                 break;
+<span class="lineNum">     306 </span>                : 
+<span class="lineNum">     307 </span>                :         default:
+<span class="lineNum">     308 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Unknown value %ld&quot;, what);</span>
+<span class="lineNum">     309 </span>                :                 break;
+<span class="lineNum">     310 </span>                :         }
+<span class="lineNum">     311 </span>                : 
+<span class="lineNum">     312 </span><span class="lineNoCov">              0 :         RETURN_FALSE;</span>
+<span class="lineNum">     313 </span>                : }
+<span class="lineNum">     314 </span>                : /* }}} */
+<span class="lineNum">     315 </span>                : 
+<span class="lineNum">     316 </span>                : /*
+<span class="lineNum">     317 </span>                :  * Local variables:
+<span class="lineNum">     318 </span>                :  * tab-width: 4
+<span class="lineNum">     319 </span>                :  * c-basic-offset: 4
+<span class="lineNum">     320 </span>                :  * End:
+<span class="lineNum">     321 </span>                :  * vim600: sw=4 ts=4 fdm=marker
+<span class="lineNum">     322 </span>                :  * vim&lt;600: sw=4 ts=4
+<span class="lineNum">     323 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

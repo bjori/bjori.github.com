@@ -1,0 +1,1460 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - ext/mongo/bson.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../index.html">directory</a> - <a href="index.html">ext/mongo</a> - bson.c (source / <a href="bson.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">605</td>
+          <td class="headerCovTableEntry">312</td>
+          <td class="headerCovTableEntryHi">51.6 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">36</td>
+          <td class="headerCovTableEntry">25</td>
+          <td class="headerCovTableEntryLo">69.4 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : // bson.c</a>
+<span class="lineNum">       2 </span>                : /**
+<span class="lineNum">       3 </span>                :  *  Copyright 2009-2011 10gen, Inc.
+<span class="lineNum">       4 </span>                :  *
+<span class="lineNum">       5 </span>                :  *  Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+<span class="lineNum">       6 </span>                :  *  you may not use this file except in compliance with the License.
+<span class="lineNum">       7 </span>                :  *  You may obtain a copy of the License at
+<span class="lineNum">       8 </span>                :  *
+<span class="lineNum">       9 </span>                :  *  http://www.apache.org/licenses/LICENSE-2.0
+<span class="lineNum">      10 </span>                :  *
+<span class="lineNum">      11 </span>                :  *  Unless required by applicable law or agreed to in writing, software
+<span class="lineNum">      12 </span>                :  *  distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+<span class="lineNum">      13 </span>                :  *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+<span class="lineNum">      14 </span>                :  *  See the License for the specific language governing permissions and
+<span class="lineNum">      15 </span>                :  *  limitations under the License.
+<span class="lineNum">      16 </span>                :  */
+<span class="lineNum">      17 </span>                : 
+<span class="lineNum">      18 </span>                : #include &lt;php.h&gt;
+<span class="lineNum">      19 </span>                : #include &lt;zend_exceptions.h&gt;
+<span class="lineNum">      20 </span>                : 
+<span class="lineNum">      21 </span>                : #ifdef WIN32
+<span class="lineNum">      22 </span>                : #  include &lt;memory.h&gt;
+<span class="lineNum">      23 </span>                : #  ifndef int64_t
+<span class="lineNum">      24 </span>                :      typedef __int64 int64_t;
+<span class="lineNum">      25 </span>                : #  endif
+<span class="lineNum">      26 </span>                : #endif
+<span class="lineNum">      27 </span>                : 
+<span class="lineNum">      28 </span>                : #include &quot;php_mongo.h&quot;
+<span class="lineNum">      29 </span>                : #include &quot;bson.h&quot;
+<span class="lineNum">      30 </span>                : #include &quot;mongo_types.h&quot;
+<span class="lineNum">      31 </span>                : 
+<span class="lineNum">      32 </span>                : extern zend_class_entry *mongo_ce_BinData,
+<span class="lineNum">      33 </span>                :   *mongo_ce_Code,
+<span class="lineNum">      34 </span>                :   *mongo_ce_Date,
+<span class="lineNum">      35 </span>                :   *mongo_ce_Id,
+<span class="lineNum">      36 </span>                :   *mongo_ce_Regex,
+<span class="lineNum">      37 </span>                :   *mongo_ce_Timestamp,
+<span class="lineNum">      38 </span>                :   *mongo_ce_MinKey,
+<span class="lineNum">      39 </span>                :   *mongo_ce_MaxKey,
+<span class="lineNum">      40 </span>                :   *mongo_ce_Exception,
+<span class="lineNum">      41 </span>                :   *mongo_ce_CursorException,
+<span class="lineNum">      42 </span>                :   *mongo_ce_Int32,
+<span class="lineNum">      43 </span>                :   *mongo_ce_Int64;
+<span class="lineNum">      44 </span>                : 
+<span class="lineNum">      45 </span>                : ZEND_EXTERN_MODULE_GLOBALS(mongo);
+<span class="lineNum">      46 </span>                : 
+<span class="lineNum">      47 </span>                : static int get_limit(mongo_cursor *cursor);
+<span class="lineNum">      48 </span>                : static int prep_obj_for_db(buffer *buf, HashTable *array TSRMLS_DC);
+<span class="lineNum">      49 </span>                : #if ZEND_MODULE_API_NO &gt;= 20090115
+<span class="lineNum">      50 </span>                : static int apply_func_args_wrapper(void **data TSRMLS_DC, int num_args, va_list args, zend_hash_key *key);
+<span class="lineNum">      51 </span>                : #else
+<span class="lineNum">      52 </span>                : static int apply_func_args_wrapper(void **data, int num_args, va_list args, zend_hash_key *key);
+<span class="lineNum">      53 </span>                : #endif /* ZEND_MODULE_API_NO &gt;= 20090115 */
+<span class="lineNum">      54 </span>                : static int is_utf8(const char *s, int len);
+<span class="lineNum">      55 </span>                : static int insert_helper(buffer *buf, zval *doc, int max TSRMLS_DC);
+<a name="56"><span class="lineNum">      56 </span>                : </a>
+<span class="lineNum">      57 </span>                : 
+<span class="lineNum">      58 </span><span class="lineCov">            176 : static int prep_obj_for_db(buffer *buf, HashTable *array TSRMLS_DC) {</span>
+<span class="lineNum">      59 </span>                :   zval temp, **data, *newid;
+<span class="lineNum">      60 </span>                : 
+<span class="lineNum">      61 </span>                :   // if _id field doesn't exist, add it
+<span class="lineNum">      62 </span><span class="lineCov">            176 :   if (zend_hash_find(array, &quot;_id&quot;, 4, (void**)&amp;data) == FAILURE) {</span>
+<span class="lineNum">      63 </span>                :     // create new MongoId
+<span class="lineNum">      64 </span><span class="lineCov">            153 :     MAKE_STD_ZVAL(newid);</span>
+<span class="lineNum">      65 </span><span class="lineCov">            153 :     object_init_ex(newid, mongo_ce_Id);</span>
+<span class="lineNum">      66 </span><span class="lineCov">            153 :     MONGO_METHOD(MongoId, __construct, &amp;temp, newid);</span>
+<span class="lineNum">      67 </span>                : 
+<span class="lineNum">      68 </span>                :     // add to obj
+<span class="lineNum">      69 </span><span class="lineCov">            153 :     zend_hash_add(array, &quot;_id&quot;, 4, &amp;newid, sizeof(zval*), NULL);</span>
+<span class="lineNum">      70 </span>                : 
+<span class="lineNum">      71 </span>                :     // set to data
+<span class="lineNum">      72 </span><span class="lineCov">            153 :     data = &amp;newid;</span>
+<span class="lineNum">      73 </span>                :   }
+<span class="lineNum">      74 </span>                : 
+<span class="lineNum">      75 </span><span class="lineCov">            176 :   php_mongo_serialize_element(&quot;_id&quot;, data, buf, 0 TSRMLS_CC);</span>
+<span class="lineNum">      76 </span><span class="lineCov">            176 :   if (EG(exception)) {</span>
+<span class="lineNum">      77 </span><span class="lineNoCov">              0 :     return FAILURE;</span>
+<span class="lineNum">      78 </span>                :   }
+<span class="lineNum">      79 </span>                : 
+<span class="lineNum">      80 </span><span class="lineCov">            176 :   return SUCCESS;</span>
+<span class="lineNum">      81 </span>                : }
+<span class="lineNum">      82 </span>                : 
+<a name="83"><span class="lineNum">      83 </span>                : </a>
+<span class="lineNum">      84 </span>                : // serialize a zval
+<span class="lineNum">      85 </span><span class="lineCov">           2436 : int zval_to_bson(buffer *buf, HashTable *hash, int prep TSRMLS_DC) {</span>
+<span class="lineNum">      86 </span>                :   uint start;
+<span class="lineNum">      87 </span><span class="lineCov">           2436 :   int num = 0;</span>
+<span class="lineNum">      88 </span>                : 
+<span class="lineNum">      89 </span>                :   // check buf size
+<span class="lineNum">      90 </span><span class="lineCov">           2436 :   if(BUF_REMAINING &lt;= 5) {</span>
+<span class="lineNum">      91 </span><span class="lineNoCov">              0 :     resize_buf(buf, 5);</span>
+<span class="lineNum">      92 </span>                :   }
+<span class="lineNum">      93 </span>                : 
+<span class="lineNum">      94 </span>                :   // keep a record of the starting position
+<span class="lineNum">      95 </span>                :   // as an offset, in case the memory is resized
+<span class="lineNum">      96 </span><span class="lineCov">           2436 :   start = buf-&gt;pos-buf-&gt;start;</span>
+<span class="lineNum">      97 </span>                : 
+<span class="lineNum">      98 </span>                :   // skip first 4 bytes to leave room for size
+<span class="lineNum">      99 </span><span class="lineCov">           2436 :   buf-&gt;pos += INT_32;</span>
+<span class="lineNum">     100 </span>                : 
+<span class="lineNum">     101 </span><span class="lineCov">           2436 :   if (zend_hash_num_elements(hash) &gt; 0) {</span>
+<span class="lineNum">     102 </span><span class="lineCov">           2403 :     if (prep) {</span>
+<span class="lineNum">     103 </span><span class="lineCov">            176 :       prep_obj_for_db(buf, hash TSRMLS_CC);</span>
+<span class="lineNum">     104 </span><span class="lineCov">            176 :       num++;</span>
+<span class="lineNum">     105 </span>                :     }
+<span class="lineNum">     106 </span>                : 
+<span class="lineNum">     107 </span>                : #if ZEND_MODULE_API_NO &gt;= 20090115
+<span class="lineNum">     108 </span><span class="lineCov">           2403 :     zend_hash_apply_with_arguments(hash TSRMLS_CC, (apply_func_args_t)apply_func_args_wrapper, 3, buf, prep, &amp;num);</span>
+<span class="lineNum">     109 </span>                : #else
+<span class="lineNum">     110 </span>                :     zend_hash_apply_with_arguments(hash, (apply_func_args_t)apply_func_args_wrapper, 4, buf, prep, &amp;num TSRMLS_CC);
+<span class="lineNum">     111 </span>                : #endif /* ZEND_MODULE_API_NO &gt;= 20090115 */
+<span class="lineNum">     112 </span>                :   }
+<span class="lineNum">     113 </span>                : 
+<span class="lineNum">     114 </span><span class="lineCov">           2436 :   php_mongo_serialize_null(buf);</span>
+<span class="lineNum">     115 </span><span class="lineCov">           2436 :   php_mongo_serialize_size(buf-&gt;start + start, buf TSRMLS_CC);</span>
+<span class="lineNum">     116 </span><span class="lineCov">           2436 :   return EG(exception) ? FAILURE : num;</span>
+<span class="lineNum">     117 </span>                : }
+<a name="118"><span class="lineNum">     118 </span>                : </a>
+<span class="lineNum">     119 </span>                : #if ZEND_MODULE_API_NO &gt;= 20090115
+<span class="lineNum">     120 </span><span class="lineCov">           2856 : static int apply_func_args_wrapper(void **data TSRMLS_DC, int num_args, va_list args, zend_hash_key *key)</span>
+<span class="lineNum">     121 </span>                : #else
+<span class="lineNum">     122 </span>                : static int apply_func_args_wrapper(void **data, int num_args, va_list args, zend_hash_key *key)
+<span class="lineNum">     123 </span>                : #endif /* ZEND_MODULE_API_NO &gt;= 20090115 */
+<span class="lineNum">     124 </span>                : {
+<span class="lineNum">     125 </span><span class="lineCov">           2856 :   buffer *buf = va_arg(args, buffer*);</span>
+<span class="lineNum">     126 </span><span class="lineCov">           2856 :   int prep = va_arg(args, int);</span>
+<span class="lineNum">     127 </span><span class="lineCov">           2856 :   int *num = va_arg(args, int*);</span>
+<span class="lineNum">     128 </span>                : 
+<span class="lineNum">     129 </span>                : #if ZEND_MODULE_API_NO &lt; 20090115
+<span class="lineNum">     130 </span>                :   void ***tsrm_ls = va_arg(args, void***);
+<span class="lineNum">     131 </span>                : #endif /* ZEND_MODULE_API_NO &lt; 20090115 */
+<span class="lineNum">     132 </span>                : 
+<span class="lineNum">     133 </span><span class="lineCov">           2856 :   if (key-&gt;nKeyLength) {</span>
+<span class="lineNum">     134 </span><span class="lineCov">           2850 :     return php_mongo_serialize_element(key-&gt;arKey, (zval**)data, buf, prep TSRMLS_CC);</span>
+<span class="lineNum">     135 </span>                :   }
+<span class="lineNum">     136 </span>                :   else {
+<span class="lineNum">     137 </span><span class="lineCov">              6 :     long current = key-&gt;h;</span>
+<span class="lineNum">     138 </span><span class="lineCov">              6 :     int pos = 29, negative = 0;</span>
+<span class="lineNum">     139 </span>                :     char name[30];
+<span class="lineNum">     140 </span>                : 
+<span class="lineNum">     141 </span>                :     // if the key is a number in ascending order, we're still
+<span class="lineNum">     142 </span>                :     // dealing with an array, not an object, so increase the count
+<span class="lineNum">     143 </span><span class="lineCov">              6 :     if (key-&gt;h == (unsigned int)*num) {</span>
+<span class="lineNum">     144 </span><span class="lineCov">              6 :       (*num)++;</span>
+<span class="lineNum">     145 </span>                :     }
+<span class="lineNum">     146 </span>                : 
+<span class="lineNum">     147 </span><span class="lineCov">              6 :     name[pos--] = '\0';</span>
+<span class="lineNum">     148 </span>                : 
+<span class="lineNum">     149 </span>                :     // take care of negative indexes
+<span class="lineNum">     150 </span><span class="lineCov">              6 :     if (current &lt; 0) {</span>
+<span class="lineNum">     151 </span><span class="lineNoCov">              0 :       current *= -1;</span>
+<span class="lineNum">     152 </span><span class="lineNoCov">              0 :       negative = 1;</span>
+<span class="lineNum">     153 </span>                :     }
+<span class="lineNum">     154 </span>                : 
+<span class="lineNum">     155 </span>                :     do {
+<span class="lineNum">     156 </span><span class="lineCov">              6 :       int digit = current % 10;</span>
+<span class="lineNum">     157 </span><span class="lineCov">              6 :       digit += (int)'0';</span>
+<span class="lineNum">     158 </span><span class="lineCov">              6 :       name[pos--] = (char)digit;</span>
+<span class="lineNum">     159 </span>                : 
+<span class="lineNum">     160 </span><span class="lineCov">              6 :       current = current / 10;</span>
+<span class="lineNum">     161 </span><span class="lineCov">              6 :     } while (current &gt; 0);</span>
+<span class="lineNum">     162 </span>                : 
+<span class="lineNum">     163 </span><span class="lineCov">              6 :     if (negative) {</span>
+<span class="lineNum">     164 </span><span class="lineNoCov">              0 :       name[pos--] = '-';</span>
+<span class="lineNum">     165 </span>                :     }
+<span class="lineNum">     166 </span>                : 
+<span class="lineNum">     167 </span><span class="lineCov">              6 :     return php_mongo_serialize_element(name+pos+1, (zval**)data, buf, prep TSRMLS_CC);</span>
+<span class="lineNum">     168 </span>                :   }
+<a name="169"><span class="lineNum">     169 </span>                : }</a>
+<span class="lineNum">     170 </span>                : 
+<span class="lineNum">     171 </span><span class="lineCov">           3032 : int php_mongo_serialize_element(char *name, zval **data, buffer *buf, int prep TSRMLS_DC) {</span>
+<span class="lineNum">     172 </span><span class="lineCov">           3032 :   int name_len = strlen(name);</span>
+<span class="lineNum">     173 </span>                : 
+<span class="lineNum">     174 </span><span class="lineCov">           3032 :   if (prep &amp;&amp; strcmp(name, &quot;_id&quot;) == 0) {</span>
+<span class="lineNum">     175 </span><span class="lineCov">            176 :     return ZEND_HASH_APPLY_KEEP;</span>
+<span class="lineNum">     176 </span>                :   }
+<span class="lineNum">     177 </span>                : 
+<span class="lineNum">     178 </span><span class="lineCov">           2856 :   switch (Z_TYPE_PP(data)) {</span>
+<span class="lineNum">     179 </span>                :   case IS_NULL:
+<span class="lineNum">     180 </span><span class="lineNoCov">              0 :     PHP_MONGO_SERIALIZE_KEY(BSON_NULL);</span>
+<span class="lineNum">     181 </span><span class="lineNoCov">              0 :     break;</span>
+<span class="lineNum">     182 </span>                :   case IS_LONG:
+<span class="lineNum">     183 </span><span class="lineCov">           2322 :     if (MonGlo(native_long)) {</span>
+<span class="lineNum">     184 </span>                : #if SIZEOF_LONG == 4
+<span class="lineNum">     185 </span>                :       PHP_MONGO_SERIALIZE_KEY(BSON_INT);
+<span class="lineNum">     186 </span>                :       php_mongo_serialize_int(buf, Z_LVAL_PP(data));
+<span class="lineNum">     187 </span>                : #else
+<span class="lineNum">     188 </span>                : # if SIZEOF_LONG == 8
+<span class="lineNum">     189 </span><span class="lineNoCov">              0 :       PHP_MONGO_SERIALIZE_KEY(BSON_LONG);</span>
+<span class="lineNum">     190 </span><span class="lineNoCov">              0 :       php_mongo_serialize_long(buf, Z_LVAL_PP(data));</span>
+<span class="lineNum">     191 </span>                : # else
+<span class="lineNum">     192 </span>                : #  error The PHP number size is neither 4 or 8 bytes; no clue what to do with that!
+<span class="lineNum">     193 </span>                : # endif
+<span class="lineNum">     194 </span>                : #endif
+<span class="lineNum">     195 </span>                :     } else {
+<span class="lineNum">     196 </span><span class="lineCov">           2322 :       PHP_MONGO_SERIALIZE_KEY(BSON_INT);</span>
+<span class="lineNum">     197 </span><span class="lineCov">           2322 :       php_mongo_serialize_int(buf, Z_LVAL_PP(data));</span>
+<span class="lineNum">     198 </span>                :     }
+<span class="lineNum">     199 </span><span class="lineCov">           2322 :     break;</span>
+<span class="lineNum">     200 </span>                :   case IS_DOUBLE:
+<span class="lineNum">     201 </span><span class="lineNoCov">              0 :     PHP_MONGO_SERIALIZE_KEY(BSON_DOUBLE);</span>
+<span class="lineNum">     202 </span><span class="lineNoCov">              0 :     php_mongo_serialize_double(buf, Z_DVAL_PP(data));</span>
+<span class="lineNum">     203 </span><span class="lineNoCov">              0 :     break;</span>
+<span class="lineNum">     204 </span>                :   case IS_BOOL:
+<span class="lineNum">     205 </span><span class="lineCov">             62 :     PHP_MONGO_SERIALIZE_KEY(BSON_BOOL);</span>
+<span class="lineNum">     206 </span><span class="lineCov">             62 :     php_mongo_serialize_bool(buf, Z_BVAL_PP(data));</span>
+<span class="lineNum">     207 </span><span class="lineCov">             62 :     break;</span>
+<span class="lineNum">     208 </span>                :   case IS_STRING: {
+<span class="lineNum">     209 </span><span class="lineCov">            222 :     PHP_MONGO_SERIALIZE_KEY(BSON_STRING);</span>
+<span class="lineNum">     210 </span>                : 
+<span class="lineNum">     211 </span>                :     // if this is not a valid string, stop
+<span class="lineNum">     212 </span><span class="lineCov">            222 :     if (MonGlo(utf8) &amp;&amp; !is_utf8(Z_STRVAL_PP(data), Z_STRLEN_PP(data))) {</span>
+<span class="lineNum">     213 </span><span class="lineNoCov">              0 :       zend_throw_exception_ex(mongo_ce_Exception, 12 TSRMLS_CC, &quot;non-utf8 string: %s&quot;, Z_STRVAL_PP(data));</span>
+<span class="lineNum">     214 </span><span class="lineNoCov">              0 :       return ZEND_HASH_APPLY_STOP;</span>
+<span class="lineNum">     215 </span>                :     }
+<span class="lineNum">     216 </span>                : 
+<span class="lineNum">     217 </span><span class="lineCov">            222 :     php_mongo_serialize_int(buf, Z_STRLEN_PP(data)+1);</span>
+<span class="lineNum">     218 </span><span class="lineCov">            222 :     php_mongo_serialize_string(buf, Z_STRVAL_PP(data), Z_STRLEN_PP(data));</span>
+<span class="lineNum">     219 </span><span class="lineCov">            222 :     break;</span>
+<span class="lineNum">     220 </span>                :   }
+<span class="lineNum">     221 </span>                :   case IS_ARRAY: {
+<span class="lineNum">     222 </span>                :     int num;
+<span class="lineNum">     223 </span>                : 
+<span class="lineNum">     224 </span>                :     // if we realloc, we need an offset, not an abs pos (phew)
+<span class="lineNum">     225 </span><span class="lineCov">             37 :     int type_offset = buf-&gt;pos-buf-&gt;start;</span>
+<span class="lineNum">     226 </span>                : 
+<span class="lineNum">     227 </span>                :     //serialize
+<span class="lineNum">     228 </span><span class="lineCov">             37 :     PHP_MONGO_SERIALIZE_KEY(BSON_ARRAY);</span>
+<span class="lineNum">     229 </span><span class="lineCov">             36 :     num = zval_to_bson(buf, Z_ARRVAL_PP(data), NO_PREP TSRMLS_CC);</span>
+<span class="lineNum">     230 </span><span class="lineCov">             36 :     if (EG(exception)) {</span>
+<span class="lineNum">     231 </span><span class="lineNoCov">              0 :       return ZEND_HASH_APPLY_STOP;</span>
+<span class="lineNum">     232 </span>                :     }
+<span class="lineNum">     233 </span>                : 
+<span class="lineNum">     234 </span>                :     // now go back and set the type bit
+<span class="lineNum">     235 </span>                :     //php_mongo_set_type(buf, BSON_ARRAY);
+<span class="lineNum">     236 </span><span class="lineCov">             36 :     if (num == zend_hash_num_elements(Z_ARRVAL_PP(data))) {</span>
+<span class="lineNum">     237 </span><span class="lineNoCov">              0 :       buf-&gt;start[type_offset] = BSON_ARRAY;</span>
+<span class="lineNum">     238 </span>                :     }
+<span class="lineNum">     239 </span>                :     else {
+<span class="lineNum">     240 </span><span class="lineCov">             36 :       buf-&gt;start[type_offset] = BSON_OBJECT;</span>
+<span class="lineNum">     241 </span>                :     }
+<span class="lineNum">     242 </span>                : 
+<span class="lineNum">     243 </span><span class="lineCov">             36 :     break;</span>
+<span class="lineNum">     244 </span>                :   }
+<span class="lineNum">     245 </span>                :   case IS_OBJECT: {
+<span class="lineNum">     246 </span><span class="lineCov">            213 :     zend_class_entry *clazz = Z_OBJCE_PP( data );</span>
+<span class="lineNum">     247 </span>                :     /* check for defined classes */
+<span class="lineNum">     248 </span>                :     // MongoId
+<span class="lineNum">     249 </span><span class="lineCov">            213 :     if(clazz == mongo_ce_Id) {</span>
+<span class="lineNum">     250 </span>                :       mongo_id *id;
+<span class="lineNum">     251 </span>                : 
+<span class="lineNum">     252 </span><span class="lineCov">            172 :       PHP_MONGO_SERIALIZE_KEY(BSON_OID);</span>
+<span class="lineNum">     253 </span><span class="lineCov">            172 :       id = (mongo_id*)zend_object_store_get_object(*data TSRMLS_CC);</span>
+<span class="lineNum">     254 </span><span class="lineCov">            172 :       if (!id-&gt;id) {</span>
+<span class="lineNum">     255 </span><span class="lineNoCov">              0 :         return ZEND_HASH_APPLY_KEEP;</span>
+<span class="lineNum">     256 </span>                :       }
+<span class="lineNum">     257 </span>                : 
+<span class="lineNum">     258 </span><span class="lineCov">            172 :       php_mongo_serialize_bytes(buf, id-&gt;id, OID_SIZE);</span>
+<span class="lineNum">     259 </span>                :     }
+<span class="lineNum">     260 </span>                :     // MongoDate
+<span class="lineNum">     261 </span><span class="lineCov">             41 :     else if (clazz == mongo_ce_Date) {</span>
+<span class="lineNum">     262 </span><span class="lineCov">             16 :       PHP_MONGO_SERIALIZE_KEY(BSON_DATE);</span>
+<span class="lineNum">     263 </span><span class="lineCov">             16 :       php_mongo_serialize_date(buf, *data TSRMLS_CC);</span>
+<span class="lineNum">     264 </span>                :     }
+<span class="lineNum">     265 </span>                :     // MongoRegex
+<span class="lineNum">     266 </span><span class="lineCov">             25 :     else if (clazz == mongo_ce_Regex) {</span>
+<span class="lineNum">     267 </span><span class="lineNoCov">              0 :       PHP_MONGO_SERIALIZE_KEY(BSON_REGEX);</span>
+<span class="lineNum">     268 </span><span class="lineNoCov">              0 :       php_mongo_serialize_regex(buf, *data TSRMLS_CC);</span>
+<span class="lineNum">     269 </span>                :     }
+<span class="lineNum">     270 </span>                :     // MongoCode
+<span class="lineNum">     271 </span><span class="lineCov">             25 :     else if (clazz == mongo_ce_Code) {</span>
+<span class="lineNum">     272 </span><span class="lineNoCov">              0 :       PHP_MONGO_SERIALIZE_KEY(BSON_CODE);</span>
+<span class="lineNum">     273 </span><span class="lineNoCov">              0 :       php_mongo_serialize_code(buf, *data TSRMLS_CC);</span>
+<span class="lineNum">     274 </span><span class="lineNoCov">              0 :       if (EG(exception)) {</span>
+<span class="lineNum">     275 </span><span class="lineNoCov">              0 :         return ZEND_HASH_APPLY_STOP;</span>
+<span class="lineNum">     276 </span>                :       }
+<span class="lineNum">     277 </span>                :     }
+<span class="lineNum">     278 </span>                :     // MongoBin
+<span class="lineNum">     279 </span><span class="lineCov">             25 :     else if (clazz == mongo_ce_BinData) {</span>
+<span class="lineNum">     280 </span><span class="lineCov">             15 :       PHP_MONGO_SERIALIZE_KEY(BSON_BINARY);</span>
+<span class="lineNum">     281 </span><span class="lineCov">             15 :       php_mongo_serialize_bin_data(buf, *data TSRMLS_CC);</span>
+<span class="lineNum">     282 </span>                :     }
+<span class="lineNum">     283 </span>                :     // MongoTimestamp
+<span class="lineNum">     284 </span><span class="lineCov">             10 :     else if (clazz == mongo_ce_Timestamp) {</span>
+<span class="lineNum">     285 </span><span class="lineNoCov">              0 :       PHP_MONGO_SERIALIZE_KEY(BSON_TIMESTAMP);</span>
+<span class="lineNum">     286 </span><span class="lineNoCov">              0 :       php_mongo_serialize_ts(buf, *data TSRMLS_CC);</span>
+<span class="lineNum">     287 </span>                :     }
+<span class="lineNum">     288 </span><span class="lineCov">             10 :     else if (clazz == mongo_ce_MinKey) {</span>
+<span class="lineNum">     289 </span><span class="lineNoCov">              0 :       PHP_MONGO_SERIALIZE_KEY(BSON_MINKEY);</span>
+<span class="lineNum">     290 </span>                :     }
+<span class="lineNum">     291 </span><span class="lineCov">             10 :     else if (clazz == mongo_ce_MaxKey) {</span>
+<span class="lineNum">     292 </span><span class="lineNoCov">              0 :       PHP_MONGO_SERIALIZE_KEY(BSON_MAXKEY);</span>
+<span class="lineNum">     293 </span>                :     }
+<span class="lineNum">     294 </span>                :     // Integer types
+<span class="lineNum">     295 </span><span class="lineCov">             10 :     else if (clazz == mongo_ce_Int32) {</span>
+<span class="lineNum">     296 </span><span class="lineNoCov">              0 :       PHP_MONGO_SERIALIZE_KEY(BSON_INT);</span>
+<span class="lineNum">     297 </span><span class="lineNoCov">              0 :       php_mongo_serialize_int32(buf, *data TSRMLS_CC);</span>
+<span class="lineNum">     298 </span>                :     }
+<span class="lineNum">     299 </span><span class="lineCov">             10 :     else if (clazz == mongo_ce_Int64) {</span>
+<span class="lineNum">     300 </span><span class="lineNoCov">              0 :       PHP_MONGO_SERIALIZE_KEY(BSON_LONG);</span>
+<span class="lineNum">     301 </span><span class="lineNoCov">              0 :       php_mongo_serialize_int64(buf, *data TSRMLS_CC);</span>
+<span class="lineNum">     302 </span>                :     }
+<span class="lineNum">     303 </span>                :     // serialize a normal obj
+<span class="lineNum">     304 </span>                :     else {
+<span class="lineNum">     305 </span><span class="lineCov">             10 :       HashTable *hash = Z_OBJPROP_PP(data);</span>
+<span class="lineNum">     306 </span>                : 
+<span class="lineNum">     307 </span>                :       // go through the k/v pairs and serialize them
+<span class="lineNum">     308 </span><span class="lineCov">             10 :       PHP_MONGO_SERIALIZE_KEY(BSON_OBJECT);</span>
+<span class="lineNum">     309 </span>                : 
+<span class="lineNum">     310 </span><span class="lineCov">             10 :       zval_to_bson(buf, hash, NO_PREP TSRMLS_CC);</span>
+<span class="lineNum">     311 </span><span class="lineCov">             10 :       if (EG(exception)) {</span>
+<span class="lineNum">     312 </span><span class="lineNoCov">              0 :         return ZEND_HASH_APPLY_STOP;</span>
+<span class="lineNum">     313 </span>                :       }
+<span class="lineNum">     314 </span>                :     }
+<span class="lineNum">     315 </span>                :     break;
+<span class="lineNum">     316 </span>                :   }
+<span class="lineNum">     317 </span>                :   }
+<span class="lineNum">     318 </span>                : 
+<span class="lineNum">     319 </span><span class="lineCov">           2855 :   return ZEND_HASH_APPLY_KEEP;</span>
+<a name="320"><span class="lineNum">     320 </span>                : }</a>
+<span class="lineNum">     321 </span>                : 
+<span class="lineNum">     322 </span><span class="lineCov">              1 : int resize_buf(buffer *buf, int size) {</span>
+<span class="lineNum">     323 </span><span class="lineCov">              1 :   int total = buf-&gt;end - buf-&gt;start;</span>
+<span class="lineNum">     324 </span><span class="lineCov">              1 :   int used = buf-&gt;pos - buf-&gt;start;</span>
+<span class="lineNum">     325 </span>                : 
+<span class="lineNum">     326 </span><span class="lineCov">              1 :   total = total &lt; GROW_SLOWLY ? total*2 : total+INITIAL_BUF_SIZE;</span>
+<span class="lineNum">     327 </span><span class="lineCov">              2 :   while (total-used &lt; size) {</span>
+<span class="lineNum">     328 </span><span class="lineNoCov">              0 :     total += size;</span>
+<span class="lineNum">     329 </span>                :   }
+<span class="lineNum">     330 </span>                : 
+<span class="lineNum">     331 </span><span class="lineCov">              1 :   buf-&gt;start = (char*)erealloc(buf-&gt;start, total);</span>
+<span class="lineNum">     332 </span><span class="lineCov">              1 :   buf-&gt;pos = buf-&gt;start + used;</span>
+<span class="lineNum">     333 </span><span class="lineCov">              1 :   buf-&gt;end = buf-&gt;start + total;</span>
+<span class="lineNum">     334 </span><span class="lineCov">              1 :   return total;</span>
+<span class="lineNum">     335 </span>                : }
+<span class="lineNum">     336 </span>                : 
+<span class="lineNum">     337 </span>                : /*
+<span class="lineNum">     338 </span>                :  * create a bson date
+<span class="lineNum">     339 </span>                :  *
+<span class="lineNum">     340 </span>                :  * type: 9
+<a name="341"><span class="lineNum">     341 </span>                :  * 8 bytes of ms since the epoch</a>
+<span class="lineNum">     342 </span>                :  */
+<span class="lineNum">     343 </span><span class="lineCov">             16 : void php_mongo_serialize_date(buffer *buf, zval *date TSRMLS_DC) {</span>
+<span class="lineNum">     344 </span>                :   int64_t ms;
+<span class="lineNum">     345 </span><span class="lineCov">             16 :   zval *sec = zend_read_property(mongo_ce_Date, date, &quot;sec&quot;, 3, 0 TSRMLS_CC);</span>
+<span class="lineNum">     346 </span><span class="lineCov">             16 :   zval *usec = zend_read_property(mongo_ce_Date, date, &quot;usec&quot;, 4, 0 TSRMLS_CC);</span>
+<span class="lineNum">     347 </span>                : 
+<span class="lineNum">     348 </span><span class="lineCov">             16 :   ms = ((int64_t)Z_LVAL_P(sec) * 1000) + ((int64_t)Z_LVAL_P(usec) / 1000);</span>
+<span class="lineNum">     349 </span><span class="lineCov">             16 :   php_mongo_serialize_long(buf, ms);</span>
+<span class="lineNum">     350 </span><span class="lineCov">             16 : }</span>
+<span class="lineNum">     351 </span>                : 
+<span class="lineNum">     352 </span>                : #if defined(_MSC_VER)
+<span class="lineNum">     353 </span>                : # define strtoll(s, f, b) _atoi64(s)
+<span class="lineNum">     354 </span>                : #elif !defined(HAVE_STRTOLL)
+<span class="lineNum">     355 </span>                : # if defined(HAVE_ATOLL)
+<span class="lineNum">     356 </span>                : #  define strtoll(s, f, b) atoll(s)
+<span class="lineNum">     357 </span>                : # else
+<span class="lineNum">     358 </span>                : #  define strtoll(s, f, b) strtol(s, f, b)
+<span class="lineNum">     359 </span>                : # endif
+<span class="lineNum">     360 </span>                : #endif
+<span class="lineNum">     361 </span>                : 
+<span class="lineNum">     362 </span>                : 
+<span class="lineNum">     363 </span>                : /*
+<a name="364"><span class="lineNum">     364 </span>                :  * create a bson int from an Int32 object</a>
+<span class="lineNum">     365 </span>                :  */
+<span class="lineNum">     366 </span><span class="lineNoCov">              0 : void php_mongo_serialize_int32(buffer *buf, zval *data TSRMLS_DC) {</span>
+<span class="lineNum">     367 </span>                :   int value;
+<span class="lineNum">     368 </span><span class="lineNoCov">              0 :   zval *zvalue = zend_read_property(mongo_ce_Int32, data, &quot;value&quot;, 5, 0 TSRMLS_CC);</span>
+<span class="lineNum">     369 </span><span class="lineNoCov">              0 :   value = strtol(Z_STRVAL_P(zvalue), NULL, 10);</span>
+<span class="lineNum">     370 </span>                : 
+<span class="lineNum">     371 </span><span class="lineNoCov">              0 :   php_mongo_serialize_int(buf, value);</span>
+<span class="lineNum">     372 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     373 </span>                : 
+<span class="lineNum">     374 </span>                : /*
+<a name="375"><span class="lineNum">     375 </span>                :  * create a bson long from an Int64 object</a>
+<span class="lineNum">     376 </span>                :  */
+<span class="lineNum">     377 </span><span class="lineNoCov">              0 : void php_mongo_serialize_int64(buffer *buf, zval *data TSRMLS_DC) {</span>
+<span class="lineNum">     378 </span>                :   int64_t value;
+<span class="lineNum">     379 </span><span class="lineNoCov">              0 :   zval *zvalue = zend_read_property(mongo_ce_Int64, data, &quot;value&quot;, 5, 0 TSRMLS_CC);</span>
+<span class="lineNum">     380 </span><span class="lineNoCov">              0 :   value = strtoll(Z_STRVAL_P(zvalue), NULL, 10);</span>
+<span class="lineNum">     381 </span>                : 
+<span class="lineNum">     382 </span><span class="lineNoCov">              0 :   php_mongo_serialize_long(buf, value);</span>
+<span class="lineNum">     383 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     384 </span>                : 
+<span class="lineNum">     385 </span>                : /*
+<span class="lineNum">     386 </span>                :  * create a bson regex
+<span class="lineNum">     387 </span>                :  *
+<span class="lineNum">     388 </span>                :  * type: 11
+<a name="389"><span class="lineNum">     389 </span>                :  * cstring cstring</a>
+<span class="lineNum">     390 </span>                :  */
+<span class="lineNum">     391 </span><span class="lineNoCov">              0 : void php_mongo_serialize_regex(buffer *buf, zval *regex TSRMLS_DC) {</span>
+<span class="lineNum">     392 </span>                :   zval *z;
+<span class="lineNum">     393 </span>                : 
+<span class="lineNum">     394 </span><span class="lineNoCov">              0 :   z = zend_read_property(mongo_ce_Regex, regex, &quot;regex&quot;, 5, 0 TSRMLS_CC);</span>
+<span class="lineNum">     395 </span><span class="lineNoCov">              0 :   php_mongo_serialize_string(buf, Z_STRVAL_P(z), Z_STRLEN_P(z));</span>
+<span class="lineNum">     396 </span><span class="lineNoCov">              0 :   z = zend_read_property(mongo_ce_Regex, regex, &quot;flags&quot;, 5, 0 TSRMLS_CC);</span>
+<span class="lineNum">     397 </span><span class="lineNoCov">              0 :   php_mongo_serialize_string(buf, Z_STRVAL_P(z), Z_STRLEN_P(z));</span>
+<span class="lineNum">     398 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     399 </span>                : 
+<span class="lineNum">     400 </span>                : /*
+<span class="lineNum">     401 </span>                :  * create a bson code with scope
+<span class="lineNum">     402 </span>                :  *
+<span class="lineNum">     403 </span>                :  * type: 15
+<span class="lineNum">     404 </span>                :  * 4 bytes total size
+<span class="lineNum">     405 </span>                :  * 4 bytes cstring size + NULL
+<span class="lineNum">     406 </span>                :  * cstring
+<a name="407"><span class="lineNum">     407 </span>                :  * bson object scope</a>
+<span class="lineNum">     408 </span>                :  */
+<span class="lineNum">     409 </span><span class="lineNoCov">              0 : void php_mongo_serialize_code(buffer *buf, zval *code TSRMLS_DC) {</span>
+<span class="lineNum">     410 </span>                :   uint start;
+<span class="lineNum">     411 </span>                :   zval *zid;
+<span class="lineNum">     412 </span>                : 
+<span class="lineNum">     413 </span>                :   // save spot for size
+<span class="lineNum">     414 </span><span class="lineNoCov">              0 :   start = buf-&gt;pos-buf-&gt;start;</span>
+<span class="lineNum">     415 </span><span class="lineNoCov">              0 :   buf-&gt;pos += INT_32;</span>
+<span class="lineNum">     416 </span><span class="lineNoCov">              0 :   zid = zend_read_property(mongo_ce_Code, code, &quot;code&quot;, 4, NOISY TSRMLS_CC);</span>
+<span class="lineNum">     417 </span>                :   // string size
+<span class="lineNum">     418 </span><span class="lineNoCov">              0 :   php_mongo_serialize_int(buf, Z_STRLEN_P(zid)+1);</span>
+<span class="lineNum">     419 </span>                :   // string
+<span class="lineNum">     420 </span><span class="lineNoCov">              0 :   php_mongo_serialize_string(buf, Z_STRVAL_P(zid), Z_STRLEN_P(zid));</span>
+<span class="lineNum">     421 </span>                :   // scope
+<span class="lineNum">     422 </span><span class="lineNoCov">              0 :   zid = zend_read_property(mongo_ce_Code, code, &quot;scope&quot;, 5, NOISY TSRMLS_CC);</span>
+<span class="lineNum">     423 </span><span class="lineNoCov">              0 :   zval_to_bson(buf, HASH_P(zid), NO_PREP TSRMLS_CC);</span>
+<span class="lineNum">     424 </span><span class="lineNoCov">              0 :   if (EG(exception)) {</span>
+<span class="lineNum">     425 </span><span class="lineNoCov">              0 :     return;</span>
+<span class="lineNum">     426 </span>                :   }
+<span class="lineNum">     427 </span>                : 
+<span class="lineNum">     428 </span>                :   // get total size
+<span class="lineNum">     429 </span><span class="lineNoCov">              0 :   php_mongo_serialize_size(buf-&gt;start+start, buf TSRMLS_CC);</span>
+<span class="lineNum">     430 </span>                : }
+<span class="lineNum">     431 </span>                : 
+<span class="lineNum">     432 </span>                : /*
+<span class="lineNum">     433 </span>                :  * create bson binary data
+<span class="lineNum">     434 </span>                :  *
+<span class="lineNum">     435 </span>                :  * type: 5
+<span class="lineNum">     436 </span>                :  * 4 bytes: length of bindata
+<span class="lineNum">     437 </span>                :  * 1 byte: bindata type
+<a name="438"><span class="lineNum">     438 </span>                :  * bindata</a>
+<span class="lineNum">     439 </span>                :  */
+<span class="lineNum">     440 </span><span class="lineCov">             15 : void php_mongo_serialize_bin_data(buffer *buf, zval *bin TSRMLS_DC) {</span>
+<span class="lineNum">     441 </span>                :   zval *zbin, *ztype;
+<span class="lineNum">     442 </span>                : 
+<span class="lineNum">     443 </span><span class="lineCov">             15 :   zbin = zend_read_property(mongo_ce_BinData, bin, &quot;bin&quot;, 3, 0 TSRMLS_CC);</span>
+<span class="lineNum">     444 </span><span class="lineCov">             15 :   ztype = zend_read_property(mongo_ce_BinData, bin, &quot;type&quot;, 4, 0 TSRMLS_CC);</span>
+<span class="lineNum">     445 </span>                : 
+<span class="lineNum">     446 </span>                :   /*
+<span class="lineNum">     447 </span>                :    * type 2 has the redundant structure:
+<span class="lineNum">     448 </span>                :    *
+<span class="lineNum">     449 </span>                :    * |------|--|-------==========|
+<span class="lineNum">     450 </span>                :    *  length 02 length   bindata
+<span class="lineNum">     451 </span>                :    *
+<span class="lineNum">     452 </span>                :    *   - 4 bytes: length of bindata (+4 for length below)
+<span class="lineNum">     453 </span>                :    *   - 1 byte type (0x02)
+<span class="lineNum">     454 </span>                :    *   - N bytes: 4 bytes of length of the following bindata + bindata
+<span class="lineNum">     455 </span>                :    *
+<span class="lineNum">     456 </span>                :    */
+<span class="lineNum">     457 </span>                : 
+<span class="lineNum">     458 </span><span class="lineCov">             15 :   if (Z_LVAL_P(ztype) == 2) {</span>
+<span class="lineNum">     459 </span>                :     // length
+<span class="lineNum">     460 </span><span class="lineCov">             15 :     php_mongo_serialize_int(buf, Z_STRLEN_P(zbin)+4);</span>
+<span class="lineNum">     461 </span>                :     // 02
+<span class="lineNum">     462 </span><span class="lineCov">             15 :     php_mongo_serialize_byte(buf, 2);</span>
+<span class="lineNum">     463 </span>                :     // length
+<span class="lineNum">     464 </span><span class="lineCov">             15 :     php_mongo_serialize_int(buf, Z_STRLEN_P(zbin));</span>
+<span class="lineNum">     465 </span>                :   }
+<span class="lineNum">     466 </span>                :   /* other types have
+<span class="lineNum">     467 </span>                :    *
+<span class="lineNum">     468 </span>                :    * |------|--|==========|
+<span class="lineNum">     469 </span>                :    *  length     bindata
+<span class="lineNum">     470 </span>                :    *        type
+<span class="lineNum">     471 </span>                :    */
+<span class="lineNum">     472 </span>                :   else {
+<span class="lineNum">     473 </span>                :     // length
+<span class="lineNum">     474 </span><span class="lineNoCov">              0 :     php_mongo_serialize_int(buf, Z_STRLEN_P(zbin));</span>
+<span class="lineNum">     475 </span>                :     // type
+<span class="lineNum">     476 </span><span class="lineNoCov">              0 :     php_mongo_serialize_byte(buf, (unsigned char)Z_LVAL_P(ztype));</span>
+<span class="lineNum">     477 </span>                :   }
+<span class="lineNum">     478 </span>                : 
+<span class="lineNum">     479 </span>                :   // bindata
+<span class="lineNum">     480 </span><span class="lineCov">             15 :   php_mongo_serialize_bytes(buf, Z_STRVAL_P(zbin), Z_STRLEN_P(zbin));</span>
+<span class="lineNum">     481 </span><span class="lineCov">             15 : }</span>
+<span class="lineNum">     482 </span>                : 
+<span class="lineNum">     483 </span>                : /*
+<span class="lineNum">     484 </span>                :  * create bson timestamp
+<span class="lineNum">     485 </span>                :  *
+<span class="lineNum">     486 </span>                :  * type: 17
+<span class="lineNum">     487 </span>                :  * 4 bytes seconds since epoch
+<a name="488"><span class="lineNum">     488 </span>                :  * 4 bytes increment</a>
+<span class="lineNum">     489 </span>                :  */
+<span class="lineNum">     490 </span><span class="lineNoCov">              0 : void php_mongo_serialize_ts(buffer *buf, zval *time TSRMLS_DC) {</span>
+<span class="lineNum">     491 </span>                :   zval *ts, *inc;
+<span class="lineNum">     492 </span>                : 
+<span class="lineNum">     493 </span><span class="lineNoCov">              0 :   ts = zend_read_property(mongo_ce_Timestamp, time, &quot;sec&quot;, strlen(&quot;sec&quot;), NOISY TSRMLS_CC);</span>
+<span class="lineNum">     494 </span><span class="lineNoCov">              0 :   inc = zend_read_property(mongo_ce_Timestamp, time, &quot;inc&quot;, strlen(&quot;inc&quot;), NOISY TSRMLS_CC);</span>
+<span class="lineNum">     495 </span>                : 
+<span class="lineNum">     496 </span><span class="lineNoCov">              0 :   php_mongo_serialize_int(buf, Z_LVAL_P(inc));</span>
+<span class="lineNum">     497 </span><span class="lineNoCov">              0 :   php_mongo_serialize_int(buf, Z_LVAL_P(ts));</span>
+<a name="498"><span class="lineNum">     498 </span><span class="lineNoCov">              0 : }</span></a>
+<span class="lineNum">     499 </span>                : 
+<span class="lineNum">     500 </span><span class="lineCov">           5369 : void php_mongo_serialize_byte(buffer *buf, char b) {</span>
+<span class="lineNum">     501 </span><span class="lineCov">           5369 :   if(BUF_REMAINING &lt;= 1) {</span>
+<span class="lineNum">     502 </span><span class="lineNoCov">              0 :     resize_buf(buf, 1);</span>
+<span class="lineNum">     503 </span>                :   }
+<span class="lineNum">     504 </span><span class="lineCov">           5369 :   *(buf-&gt;pos) = b;</span>
+<span class="lineNum">     505 </span><span class="lineCov">           5369 :   buf-&gt;pos += 1;</span>
+<a name="506"><span class="lineNum">     506 </span><span class="lineCov">           5369 : }</span></a>
+<span class="lineNum">     507 </span>                : 
+<span class="lineNum">     508 </span><span class="lineCov">            187 : void php_mongo_serialize_bytes(buffer *buf, char *str, int str_len) {</span>
+<span class="lineNum">     509 </span><span class="lineCov">            187 :   if(BUF_REMAINING &lt;= str_len) {</span>
+<span class="lineNum">     510 </span><span class="lineCov">              1 :     resize_buf(buf, str_len);</span>
+<span class="lineNum">     511 </span>                :   }
+<span class="lineNum">     512 </span><span class="lineCov">            187 :   memcpy(buf-&gt;pos, str, str_len);</span>
+<span class="lineNum">     513 </span><span class="lineCov">            187 :   buf-&gt;pos += str_len;</span>
+<a name="514"><span class="lineNum">     514 </span><span class="lineCov">            187 : }</span></a>
+<span class="lineNum">     515 </span>                : 
+<span class="lineNum">     516 </span><span class="lineCov">            222 : void php_mongo_serialize_string(buffer *buf, char *str, int str_len) {</span>
+<span class="lineNum">     517 </span><span class="lineCov">            222 :   if(BUF_REMAINING &lt;= str_len+1) {</span>
+<span class="lineNum">     518 </span><span class="lineNoCov">              0 :     resize_buf(buf, str_len+1);</span>
+<span class="lineNum">     519 </span>                :   }
+<span class="lineNum">     520 </span>                : 
+<span class="lineNum">     521 </span><span class="lineCov">            222 :   memcpy(buf-&gt;pos, str, str_len);</span>
+<span class="lineNum">     522 </span>                :   // add \0 at the end of the string
+<span class="lineNum">     523 </span><span class="lineCov">            222 :   buf-&gt;pos[str_len] = 0;</span>
+<span class="lineNum">     524 </span><span class="lineCov">            222 :   buf-&gt;pos += str_len + 1;</span>
+<a name="525"><span class="lineNum">     525 </span><span class="lineCov">            222 : }</span></a>
+<span class="lineNum">     526 </span>                : 
+<span class="lineNum">     527 </span><span class="lineCov">          16478 : void php_mongo_serialize_int(buffer *buf, int num) {</span>
+<span class="lineNum">     528 </span><span class="lineCov">          16478 :   int i = MONGO_32(num);</span>
+<span class="lineNum">     529 </span>                : 
+<span class="lineNum">     530 </span><span class="lineCov">          16478 :   if(BUF_REMAINING &lt;= INT_32) {</span>
+<span class="lineNum">     531 </span><span class="lineNoCov">              0 :     resize_buf(buf, INT_32);</span>
+<span class="lineNum">     532 </span>                :   }
+<span class="lineNum">     533 </span>                : 
+<span class="lineNum">     534 </span><span class="lineCov">          16478 :   memcpy(buf-&gt;pos, &amp;i, INT_32);</span>
+<span class="lineNum">     535 </span><span class="lineCov">          16478 :   buf-&gt;pos += INT_32;</span>
+<a name="536"><span class="lineNum">     536 </span><span class="lineCov">          16478 : }</span></a>
+<span class="lineNum">     537 </span>                : 
+<span class="lineNum">     538 </span><span class="lineCov">             16 : void php_mongo_serialize_long(buffer *buf, int64_t num) {</span>
+<span class="lineNum">     539 </span><span class="lineCov">             16 :   int64_t i = MONGO_64(num);</span>
+<span class="lineNum">     540 </span>                : 
+<span class="lineNum">     541 </span><span class="lineCov">             16 :   if(BUF_REMAINING &lt;= INT_64) {</span>
+<span class="lineNum">     542 </span><span class="lineNoCov">              0 :     resize_buf(buf, INT_64);</span>
+<span class="lineNum">     543 </span>                :   }
+<span class="lineNum">     544 </span>                : 
+<span class="lineNum">     545 </span><span class="lineCov">             16 :   memcpy(buf-&gt;pos, &amp;i, INT_64);</span>
+<span class="lineNum">     546 </span><span class="lineCov">             16 :   buf-&gt;pos += INT_64;</span>
+<a name="547"><span class="lineNum">     547 </span><span class="lineCov">             16 : }</span></a>
+<span class="lineNum">     548 </span>                : 
+<span class="lineNum">     549 </span><span class="lineNoCov">              0 : void php_mongo_serialize_double(buffer *buf, double num) {</span>
+<span class="lineNum">     550 </span>                :   int64_t dest, *dest_p;
+<span class="lineNum">     551 </span><span class="lineNoCov">              0 :   dest_p = &amp;dest;</span>
+<span class="lineNum">     552 </span><span class="lineNoCov">              0 :   memcpy(dest_p, &amp;num, 8);</span>
+<span class="lineNum">     553 </span><span class="lineNoCov">              0 :   dest = MONGO_64(dest);</span>
+<span class="lineNum">     554 </span>                : 
+<span class="lineNum">     555 </span><span class="lineNoCov">              0 :   if(BUF_REMAINING &lt;= INT_64) {</span>
+<span class="lineNum">     556 </span><span class="lineNoCov">              0 :     resize_buf(buf, INT_64);</span>
+<span class="lineNum">     557 </span>                :   }
+<span class="lineNum">     558 </span>                : 
+<span class="lineNum">     559 </span><span class="lineNoCov">              0 :   memcpy(buf-&gt;pos, dest_p, DOUBLE_64);</span>
+<span class="lineNum">     560 </span><span class="lineNoCov">              0 :   buf-&gt;pos += DOUBLE_64;</span>
+<span class="lineNum">     561 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     562 </span>                : 
+<span class="lineNum">     563 </span>                : /*
+<span class="lineNum">     564 </span>                :  * prep == true
+<a name="565"><span class="lineNum">     565 </span>                :  *    we are inserting, so keys can't have .s in them</a>
+<span class="lineNum">     566 </span>                :  */
+<span class="lineNum">     567 </span><span class="lineCov">           2856 : void php_mongo_serialize_key(buffer *buf, char *str, int str_len, int prep TSRMLS_DC) {</span>
+<span class="lineNum">     568 </span><span class="lineCov">           2856 :   if (str[0] == '\0' &amp;&amp; !MonGlo(allow_empty_keys)) {</span>
+<span class="lineNum">     569 </span><span class="lineNoCov">              0 :     zend_throw_exception_ex(mongo_ce_Exception, 1 TSRMLS_CC, &quot;zero-length keys are not allowed, did you use $ with double quotes?&quot;);</span>
+<span class="lineNum">     570 </span><span class="lineNoCov">              0 :     return;</span>
+<span class="lineNum">     571 </span>                :   }
+<span class="lineNum">     572 </span>                : 
+<span class="lineNum">     573 </span><span class="lineCov">           2856 :   if(BUF_REMAINING &lt;= str_len+1) {</span>
+<span class="lineNum">     574 </span><span class="lineNoCov">              0 :     resize_buf(buf, str_len+1);</span>
+<span class="lineNum">     575 </span>                :   }
+<span class="lineNum">     576 </span>                : 
+<span class="lineNum">     577 </span><span class="lineCov">           2856 :   if (prep &amp;&amp; (strchr(str, '.') != 0)) {</span>
+<span class="lineNum">     578 </span><span class="lineNoCov">              0 :     zend_throw_exception_ex(mongo_ce_Exception, 2 TSRMLS_CC, &quot;'.' not allowed in key: %s&quot;, str);</span>
+<span class="lineNum">     579 </span><span class="lineNoCov">              0 :     return;</span>
+<span class="lineNum">     580 </span>                :   }
+<span class="lineNum">     581 </span>                : 
+<span class="lineNum">     582 </span><span class="lineCov">           2861 :   if (MonGlo(cmd_char) &amp;&amp; strchr(str, MonGlo(cmd_char)[0]) == str) {</span>
+<span class="lineNum">     583 </span><span class="lineCov">              5 :     *(buf-&gt;pos) = '$';</span>
+<span class="lineNum">     584 </span><span class="lineCov">              5 :     memcpy(buf-&gt;pos+1, str+1, str_len-1);</span>
+<span class="lineNum">     585 </span>                :   }
+<span class="lineNum">     586 </span>                :   else {
+<span class="lineNum">     587 </span><span class="lineCov">           2851 :     memcpy(buf-&gt;pos, str, str_len);</span>
+<span class="lineNum">     588 </span>                :   }
+<span class="lineNum">     589 </span>                : 
+<span class="lineNum">     590 </span>                :   // add \0 at the end of the string
+<span class="lineNum">     591 </span><span class="lineCov">           2856 :   buf-&gt;pos[str_len] = 0;</span>
+<span class="lineNum">     592 </span><span class="lineCov">           2856 :   buf-&gt;pos += str_len + 1;</span>
+<span class="lineNum">     593 </span>                : }
+<span class="lineNum">     594 </span>                : 
+<span class="lineNum">     595 </span>                : /*
+<span class="lineNum">     596 </span>                :  * replaces collection names starting with MonGlo(cmd_char)
+<span class="lineNum">     597 </span>                :  * with the '$' character.
+<span class="lineNum">     598 </span>                :  *
+<span class="lineNum">     599 </span>                :  * TODO: this doesn't handle main.$oplog-type situations (if
+<a name="600"><span class="lineNum">     600 </span>                :  * MonGlo(cmd_char) is set)</a>
+<span class="lineNum">     601 </span>                :  */
+<span class="lineNum">     602 </span><span class="lineCov">           2378 : void php_mongo_serialize_ns(buffer *buf, char *str TSRMLS_DC) {</span>
+<span class="lineNum">     603 </span><span class="lineCov">           2378 :   char *collection = strchr(str, '.')+1;</span>
+<span class="lineNum">     604 </span>                : 
+<span class="lineNum">     605 </span><span class="lineCov">           2378 :   if(BUF_REMAINING &lt;= (int)strlen(str)+1) {</span>
+<span class="lineNum">     606 </span><span class="lineNoCov">              0 :     resize_buf(buf, strlen(str)+1);</span>
+<span class="lineNum">     607 </span>                :   }
+<span class="lineNum">     608 </span>                : 
+<span class="lineNum">     609 </span><span class="lineCov">           4516 :   if (MonGlo(cmd_char) &amp;&amp; strchr(collection, MonGlo(cmd_char)[0]) == collection) {</span>
+<span class="lineNum">     610 </span><span class="lineCov">           2138 :     memcpy(buf-&gt;pos, str, collection-str);</span>
+<span class="lineNum">     611 </span><span class="lineCov">           2138 :     buf-&gt;pos += collection-str;</span>
+<span class="lineNum">     612 </span><span class="lineCov">           2138 :     *(buf-&gt;pos) = '$';</span>
+<span class="lineNum">     613 </span><span class="lineCov">           2138 :     memcpy(buf-&gt;pos+1, collection+1, strlen(collection)-1);</span>
+<span class="lineNum">     614 </span><span class="lineCov">           2138 :     buf-&gt;pos[strlen(collection)] = 0;</span>
+<span class="lineNum">     615 </span><span class="lineCov">           2138 :     buf-&gt;pos += strlen(collection) + 1;</span>
+<span class="lineNum">     616 </span>                :   }
+<span class="lineNum">     617 </span>                :   else {
+<span class="lineNum">     618 </span><span class="lineCov">            240 :     memcpy(buf-&gt;pos, str, strlen(str));</span>
+<span class="lineNum">     619 </span><span class="lineCov">            240 :     buf-&gt;pos[strlen(str)] = 0;</span>
+<span class="lineNum">     620 </span><span class="lineCov">            240 :     buf-&gt;pos += strlen(str) + 1;</span>
+<span class="lineNum">     621 </span>                :   }
+<span class="lineNum">     622 </span><span class="lineCov">           2378 : }</span>
+<span class="lineNum">     623 </span>                : 
+<span class="lineNum">     624 </span>                : 
+<span class="lineNum">     625 </span>                : /* the position is not increased, we are just filling
+<a name="626"><span class="lineNum">     626 </span>                :  * in the first 4 bytes with the size.</a>
+<span class="lineNum">     627 </span>                :  */
+<span class="lineNum">     628 </span><span class="lineCov">           4989 : int php_mongo_serialize_size(char *start, buffer *buf TSRMLS_DC) {</span>
+<span class="lineNum">     629 </span><span class="lineCov">           4989 :   int total = MONGO_32((buf-&gt;pos - start));</span>
+<span class="lineNum">     630 </span><span class="lineCov">           4989 :   if (buf-&gt;pos - start &gt; 16000000) {</span>
+<span class="lineNum">     631 </span><span class="lineNoCov">              0 :     zend_throw_exception_ex(mongo_ce_Exception, 3 TSRMLS_CC, &quot;insert too large: %d, max: 16000000&quot;, buf-&gt;pos - start);</span>
+<span class="lineNum">     632 </span><span class="lineNoCov">              0 :     return FAILURE;</span>
+<span class="lineNum">     633 </span>                :   }
+<span class="lineNum">     634 </span><span class="lineCov">           4989 :   memcpy(start, &amp;total, INT_32);</span>
+<span class="lineNum">     635 </span><span class="lineCov">           4989 :   return SUCCESS;</span>
+<a name="636"><span class="lineNum">     636 </span>                : }</a>
+<span class="lineNum">     637 </span>                : 
+<span class="lineNum">     638 </span><span class="lineCov">            176 : static int insert_helper(buffer *buf, zval *doc, int max TSRMLS_DC) {</span>
+<span class="lineNum">     639 </span><span class="lineCov">            176 :   int start = buf-&gt;pos - buf-&gt;start;</span>
+<span class="lineNum">     640 </span>                : 
+<span class="lineNum">     641 </span><span class="lineCov">            176 :   int result = zval_to_bson(buf, HASH_P(doc), PREP TSRMLS_CC);</span>
+<span class="lineNum">     642 </span>                : 
+<span class="lineNum">     643 </span>                :   // throw exception if serialization crapped out
+<span class="lineNum">     644 </span><span class="lineCov">            176 :   if (EG(exception) || FAILURE == result) {</span>
+<span class="lineNum">     645 </span><span class="lineNoCov">              0 :     return FAILURE;</span>
+<span class="lineNum">     646 </span>                :   }
+<span class="lineNum">     647 </span>                :   // return if there were 0 elements
+<span class="lineNum">     648 </span><span class="lineCov">            176 :   else if (0 == result) {</span>
+<span class="lineNum">     649 </span><span class="lineNoCov">              0 :     zend_throw_exception_ex(mongo_ce_Exception, 4 TSRMLS_CC, &quot;no elements in doc&quot;);</span>
+<span class="lineNum">     650 </span><span class="lineNoCov">              0 :     return FAILURE;</span>
+<span class="lineNum">     651 </span>                :   }
+<span class="lineNum">     652 </span>                : 
+<span class="lineNum">     653 </span>                :   // throw an exception if the doc was too big
+<span class="lineNum">     654 </span><span class="lineCov">            176 :   if(buf-&gt;pos - (buf-&gt;start + start) &gt; max) {</span>
+<span class="lineNum">     655 </span><span class="lineNoCov">              0 :     zend_throw_exception_ex(mongo_ce_Exception, 5 TSRMLS_CC, &quot;size of BSON doc is %d bytes, max is %d&quot;,</span>
+<span class="lineNum">     656 </span><span class="lineNoCov">              0 :                             buf-&gt;pos - (buf-&gt;start + start), max);</span>
+<span class="lineNum">     657 </span><span class="lineNoCov">              0 :     return FAILURE;</span>
+<span class="lineNum">     658 </span>                :   }
+<span class="lineNum">     659 </span>                : 
+<span class="lineNum">     660 </span><span class="lineCov">            176 :   return php_mongo_serialize_size(buf-&gt;start + start, buf TSRMLS_CC);</span>
+<a name="661"><span class="lineNum">     661 </span>                : }</a>
+<span class="lineNum">     662 </span>                : 
+<span class="lineNum">     663 </span><span class="lineCov">            172 : int php_mongo_write_insert(buffer *buf, char *ns, zval *doc, int max TSRMLS_DC) {</span>
+<span class="lineNum">     664 </span>                :   mongo_msg_header header;
+<span class="lineNum">     665 </span><span class="lineCov">            172 :   int start = buf-&gt;pos - buf-&gt;start;</span>
+<span class="lineNum">     666 </span>                : 
+<span class="lineNum">     667 </span><span class="lineCov">            172 :   CREATE_HEADER(buf, ns, OP_INSERT);</span>
+<span class="lineNum">     668 </span>                : 
+<span class="lineNum">     669 </span><span class="lineCov">            172 :   if (FAILURE == insert_helper(buf, doc, max TSRMLS_CC)) {</span>
+<span class="lineNum">     670 </span><span class="lineNoCov">              0 :     return FAILURE;</span>
+<span class="lineNum">     671 </span>                :   }
+<span class="lineNum">     672 </span>                : 
+<span class="lineNum">     673 </span><span class="lineCov">            172 :   return php_mongo_serialize_size(buf-&gt;start + start, buf TSRMLS_CC);</span>
+<a name="674"><span class="lineNum">     674 </span>                : }</a>
+<span class="lineNum">     675 </span>                : 
+<span class="lineNum">     676 </span><span class="lineCov">              1 : int php_mongo_write_batch_insert(buffer *buf, char *ns, int flags, zval *docs, int max TSRMLS_DC) {</span>
+<span class="lineNum">     677 </span><span class="lineCov">              1 :   int start = buf-&gt;pos - buf-&gt;start, count = 0;</span>
+<span class="lineNum">     678 </span>                :   HashPosition pointer;
+<span class="lineNum">     679 </span>                :   zval **doc;
+<span class="lineNum">     680 </span>                :   mongo_msg_header header;
+<span class="lineNum">     681 </span>                : 
+<span class="lineNum">     682 </span><span class="lineCov">              1 :   CREATE_HEADER_WITH_OPTS(buf, ns, OP_INSERT, flags);</span>
+<span class="lineNum">     683 </span>                :   
+<span class="lineNum">     684 </span>                : //  php_mongo_serialize_int(buf, flags);
+<span class="lineNum">     685 </span>                : 
+<span class="lineNum">     686 </span><span class="lineCov">              6 :   for(zend_hash_internal_pointer_reset_ex(HASH_P(docs), &amp;pointer);</span>
+<span class="lineNum">     687 </span><span class="lineCov">              5 :       zend_hash_get_current_data_ex(HASH_P(docs), (void**)&amp;doc, &amp;pointer) == SUCCESS;</span>
+<span class="lineNum">     688 </span><span class="lineCov">              4 :       zend_hash_move_forward_ex(HASH_P(docs), &amp;pointer)) {</span>
+<span class="lineNum">     689 </span>                : 
+<span class="lineNum">     690 </span><span class="lineCov">              4 :     if (IS_SCALAR_PP(doc)) {</span>
+<span class="lineNum">     691 </span><span class="lineNoCov">              0 :       continue;</span>
+<span class="lineNum">     692 </span>                :     }
+<span class="lineNum">     693 </span>                : 
+<span class="lineNum">     694 </span><span class="lineCov">              8 :     if (FAILURE == insert_helper(buf, *doc, max TSRMLS_CC) ||</span>
+<span class="lineNum">     695 </span><span class="lineCov">              4 :         buf-&gt;pos - buf-&gt;start &gt;= MonGlo(max_send_size)) {</span>
+<span class="lineNum">     696 </span><span class="lineNoCov">              0 :       return FAILURE;</span>
+<span class="lineNum">     697 </span>                :     }
+<span class="lineNum">     698 </span>                : 
+<span class="lineNum">     699 </span><span class="lineCov">              4 :     count++;</span>
+<span class="lineNum">     700 </span>                :   }
+<span class="lineNum">     701 </span>                : 
+<span class="lineNum">     702 </span>                :   // if there are no elements, don't bother saving
+<span class="lineNum">     703 </span><span class="lineCov">              1 :   if (count == 0) {</span>
+<span class="lineNum">     704 </span><span class="lineNoCov">              0 :     zend_throw_exception_ex(mongo_ce_Exception, 6 TSRMLS_CC, &quot;no documents given&quot;);</span>
+<span class="lineNum">     705 </span><span class="lineNoCov">              0 :     return FAILURE;</span>
+<span class="lineNum">     706 </span>                :   }
+<span class="lineNum">     707 </span>                : 
+<span class="lineNum">     708 </span>                :   // this is a hard limit in the db server (util/messages.cpp)
+<span class="lineNum">     709 </span><span class="lineCov">              1 :   if (buf-&gt;pos - (buf-&gt;start + start) &gt; 16000000) {</span>
+<span class="lineNum">     710 </span><span class="lineNoCov">              0 :     zend_throw_exception_ex(mongo_ce_Exception, 3 TSRMLS_CC, &quot;insert too large: %d, max: 16000000&quot;, buf-&gt;pos - (buf-&gt;start+start));</span>
+<span class="lineNum">     711 </span><span class="lineNoCov">              0 :     return FAILURE;</span>
+<span class="lineNum">     712 </span>                :   }
+<span class="lineNum">     713 </span>                : 
+<span class="lineNum">     714 </span><span class="lineCov">              1 :   return php_mongo_serialize_size(buf-&gt;start + start, buf TSRMLS_CC);</span>
+<a name="715"><span class="lineNum">     715 </span>                : }</a>
+<span class="lineNum">     716 </span>                : 
+<span class="lineNum">     717 </span><span class="lineNoCov">              0 : int php_mongo_write_update(buffer *buf, char *ns, int flags, zval *criteria, zval *newobj TSRMLS_DC) {</span>
+<span class="lineNum">     718 </span>                :   mongo_msg_header header;
+<span class="lineNum">     719 </span><span class="lineNoCov">              0 :   int start = buf-&gt;pos - buf-&gt;start;</span>
+<span class="lineNum">     720 </span>                : 
+<span class="lineNum">     721 </span><span class="lineNoCov">              0 :   CREATE_HEADER(buf, ns, OP_UPDATE);</span>
+<span class="lineNum">     722 </span>                : 
+<span class="lineNum">     723 </span><span class="lineNoCov">              0 :   php_mongo_serialize_int(buf, flags);</span>
+<span class="lineNum">     724 </span>                : 
+<span class="lineNum">     725 </span><span class="lineNoCov">              0 :   if (zval_to_bson(buf, HASH_P(criteria), NO_PREP TSRMLS_CC) == FAILURE ||</span>
+<span class="lineNum">     726 </span><span class="lineNoCov">              0 :       EG(exception) ||</span>
+<span class="lineNum">     727 </span><span class="lineNoCov">              0 :       zval_to_bson(buf, HASH_P(newobj), NO_PREP TSRMLS_CC) == FAILURE ||</span>
+<span class="lineNum">     728 </span><span class="lineNoCov">              0 :       EG(exception)) {</span>
+<span class="lineNum">     729 </span><span class="lineNoCov">              0 :     return FAILURE;</span>
+<span class="lineNum">     730 </span>                :   }
+<span class="lineNum">     731 </span>                : 
+<span class="lineNum">     732 </span><span class="lineNoCov">              0 :   return php_mongo_serialize_size(buf-&gt;start + start, buf TSRMLS_CC);</span>
+<a name="733"><span class="lineNum">     733 </span>                : }</a>
+<span class="lineNum">     734 </span>                : 
+<span class="lineNum">     735 </span><span class="lineCov">             18 : int php_mongo_write_delete(buffer *buf, char *ns, int flags, zval *criteria TSRMLS_DC) {</span>
+<span class="lineNum">     736 </span>                :   mongo_msg_header header;
+<span class="lineNum">     737 </span><span class="lineCov">             18 :   int start = buf-&gt;pos - buf-&gt;start;</span>
+<span class="lineNum">     738 </span>                : 
+<span class="lineNum">     739 </span><span class="lineCov">             18 :   CREATE_HEADER(buf, ns, OP_DELETE);</span>
+<span class="lineNum">     740 </span>                : 
+<span class="lineNum">     741 </span><span class="lineCov">             18 :   php_mongo_serialize_int(buf, flags);</span>
+<span class="lineNum">     742 </span>                : 
+<span class="lineNum">     743 </span><span class="lineCov">             36 :   if (zval_to_bson(buf, HASH_P(criteria), NO_PREP TSRMLS_CC) == FAILURE ||</span>
+<span class="lineNum">     744 </span><span class="lineCov">             18 :       EG(exception)) {</span>
+<span class="lineNum">     745 </span><span class="lineNoCov">              0 :     return FAILURE;</span>
+<span class="lineNum">     746 </span>                :   }
+<span class="lineNum">     747 </span>                : 
+<span class="lineNum">     748 </span><span class="lineCov">             18 :   return php_mongo_serialize_size(buf-&gt;start + start, buf TSRMLS_CC);</span>
+<span class="lineNum">     749 </span>                : }
+<span class="lineNum">     750 </span>                : 
+<span class="lineNum">     751 </span>                : /*
+<span class="lineNum">     752 </span>                :  * Creates a query string in buf.
+<span class="lineNum">     753 </span>                :  *
+<span class="lineNum">     754 </span>                :  * The following fields of cursor are used:
+<span class="lineNum">     755 </span>                :  *  - ns
+<span class="lineNum">     756 </span>                :  *  - opts
+<span class="lineNum">     757 </span>                :  *  - skip
+<span class="lineNum">     758 </span>                :  *  - limit
+<span class="lineNum">     759 </span>                :  *  - query
+<span class="lineNum">     760 </span>                :  *  - fields
+<a name="761"><span class="lineNum">     761 </span>                :  *</a>
+<span class="lineNum">     762 </span>                :  */
+<span class="lineNum">     763 </span><span class="lineCov">           2187 : int php_mongo_write_query(buffer *buf, mongo_cursor *cursor TSRMLS_DC) {</span>
+<span class="lineNum">     764 </span>                :   mongo_msg_header header;
+<span class="lineNum">     765 </span><span class="lineCov">           2187 :   int start = buf-&gt;pos - buf-&gt;start;</span>
+<span class="lineNum">     766 </span>                : 
+<span class="lineNum">     767 </span><span class="lineCov">           2187 :   CREATE_HEADER_WITH_OPTS(buf, cursor-&gt;ns, OP_QUERY, cursor-&gt;opts);</span>
+<span class="lineNum">     768 </span><span class="lineCov">           2187 :   cursor-&gt;send.request_id = header.request_id;</span>
+<span class="lineNum">     769 </span>                : 
+<span class="lineNum">     770 </span><span class="lineCov">           2187 :   php_mongo_serialize_int(buf, cursor-&gt;skip);</span>
+<span class="lineNum">     771 </span><span class="lineCov">           2187 :   php_mongo_serialize_int(buf, get_limit(cursor));</span>
+<span class="lineNum">     772 </span>                : 
+<span class="lineNum">     773 </span><span class="lineCov">           4373 :   if (zval_to_bson(buf, HASH_P(cursor-&gt;query), NO_PREP TSRMLS_CC) == FAILURE ||</span>
+<span class="lineNum">     774 </span><span class="lineCov">           2186 :       EG(exception)) {</span>
+<span class="lineNum">     775 </span><span class="lineCov">              1 :     return FAILURE;</span>
+<span class="lineNum">     776 </span>                :   }
+<span class="lineNum">     777 </span><span class="lineCov">           2186 :   if (cursor-&gt;fields &amp;&amp; zend_hash_num_elements(HASH_P(cursor-&gt;fields)) &gt; 0) {</span>
+<span class="lineNum">     778 </span><span class="lineCov">             18 :     if (zval_to_bson(buf, HASH_P(cursor-&gt;fields), NO_PREP TSRMLS_CC) == FAILURE ||</span>
+<span class="lineNum">     779 </span><span class="lineCov">              9 :         EG(exception)) {</span>
+<span class="lineNum">     780 </span><span class="lineNoCov">              0 :       return FAILURE;</span>
+<span class="lineNum">     781 </span>                :     }
+<span class="lineNum">     782 </span>                :   }
+<span class="lineNum">     783 </span>                : 
+<span class="lineNum">     784 </span><span class="lineCov">           2186 :   return php_mongo_serialize_size(buf-&gt;start + start, buf TSRMLS_CC);</span>
+<a name="785"><span class="lineNum">     785 </span>                : }</a>
+<span class="lineNum">     786 </span>                : 
+<span class="lineNum">     787 </span><span class="lineNoCov">              0 : int php_mongo_write_kill_cursors(buffer *buf, int64_t cursor_id TSRMLS_DC) {</span>
+<span class="lineNum">     788 </span>                :   mongo_msg_header header;
+<span class="lineNum">     789 </span>                : 
+<span class="lineNum">     790 </span><span class="lineNoCov">              0 :   CREATE_MSG_HEADER(MonGlo(request_id)++, 0, OP_KILL_CURSORS);</span>
+<span class="lineNum">     791 </span><span class="lineNoCov">              0 :   APPEND_HEADER(buf, 0);</span>
+<span class="lineNum">     792 </span>                : 
+<span class="lineNum">     793 </span>                :   // # of cursors
+<span class="lineNum">     794 </span><span class="lineNoCov">              0 :   php_mongo_serialize_int(buf, 1);</span>
+<span class="lineNum">     795 </span>                :   // cursor ids
+<span class="lineNum">     796 </span><span class="lineNoCov">              0 :   php_mongo_serialize_long(buf, cursor_id);</span>
+<span class="lineNum">     797 </span><span class="lineNoCov">              0 :   return php_mongo_serialize_size(buf-&gt;start, buf TSRMLS_CC);</span>
+<span class="lineNum">     798 </span>                : }
+<span class="lineNum">     799 </span>                : 
+<span class="lineNum">     800 </span>                : /*
+<span class="lineNum">     801 </span>                :  * Creates a GET_MORE request
+<span class="lineNum">     802 </span>                :  *
+<span class="lineNum">     803 </span>                :  * The following fields of cursor are used:
+<span class="lineNum">     804 </span>                :  *  - ns
+<span class="lineNum">     805 </span>                :  *  - recv.request_id
+<span class="lineNum">     806 </span>                :  *  - limit
+<a name="807"><span class="lineNum">     807 </span>                :  *  - cursor_id</a>
+<span class="lineNum">     808 </span>                :  */
+<span class="lineNum">     809 </span><span class="lineNoCov">              0 : int php_mongo_write_get_more(buffer *buf, mongo_cursor *cursor TSRMLS_DC) {</span>
+<span class="lineNum">     810 </span>                :   mongo_msg_header header;
+<span class="lineNum">     811 </span><span class="lineNoCov">              0 :   int start = buf-&gt;pos - buf-&gt;start;</span>
+<span class="lineNum">     812 </span>                : 
+<span class="lineNum">     813 </span><span class="lineNoCov">              0 :   CREATE_RESPONSE_HEADER(buf, cursor-&gt;ns, cursor-&gt;recv.request_id, OP_GET_MORE);</span>
+<span class="lineNum">     814 </span><span class="lineNoCov">              0 :   cursor-&gt;send.request_id = header.request_id;</span>
+<span class="lineNum">     815 </span>                : 
+<span class="lineNum">     816 </span><span class="lineNoCov">              0 :   php_mongo_serialize_int(buf, get_limit(cursor));</span>
+<span class="lineNum">     817 </span><span class="lineNoCov">              0 :   php_mongo_serialize_long(buf, cursor-&gt;cursor_id);</span>
+<span class="lineNum">     818 </span>                : 
+<span class="lineNum">     819 </span><span class="lineNoCov">              0 :   return php_mongo_serialize_size(buf-&gt;start + start, buf TSRMLS_CC);</span>
+<span class="lineNum">     820 </span>                : }
+<a name="821"><span class="lineNum">     821 </span>                : </a>
+<span class="lineNum">     822 </span>                : 
+<span class="lineNum">     823 </span><span class="lineCov">           2187 : static int get_limit(mongo_cursor *cursor) {</span>
+<span class="lineNum">     824 </span>                :   int lim_at;
+<span class="lineNum">     825 </span>                : 
+<span class="lineNum">     826 </span><span class="lineCov">           2187 :   if (cursor-&gt;limit &lt; 0) {</span>
+<span class="lineNum">     827 </span><span class="lineCov">           2158 :     return cursor-&gt;limit;</span>
+<span class="lineNum">     828 </span>                :   }
+<span class="lineNum">     829 </span><span class="lineCov">             29 :   else if (cursor-&gt;batch_size &lt; 0) {</span>
+<span class="lineNum">     830 </span><span class="lineNoCov">              0 :     return cursor-&gt;batch_size;</span>
+<span class="lineNum">     831 </span>                :   }
+<span class="lineNum">     832 </span>                : 
+<span class="lineNum">     833 </span><span class="lineCov">             29 :   lim_at = cursor-&gt;limit &gt; cursor-&gt;batch_size ? cursor-&gt;limit - cursor-&gt;at : cursor-&gt;limit;</span>
+<span class="lineNum">     834 </span><span class="lineCov">             29 :   if (cursor-&gt;batch_size &amp;&amp; (!lim_at || cursor-&gt;batch_size &lt;= lim_at)) {</span>
+<span class="lineNum">     835 </span><span class="lineNoCov">              0 :     return cursor-&gt;batch_size;</span>
+<span class="lineNum">     836 </span>                :   }
+<span class="lineNum">     837 </span><span class="lineCov">             29 :   else if (lim_at &amp;&amp; (!cursor-&gt;batch_size || lim_at &lt; cursor-&gt;batch_size)) {</span>
+<span class="lineNum">     838 </span><span class="lineCov">              1 :     return lim_at;</span>
+<span class="lineNum">     839 </span>                :   }
+<span class="lineNum">     840 </span>                : 
+<span class="lineNum">     841 </span><span class="lineCov">             28 :   return 0;</span>
+<span class="lineNum">     842 </span>                : }
+<a name="843"><span class="lineNum">     843 </span>                : </a>
+<span class="lineNum">     844 </span>                : 
+<span class="lineNum">     845 </span><span class="lineCov">           2186 : char* bson_to_zval(char *buf, HashTable *result TSRMLS_DC) {</span>
+<span class="lineNum">     846 </span>                :   /*
+<span class="lineNum">     847 </span>                :    * buf_start is used for debugging
+<span class="lineNum">     848 </span>                :    *
+<span class="lineNum">     849 </span>                :    * if the deserializer runs into bson it can't
+<span class="lineNum">     850 </span>                :    * parse, it will dump the bytes to that point.
+<span class="lineNum">     851 </span>                :    *
+<span class="lineNum">     852 </span>                :    * we lose buf's position as we iterate, so we
+<span class="lineNum">     853 </span>                :    * need buf_start to save it.
+<span class="lineNum">     854 </span>                :    */
+<span class="lineNum">     855 </span><span class="lineCov">           2186 :   char *buf_start = buf;</span>
+<span class="lineNum">     856 </span>                :   char type;
+<span class="lineNum">     857 </span>                : 
+<span class="lineNum">     858 </span><span class="lineCov">           2186 :   if (buf == 0) {</span>
+<span class="lineNum">     859 </span><span class="lineNoCov">              0 :     return 0;</span>
+<span class="lineNum">     860 </span>                :   }
+<span class="lineNum">     861 </span>                : 
+<span class="lineNum">     862 </span>                :   // for size
+<span class="lineNum">     863 </span><span class="lineCov">           2186 :   buf += INT_32;</span>
+<span class="lineNum">     864 </span>                : 
+<span class="lineNum">     865 </span><span class="lineCov">           8896 :   while ((type = *buf++) != 0) {</span>
+<span class="lineNum">     866 </span>                :     char *name;
+<span class="lineNum">     867 </span>                :     zval *value;
+<span class="lineNum">     868 </span>                : 
+<span class="lineNum">     869 </span><span class="lineCov">           4524 :     name = buf;</span>
+<span class="lineNum">     870 </span>                :     // get past field name
+<span class="lineNum">     871 </span><span class="lineCov">           4524 :     buf += strlen(buf) + 1;</span>
+<span class="lineNum">     872 </span>                : 
+<span class="lineNum">     873 </span><span class="lineCov">           4524 :     MAKE_STD_ZVAL(value);</span>
+<span class="lineNum">     874 </span><span class="lineCov">           4524 :     ZVAL_NULL(value);</span>
+<span class="lineNum">     875 </span>                : 
+<span class="lineNum">     876 </span>                :     // get value
+<span class="lineNum">     877 </span><span class="lineCov">           4524 :     switch(type) {</span>
+<span class="lineNum">     878 </span>                :     case BSON_OID: {
+<span class="lineNum">     879 </span>                :       mongo_id *this_id;
+<span class="lineNum">     880 </span><span class="lineCov">             13 :       zval *str = 0;</span>
+<span class="lineNum">     881 </span>                : 
+<span class="lineNum">     882 </span><span class="lineCov">             13 :       object_init_ex(value, mongo_ce_Id);</span>
+<span class="lineNum">     883 </span>                : 
+<span class="lineNum">     884 </span><span class="lineCov">             13 :       this_id = (mongo_id*)zend_object_store_get_object(value TSRMLS_CC);</span>
+<span class="lineNum">     885 </span><span class="lineCov">             13 :       this_id-&gt;id = estrndup(buf, OID_SIZE);</span>
+<span class="lineNum">     886 </span>                : 
+<span class="lineNum">     887 </span><span class="lineCov">             13 :       MAKE_STD_ZVAL(str);</span>
+<span class="lineNum">     888 </span><span class="lineCov">             13 :       ZVAL_NULL(str);</span>
+<span class="lineNum">     889 </span>                : 
+<span class="lineNum">     890 </span><span class="lineCov">             13 :       MONGO_METHOD(MongoId, __toString, str, value);</span>
+<span class="lineNum">     891 </span><span class="lineCov">             13 :       zend_update_property(mongo_ce_Id, value, &quot;$id&quot;, strlen(&quot;$id&quot;), str TSRMLS_CC);</span>
+<span class="lineNum">     892 </span><span class="lineCov">             13 :       zval_ptr_dtor(&amp;str);</span>
+<span class="lineNum">     893 </span>                : 
+<span class="lineNum">     894 </span><span class="lineCov">             13 :       buf += OID_SIZE;</span>
+<span class="lineNum">     895 </span><span class="lineCov">             13 :       break;</span>
+<span class="lineNum">     896 </span>                :     }
+<span class="lineNum">     897 </span>                :     case BSON_DOUBLE: {
+<span class="lineNum">     898 </span><span class="lineCov">           2163 :       double d = *(double*)buf;</span>
+<span class="lineNum">     899 </span>                :       int64_t i, *i_p;
+<span class="lineNum">     900 </span><span class="lineCov">           2163 :       i_p = &amp;i;</span>
+<span class="lineNum">     901 </span>                : 
+<span class="lineNum">     902 </span><span class="lineCov">           2163 :       memcpy(i_p, &amp;d, DOUBLE_64);</span>
+<span class="lineNum">     903 </span><span class="lineCov">           2163 :       i = MONGO_64(i);</span>
+<span class="lineNum">     904 </span><span class="lineCov">           2163 :       memcpy(&amp;d, i_p, DOUBLE_64);</span>
+<span class="lineNum">     905 </span>                : 
+<span class="lineNum">     906 </span><span class="lineCov">           2163 :       ZVAL_DOUBLE(value, d);</span>
+<span class="lineNum">     907 </span><span class="lineCov">           2163 :       buf += DOUBLE_64;</span>
+<span class="lineNum">     908 </span><span class="lineCov">           2163 :       break;</span>
+<span class="lineNum">     909 </span>                :     }
+<span class="lineNum">     910 </span>                :     case BSON_SYMBOL:
+<span class="lineNum">     911 </span>                :     case BSON_STRING: {
+<span class="lineNum">     912 </span>                :       // len includes \0
+<span class="lineNum">     913 </span><span class="lineCov">           2116 :       int len = MONGO_32(*((int*)buf));</span>
+<span class="lineNum">     914 </span><span class="lineCov">           2116 :       if (INVALID_STRING_LEN(len)) {</span>
+<span class="lineNum">     915 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;value);</span>
+<span class="lineNum">     916 </span><span class="lineNoCov">              0 :         zend_throw_exception_ex(mongo_ce_CursorException, 0 TSRMLS_CC, &quot;invalid string length for key \&quot;%s\&quot;: %d&quot;, name, len);</span>
+<span class="lineNum">     917 </span><span class="lineNoCov">              0 :         return 0;</span>
+<span class="lineNum">     918 </span>                :       }
+<span class="lineNum">     919 </span><span class="lineCov">           2116 :       buf += INT_32;</span>
+<span class="lineNum">     920 </span>                : 
+<span class="lineNum">     921 </span><span class="lineCov">           2116 :       ZVAL_STRINGL(value, buf, len-1, 1);</span>
+<span class="lineNum">     922 </span><span class="lineCov">           2116 :       buf += len;</span>
+<span class="lineNum">     923 </span><span class="lineCov">           2116 :       break;</span>
+<span class="lineNum">     924 </span>                :     }
+<span class="lineNum">     925 </span>                :     case BSON_OBJECT:
+<span class="lineNum">     926 </span>                :     case BSON_ARRAY: {
+<span class="lineNum">     927 </span><span class="lineCov">             11 :       array_init(value);</span>
+<span class="lineNum">     928 </span><span class="lineCov">             11 :       buf = bson_to_zval(buf, Z_ARRVAL_P(value) TSRMLS_CC);</span>
+<span class="lineNum">     929 </span><span class="lineCov">             11 :       if (EG(exception)) {</span>
+<span class="lineNum">     930 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;value);</span>
+<span class="lineNum">     931 </span><span class="lineNoCov">              0 :         return 0;</span>
+<span class="lineNum">     932 </span>                :       }
+<span class="lineNum">     933 </span><span class="lineCov">             11 :       break;</span>
+<span class="lineNum">     934 </span>                :     }
+<span class="lineNum">     935 </span>                :     case BSON_BINARY: {
+<span class="lineNum">     936 </span>                :       char type;
+<span class="lineNum">     937 </span>                : 
+<span class="lineNum">     938 </span><span class="lineCov">              4 :       int len = MONGO_32(*(int*)buf);</span>
+<span class="lineNum">     939 </span><span class="lineCov">              4 :       if (INVALID_STRING_LEN(len)) {</span>
+<span class="lineNum">     940 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;value);</span>
+<span class="lineNum">     941 </span><span class="lineNoCov">              0 :         zend_throw_exception_ex(mongo_ce_CursorException, 1 TSRMLS_CC, &quot;invalid binary length for key \&quot;%s\&quot;: %d&quot;, name, len);</span>
+<span class="lineNum">     942 </span><span class="lineNoCov">              0 :         return 0;</span>
+<span class="lineNum">     943 </span>                :       }
+<span class="lineNum">     944 </span><span class="lineCov">              4 :       buf += INT_32;</span>
+<span class="lineNum">     945 </span>                : 
+<span class="lineNum">     946 </span><span class="lineCov">              4 :       type = *buf++;</span>
+<span class="lineNum">     947 </span>                : 
+<span class="lineNum">     948 </span>                :       /* If the type is 2, check if the binary data
+<span class="lineNum">     949 </span>                :        * is prefixed by its length.
+<span class="lineNum">     950 </span>                :        *
+<span class="lineNum">     951 </span>                :        * There is an infinitesimally small chance that
+<span class="lineNum">     952 </span>                :        * the first four bytes will happen to be the
+<span class="lineNum">     953 </span>                :        * length of the rest of the string.  In this
+<span class="lineNum">     954 </span>                :        * case, the data will be corrupted.
+<span class="lineNum">     955 </span>                :        */
+<span class="lineNum">     956 </span><span class="lineCov">              4 :       if ((int)type == 2) {</span>
+<span class="lineNum">     957 </span><span class="lineCov">              4 :         int len2 = MONGO_32(*(int*)buf);</span>
+<span class="lineNum">     958 </span>                : 
+<span class="lineNum">     959 </span>                :         /* if the lengths match, the data is to spec,
+<span class="lineNum">     960 </span>                :          * so we use len2 as the true length.
+<span class="lineNum">     961 </span>                :          */
+<span class="lineNum">     962 </span><span class="lineCov">              4 :         if (len2 == len - 4) {</span>
+<span class="lineNum">     963 </span><span class="lineCov">              4 :           len = len2;</span>
+<span class="lineNum">     964 </span><span class="lineCov">              4 :           buf += INT_32;</span>
+<span class="lineNum">     965 </span>                :         }
+<span class="lineNum">     966 </span>                :       }
+<span class="lineNum">     967 </span>                : 
+<span class="lineNum">     968 </span><span class="lineCov">              4 :       object_init_ex(value, mongo_ce_BinData);</span>
+<span class="lineNum">     969 </span>                : 
+<span class="lineNum">     970 </span><span class="lineCov">              4 :       zend_update_property_stringl(mongo_ce_BinData, value, &quot;bin&quot;, strlen(&quot;bin&quot;), buf, len TSRMLS_CC);</span>
+<span class="lineNum">     971 </span><span class="lineCov">              4 :       zend_update_property_long(mongo_ce_BinData, value, &quot;type&quot;, strlen(&quot;type&quot;), type TSRMLS_CC);</span>
+<span class="lineNum">     972 </span>                : 
+<span class="lineNum">     973 </span><span class="lineCov">              4 :       buf += len;</span>
+<span class="lineNum">     974 </span><span class="lineCov">              4 :       break;</span>
+<span class="lineNum">     975 </span>                :     }
+<span class="lineNum">     976 </span>                :     case BSON_BOOL: {
+<span class="lineNum">     977 </span><span class="lineCov">             22 :       char d = *buf++;</span>
+<span class="lineNum">     978 </span><span class="lineCov">             22 :       ZVAL_BOOL(value, d);</span>
+<span class="lineNum">     979 </span><span class="lineCov">             22 :       break;</span>
+<span class="lineNum">     980 </span>                :     }
+<span class="lineNum">     981 </span>                :     case BSON_UNDEF:
+<span class="lineNum">     982 </span>                :     case BSON_NULL: {
+<span class="lineNum">     983 </span><span class="lineCov">             27 :       ZVAL_NULL(value);</span>
+<span class="lineNum">     984 </span><span class="lineCov">             27 :       break;</span>
+<span class="lineNum">     985 </span>                :     }
+<span class="lineNum">     986 </span>                :     case BSON_INT: {
+<span class="lineNum">     987 </span><span class="lineCov">            157 :       ZVAL_LONG(value, MONGO_32(*((int*)buf)));</span>
+<span class="lineNum">     988 </span><span class="lineCov">            157 :       buf += INT_32;</span>
+<span class="lineNum">     989 </span><span class="lineCov">            157 :       break;</span>
+<span class="lineNum">     990 </span>                :     }
+<span class="lineNum">     991 </span>                :     case BSON_LONG: {
+<span class="lineNum">     992 </span><span class="lineNoCov">              0 :       if (MonGlo(long_as_object)) {</span>
+<span class="lineNum">     993 </span>                :         char *buffer;
+<span class="lineNum">     994 </span>                : 
+<span class="lineNum">     995 </span>                : #ifdef WIN32
+<span class="lineNum">     996 </span>                :         spprintf(&amp;buffer, 0, &quot;%I64d&quot;, (int64_t)MONGO_64(*((int64_t*)buf)));
+<span class="lineNum">     997 </span>                : #else
+<span class="lineNum">     998 </span><span class="lineNoCov">              0 :         spprintf(&amp;buffer, 0, &quot;%lld&quot;, (long long int)MONGO_64(*((int64_t*)buf)));</span>
+<span class="lineNum">     999 </span>                : #endif
+<span class="lineNum">    1000 </span><span class="lineNoCov">              0 :         object_init_ex(value, mongo_ce_Int64);</span>
+<span class="lineNum">    1001 </span>                : 
+<span class="lineNum">    1002 </span><span class="lineNoCov">              0 :         zend_update_property_string(mongo_ce_Int64, value, &quot;value&quot;, strlen(&quot;value&quot;), buffer TSRMLS_CC);</span>
+<span class="lineNum">    1003 </span>                : 
+<span class="lineNum">    1004 </span><span class="lineNoCov">              0 :         efree(buffer);</span>
+<span class="lineNum">    1005 </span>                :       } else {
+<span class="lineNum">    1006 </span><span class="lineNoCov">              0 :         if (MonGlo(native_long)) {</span>
+<span class="lineNum">    1007 </span>                : #if SIZEOF_LONG == 4
+<span class="lineNum">    1008 </span>                :           zend_throw_exception_ex(mongo_ce_CursorException, 1 TSRMLS_CC, &quot;Can not natively represent the long %llu on this platform&quot;, (int64_t)MONGO_64(*((int64_t*)buf)));
+<span class="lineNum">    1009 </span>                :           return 0;
+<span class="lineNum">    1010 </span>                : #else
+<span class="lineNum">    1011 </span>                : # if SIZEOF_LONG == 8
+<span class="lineNum">    1012 </span><span class="lineNoCov">              0 :           ZVAL_LONG(value, (long)MONGO_64(*((int64_t*)buf)));</span>
+<span class="lineNum">    1013 </span>                : # else
+<span class="lineNum">    1014 </span>                : #  error The PHP number size is neither 4 or 8 bytes; no clue what to do with that!
+<span class="lineNum">    1015 </span>                : # endif
+<span class="lineNum">    1016 </span>                : #endif
+<span class="lineNum">    1017 </span>                :         } else {
+<span class="lineNum">    1018 </span><span class="lineNoCov">              0 :           ZVAL_DOUBLE(value, (double)MONGO_64(*((int64_t*)buf)));</span>
+<span class="lineNum">    1019 </span>                :         }
+<span class="lineNum">    1020 </span>                :       }
+<span class="lineNum">    1021 </span><span class="lineNoCov">              0 :       buf += INT_64;</span>
+<span class="lineNum">    1022 </span><span class="lineNoCov">              0 :       break;</span>
+<span class="lineNum">    1023 </span>                :     }
+<span class="lineNum">    1024 </span>                :     case BSON_DATE: {
+<span class="lineNum">    1025 </span><span class="lineCov">             11 :       int64_t d = MONGO_64(*((int64_t*)buf));</span>
+<span class="lineNum">    1026 </span><span class="lineCov">             11 :       buf += INT_64;</span>
+<span class="lineNum">    1027 </span>                : 
+<span class="lineNum">    1028 </span><span class="lineCov">             11 :       object_init_ex(value, mongo_ce_Date);</span>
+<span class="lineNum">    1029 </span>                : 
+<span class="lineNum">    1030 </span><span class="lineCov">             11 :       zend_update_property_long(mongo_ce_Date, value, &quot;sec&quot;, strlen(&quot;sec&quot;), (long)(d/1000) TSRMLS_CC);</span>
+<span class="lineNum">    1031 </span><span class="lineCov">             11 :       zend_update_property_long(mongo_ce_Date, value, &quot;usec&quot;, strlen(&quot;usec&quot;), (long)((d*1000)%1000000) TSRMLS_CC);</span>
+<span class="lineNum">    1032 </span>                : 
+<span class="lineNum">    1033 </span><span class="lineCov">             11 :       break;</span>
+<span class="lineNum">    1034 </span>                :     }
+<span class="lineNum">    1035 </span>                :     case BSON_REGEX: {
+<span class="lineNum">    1036 </span>                :       char *regex, *flags;
+<span class="lineNum">    1037 </span>                :       int regex_len, flags_len;
+<span class="lineNum">    1038 </span>                : 
+<span class="lineNum">    1039 </span><span class="lineNoCov">              0 :       regex = buf;</span>
+<span class="lineNum">    1040 </span><span class="lineNoCov">              0 :       regex_len = strlen(buf);</span>
+<span class="lineNum">    1041 </span><span class="lineNoCov">              0 :       buf += regex_len+1;</span>
+<span class="lineNum">    1042 </span>                : 
+<span class="lineNum">    1043 </span><span class="lineNoCov">              0 :       flags = buf;</span>
+<span class="lineNum">    1044 </span><span class="lineNoCov">              0 :       flags_len = strlen(buf);</span>
+<span class="lineNum">    1045 </span><span class="lineNoCov">              0 :       buf += flags_len+1;</span>
+<span class="lineNum">    1046 </span>                : 
+<span class="lineNum">    1047 </span><span class="lineNoCov">              0 :       object_init_ex(value, mongo_ce_Regex);</span>
+<span class="lineNum">    1048 </span>                : 
+<span class="lineNum">    1049 </span><span class="lineNoCov">              0 :       zend_update_property_stringl(mongo_ce_Regex, value, &quot;regex&quot;, strlen(&quot;regex&quot;), regex, regex_len TSRMLS_CC);</span>
+<span class="lineNum">    1050 </span><span class="lineNoCov">              0 :       zend_update_property_stringl(mongo_ce_Regex, value, &quot;flags&quot;, strlen(&quot;flags&quot;), flags, flags_len TSRMLS_CC);</span>
+<span class="lineNum">    1051 </span>                : 
+<span class="lineNum">    1052 </span><span class="lineNoCov">              0 :       break;</span>
+<span class="lineNum">    1053 </span>                :     }
+<span class="lineNum">    1054 </span>                :     case BSON_CODE:
+<span class="lineNum">    1055 </span>                :     case BSON_CODE__D: {
+<span class="lineNum">    1056 </span>                :       zval *zcope;
+<span class="lineNum">    1057 </span>                :       int code_len;
+<span class="lineNum">    1058 </span>                :       char *code;
+<span class="lineNum">    1059 </span>                : 
+<span class="lineNum">    1060 </span>                :       // CODE has a useless total size field
+<span class="lineNum">    1061 </span><span class="lineNoCov">              0 :       if (type == BSON_CODE) {</span>
+<span class="lineNum">    1062 </span><span class="lineNoCov">              0 :         buf += INT_32;</span>
+<span class="lineNum">    1063 </span>                :       }
+<span class="lineNum">    1064 </span>                : 
+<span class="lineNum">    1065 </span>                :       // length of code (includes \0)
+<span class="lineNum">    1066 </span><span class="lineNoCov">              0 :       code_len = MONGO_32(*(int*)buf);</span>
+<span class="lineNum">    1067 </span><span class="lineNoCov">              0 :       if (INVALID_STRING_LEN(code_len)) {</span>
+<span class="lineNum">    1068 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;value);</span>
+<span class="lineNum">    1069 </span><span class="lineNoCov">              0 :         zend_throw_exception_ex(mongo_ce_CursorException, 2 TSRMLS_CC, &quot;invalid code length for key \&quot;%s\&quot;: %d&quot;, name, code_len);</span>
+<span class="lineNum">    1070 </span><span class="lineNoCov">              0 :         return 0;</span>
+<span class="lineNum">    1071 </span>                :       }
+<span class="lineNum">    1072 </span><span class="lineNoCov">              0 :       buf += INT_32;</span>
+<span class="lineNum">    1073 </span>                : 
+<span class="lineNum">    1074 </span><span class="lineNoCov">              0 :       code = buf;</span>
+<span class="lineNum">    1075 </span><span class="lineNoCov">              0 :       buf += code_len;</span>
+<span class="lineNum">    1076 </span>                : 
+<span class="lineNum">    1077 </span>                :       // initialize scope array
+<span class="lineNum">    1078 </span><span class="lineNoCov">              0 :       MAKE_STD_ZVAL(zcope);</span>
+<span class="lineNum">    1079 </span><span class="lineNoCov">              0 :       array_init(zcope);</span>
+<span class="lineNum">    1080 </span>                : 
+<span class="lineNum">    1081 </span><span class="lineNoCov">              0 :       if (type == BSON_CODE) {</span>
+<span class="lineNum">    1082 </span><span class="lineNoCov">              0 :         buf = bson_to_zval(buf, HASH_P(zcope) TSRMLS_CC);</span>
+<span class="lineNum">    1083 </span><span class="lineNoCov">              0 :         if (EG(exception)) {</span>
+<span class="lineNum">    1084 </span><span class="lineNoCov">              0 :           zval_ptr_dtor(&amp;zcope);</span>
+<span class="lineNum">    1085 </span><span class="lineNoCov">              0 :           return 0;</span>
+<span class="lineNum">    1086 </span>                :         }
+<span class="lineNum">    1087 </span>                :       }
+<span class="lineNum">    1088 </span>                : 
+<span class="lineNum">    1089 </span><span class="lineNoCov">              0 :       object_init_ex(value, mongo_ce_Code);</span>
+<span class="lineNum">    1090 </span>                :       // exclude \0
+<span class="lineNum">    1091 </span><span class="lineNoCov">              0 :       zend_update_property_stringl(mongo_ce_Code, value, &quot;code&quot;, strlen(&quot;code&quot;), code, code_len-1 TSRMLS_CC);</span>
+<span class="lineNum">    1092 </span><span class="lineNoCov">              0 :       zend_update_property(mongo_ce_Code, value, &quot;scope&quot;, strlen(&quot;scope&quot;), zcope TSRMLS_CC);</span>
+<span class="lineNum">    1093 </span><span class="lineNoCov">              0 :       zval_ptr_dtor(&amp;zcope);</span>
+<span class="lineNum">    1094 </span>                : 
+<span class="lineNum">    1095 </span><span class="lineNoCov">              0 :       break;</span>
+<span class="lineNum">    1096 </span>                :     }
+<span class="lineNum">    1097 </span>                :     /* DEPRECATED
+<span class="lineNum">    1098 </span>                :      * database reference (12)
+<span class="lineNum">    1099 </span>                :      *   - 4 bytes ns length (includes trailing \0)
+<span class="lineNum">    1100 </span>                :      *   - ns + \0
+<span class="lineNum">    1101 </span>                :      *   - 12 bytes MongoId
+<span class="lineNum">    1102 </span>                :      * This converts the deprecated, old-style db ref type
+<span class="lineNum">    1103 </span>                :      * into the new type (array('$ref' =&gt; ..., $id =&gt; ...)).
+<span class="lineNum">    1104 </span>                :      */
+<span class="lineNum">    1105 </span>                :     case BSON_DBREF: {
+<span class="lineNum">    1106 </span>                :       int ns_len;
+<span class="lineNum">    1107 </span>                :       char *ns;
+<span class="lineNum">    1108 </span>                :       zval *zoid;
+<span class="lineNum">    1109 </span>                :       mongo_id *this_id;
+<span class="lineNum">    1110 </span>                : 
+<span class="lineNum">    1111 </span>                :       // ns
+<span class="lineNum">    1112 </span><span class="lineNoCov">              0 :       ns_len = *(int*)buf;</span>
+<span class="lineNum">    1113 </span><span class="lineNoCov">              0 :       if (INVALID_STRING_LEN(ns_len)) {</span>
+<span class="lineNum">    1114 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;value);</span>
+<span class="lineNum">    1115 </span><span class="lineNoCov">              0 :         zend_throw_exception_ex(mongo_ce_CursorException, 3 TSRMLS_CC, &quot;invalid dbref length for key \&quot;%s\&quot;: %d&quot;, name, ns_len);</span>
+<span class="lineNum">    1116 </span><span class="lineNoCov">              0 :         return 0;</span>
+<span class="lineNum">    1117 </span>                :       }
+<span class="lineNum">    1118 </span><span class="lineNoCov">              0 :       buf += INT_32;</span>
+<span class="lineNum">    1119 </span><span class="lineNoCov">              0 :       ns = buf;</span>
+<span class="lineNum">    1120 </span><span class="lineNoCov">              0 :       buf += ns_len;</span>
+<span class="lineNum">    1121 </span>                : 
+<span class="lineNum">    1122 </span>                :       // id
+<span class="lineNum">    1123 </span><span class="lineNoCov">              0 :       MAKE_STD_ZVAL(zoid);</span>
+<span class="lineNum">    1124 </span><span class="lineNoCov">              0 :       object_init_ex(zoid, mongo_ce_Id);</span>
+<span class="lineNum">    1125 </span>                : 
+<span class="lineNum">    1126 </span><span class="lineNoCov">              0 :       this_id = (mongo_id*)zend_object_store_get_object(zoid TSRMLS_CC);</span>
+<span class="lineNum">    1127 </span><span class="lineNoCov">              0 :       this_id-&gt;id = estrndup(buf, OID_SIZE);</span>
+<span class="lineNum">    1128 </span>                : 
+<span class="lineNum">    1129 </span><span class="lineNoCov">              0 :       buf += OID_SIZE;</span>
+<span class="lineNum">    1130 </span>                : 
+<span class="lineNum">    1131 </span>                :       // put it all together
+<span class="lineNum">    1132 </span><span class="lineNoCov">              0 :       array_init(value);</span>
+<span class="lineNum">    1133 </span><span class="lineNoCov">              0 :       add_assoc_stringl(value, &quot;$ref&quot;, ns, ns_len-1, 1);</span>
+<span class="lineNum">    1134 </span><span class="lineNoCov">              0 :       add_assoc_zval(value, &quot;$id&quot;, zoid);</span>
+<span class="lineNum">    1135 </span><span class="lineNoCov">              0 :       break;</span>
+<span class="lineNum">    1136 </span>                :     }
+<span class="lineNum">    1137 </span>                :     /* MongoTimestamp (17)
+<span class="lineNum">    1138 </span>                :      * 8 bytes total:
+<span class="lineNum">    1139 </span>                :      *  - sec: 4 bytes
+<span class="lineNum">    1140 </span>                :      *  - inc: 4 bytes
+<span class="lineNum">    1141 </span>                :      */
+<span class="lineNum">    1142 </span>                :     case BSON_TIMESTAMP: {
+<span class="lineNum">    1143 </span><span class="lineNoCov">              0 :       object_init_ex(value, mongo_ce_Timestamp);</span>
+<span class="lineNum">    1144 </span><span class="lineNoCov">              0 :       zend_update_property_long(mongo_ce_Timestamp, value, &quot;inc&quot;, strlen(&quot;inc&quot;), MONGO_32(*(int*)buf) TSRMLS_CC);</span>
+<span class="lineNum">    1145 </span><span class="lineNoCov">              0 :       buf += INT_32;</span>
+<span class="lineNum">    1146 </span><span class="lineNoCov">              0 :       zend_update_property_long(mongo_ce_Timestamp, value, &quot;sec&quot;, strlen(&quot;sec&quot;), MONGO_32(*(int*)buf) TSRMLS_CC);</span>
+<span class="lineNum">    1147 </span><span class="lineNoCov">              0 :       buf += INT_32;</span>
+<span class="lineNum">    1148 </span><span class="lineNoCov">              0 :       break;</span>
+<span class="lineNum">    1149 </span>                :     }
+<span class="lineNum">    1150 </span>                :     /* max key (127)
+<span class="lineNum">    1151 </span>                :      * max and min keys are used only for sharding, and
+<span class="lineNum">    1152 </span>                :      * cannot be resaved to the database at the moment
+<span class="lineNum">    1153 </span>                :      */
+<span class="lineNum">    1154 </span>                :     case BSON_MINKEY: {
+<span class="lineNum">    1155 </span><span class="lineNoCov">              0 :       object_init_ex(value, mongo_ce_MinKey);</span>
+<span class="lineNum">    1156 </span><span class="lineNoCov">              0 :       break;</span>
+<span class="lineNum">    1157 </span>                :     }
+<span class="lineNum">    1158 </span>                :     /* min key (0)
+<span class="lineNum">    1159 </span>                :      */
+<span class="lineNum">    1160 </span>                :     case BSON_MAXKEY: {
+<span class="lineNum">    1161 </span><span class="lineNoCov">              0 :       object_init_ex(value, mongo_ce_MaxKey);</span>
+<span class="lineNum">    1162 </span><span class="lineNoCov">              0 :       break;</span>
+<span class="lineNum">    1163 </span>                :     }
+<span class="lineNum">    1164 </span>                :     default: {
+<span class="lineNum">    1165 </span>                :       /* if we run into a type we don't recognize, there's
+<span class="lineNum">    1166 </span>                :        * either been some corruption or we've messed up on
+<span class="lineNum">    1167 </span>                :        * the parsing.  Either way, it's helpful to know the
+<span class="lineNum">    1168 </span>                :        * situation that led us here, so this dumps the
+<span class="lineNum">    1169 </span>                :        * buffer up to this point to stdout and returns.
+<span class="lineNum">    1170 </span>                :        *
+<span class="lineNum">    1171 </span>                :        * We can't dump any more of the buffer, unfortunately,
+<span class="lineNum">    1172 </span>                :        * because we don't keep track of the size.  Besides,
+<span class="lineNum">    1173 </span>                :        * if it is corrupt, the size might be messed up, too.
+<span class="lineNum">    1174 </span>                :        */
+<span class="lineNum">    1175 </span>                :       char *msg, *pos, *template;
+<span class="lineNum">    1176 </span>                :       int i, width, len;
+<span class="lineNum">    1177 </span><span class="lineNoCov">              0 :       unsigned char t = type;</span>
+<span class="lineNum">    1178 </span>                : 
+<span class="lineNum">    1179 </span><span class="lineNoCov">              0 :       template = &quot;type 0x00 not supported:&quot;;</span>
+<span class="lineNum">    1180 </span>                : 
+<span class="lineNum">    1181 </span>                :       // each byte is &quot; xx&quot; (3 chars)
+<span class="lineNum">    1182 </span><span class="lineNoCov">              0 :       width = 3;</span>
+<span class="lineNum">    1183 </span><span class="lineNoCov">              0 :       len = (buf - buf_start) * width;</span>
+<span class="lineNum">    1184 </span>                : 
+<span class="lineNum">    1185 </span><span class="lineNoCov">              0 :       msg = (char*)emalloc(strlen(template)+len+1);</span>
+<span class="lineNum">    1186 </span><span class="lineNoCov">              0 :       memcpy(msg, template, strlen(template));</span>
+<span class="lineNum">    1187 </span><span class="lineNoCov">              0 :       pos = msg+7;</span>
+<span class="lineNum">    1188 </span>                : 
+<span class="lineNum">    1189 </span><span class="lineNoCov">              0 :       sprintf(pos++, &quot;%x&quot;, t/16);</span>
+<span class="lineNum">    1190 </span><span class="lineNoCov">              0 :       t = t%16;</span>
+<span class="lineNum">    1191 </span><span class="lineNoCov">              0 :       sprintf(pos++, &quot;%x&quot;, t);</span>
+<span class="lineNum">    1192 </span>                :       // remove '\0' added by sprintf
+<span class="lineNum">    1193 </span><span class="lineNoCov">              0 :       *(pos) = ' ';</span>
+<span class="lineNum">    1194 </span>                : 
+<span class="lineNum">    1195 </span>                :       // jump to end of template
+<span class="lineNum">    1196 </span><span class="lineNoCov">              0 :       pos = msg + strlen(template);</span>
+<span class="lineNum">    1197 </span><span class="lineNoCov">              0 :       for (i=0; i&lt;buf-buf_start; i++) {</span>
+<span class="lineNum">    1198 </span><span class="lineNoCov">              0 :         sprintf(pos, &quot; %02x&quot;, (unsigned char)buf_start[i]);</span>
+<span class="lineNum">    1199 </span><span class="lineNoCov">              0 :         pos += width;</span>
+<span class="lineNum">    1200 </span>                :       }
+<span class="lineNum">    1201 </span>                :       // sprintf 0-terminates the string
+<span class="lineNum">    1202 </span>                : 
+<span class="lineNum">    1203 </span><span class="lineNoCov">              0 :       zend_throw_exception(mongo_ce_Exception, msg, 17 TSRMLS_CC);</span>
+<span class="lineNum">    1204 </span><span class="lineNoCov">              0 :       efree(msg);</span>
+<span class="lineNum">    1205 </span><span class="lineNoCov">              0 :       return 0;</span>
+<span class="lineNum">    1206 </span>                :     }
+<span class="lineNum">    1207 </span>                :     }
+<span class="lineNum">    1208 </span>                : 
+<span class="lineNum">    1209 </span><span class="lineCov">           4524 :     zend_symtable_update(result, name, strlen(name)+1, &amp;value, sizeof(zval*), NULL);</span>
+<span class="lineNum">    1210 </span>                :   }
+<span class="lineNum">    1211 </span>                : 
+<span class="lineNum">    1212 </span><span class="lineCov">           2186 :   return buf;</span>
+<a name="1213"><span class="lineNum">    1213 </span>                : }</a>
+<span class="lineNum">    1214 </span>                : 
+<span class="lineNum">    1215 </span><span class="lineCov">            222 : static int is_utf8(const char *s, int len) {</span>
+<span class="lineNum">    1216 </span>                :   int i;
+<span class="lineNum">    1217 </span>                : 
+<span class="lineNum">    1218 </span><span class="lineCov">           2887 :   for (i=0; i&lt;len; i++) {</span>
+<span class="lineNum">    1219 </span><span class="lineCov">           4696 :     if (i+3 &lt; len &amp;&amp;</span>
+<span class="lineNum">    1220 </span><span class="lineCov">           2031 :         (s[i] &amp; 248) == 240 &amp;&amp;</span>
+<span class="lineNum">    1221 </span><span class="lineNoCov">              0 :         (s[i+1] &amp; 192) == 128 &amp;&amp;</span>
+<span class="lineNum">    1222 </span><span class="lineNoCov">              0 :         (s[i+2] &amp; 192) == 128 &amp;&amp;</span>
+<span class="lineNum">    1223 </span><span class="lineNoCov">              0 :         (s[i+3] &amp; 192) == 128) {</span>
+<span class="lineNum">    1224 </span><span class="lineNoCov">              0 :       i += 3;</span>
+<span class="lineNum">    1225 </span>                :     }
+<span class="lineNum">    1226 </span><span class="lineCov">           4894 :     else if (i+2 &lt; len &amp;&amp;</span>
+<span class="lineNum">    1227 </span><span class="lineCov">           2229 :              (s[i] &amp; 240) == 224 &amp;&amp;</span>
+<span class="lineNum">    1228 </span><span class="lineNoCov">              0 :              (s[i+1] &amp; 192) == 128 &amp;&amp;</span>
+<span class="lineNum">    1229 </span><span class="lineNoCov">              0 :              (s[i+2] &amp; 192) == 128) {</span>
+<span class="lineNum">    1230 </span><span class="lineNoCov">              0 :       i += 2;</span>
+<span class="lineNum">    1231 </span>                :     }
+<span class="lineNum">    1232 </span><span class="lineCov">           5108 :     else if (i+1 &lt; len &amp;&amp;</span>
+<span class="lineNum">    1233 </span><span class="lineCov">           2443 :              (s[i] &amp; 224) == 192 &amp;&amp;</span>
+<span class="lineNum">    1234 </span><span class="lineNoCov">              0 :              (s[i+1] &amp; 192) == 128) {</span>
+<span class="lineNum">    1235 </span><span class="lineNoCov">              0 :       i += 1;</span>
+<span class="lineNum">    1236 </span>                :     }
+<span class="lineNum">    1237 </span><span class="lineCov">           2665 :     else if ((s[i] &amp; 128) != 0) {</span>
+<span class="lineNum">    1238 </span><span class="lineNoCov">              0 :       return 0;</span>
+<span class="lineNum">    1239 </span>                :     }
+<span class="lineNum">    1240 </span>                :   }
+<span class="lineNum">    1241 </span><span class="lineCov">            222 :   return 1;</span>
+<span class="lineNum">    1242 </span>                : }
+<span class="lineNum">    1243 </span>                : 
+<span class="lineNum">    1244 </span>                : /*
+<a name="1245"><span class="lineNum">    1245 </span>                :  * Takes any type of PHP var and turns it into BSON</a>
+<span class="lineNum">    1246 </span>                :  */
+<span class="lineNum">    1247 </span><span class="lineNoCov">              0 : PHP_FUNCTION(bson_encode) {</span>
+<span class="lineNum">    1248 </span>                :   zval *z;
+<span class="lineNum">    1249 </span>                :   buffer buf;
+<span class="lineNum">    1250 </span>                : 
+<span class="lineNum">    1251 </span><span class="lineNoCov">              0 :   if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;z&quot;, &amp;z) == FAILURE) {</span>
+<span class="lineNum">    1252 </span><span class="lineNoCov">              0 :     return;</span>
+<span class="lineNum">    1253 </span>                :   }
+<span class="lineNum">    1254 </span>                : 
+<span class="lineNum">    1255 </span><span class="lineNoCov">              0 :   switch (Z_TYPE_P(z)) {</span>
+<span class="lineNum">    1256 </span>                :   case IS_NULL: {
+<span class="lineNum">    1257 </span><span class="lineNoCov">              0 :     RETURN_STRING(&quot;&quot;, 1);</span>
+<span class="lineNum">    1258 </span>                :     break;
+<span class="lineNum">    1259 </span>                :   }
+<span class="lineNum">    1260 </span>                :   case IS_LONG: {
+<span class="lineNum">    1261 </span><span class="lineNoCov">              0 :     CREATE_BUF_STATIC(9);</span>
+<span class="lineNum">    1262 </span>                : #if SIZEOF_LONG == 4
+<span class="lineNum">    1263 </span>                :     php_mongo_serialize_int(&amp;buf, Z_LVAL_P(z));
+<span class="lineNum">    1264 </span>                :     RETURN_STRINGL(buf.start, 4, 1);
+<span class="lineNum">    1265 </span>                : #else
+<span class="lineNum">    1266 </span><span class="lineNoCov">              0 :     php_mongo_serialize_long(&amp;buf, Z_LVAL_P(z));</span>
+<span class="lineNum">    1267 </span><span class="lineNoCov">              0 :     RETURN_STRINGL(buf.start, 8, 1);</span>
+<span class="lineNum">    1268 </span>                : #endif
+<span class="lineNum">    1269 </span>                :     break;
+<span class="lineNum">    1270 </span>                :   }
+<span class="lineNum">    1271 </span>                :   case IS_DOUBLE: {
+<span class="lineNum">    1272 </span><span class="lineNoCov">              0 :     CREATE_BUF_STATIC(9);</span>
+<span class="lineNum">    1273 </span><span class="lineNoCov">              0 :     php_mongo_serialize_double(&amp;buf, Z_DVAL_P(z));</span>
+<span class="lineNum">    1274 </span><span class="lineNoCov">              0 :     RETURN_STRINGL(b, 8, 1);</span>
+<span class="lineNum">    1275 </span>                :     break;
+<span class="lineNum">    1276 </span>                :   }
+<span class="lineNum">    1277 </span>                :   case IS_BOOL: {
+<span class="lineNum">    1278 </span><span class="lineNoCov">              0 :     if (Z_BVAL_P(z)) {</span>
+<span class="lineNum">    1279 </span><span class="lineNoCov">              0 :       RETURN_STRINGL(&quot;\x01&quot;, 1, 1);</span>
+<span class="lineNum">    1280 </span>                :     }
+<span class="lineNum">    1281 </span>                :     else {
+<span class="lineNum">    1282 </span><span class="lineNoCov">              0 :       RETURN_STRINGL(&quot;\x00&quot;, 1, 1);</span>
+<span class="lineNum">    1283 </span>                :     }
+<span class="lineNum">    1284 </span>                :     break;
+<span class="lineNum">    1285 </span>                :   }
+<span class="lineNum">    1286 </span>                :   case IS_STRING: {
+<span class="lineNum">    1287 </span><span class="lineNoCov">              0 :     RETURN_STRINGL(Z_STRVAL_P(z), Z_STRLEN_P(z), 1);</span>
+<span class="lineNum">    1288 </span>                :     break;
+<span class="lineNum">    1289 </span>                :   }
+<span class="lineNum">    1290 </span>                :   case IS_OBJECT: {
+<span class="lineNum">    1291 </span><span class="lineNoCov">              0 :     zend_class_entry *clazz = Z_OBJCE_P(z);</span>
+<span class="lineNum">    1292 </span><span class="lineNoCov">              0 :     if (clazz == mongo_ce_Id) {</span>
+<span class="lineNum">    1293 </span><span class="lineNoCov">              0 :       mongo_id *id = (mongo_id*)zend_object_store_get_object(z TSRMLS_CC);</span>
+<span class="lineNum">    1294 </span><span class="lineNoCov">              0 :       RETURN_STRINGL(id-&gt;id, 12, 1);</span>
+<span class="lineNum">    1295 </span>                :       break;
+<span class="lineNum">    1296 </span>                :     }
+<span class="lineNum">    1297 </span><span class="lineNoCov">              0 :     else if (clazz == mongo_ce_Date) {</span>
+<span class="lineNum">    1298 </span><span class="lineNoCov">              0 :       CREATE_BUF_STATIC(9);</span>
+<span class="lineNum">    1299 </span><span class="lineNoCov">              0 :       php_mongo_serialize_date(&amp;buf, z TSRMLS_CC);</span>
+<span class="lineNum">    1300 </span><span class="lineNoCov">              0 :       RETURN_STRINGL(buf.start, 8, 0);</span>
+<span class="lineNum">    1301 </span>                :       break;
+<span class="lineNum">    1302 </span>                :     }
+<span class="lineNum">    1303 </span><span class="lineNoCov">              0 :     else if (clazz == mongo_ce_Regex) {</span>
+<span class="lineNum">    1304 </span><span class="lineNoCov">              0 :       CREATE_BUF(buf, 128);</span>
+<span class="lineNum">    1305 </span>                : 
+<span class="lineNum">    1306 </span><span class="lineNoCov">              0 :       php_mongo_serialize_regex(&amp;buf, z TSRMLS_CC);</span>
+<span class="lineNum">    1307 </span><span class="lineNoCov">              0 :       RETVAL_STRINGL(buf.start, buf.pos-buf.start, 1);</span>
+<span class="lineNum">    1308 </span><span class="lineNoCov">              0 :       efree(buf.start);</span>
+<span class="lineNum">    1309 </span><span class="lineNoCov">              0 :       break;</span>
+<span class="lineNum">    1310 </span>                :     }
+<span class="lineNum">    1311 </span><span class="lineNoCov">              0 :     else if (clazz == mongo_ce_Code) {</span>
+<span class="lineNum">    1312 </span><span class="lineNoCov">              0 :       CREATE_BUF(buf, INITIAL_BUF_SIZE);</span>
+<span class="lineNum">    1313 </span>                : 
+<span class="lineNum">    1314 </span><span class="lineNoCov">              0 :       php_mongo_serialize_code(&amp;buf, z TSRMLS_CC);</span>
+<span class="lineNum">    1315 </span><span class="lineNoCov">              0 :       RETVAL_STRINGL(buf.start, buf.pos-buf.start, 1);</span>
+<span class="lineNum">    1316 </span><span class="lineNoCov">              0 :       efree(buf.start);</span>
+<span class="lineNum">    1317 </span><span class="lineNoCov">              0 :       break;</span>
+<span class="lineNum">    1318 </span>                :     }
+<span class="lineNum">    1319 </span><span class="lineNoCov">              0 :     else if (clazz == mongo_ce_BinData) {</span>
+<span class="lineNum">    1320 </span><span class="lineNoCov">              0 :       CREATE_BUF(buf, INITIAL_BUF_SIZE);</span>
+<span class="lineNum">    1321 </span>                : 
+<span class="lineNum">    1322 </span><span class="lineNoCov">              0 :       php_mongo_serialize_bin_data(&amp;buf, z TSRMLS_CC);</span>
+<span class="lineNum">    1323 </span><span class="lineNoCov">              0 :       RETVAL_STRINGL(buf.start, buf.pos-buf.start, 1);</span>
+<span class="lineNum">    1324 </span><span class="lineNoCov">              0 :       efree(buf.start);</span>
+<span class="lineNum">    1325 </span><span class="lineNoCov">              0 :       break;</span>
+<span class="lineNum">    1326 </span>                :     }
+<span class="lineNum">    1327 </span><span class="lineNoCov">              0 :     else if (clazz == mongo_ce_Timestamp) {</span>
+<span class="lineNum">    1328 </span><span class="lineNoCov">              0 :       CREATE_BUF(buf, 9);</span>
+<span class="lineNum">    1329 </span><span class="lineNoCov">              0 :       buf.pos[8] = (char)0;</span>
+<span class="lineNum">    1330 </span>                : 
+<span class="lineNum">    1331 </span><span class="lineNoCov">              0 :       php_mongo_serialize_bin_data(&amp;buf, z TSRMLS_CC);</span>
+<span class="lineNum">    1332 </span><span class="lineNoCov">              0 :       RETURN_STRINGL(buf.start, 8, 0);</span>
+<span class="lineNum">    1333 </span>                :       break;
+<span class="lineNum">    1334 </span>                :     }
+<span class="lineNum">    1335 </span>                :   }
+<span class="lineNum">    1336 </span>                :   /* fallthrough for a normal obj */
+<span class="lineNum">    1337 </span>                :   case IS_ARRAY: {
+<span class="lineNum">    1338 </span><span class="lineNoCov">              0 :     CREATE_BUF(buf, INITIAL_BUF_SIZE);</span>
+<span class="lineNum">    1339 </span><span class="lineNoCov">              0 :     zval_to_bson(&amp;buf, HASH_P(z), 0 TSRMLS_CC);</span>
+<span class="lineNum">    1340 </span>                : 
+<span class="lineNum">    1341 </span><span class="lineNoCov">              0 :     RETVAL_STRINGL(buf.start, buf.pos-buf.start, 1);</span>
+<span class="lineNum">    1342 </span><span class="lineNoCov">              0 :     efree(buf.start);</span>
+<span class="lineNum">    1343 </span><span class="lineNoCov">              0 :     break;</span>
+<span class="lineNum">    1344 </span>                :   }
+<span class="lineNum">    1345 </span>                :   default:
+<span class="lineNum">    1346 </span>                : #if ZEND_MODULE_API_NO &gt;= 20060613
+<span class="lineNum">    1347 </span><span class="lineNoCov">              0 :     zend_throw_exception(zend_exception_get_default(TSRMLS_C), &quot;couldn't serialize element&quot;, 0 TSRMLS_CC);</span>
+<span class="lineNum">    1348 </span>                : #else
+<span class="lineNum">    1349 </span>                :     zend_throw_exception(zend_exception_get_default(), &quot;couldn't serialize element&quot;, 0 TSRMLS_CC);
+<span class="lineNum">    1350 </span>                : #endif
+<span class="lineNum">    1351 </span><span class="lineNoCov">              0 :     return;</span>
+<span class="lineNum">    1352 </span>                :   }
+<span class="lineNum">    1353 </span>                : }
+<span class="lineNum">    1354 </span>                : 
+<span class="lineNum">    1355 </span>                : /*
+<span class="lineNum">    1356 </span>                :  * Takes a serialized BSON object and turns it into a PHP array.
+<a name="1357"><span class="lineNum">    1357 </span>                :  * This only deserializes entire documents!</a>
+<span class="lineNum">    1358 </span>                :  */
+<span class="lineNum">    1359 </span><span class="lineNoCov">              0 : PHP_FUNCTION(bson_decode) {</span>
+<span class="lineNum">    1360 </span>                :   char *str;
+<span class="lineNum">    1361 </span>                :   int str_len;
+<span class="lineNum">    1362 </span>                : 
+<span class="lineNum">    1363 </span><span class="lineNoCov">              0 :   if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;s&quot;, &amp;str, &amp;str_len) == FAILURE) {</span>
+<span class="lineNum">    1364 </span><span class="lineNoCov">              0 :     return;</span>
+<span class="lineNum">    1365 </span>                :   }
+<span class="lineNum">    1366 </span>                : 
+<span class="lineNum">    1367 </span><span class="lineNoCov">              0 :   array_init(return_value);</span>
+<span class="lineNum">    1368 </span><span class="lineNoCov">              0 :   bson_to_zval(str, HASH_P(return_value) TSRMLS_CC);</span>
+<a name="1369"><span class="lineNum">    1369 </span>                : }</a>
+<span class="lineNum">    1370 </span>                : 
+<span class="lineNum">    1371 </span><span class="lineCov">            193 : void mongo_buf_init(char *dest) {</span>
+<span class="lineNum">    1372 </span><span class="lineCov">            193 :   dest[0] = '\0';</span>
+<a name="1373"><span class="lineNum">    1373 </span><span class="lineCov">            193 : }</span></a>
+<span class="lineNum">    1374 </span>                : 
+<span class="lineNum">    1375 </span><span class="lineCov">            573 : void mongo_buf_append(char *dest, char *piece) {</span>
+<span class="lineNum">    1376 </span><span class="lineCov">            573 :   int pos = strlen(dest);</span>
+<span class="lineNum">    1377 </span><span class="lineCov">            573 :   memcpy(dest+pos, piece, strlen(piece)+1);</span>
+<span class="lineNum">    1378 </span><span class="lineCov">            573 : }</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

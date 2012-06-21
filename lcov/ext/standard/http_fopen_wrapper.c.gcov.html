@@ -1,0 +1,1042 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - ext/standard/http_fopen_wrapper.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../index.html">directory</a> - <a href="index.html">ext/standard</a> - http_fopen_wrapper.c (source / <a href="http_fopen_wrapper.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">476</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">3</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Authors: Rasmus Lerdorf &lt;rasmus@php.net&gt;                             |
+<span class="lineNum">      16 </span>                :    |          Jim Winstead &lt;jimw@php.net&gt;                                 |
+<span class="lineNum">      17 </span>                :    |          Hartmut Holzgraefe &lt;hholzgra@php.net&gt;                       |
+<span class="lineNum">      18 </span>                :    |          Wez Furlong &lt;wez@thebrainroom.com&gt;                          |
+<span class="lineNum">      19 </span>                :    |          Sara Golemon &lt;pollita@php.net&gt;                              |
+<span class="lineNum">      20 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      21 </span>                :  */
+<span class="lineNum">      22 </span>                : /* $Id$ */ 
+<span class="lineNum">      23 </span>                : 
+<span class="lineNum">      24 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">      25 </span>                : #include &quot;php_globals.h&quot;
+<span class="lineNum">      26 </span>                : #include &quot;php_streams.h&quot;
+<span class="lineNum">      27 </span>                : #include &quot;php_network.h&quot;
+<span class="lineNum">      28 </span>                : #include &quot;php_ini.h&quot;
+<span class="lineNum">      29 </span>                : #include &quot;ext/standard/basic_functions.h&quot;
+<span class="lineNum">      30 </span>                : #include &quot;ext/standard/php_smart_str.h&quot;
+<span class="lineNum">      31 </span>                : 
+<span class="lineNum">      32 </span>                : #include &lt;stdio.h&gt;
+<span class="lineNum">      33 </span>                : #include &lt;stdlib.h&gt;
+<span class="lineNum">      34 </span>                : #include &lt;errno.h&gt;
+<span class="lineNum">      35 </span>                : #include &lt;sys/types.h&gt;
+<span class="lineNum">      36 </span>                : #include &lt;sys/stat.h&gt;
+<span class="lineNum">      37 </span>                : #include &lt;fcntl.h&gt;
+<span class="lineNum">      38 </span>                : 
+<span class="lineNum">      39 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">      40 </span>                : #define O_RDONLY _O_RDONLY
+<span class="lineNum">      41 </span>                : #include &quot;win32/param.h&quot;
+<span class="lineNum">      42 </span>                : #else
+<span class="lineNum">      43 </span>                : #include &lt;sys/param.h&gt;
+<span class="lineNum">      44 </span>                : #endif
+<span class="lineNum">      45 </span>                : 
+<span class="lineNum">      46 </span>                : #include &quot;php_standard.h&quot;
+<span class="lineNum">      47 </span>                : 
+<span class="lineNum">      48 </span>                : #include &lt;sys/types.h&gt;
+<span class="lineNum">      49 </span>                : #if HAVE_SYS_SOCKET_H
+<span class="lineNum">      50 </span>                : #include &lt;sys/socket.h&gt;
+<span class="lineNum">      51 </span>                : #endif
+<span class="lineNum">      52 </span>                : 
+<span class="lineNum">      53 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">      54 </span>                : #include &lt;winsock2.h&gt;
+<span class="lineNum">      55 </span>                : #elif defined(NETWARE) &amp;&amp; defined(USE_WINSOCK)
+<span class="lineNum">      56 </span>                : #include &lt;novsock2.h&gt;
+<span class="lineNum">      57 </span>                : #else
+<span class="lineNum">      58 </span>                : #include &lt;netinet/in.h&gt;
+<span class="lineNum">      59 </span>                : #include &lt;netdb.h&gt;
+<span class="lineNum">      60 </span>                : #if HAVE_ARPA_INET_H
+<span class="lineNum">      61 </span>                : #include &lt;arpa/inet.h&gt;
+<span class="lineNum">      62 </span>                : #endif
+<span class="lineNum">      63 </span>                : #endif
+<span class="lineNum">      64 </span>                : 
+<span class="lineNum">      65 </span>                : #if defined(PHP_WIN32) || defined(__riscos__) || defined(NETWARE)
+<span class="lineNum">      66 </span>                : #undef AF_UNIX
+<span class="lineNum">      67 </span>                : #endif
+<span class="lineNum">      68 </span>                : 
+<span class="lineNum">      69 </span>                : #if defined(AF_UNIX)
+<span class="lineNum">      70 </span>                : #include &lt;sys/un.h&gt;
+<span class="lineNum">      71 </span>                : #endif
+<span class="lineNum">      72 </span>                : 
+<span class="lineNum">      73 </span>                : #include &quot;php_fopen_wrappers.h&quot;
+<span class="lineNum">      74 </span>                : 
+<span class="lineNum">      75 </span>                : #define HTTP_HEADER_BLOCK_SIZE          1024
+<span class="lineNum">      76 </span>                : #define PHP_URL_REDIRECT_MAX            20
+<span class="lineNum">      77 </span>                : #define HTTP_HEADER_USER_AGENT          1
+<span class="lineNum">      78 </span>                : #define HTTP_HEADER_HOST                        2
+<span class="lineNum">      79 </span>                : #define HTTP_HEADER_AUTH                        4
+<span class="lineNum">      80 </span>                : #define HTTP_HEADER_FROM                        8
+<span class="lineNum">      81 </span>                : #define HTTP_HEADER_CONTENT_LENGTH      16
+<span class="lineNum">      82 </span>                : #define HTTP_HEADER_TYPE                        32
+<span class="lineNum">      83 </span>                : 
+<span class="lineNum">      84 </span>                : #define HTTP_WRAPPER_HEADER_INIT    1
+<a name="85"><span class="lineNum">      85 </span>                : #define HTTP_WRAPPER_REDIRECTED     2</a>
+<span class="lineNum">      86 </span>                : 
+<span class="lineNum">      87 </span><span class="lineNoCov">              0 : php_stream *php_stream_url_wrap_http_ex(php_stream_wrapper *wrapper, char *path, char *mode, int options, char **opened_path, php_stream_context *context, int redirect_max, int flags STREAMS_DC TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">      88 </span>                : {
+<span class="lineNum">      89 </span><span class="lineNoCov">              0 :         php_stream *stream = NULL;</span>
+<span class="lineNum">      90 </span><span class="lineNoCov">              0 :         php_url *resource = NULL;</span>
+<span class="lineNum">      91 </span>                :         int use_ssl;
+<span class="lineNum">      92 </span><span class="lineNoCov">              0 :         int use_proxy = 0;</span>
+<span class="lineNum">      93 </span><span class="lineNoCov">              0 :         char *scratch = NULL;</span>
+<span class="lineNum">      94 </span><span class="lineNoCov">              0 :         char *tmp = NULL;</span>
+<span class="lineNum">      95 </span><span class="lineNoCov">              0 :         char *ua_str = NULL;</span>
+<span class="lineNum">      96 </span><span class="lineNoCov">              0 :         zval **ua_zval = NULL, **tmpzval = NULL;</span>
+<span class="lineNum">      97 </span><span class="lineNoCov">              0 :         int scratch_len = 0;</span>
+<span class="lineNum">      98 </span><span class="lineNoCov">              0 :         int body = 0;</span>
+<span class="lineNum">      99 </span>                :         char location[HTTP_HEADER_BLOCK_SIZE];
+<span class="lineNum">     100 </span><span class="lineNoCov">              0 :         zval *response_header = NULL;</span>
+<span class="lineNum">     101 </span><span class="lineNoCov">              0 :         int reqok = 0;</span>
+<span class="lineNum">     102 </span><span class="lineNoCov">              0 :         char *http_header_line = NULL;</span>
+<span class="lineNum">     103 </span>                :         char tmp_line[128];
+<span class="lineNum">     104 </span><span class="lineNoCov">              0 :         size_t chunk_size = 0, file_size = 0;</span>
+<span class="lineNum">     105 </span><span class="lineNoCov">              0 :         int eol_detect = 0;</span>
+<span class="lineNum">     106 </span><span class="lineNoCov">              0 :         char *transport_string, *errstr = NULL;</span>
+<span class="lineNum">     107 </span><span class="lineNoCov">              0 :         int transport_len, have_header = 0, request_fulluri = 0, ignore_errors = 0;</span>
+<span class="lineNum">     108 </span><span class="lineNoCov">              0 :         char *protocol_version = NULL;</span>
+<span class="lineNum">     109 </span><span class="lineNoCov">              0 :         int protocol_version_len = 3; /* Default: &quot;1.0&quot; */</span>
+<span class="lineNum">     110 </span>                :         struct timeval timeout;
+<span class="lineNum">     111 </span><span class="lineNoCov">              0 :         char *user_headers = NULL;</span>
+<span class="lineNum">     112 </span><span class="lineNoCov">              0 :         int header_init = ((flags &amp; HTTP_WRAPPER_HEADER_INIT) != 0);</span>
+<span class="lineNum">     113 </span><span class="lineNoCov">              0 :         int redirected = ((flags &amp; HTTP_WRAPPER_REDIRECTED) != 0);</span>
+<span class="lineNum">     114 </span><span class="lineNoCov">              0 :         int follow_location = 1;</span>
+<span class="lineNum">     115 </span><span class="lineNoCov">              0 :         php_stream_filter *transfer_encoding = NULL;</span>
+<span class="lineNum">     116 </span>                : 
+<span class="lineNum">     117 </span><span class="lineNoCov">              0 :         tmp_line[0] = '\0';</span>
+<span class="lineNum">     118 </span>                : 
+<span class="lineNum">     119 </span><span class="lineNoCov">              0 :         if (redirect_max &lt; 1) {</span>
+<span class="lineNum">     120 </span><span class="lineNoCov">              0 :                 php_stream_wrapper_log_error(wrapper, options TSRMLS_CC, &quot;Redirection limit reached, aborting&quot;);</span>
+<span class="lineNum">     121 </span><span class="lineNoCov">              0 :                 return NULL;</span>
+<span class="lineNum">     122 </span>                :         }
+<span class="lineNum">     123 </span>                : 
+<span class="lineNum">     124 </span><span class="lineNoCov">              0 :         resource = php_url_parse(path);</span>
+<span class="lineNum">     125 </span><span class="lineNoCov">              0 :         if (resource == NULL) {</span>
+<span class="lineNum">     126 </span><span class="lineNoCov">              0 :                 return NULL;</span>
+<span class="lineNum">     127 </span>                :         }
+<span class="lineNum">     128 </span>                : 
+<span class="lineNum">     129 </span><span class="lineNoCov">              0 :         if (strncasecmp(resource-&gt;scheme, &quot;http&quot;, sizeof(&quot;http&quot;)) &amp;&amp; strncasecmp(resource-&gt;scheme, &quot;https&quot;, sizeof(&quot;https&quot;))) {</span>
+<span class="lineNum">     130 </span><span class="lineNoCov">              0 :                 if (!context || </span>
+<span class="lineNum">     131 </span><span class="lineNoCov">              0 :                         php_stream_context_get_option(context, wrapper-&gt;wops-&gt;label, &quot;proxy&quot;, &amp;tmpzval) == FAILURE ||</span>
+<span class="lineNum">     132 </span><span class="lineNoCov">              0 :                         Z_TYPE_PP(tmpzval) != IS_STRING ||</span>
+<span class="lineNum">     133 </span><span class="lineNoCov">              0 :                         Z_STRLEN_PP(tmpzval) &lt;= 0) {</span>
+<span class="lineNum">     134 </span><span class="lineNoCov">              0 :                         php_url_free(resource);</span>
+<span class="lineNum">     135 </span><span class="lineNoCov">              0 :                         return php_stream_open_wrapper_ex(path, mode, REPORT_ERRORS, NULL, context);</span>
+<span class="lineNum">     136 </span>                :                 }
+<span class="lineNum">     137 </span>                :                 /* Called from a non-http wrapper with http proxying requested (i.e. ftp) */
+<span class="lineNum">     138 </span><span class="lineNoCov">              0 :                 request_fulluri = 1;</span>
+<span class="lineNum">     139 </span><span class="lineNoCov">              0 :                 use_ssl = 0;</span>
+<span class="lineNum">     140 </span><span class="lineNoCov">              0 :                 use_proxy = 1;</span>
+<span class="lineNum">     141 </span>                : 
+<span class="lineNum">     142 </span><span class="lineNoCov">              0 :                 transport_len = Z_STRLEN_PP(tmpzval);</span>
+<span class="lineNum">     143 </span><span class="lineNoCov">              0 :                 transport_string = estrndup(Z_STRVAL_PP(tmpzval), Z_STRLEN_PP(tmpzval));</span>
+<span class="lineNum">     144 </span>                :         } else {
+<span class="lineNum">     145 </span>                :                 /* Normal http request (possibly with proxy) */
+<span class="lineNum">     146 </span>                :         
+<span class="lineNum">     147 </span><span class="lineNoCov">              0 :                 if (strpbrk(mode, &quot;awx+&quot;)) {</span>
+<span class="lineNum">     148 </span><span class="lineNoCov">              0 :                         php_stream_wrapper_log_error(wrapper, options TSRMLS_CC, &quot;HTTP wrapper does not support writeable connections&quot;);</span>
+<span class="lineNum">     149 </span><span class="lineNoCov">              0 :                         php_url_free(resource);</span>
+<span class="lineNum">     150 </span><span class="lineNoCov">              0 :                         return NULL;</span>
+<span class="lineNum">     151 </span>                :                 }
+<span class="lineNum">     152 </span>                : 
+<span class="lineNum">     153 </span><span class="lineNoCov">              0 :                 use_ssl = resource-&gt;scheme &amp;&amp; (strlen(resource-&gt;scheme) &gt; 4) &amp;&amp; resource-&gt;scheme[4] == 's';</span>
+<span class="lineNum">     154 </span>                :                 /* choose default ports */
+<span class="lineNum">     155 </span><span class="lineNoCov">              0 :                 if (use_ssl &amp;&amp; resource-&gt;port == 0)</span>
+<span class="lineNum">     156 </span><span class="lineNoCov">              0 :                         resource-&gt;port = 443;</span>
+<span class="lineNum">     157 </span><span class="lineNoCov">              0 :                 else if (resource-&gt;port == 0)</span>
+<span class="lineNum">     158 </span><span class="lineNoCov">              0 :                         resource-&gt;port = 80;</span>
+<span class="lineNum">     159 </span>                : 
+<span class="lineNum">     160 </span><span class="lineNoCov">              0 :                 if (context &amp;&amp;</span>
+<span class="lineNum">     161 </span><span class="lineNoCov">              0 :                         php_stream_context_get_option(context, wrapper-&gt;wops-&gt;label, &quot;proxy&quot;, &amp;tmpzval) == SUCCESS &amp;&amp;</span>
+<span class="lineNum">     162 </span><span class="lineNoCov">              0 :                         Z_TYPE_PP(tmpzval) == IS_STRING &amp;&amp;</span>
+<span class="lineNum">     163 </span><span class="lineNoCov">              0 :                         Z_STRLEN_PP(tmpzval) &gt; 0) {</span>
+<span class="lineNum">     164 </span><span class="lineNoCov">              0 :                         use_proxy = 1;</span>
+<span class="lineNum">     165 </span><span class="lineNoCov">              0 :                         transport_len = Z_STRLEN_PP(tmpzval);</span>
+<span class="lineNum">     166 </span><span class="lineNoCov">              0 :                         transport_string = estrndup(Z_STRVAL_PP(tmpzval), Z_STRLEN_PP(tmpzval));</span>
+<span class="lineNum">     167 </span>                :                 } else {
+<span class="lineNum">     168 </span><span class="lineNoCov">              0 :                         transport_len = spprintf(&amp;transport_string, 0, &quot;%s://%s:%d&quot;, use_ssl ? &quot;ssl&quot; : &quot;tcp&quot;, resource-&gt;host, resource-&gt;port);</span>
+<span class="lineNum">     169 </span>                :                 }
+<span class="lineNum">     170 </span>                :         }
+<span class="lineNum">     171 </span>                : 
+<span class="lineNum">     172 </span><span class="lineNoCov">              0 :         if (context &amp;&amp; php_stream_context_get_option(context, wrapper-&gt;wops-&gt;label, &quot;timeout&quot;, &amp;tmpzval) == SUCCESS) {</span>
+<span class="lineNum">     173 </span><span class="lineNoCov">              0 :                 SEPARATE_ZVAL(tmpzval);</span>
+<span class="lineNum">     174 </span><span class="lineNoCov">              0 :                 convert_to_double_ex(tmpzval);</span>
+<span class="lineNum">     175 </span><span class="lineNoCov">              0 :                 timeout.tv_sec = (time_t) Z_DVAL_PP(tmpzval);</span>
+<span class="lineNum">     176 </span><span class="lineNoCov">              0 :                 timeout.tv_usec = (size_t) ((Z_DVAL_PP(tmpzval) - timeout.tv_sec) * 1000000);</span>
+<span class="lineNum">     177 </span>                :         } else {
+<span class="lineNum">     178 </span><span class="lineNoCov">              0 :                 timeout.tv_sec = FG(default_socket_timeout);</span>
+<span class="lineNum">     179 </span><span class="lineNoCov">              0 :                 timeout.tv_usec = 0;</span>
+<span class="lineNum">     180 </span>                :         }
+<span class="lineNum">     181 </span>                : 
+<span class="lineNum">     182 </span><span class="lineNoCov">              0 :         stream = php_stream_xport_create(transport_string, transport_len, options,</span>
+<span class="lineNum">     183 </span>                :                         STREAM_XPORT_CLIENT | STREAM_XPORT_CONNECT,
+<span class="lineNum">     184 </span>                :                         NULL, &amp;timeout, context, &amp;errstr, NULL);
+<span class="lineNum">     185 </span>                :     
+<span class="lineNum">     186 </span><span class="lineNoCov">              0 :         if (stream) {</span>
+<span class="lineNum">     187 </span><span class="lineNoCov">              0 :                 php_stream_set_option(stream, PHP_STREAM_OPTION_READ_TIMEOUT, 0, &amp;timeout);</span>
+<span class="lineNum">     188 </span>                :         }
+<span class="lineNum">     189 </span>                :                         
+<span class="lineNum">     190 </span><span class="lineNoCov">              0 :         if (errstr) {</span>
+<span class="lineNum">     191 </span><span class="lineNoCov">              0 :                 php_stream_wrapper_log_error(wrapper, options TSRMLS_CC, &quot;%s&quot;, errstr);</span>
+<span class="lineNum">     192 </span><span class="lineNoCov">              0 :                 efree(errstr);</span>
+<span class="lineNum">     193 </span><span class="lineNoCov">              0 :                 errstr = NULL;</span>
+<span class="lineNum">     194 </span>                :         }
+<span class="lineNum">     195 </span>                : 
+<span class="lineNum">     196 </span><span class="lineNoCov">              0 :         efree(transport_string);</span>
+<span class="lineNum">     197 </span>                : 
+<span class="lineNum">     198 </span><span class="lineNoCov">              0 :         if (stream &amp;&amp; use_proxy &amp;&amp; use_ssl) {</span>
+<span class="lineNum">     199 </span><span class="lineNoCov">              0 :                 smart_str header = {0};</span>
+<span class="lineNum">     200 </span>                : 
+<span class="lineNum">     201 </span><span class="lineNoCov">              0 :                 smart_str_appendl(&amp;header, &quot;CONNECT &quot;, sizeof(&quot;CONNECT &quot;)-1);</span>
+<span class="lineNum">     202 </span><span class="lineNoCov">              0 :                 smart_str_appends(&amp;header, resource-&gt;host);</span>
+<span class="lineNum">     203 </span><span class="lineNoCov">              0 :                 smart_str_appendc(&amp;header, ':');</span>
+<span class="lineNum">     204 </span><span class="lineNoCov">              0 :                 smart_str_append_unsigned(&amp;header, resource-&gt;port);</span>
+<span class="lineNum">     205 </span><span class="lineNoCov">              0 :                 smart_str_appendl(&amp;header, &quot; HTTP/1.0\r\n&quot;, sizeof(&quot; HTTP/1.0\r\n&quot;)-1);</span>
+<span class="lineNum">     206 </span>                : 
+<span class="lineNum">     207 </span>                :             /* check if we have Proxy-Authorization header */
+<span class="lineNum">     208 </span><span class="lineNoCov">              0 :                 if (context &amp;&amp; php_stream_context_get_option(context, &quot;http&quot;, &quot;header&quot;, &amp;tmpzval) == SUCCESS) {</span>
+<span class="lineNum">     209 </span>                :                         char *s, *p;
+<span class="lineNum">     210 </span>                : 
+<span class="lineNum">     211 </span><span class="lineNoCov">              0 :                         if (Z_TYPE_PP(tmpzval) == IS_ARRAY) {</span>
+<span class="lineNum">     212 </span>                :                                 HashPosition pos;
+<span class="lineNum">     213 </span><span class="lineNoCov">              0 :                                 zval **tmpheader = NULL;</span>
+<span class="lineNum">     214 </span>                : 
+<span class="lineNum">     215 </span><span class="lineNoCov">              0 :                                 for (zend_hash_internal_pointer_reset_ex(Z_ARRVAL_PP(tmpzval), &amp;pos);</span>
+<span class="lineNum">     216 </span><span class="lineNoCov">              0 :                                         SUCCESS == zend_hash_get_current_data_ex(Z_ARRVAL_PP(tmpzval), (void *)&amp;tmpheader, &amp;pos);</span>
+<span class="lineNum">     217 </span><span class="lineNoCov">              0 :                                         zend_hash_move_forward_ex(Z_ARRVAL_PP(tmpzval), &amp;pos)) {</span>
+<span class="lineNum">     218 </span><span class="lineNoCov">              0 :                                         if (Z_TYPE_PP(tmpheader) == IS_STRING) {</span>
+<span class="lineNum">     219 </span><span class="lineNoCov">              0 :                                                 s = Z_STRVAL_PP(tmpheader);</span>
+<span class="lineNum">     220 </span>                :                                                 do {
+<span class="lineNum">     221 </span><span class="lineNoCov">              0 :                                                         while (*s == ' ' || *s == '\t') s++;</span>
+<span class="lineNum">     222 </span><span class="lineNoCov">              0 :                                                         p = s;</span>
+<span class="lineNum">     223 </span><span class="lineNoCov">              0 :                                                         while (*p != 0 &amp;&amp; *p != ':' &amp;&amp; *p != '\r' &amp;&amp; *p !='\n') p++;</span>
+<span class="lineNum">     224 </span><span class="lineNoCov">              0 :                                                         if (*p == ':') {</span>
+<span class="lineNum">     225 </span><span class="lineNoCov">              0 :                                                                 p++;</span>
+<span class="lineNum">     226 </span><span class="lineNoCov">              0 :                                                                 if (p - s == sizeof(&quot;Proxy-Authorization:&quot;) - 1 &amp;&amp;</span>
+<span class="lineNum">     227 </span>                :                                                                     zend_binary_strcasecmp(s, sizeof(&quot;Proxy-Authorization:&quot;) - 1,
+<span class="lineNum">     228 </span><span class="lineNoCov">              0 :                                                                         &quot;Proxy-Authorization:&quot;, sizeof(&quot;Proxy-Authorization:&quot;) - 1) == 0) {</span>
+<span class="lineNum">     229 </span><span class="lineNoCov">              0 :                                                                         while (*p != 0 &amp;&amp; *p != '\r' &amp;&amp; *p !='\n') p++;</span>
+<span class="lineNum">     230 </span><span class="lineNoCov">              0 :                                                                         smart_str_appendl(&amp;header, s, p - s);</span>
+<span class="lineNum">     231 </span><span class="lineNoCov">              0 :                                                                         smart_str_appendl(&amp;header, &quot;\r\n&quot;, sizeof(&quot;\r\n&quot;)-1);</span>
+<span class="lineNum">     232 </span><span class="lineNoCov">              0 :                                                                         goto finish;</span>
+<span class="lineNum">     233 </span>                :                                                                 } else {
+<span class="lineNum">     234 </span><span class="lineNoCov">              0 :                                                                         while (*p != 0 &amp;&amp; *p != '\r' &amp;&amp; *p !='\n') p++;</span>
+<span class="lineNum">     235 </span>                :                                                                 }
+<span class="lineNum">     236 </span>                :                                                         }
+<span class="lineNum">     237 </span><span class="lineNoCov">              0 :                                                         s = p;</span>
+<span class="lineNum">     238 </span><span class="lineNoCov">              0 :                                                         while (*s == '\r' || *s == '\n') s++;</span>
+<span class="lineNum">     239 </span><span class="lineNoCov">              0 :                                                 } while (*s != 0);</span>
+<span class="lineNum">     240 </span>                :                                         }
+<span class="lineNum">     241 </span>                :                                 }
+<span class="lineNum">     242 </span><span class="lineNoCov">              0 :                         } else if (Z_TYPE_PP(tmpzval) == IS_STRING &amp;&amp; Z_STRLEN_PP(tmpzval)) {</span>
+<span class="lineNum">     243 </span><span class="lineNoCov">              0 :                                 s = Z_STRVAL_PP(tmpzval);</span>
+<span class="lineNum">     244 </span>                :                                 do {
+<span class="lineNum">     245 </span><span class="lineNoCov">              0 :                                         while (*s == ' ' || *s == '\t') s++;</span>
+<span class="lineNum">     246 </span><span class="lineNoCov">              0 :                                         p = s;</span>
+<span class="lineNum">     247 </span><span class="lineNoCov">              0 :                                         while (*p != 0 &amp;&amp; *p != ':' &amp;&amp; *p != '\r' &amp;&amp; *p !='\n') p++;</span>
+<span class="lineNum">     248 </span><span class="lineNoCov">              0 :                                         if (*p == ':') {</span>
+<span class="lineNum">     249 </span><span class="lineNoCov">              0 :                                                 p++;</span>
+<span class="lineNum">     250 </span><span class="lineNoCov">              0 :                                                 if (p - s == sizeof(&quot;Proxy-Authorization:&quot;) - 1 &amp;&amp;</span>
+<span class="lineNum">     251 </span>                :                                                     zend_binary_strcasecmp(s, sizeof(&quot;Proxy-Authorization:&quot;) - 1,
+<span class="lineNum">     252 </span><span class="lineNoCov">              0 :                                                         &quot;Proxy-Authorization:&quot;, sizeof(&quot;Proxy-Authorization:&quot;) - 1) == 0) {</span>
+<span class="lineNum">     253 </span><span class="lineNoCov">              0 :                                                         while (*p != 0 &amp;&amp; *p != '\r' &amp;&amp; *p !='\n') p++;</span>
+<span class="lineNum">     254 </span><span class="lineNoCov">              0 :                                                         smart_str_appendl(&amp;header, s, p - s);</span>
+<span class="lineNum">     255 </span><span class="lineNoCov">              0 :                                                         smart_str_appendl(&amp;header, &quot;\r\n&quot;, sizeof(&quot;\r\n&quot;)-1);</span>
+<span class="lineNum">     256 </span><span class="lineNoCov">              0 :                                                         goto finish;</span>
+<span class="lineNum">     257 </span>                :                                                 } else {
+<span class="lineNum">     258 </span><span class="lineNoCov">              0 :                                                         while (*p != 0 &amp;&amp; *p != '\r' &amp;&amp; *p !='\n') p++;</span>
+<span class="lineNum">     259 </span>                :                                                 }
+<span class="lineNum">     260 </span>                :                                         }
+<span class="lineNum">     261 </span><span class="lineNoCov">              0 :                                         s = p;</span>
+<span class="lineNum">     262 </span><span class="lineNoCov">              0 :                                         while (*s == '\r' || *s == '\n') s++;</span>
+<span class="lineNum">     263 </span><span class="lineNoCov">              0 :                                 } while (*s != 0);</span>
+<span class="lineNum">     264 </span>                :                         }
+<span class="lineNum">     265 </span>                :                 }
+<span class="lineNum">     266 </span>                : finish:
+<span class="lineNum">     267 </span><span class="lineNoCov">              0 :                 smart_str_appendl(&amp;header, &quot;\r\n&quot;, sizeof(&quot;\r\n&quot;)-1);</span>
+<span class="lineNum">     268 </span>                : 
+<span class="lineNum">     269 </span><span class="lineNoCov">              0 :                 if (php_stream_write(stream, header.c, header.len) != header.len) {</span>
+<span class="lineNum">     270 </span><span class="lineNoCov">              0 :                         php_stream_wrapper_log_error(wrapper, options TSRMLS_CC, &quot;Cannot connect to HTTPS server through proxy&quot;);</span>
+<span class="lineNum">     271 </span><span class="lineNoCov">              0 :                         php_stream_close(stream);</span>
+<span class="lineNum">     272 </span><span class="lineNoCov">              0 :                         stream = NULL;</span>
+<span class="lineNum">     273 </span>                :                 }
+<span class="lineNum">     274 </span><span class="lineNoCov">              0 :                 smart_str_free(&amp;header);</span>
+<span class="lineNum">     275 </span>                : 
+<span class="lineNum">     276 </span><span class="lineNoCov">              0 :                 if (stream) {</span>
+<span class="lineNum">     277 </span>                :                         char header_line[HTTP_HEADER_BLOCK_SIZE];
+<span class="lineNum">     278 </span>                : 
+<span class="lineNum">     279 </span>                :                         /* get response header */
+<span class="lineNum">     280 </span><span class="lineNoCov">              0 :                         while (php_stream_gets(stream, header_line, HTTP_HEADER_BLOCK_SIZE-1) != NULL) {</span>
+<span class="lineNum">     281 </span><span class="lineNoCov">              0 :                                 if (header_line[0] == '\n' ||</span>
+<span class="lineNum">     282 </span><span class="lineNoCov">              0 :                                     header_line[0] == '\r' ||</span>
+<span class="lineNum">     283 </span><span class="lineNoCov">              0 :                                     header_line[0] == '\0') {</span>
+<span class="lineNum">     284 </span>                :                                   break;
+<span class="lineNum">     285 </span>                :                                 }
+<span class="lineNum">     286 </span>                :                         }
+<span class="lineNum">     287 </span>                :                 }
+<span class="lineNum">     288 </span>                : 
+<span class="lineNum">     289 </span>                :                 /* enable SSL transport layer */
+<span class="lineNum">     290 </span><span class="lineNoCov">              0 :                 if (stream) {</span>
+<span class="lineNum">     291 </span><span class="lineNoCov">              0 :                         if (php_stream_xport_crypto_setup(stream, STREAM_CRYPTO_METHOD_SSLv23_CLIENT, NULL TSRMLS_CC) &lt; 0 ||</span>
+<span class="lineNum">     292 </span><span class="lineNoCov">              0 :                             php_stream_xport_crypto_enable(stream, 1 TSRMLS_CC) &lt; 0) {</span>
+<span class="lineNum">     293 </span><span class="lineNoCov">              0 :                                 php_stream_wrapper_log_error(wrapper, options TSRMLS_CC, &quot;Cannot connect to HTTPS server through proxy&quot;);</span>
+<span class="lineNum">     294 </span><span class="lineNoCov">              0 :                                 php_stream_close(stream);</span>
+<span class="lineNum">     295 </span><span class="lineNoCov">              0 :                                 stream = NULL;</span>
+<span class="lineNum">     296 </span>                :                         }
+<span class="lineNum">     297 </span>                :                 }
+<span class="lineNum">     298 </span>                :         }
+<span class="lineNum">     299 </span>                : 
+<span class="lineNum">     300 </span><span class="lineNoCov">              0 :         if (stream == NULL)</span>
+<span class="lineNum">     301 </span><span class="lineNoCov">              0 :                 goto out;</span>
+<span class="lineNum">     302 </span>                : 
+<span class="lineNum">     303 </span>                :         /* avoid buffering issues while reading header */
+<span class="lineNum">     304 </span><span class="lineNoCov">              0 :         if (options &amp; STREAM_WILL_CAST)</span>
+<span class="lineNum">     305 </span><span class="lineNoCov">              0 :                 chunk_size = php_stream_set_chunk_size(stream, 1);</span>
+<span class="lineNum">     306 </span>                :         
+<span class="lineNum">     307 </span>                :         /* avoid problems with auto-detecting when reading the headers -&gt; the headers
+<span class="lineNum">     308 </span>                :          * are always in canonical \r\n format */
+<span class="lineNum">     309 </span><span class="lineNoCov">              0 :         eol_detect = stream-&gt;flags &amp; (PHP_STREAM_FLAG_DETECT_EOL | PHP_STREAM_FLAG_EOL_MAC);</span>
+<span class="lineNum">     310 </span><span class="lineNoCov">              0 :         stream-&gt;flags &amp;= ~(PHP_STREAM_FLAG_DETECT_EOL | PHP_STREAM_FLAG_EOL_MAC);</span>
+<span class="lineNum">     311 </span>                : 
+<span class="lineNum">     312 </span><span class="lineNoCov">              0 :         php_stream_context_set(stream, context);</span>
+<span class="lineNum">     313 </span>                : 
+<span class="lineNum">     314 </span><span class="lineNoCov">              0 :         php_stream_notify_info(context, PHP_STREAM_NOTIFY_CONNECT, NULL, 0);</span>
+<span class="lineNum">     315 </span>                : 
+<span class="lineNum">     316 </span><span class="lineNoCov">              0 :         if (header_init &amp;&amp; context &amp;&amp; php_stream_context_get_option(context, &quot;http&quot;, &quot;max_redirects&quot;, &amp;tmpzval) == SUCCESS) {</span>
+<span class="lineNum">     317 </span><span class="lineNoCov">              0 :                 SEPARATE_ZVAL(tmpzval);</span>
+<span class="lineNum">     318 </span><span class="lineNoCov">              0 :                 convert_to_long_ex(tmpzval);</span>
+<span class="lineNum">     319 </span><span class="lineNoCov">              0 :                 redirect_max = Z_LVAL_PP(tmpzval);</span>
+<span class="lineNum">     320 </span>                :         }
+<span class="lineNum">     321 </span>                : 
+<span class="lineNum">     322 </span><span class="lineNoCov">              0 :         if (context &amp;&amp; php_stream_context_get_option(context, &quot;http&quot;, &quot;method&quot;, &amp;tmpzval) == SUCCESS) {</span>
+<span class="lineNum">     323 </span><span class="lineNoCov">              0 :                 if (Z_TYPE_PP(tmpzval) == IS_STRING &amp;&amp; Z_STRLEN_PP(tmpzval) &gt; 0) {</span>
+<span class="lineNum">     324 </span>                :                         /* As per the RFC, automatically redirected requests MUST NOT use other methods than
+<span class="lineNum">     325 </span>                :                          * GET and HEAD unless it can be confirmed by the user */
+<span class="lineNum">     326 </span><span class="lineNoCov">              0 :                         if (!redirected</span>
+<span class="lineNum">     327 </span><span class="lineNoCov">              0 :                                 || (Z_STRLEN_PP(tmpzval) == 3 &amp;&amp; memcmp(&quot;GET&quot;, Z_STRVAL_PP(tmpzval), 3) == 0)</span>
+<span class="lineNum">     328 </span><span class="lineNoCov">              0 :                                 || (Z_STRLEN_PP(tmpzval) == 4 &amp;&amp; memcmp(&quot;HEAD&quot;,Z_STRVAL_PP(tmpzval), 4) == 0)</span>
+<span class="lineNum">     329 </span>                :                         ) {
+<span class="lineNum">     330 </span><span class="lineNoCov">              0 :                                 scratch_len = strlen(path) + 29 + Z_STRLEN_PP(tmpzval);</span>
+<span class="lineNum">     331 </span><span class="lineNoCov">              0 :                                 scratch = emalloc(scratch_len);</span>
+<span class="lineNum">     332 </span><span class="lineNoCov">              0 :                                 strlcpy(scratch, Z_STRVAL_PP(tmpzval), Z_STRLEN_PP(tmpzval) + 1);</span>
+<span class="lineNum">     333 </span><span class="lineNoCov">              0 :                                 strncat(scratch, &quot; &quot;, 1);</span>
+<span class="lineNum">     334 </span>                :                         }
+<span class="lineNum">     335 </span>                :                 }
+<span class="lineNum">     336 </span>                :         }
+<span class="lineNum">     337 </span>                :  
+<span class="lineNum">     338 </span><span class="lineNoCov">              0 :         if (context &amp;&amp; php_stream_context_get_option(context, &quot;http&quot;, &quot;protocol_version&quot;, &amp;tmpzval) == SUCCESS) {</span>
+<span class="lineNum">     339 </span><span class="lineNoCov">              0 :                 SEPARATE_ZVAL(tmpzval);</span>
+<span class="lineNum">     340 </span><span class="lineNoCov">              0 :                 convert_to_double_ex(tmpzval);</span>
+<span class="lineNum">     341 </span><span class="lineNoCov">              0 :                 protocol_version_len = spprintf(&amp;protocol_version, 0, &quot;%.1F&quot;, Z_DVAL_PP(tmpzval));</span>
+<span class="lineNum">     342 </span>                :         }
+<span class="lineNum">     343 </span>                : 
+<span class="lineNum">     344 </span><span class="lineNoCov">              0 :         if (!scratch) {</span>
+<span class="lineNum">     345 </span><span class="lineNoCov">              0 :                 scratch_len = strlen(path) + 29 + protocol_version_len;</span>
+<span class="lineNum">     346 </span><span class="lineNoCov">              0 :                 scratch = emalloc(scratch_len);</span>
+<span class="lineNum">     347 </span><span class="lineNoCov">              0 :                 strncpy(scratch, &quot;GET &quot;, scratch_len);</span>
+<span class="lineNum">     348 </span>                :         }
+<span class="lineNum">     349 </span>                : 
+<span class="lineNum">     350 </span>                :         /* Should we send the entire path in the request line, default to no. */
+<span class="lineNum">     351 </span><span class="lineNoCov">              0 :         if (!request_fulluri &amp;&amp;</span>
+<span class="lineNum">     352 </span>                :                 context &amp;&amp;
+<span class="lineNum">     353 </span><span class="lineNoCov">              0 :                 php_stream_context_get_option(context, &quot;http&quot;, &quot;request_fulluri&quot;, &amp;tmpzval) == SUCCESS) {</span>
+<span class="lineNum">     354 </span><span class="lineNoCov">              0 :                 zval ztmp = **tmpzval;</span>
+<span class="lineNum">     355 </span>                : 
+<span class="lineNum">     356 </span>                :                 zval_copy_ctor(&amp;ztmp);
+<span class="lineNum">     357 </span><span class="lineNoCov">              0 :                 convert_to_boolean(&amp;ztmp);</span>
+<span class="lineNum">     358 </span><span class="lineNoCov">              0 :                 request_fulluri = Z_BVAL(ztmp) ? 1 : 0;</span>
+<span class="lineNum">     359 </span>                :                 zval_dtor(&amp;ztmp);
+<span class="lineNum">     360 </span>                :         }
+<span class="lineNum">     361 </span>                : 
+<span class="lineNum">     362 </span><span class="lineNoCov">              0 :         if (request_fulluri) {</span>
+<span class="lineNum">     363 </span>                :                 /* Ask for everything */
+<span class="lineNum">     364 </span><span class="lineNoCov">              0 :                 strcat(scratch, path);</span>
+<span class="lineNum">     365 </span>                :         } else {
+<span class="lineNum">     366 </span>                :                 /* Send the traditional /path/to/file?query_string */
+<span class="lineNum">     367 </span>                : 
+<span class="lineNum">     368 </span>                :                 /* file */
+<span class="lineNum">     369 </span><span class="lineNoCov">              0 :                 if (resource-&gt;path &amp;&amp; *resource-&gt;path) {</span>
+<span class="lineNum">     370 </span><span class="lineNoCov">              0 :                         strlcat(scratch, resource-&gt;path, scratch_len);</span>
+<span class="lineNum">     371 </span>                :                 } else {
+<span class="lineNum">     372 </span><span class="lineNoCov">              0 :                         strlcat(scratch, &quot;/&quot;, scratch_len);</span>
+<span class="lineNum">     373 </span>                :                 }
+<span class="lineNum">     374 </span>                : 
+<span class="lineNum">     375 </span>                :                 /* query string */
+<span class="lineNum">     376 </span><span class="lineNoCov">              0 :                 if (resource-&gt;query) {</span>
+<span class="lineNum">     377 </span><span class="lineNoCov">              0 :                         strlcat(scratch, &quot;?&quot;, scratch_len);</span>
+<span class="lineNum">     378 </span><span class="lineNoCov">              0 :                         strlcat(scratch, resource-&gt;query, scratch_len);</span>
+<span class="lineNum">     379 </span>                :                 }
+<span class="lineNum">     380 </span>                :         }
+<span class="lineNum">     381 </span>                : 
+<span class="lineNum">     382 </span>                :         /* protocol version we are speaking */
+<span class="lineNum">     383 </span><span class="lineNoCov">              0 :         if (protocol_version) {</span>
+<span class="lineNum">     384 </span><span class="lineNoCov">              0 :                 strlcat(scratch, &quot; HTTP/&quot;, scratch_len);</span>
+<span class="lineNum">     385 </span><span class="lineNoCov">              0 :                 strlcat(scratch, protocol_version, scratch_len);</span>
+<span class="lineNum">     386 </span><span class="lineNoCov">              0 :                 strlcat(scratch, &quot;\r\n&quot;, scratch_len);</span>
+<span class="lineNum">     387 </span><span class="lineNoCov">              0 :                 efree(protocol_version);</span>
+<span class="lineNum">     388 </span><span class="lineNoCov">              0 :                 protocol_version = NULL;</span>
+<span class="lineNum">     389 </span>                :         } else {
+<span class="lineNum">     390 </span><span class="lineNoCov">              0 :                 strlcat(scratch, &quot; HTTP/1.0\r\n&quot;, scratch_len);</span>
+<span class="lineNum">     391 </span>                :         }
+<span class="lineNum">     392 </span>                : 
+<span class="lineNum">     393 </span>                :         /* send it */
+<span class="lineNum">     394 </span><span class="lineNoCov">              0 :         php_stream_write(stream, scratch, strlen(scratch));</span>
+<span class="lineNum">     395 </span>                : 
+<span class="lineNum">     396 </span><span class="lineNoCov">              0 :         if (context &amp;&amp; php_stream_context_get_option(context, &quot;http&quot;, &quot;header&quot;, &amp;tmpzval) == SUCCESS) {</span>
+<span class="lineNum">     397 </span><span class="lineNoCov">              0 :                 tmp = NULL;</span>
+<span class="lineNum">     398 </span>                :                 
+<span class="lineNum">     399 </span><span class="lineNoCov">              0 :                 if (Z_TYPE_PP(tmpzval) == IS_ARRAY) {</span>
+<span class="lineNum">     400 </span>                :                         HashPosition pos;
+<span class="lineNum">     401 </span><span class="lineNoCov">              0 :                         zval **tmpheader = NULL;</span>
+<span class="lineNum">     402 </span><span class="lineNoCov">              0 :                         smart_str tmpstr = {0};</span>
+<span class="lineNum">     403 </span>                : 
+<span class="lineNum">     404 </span><span class="lineNoCov">              0 :                         for (zend_hash_internal_pointer_reset_ex(Z_ARRVAL_PP(tmpzval), &amp;pos);</span>
+<span class="lineNum">     405 </span><span class="lineNoCov">              0 :                                 SUCCESS == zend_hash_get_current_data_ex(Z_ARRVAL_PP(tmpzval), (void *)&amp;tmpheader, &amp;pos);</span>
+<span class="lineNum">     406 </span><span class="lineNoCov">              0 :                                 zend_hash_move_forward_ex(Z_ARRVAL_PP(tmpzval), &amp;pos)</span>
+<span class="lineNum">     407 </span><span class="lineNoCov">              0 :                         ) {</span>
+<span class="lineNum">     408 </span><span class="lineNoCov">              0 :                                 if (Z_TYPE_PP(tmpheader) == IS_STRING) {</span>
+<span class="lineNum">     409 </span><span class="lineNoCov">              0 :                                         smart_str_appendl(&amp;tmpstr, Z_STRVAL_PP(tmpheader), Z_STRLEN_PP(tmpheader));</span>
+<span class="lineNum">     410 </span><span class="lineNoCov">              0 :                                         smart_str_appendl(&amp;tmpstr, &quot;\r\n&quot;, sizeof(&quot;\r\n&quot;) - 1);</span>
+<span class="lineNum">     411 </span>                :                                 }
+<span class="lineNum">     412 </span>                :                         }
+<span class="lineNum">     413 </span><span class="lineNoCov">              0 :                         smart_str_0(&amp;tmpstr);</span>
+<span class="lineNum">     414 </span>                :                         /* Remove newlines and spaces from start and end. there's at least one extra \r\n at the end that needs to go. */
+<span class="lineNum">     415 </span><span class="lineNoCov">              0 :                         if (tmpstr.c) {</span>
+<span class="lineNum">     416 </span><span class="lineNoCov">              0 :                                 tmp = php_trim(tmpstr.c, strlen(tmpstr.c), NULL, 0, NULL, 3 TSRMLS_CC);</span>
+<span class="lineNum">     417 </span><span class="lineNoCov">              0 :                                 smart_str_free(&amp;tmpstr);</span>
+<span class="lineNum">     418 </span>                :                         }
+<span class="lineNum">     419 </span>                :                 }
+<span class="lineNum">     420 </span><span class="lineNoCov">              0 :                 if (Z_TYPE_PP(tmpzval) == IS_STRING &amp;&amp; Z_STRLEN_PP(tmpzval)) {</span>
+<span class="lineNum">     421 </span>                :                         /* Remove newlines and spaces from start and end php_trim will estrndup() */
+<span class="lineNum">     422 </span><span class="lineNoCov">              0 :                         tmp = php_trim(Z_STRVAL_PP(tmpzval), Z_STRLEN_PP(tmpzval), NULL, 0, NULL, 3 TSRMLS_CC);</span>
+<span class="lineNum">     423 </span>                :                 }
+<span class="lineNum">     424 </span><span class="lineNoCov">              0 :                 if (tmp &amp;&amp; strlen(tmp) &gt; 0) {</span>
+<span class="lineNum">     425 </span>                :                         char *s;
+<span class="lineNum">     426 </span>                : 
+<span class="lineNum">     427 </span><span class="lineNoCov">              0 :                         if (!header_init) { /* Remove post headers for redirects */</span>
+<span class="lineNum">     428 </span><span class="lineNoCov">              0 :                                 int l = strlen(tmp);</span>
+<span class="lineNum">     429 </span><span class="lineNoCov">              0 :                                 char *s2, *tmp_c = estrdup(tmp);</span>
+<span class="lineNum">     430 </span>                :                                 
+<span class="lineNum">     431 </span><span class="lineNoCov">              0 :                                 php_strtolower(tmp_c, l);</span>
+<span class="lineNum">     432 </span><span class="lineNoCov">              0 :                                 if ((s = strstr(tmp_c, &quot;content-length:&quot;))) {</span>
+<span class="lineNum">     433 </span><span class="lineNoCov">              0 :                                         if ((s2 = memchr(s, '\n', tmp_c + l - s))) {</span>
+<span class="lineNum">     434 </span><span class="lineNoCov">              0 :                                                 int b = tmp_c + l - 1 - s2;</span>
+<span class="lineNum">     435 </span><span class="lineNoCov">              0 :                                                 memmove(tmp, tmp + (s2 + 1 - tmp_c), b);</span>
+<span class="lineNum">     436 </span><span class="lineNoCov">              0 :                                                 memmove(tmp_c, s2 + 1, b);</span>
+<span class="lineNum">     437 </span>                :                                                 
+<span class="lineNum">     438 </span>                :                                         } else {
+<span class="lineNum">     439 </span><span class="lineNoCov">              0 :                                                 tmp[s - tmp_c] = *s = '\0';</span>
+<span class="lineNum">     440 </span>                :                                         }
+<span class="lineNum">     441 </span><span class="lineNoCov">              0 :                                         l = strlen(tmp_c);</span>
+<span class="lineNum">     442 </span>                :                                 }
+<span class="lineNum">     443 </span><span class="lineNoCov">              0 :                                 if ((s = strstr(tmp_c, &quot;content-type:&quot;))) {</span>
+<span class="lineNum">     444 </span><span class="lineNoCov">              0 :                                         if ((s2 = memchr(s, '\n', tmp_c + l - s))) {</span>
+<span class="lineNum">     445 </span><span class="lineNoCov">              0 :                                                 memmove(tmp, tmp + (s2 + 1 - tmp_c), tmp_c + l - 1 - s2);</span>
+<span class="lineNum">     446 </span>                :                                         } else {
+<span class="lineNum">     447 </span><span class="lineNoCov">              0 :                                                 tmp[s - tmp_c] = '\0';</span>
+<span class="lineNum">     448 </span>                :                                         }
+<span class="lineNum">     449 </span>                :                                 }
+<span class="lineNum">     450 </span>                : 
+<span class="lineNum">     451 </span><span class="lineNoCov">              0 :                                 efree(tmp_c);</span>
+<span class="lineNum">     452 </span><span class="lineNoCov">              0 :                                 tmp_c = php_trim(tmp, strlen(tmp), NULL, 0, NULL, 3 TSRMLS_CC);</span>
+<span class="lineNum">     453 </span><span class="lineNoCov">              0 :                                 efree(tmp);</span>
+<span class="lineNum">     454 </span><span class="lineNoCov">              0 :                                 tmp = tmp_c;</span>
+<span class="lineNum">     455 </span>                :                         }
+<span class="lineNum">     456 </span>                : 
+<span class="lineNum">     457 </span><span class="lineNoCov">              0 :                         user_headers = estrdup(tmp);</span>
+<span class="lineNum">     458 </span>                : 
+<span class="lineNum">     459 </span>                :                         /* Make lowercase for easy comparison against 'standard' headers */
+<span class="lineNum">     460 </span><span class="lineNoCov">              0 :                         php_strtolower(tmp, strlen(tmp));</span>
+<span class="lineNum">     461 </span><span class="lineNoCov">              0 :                         if ((s = strstr(tmp, &quot;user-agent:&quot;)) &amp;&amp; </span>
+<span class="lineNum">     462 </span><span class="lineNoCov">              0 :                             (s == tmp || *(s-1) == '\r' || *(s-1) == '\n' || </span>
+<span class="lineNum">     463 </span><span class="lineNoCov">              0 :                                          *(s-1) == '\t' || *(s-1) == ' ')) {</span>
+<span class="lineNum">     464 </span><span class="lineNoCov">              0 :                                  have_header |= HTTP_HEADER_USER_AGENT;</span>
+<span class="lineNum">     465 </span>                :                         }
+<span class="lineNum">     466 </span><span class="lineNoCov">              0 :                         if ((s = strstr(tmp, &quot;host:&quot;)) &amp;&amp;</span>
+<span class="lineNum">     467 </span><span class="lineNoCov">              0 :                             (s == tmp || *(s-1) == '\r' || *(s-1) == '\n' || </span>
+<span class="lineNum">     468 </span><span class="lineNoCov">              0 :                                          *(s-1) == '\t' || *(s-1) == ' ')) {</span>
+<span class="lineNum">     469 </span><span class="lineNoCov">              0 :                                  have_header |= HTTP_HEADER_HOST;</span>
+<span class="lineNum">     470 </span>                :                         }
+<span class="lineNum">     471 </span><span class="lineNoCov">              0 :                         if ((s = strstr(tmp, &quot;from:&quot;)) &amp;&amp;</span>
+<span class="lineNum">     472 </span><span class="lineNoCov">              0 :                             (s == tmp || *(s-1) == '\r' || *(s-1) == '\n' || </span>
+<span class="lineNum">     473 </span><span class="lineNoCov">              0 :                                          *(s-1) == '\t' || *(s-1) == ' ')) {</span>
+<span class="lineNum">     474 </span><span class="lineNoCov">              0 :                                  have_header |= HTTP_HEADER_FROM;</span>
+<span class="lineNum">     475 </span>                :                                 }
+<span class="lineNum">     476 </span><span class="lineNoCov">              0 :                         if ((s = strstr(tmp, &quot;authorization:&quot;)) &amp;&amp;</span>
+<span class="lineNum">     477 </span><span class="lineNoCov">              0 :                             (s == tmp || *(s-1) == '\r' || *(s-1) == '\n' || </span>
+<span class="lineNum">     478 </span><span class="lineNoCov">              0 :                                          *(s-1) == '\t' || *(s-1) == ' ')) {</span>
+<span class="lineNum">     479 </span><span class="lineNoCov">              0 :                                  have_header |= HTTP_HEADER_AUTH;</span>
+<span class="lineNum">     480 </span>                :                         }
+<span class="lineNum">     481 </span><span class="lineNoCov">              0 :                         if ((s = strstr(tmp, &quot;content-length:&quot;)) &amp;&amp;</span>
+<span class="lineNum">     482 </span><span class="lineNoCov">              0 :                             (s == tmp || *(s-1) == '\r' || *(s-1) == '\n' || </span>
+<span class="lineNum">     483 </span><span class="lineNoCov">              0 :                                          *(s-1) == '\t' || *(s-1) == ' ')) {</span>
+<span class="lineNum">     484 </span><span class="lineNoCov">              0 :                                  have_header |= HTTP_HEADER_CONTENT_LENGTH;</span>
+<span class="lineNum">     485 </span>                :                         }
+<span class="lineNum">     486 </span><span class="lineNoCov">              0 :                         if ((s = strstr(tmp, &quot;content-type:&quot;)) &amp;&amp;</span>
+<span class="lineNum">     487 </span><span class="lineNoCov">              0 :                             (s == tmp || *(s-1) == '\r' || *(s-1) == '\n' || </span>
+<span class="lineNum">     488 </span><span class="lineNoCov">              0 :                                          *(s-1) == '\t' || *(s-1) == ' ')) {</span>
+<span class="lineNum">     489 </span><span class="lineNoCov">              0 :                                  have_header |= HTTP_HEADER_TYPE;</span>
+<span class="lineNum">     490 </span>                :                         }
+<span class="lineNum">     491 </span>                :                         /* remove Proxy-Authorization header */
+<span class="lineNum">     492 </span><span class="lineNoCov">              0 :                         if (use_proxy &amp;&amp; use_ssl &amp;&amp; (s = strstr(tmp, &quot;proxy-authorization:&quot;)) &amp;&amp;</span>
+<span class="lineNum">     493 </span><span class="lineNoCov">              0 :                             (s == tmp || *(s-1) == '\r' || *(s-1) == '\n' || </span>
+<span class="lineNum">     494 </span><span class="lineNoCov">              0 :                                          *(s-1) == '\t' || *(s-1) == ' ')) {</span>
+<span class="lineNum">     495 </span><span class="lineNoCov">              0 :                                 char *p = s + sizeof(&quot;proxy-authorization:&quot;) - 1;</span>
+<span class="lineNum">     496 </span>                :                                 
+<span class="lineNum">     497 </span><span class="lineNoCov">              0 :                                 while (s &gt; tmp &amp;&amp; (*(s-1) == ' ' || *(s-1) == '\t')) s--;</span>
+<span class="lineNum">     498 </span><span class="lineNoCov">              0 :                                 while (*p != 0 &amp;&amp; *p != '\r' &amp;&amp; *p != '\n') p++;</span>
+<span class="lineNum">     499 </span><span class="lineNoCov">              0 :                                 while (*p == '\r' || *p == '\n') p++;</span>
+<span class="lineNum">     500 </span><span class="lineNoCov">              0 :                                 if (*p == 0) {</span>
+<span class="lineNum">     501 </span><span class="lineNoCov">              0 :                                         if (s == tmp) {</span>
+<span class="lineNum">     502 </span><span class="lineNoCov">              0 :                                                 efree(user_headers);</span>
+<span class="lineNum">     503 </span><span class="lineNoCov">              0 :                                                 user_headers = NULL;</span>
+<span class="lineNum">     504 </span>                :                                         } else {
+<span class="lineNum">     505 </span><span class="lineNoCov">              0 :                                                 while (s &gt; tmp &amp;&amp; (*(s-1) == '\r' || *(s-1) == '\n')) s--;</span>
+<span class="lineNum">     506 </span><span class="lineNoCov">              0 :                                                 user_headers[s - tmp] = 0;</span>
+<span class="lineNum">     507 </span>                :                                         }
+<span class="lineNum">     508 </span>                :                                 } else {
+<span class="lineNum">     509 </span><span class="lineNoCov">              0 :                                         memmove(user_headers + (s - tmp), user_headers + (p - tmp), strlen(p) + 1);</span>
+<span class="lineNum">     510 </span>                :                                 }
+<span class="lineNum">     511 </span>                :                         }
+<span class="lineNum">     512 </span>                : 
+<span class="lineNum">     513 </span>                :                 }
+<span class="lineNum">     514 </span><span class="lineNoCov">              0 :                 if (tmp) {</span>
+<span class="lineNum">     515 </span><span class="lineNoCov">              0 :                         efree(tmp);</span>
+<span class="lineNum">     516 </span>                :                 }
+<span class="lineNum">     517 </span>                :         }
+<span class="lineNum">     518 </span>                : 
+<span class="lineNum">     519 </span>                :         /* auth header if it was specified */
+<span class="lineNum">     520 </span><span class="lineNoCov">              0 :         if (((have_header &amp; HTTP_HEADER_AUTH) == 0) &amp;&amp; resource-&gt;user) {</span>
+<span class="lineNum">     521 </span>                :                 /* decode the strings first */
+<span class="lineNum">     522 </span><span class="lineNoCov">              0 :                 php_url_decode(resource-&gt;user, strlen(resource-&gt;user));</span>
+<span class="lineNum">     523 </span>                : 
+<span class="lineNum">     524 </span>                :                 /* scratch is large enough, since it was made large enough for the whole URL */
+<span class="lineNum">     525 </span><span class="lineNoCov">              0 :                 strcpy(scratch, resource-&gt;user);</span>
+<span class="lineNum">     526 </span><span class="lineNoCov">              0 :                 strcat(scratch, &quot;:&quot;);</span>
+<span class="lineNum">     527 </span>                : 
+<span class="lineNum">     528 </span>                :                 /* Note: password is optional! */
+<span class="lineNum">     529 </span><span class="lineNoCov">              0 :                 if (resource-&gt;pass) {</span>
+<span class="lineNum">     530 </span><span class="lineNoCov">              0 :                         php_url_decode(resource-&gt;pass, strlen(resource-&gt;pass));</span>
+<span class="lineNum">     531 </span><span class="lineNoCov">              0 :                         strcat(scratch, resource-&gt;pass);</span>
+<span class="lineNum">     532 </span>                :                 }
+<span class="lineNum">     533 </span>                : 
+<span class="lineNum">     534 </span><span class="lineNoCov">              0 :                 tmp = (char*)php_base64_encode((unsigned char*)scratch, strlen(scratch), NULL);</span>
+<span class="lineNum">     535 </span>                :                 
+<span class="lineNum">     536 </span><span class="lineNoCov">              0 :                 if (snprintf(scratch, scratch_len, &quot;Authorization: Basic %s\r\n&quot;, tmp) &gt; 0) {</span>
+<span class="lineNum">     537 </span><span class="lineNoCov">              0 :                         php_stream_write(stream, scratch, strlen(scratch));</span>
+<span class="lineNum">     538 </span><span class="lineNoCov">              0 :                         php_stream_notify_info(context, PHP_STREAM_NOTIFY_AUTH_REQUIRED, NULL, 0);</span>
+<span class="lineNum">     539 </span>                :                 }
+<span class="lineNum">     540 </span>                : 
+<span class="lineNum">     541 </span><span class="lineNoCov">              0 :                 efree(tmp);</span>
+<span class="lineNum">     542 </span><span class="lineNoCov">              0 :                 tmp = NULL;</span>
+<span class="lineNum">     543 </span>                :         }
+<span class="lineNum">     544 </span>                : 
+<span class="lineNum">     545 </span>                :         /* if the user has configured who they are, send a From: line */
+<span class="lineNum">     546 </span><span class="lineNoCov">              0 :         if (((have_header &amp; HTTP_HEADER_FROM) == 0) &amp;&amp; FG(from_address)) {</span>
+<span class="lineNum">     547 </span><span class="lineNoCov">              0 :                 if (snprintf(scratch, scratch_len, &quot;From: %s\r\n&quot;, FG(from_address)) &gt; 0)</span>
+<span class="lineNum">     548 </span><span class="lineNoCov">              0 :                         php_stream_write(stream, scratch, strlen(scratch));</span>
+<span class="lineNum">     549 </span>                :         }
+<span class="lineNum">     550 </span>                : 
+<span class="lineNum">     551 </span>                :         /* Send Host: header so name-based virtual hosts work */
+<span class="lineNum">     552 </span><span class="lineNoCov">              0 :         if ((have_header &amp; HTTP_HEADER_HOST) == 0) {</span>
+<span class="lineNum">     553 </span><span class="lineNoCov">              0 :                 if ((use_ssl &amp;&amp; resource-&gt;port != 443 &amp;&amp; resource-&gt;port != 0) || </span>
+<span class="lineNum">     554 </span><span class="lineNoCov">              0 :                         (!use_ssl &amp;&amp; resource-&gt;port != 80 &amp;&amp; resource-&gt;port != 0)) {</span>
+<span class="lineNum">     555 </span><span class="lineNoCov">              0 :                         if (snprintf(scratch, scratch_len, &quot;Host: %s:%i\r\n&quot;, resource-&gt;host, resource-&gt;port) &gt; 0)</span>
+<span class="lineNum">     556 </span><span class="lineNoCov">              0 :                                 php_stream_write(stream, scratch, strlen(scratch));</span>
+<span class="lineNum">     557 </span>                :                 } else {
+<span class="lineNum">     558 </span><span class="lineNoCov">              0 :                         if (snprintf(scratch, scratch_len, &quot;Host: %s\r\n&quot;, resource-&gt;host) &gt; 0) {</span>
+<span class="lineNum">     559 </span><span class="lineNoCov">              0 :                                 php_stream_write(stream, scratch, strlen(scratch));</span>
+<span class="lineNum">     560 </span>                :                         }
+<span class="lineNum">     561 </span>                :                 }
+<span class="lineNum">     562 </span>                :         }
+<span class="lineNum">     563 </span>                : 
+<span class="lineNum">     564 </span><span class="lineNoCov">              0 :         if (context &amp;&amp; </span>
+<span class="lineNum">     565 </span><span class="lineNoCov">              0 :             php_stream_context_get_option(context, &quot;http&quot;, &quot;user_agent&quot;, &amp;ua_zval) == SUCCESS &amp;&amp;</span>
+<span class="lineNum">     566 </span><span class="lineNoCov">              0 :                 Z_TYPE_PP(ua_zval) == IS_STRING) {</span>
+<span class="lineNum">     567 </span><span class="lineNoCov">              0 :                 ua_str = Z_STRVAL_PP(ua_zval);</span>
+<span class="lineNum">     568 </span><span class="lineNoCov">              0 :         } else if (FG(user_agent)) {</span>
+<span class="lineNum">     569 </span><span class="lineNoCov">              0 :                 ua_str = FG(user_agent);</span>
+<span class="lineNum">     570 </span>                :         }
+<span class="lineNum">     571 </span>                : 
+<span class="lineNum">     572 </span><span class="lineNoCov">              0 :         if (((have_header &amp; HTTP_HEADER_USER_AGENT) == 0) &amp;&amp; ua_str) {</span>
+<span class="lineNum">     573 </span>                : #define _UA_HEADER &quot;User-Agent: %s\r\n&quot;
+<span class="lineNum">     574 </span>                :                 char *ua;
+<span class="lineNum">     575 </span>                :                 size_t ua_len;
+<span class="lineNum">     576 </span>                :                 
+<span class="lineNum">     577 </span><span class="lineNoCov">              0 :                 ua_len = sizeof(_UA_HEADER) + strlen(ua_str);</span>
+<span class="lineNum">     578 </span>                :                 
+<span class="lineNum">     579 </span>                :                 /* ensure the header is only sent if user_agent is not blank */
+<span class="lineNum">     580 </span><span class="lineNoCov">              0 :                 if (ua_len &gt; sizeof(_UA_HEADER)) {</span>
+<span class="lineNum">     581 </span><span class="lineNoCov">              0 :                         ua = emalloc(ua_len + 1);</span>
+<span class="lineNum">     582 </span><span class="lineNoCov">              0 :                         if ((ua_len = slprintf(ua, ua_len, _UA_HEADER, ua_str)) &gt; 0) {</span>
+<span class="lineNum">     583 </span><span class="lineNoCov">              0 :                                 ua[ua_len] = 0;</span>
+<span class="lineNum">     584 </span><span class="lineNoCov">              0 :                                 php_stream_write(stream, ua, ua_len);</span>
+<span class="lineNum">     585 </span>                :                         } else {
+<span class="lineNum">     586 </span><span class="lineNoCov">              0 :                                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Cannot construct User-agent header&quot;);</span>
+<span class="lineNum">     587 </span>                :                         }
+<span class="lineNum">     588 </span>                : 
+<span class="lineNum">     589 </span><span class="lineNoCov">              0 :                         if (ua) {</span>
+<span class="lineNum">     590 </span><span class="lineNoCov">              0 :                                 efree(ua);</span>
+<span class="lineNum">     591 </span>                :                         }
+<span class="lineNum">     592 </span>                :                 }       
+<span class="lineNum">     593 </span>                :         }
+<span class="lineNum">     594 </span>                : 
+<span class="lineNum">     595 </span><span class="lineNoCov">              0 :         if (user_headers) {</span>
+<span class="lineNum">     596 </span>                :                 /* A bit weird, but some servers require that Content-Length be sent prior to Content-Type for POST
+<span class="lineNum">     597 </span>                :                  * see bug #44603 for details. Since Content-Type maybe part of user's headers we need to do this check first.
+<span class="lineNum">     598 </span>                :                  */
+<span class="lineNum">     599 </span><span class="lineNoCov">              0 :                 if (</span>
+<span class="lineNum">     600 </span>                :                                 header_init &amp;&amp;
+<span class="lineNum">     601 </span>                :                                 context &amp;&amp;
+<span class="lineNum">     602 </span><span class="lineNoCov">              0 :                                 !(have_header &amp; HTTP_HEADER_CONTENT_LENGTH) &amp;&amp;</span>
+<span class="lineNum">     603 </span><span class="lineNoCov">              0 :                                 php_stream_context_get_option(context, &quot;http&quot;, &quot;content&quot;, &amp;tmpzval) == SUCCESS &amp;&amp;</span>
+<span class="lineNum">     604 </span><span class="lineNoCov">              0 :                                 Z_TYPE_PP(tmpzval) == IS_STRING &amp;&amp; Z_STRLEN_PP(tmpzval) &gt; 0</span>
+<span class="lineNum">     605 </span>                :                 ) {
+<span class="lineNum">     606 </span><span class="lineNoCov">              0 :                         scratch_len = slprintf(scratch, scratch_len, &quot;Content-Length: %d\r\n&quot;, Z_STRLEN_PP(tmpzval));</span>
+<span class="lineNum">     607 </span><span class="lineNoCov">              0 :                         php_stream_write(stream, scratch, scratch_len);</span>
+<span class="lineNum">     608 </span><span class="lineNoCov">              0 :                         have_header |= HTTP_HEADER_CONTENT_LENGTH;</span>
+<span class="lineNum">     609 </span>                :                 }
+<span class="lineNum">     610 </span>                : 
+<span class="lineNum">     611 </span><span class="lineNoCov">              0 :                 php_stream_write(stream, user_headers, strlen(user_headers));</span>
+<span class="lineNum">     612 </span><span class="lineNoCov">              0 :                 php_stream_write(stream, &quot;\r\n&quot;, sizeof(&quot;\r\n&quot;)-1);</span>
+<span class="lineNum">     613 </span><span class="lineNoCov">              0 :                 efree(user_headers);</span>
+<span class="lineNum">     614 </span>                :         }
+<span class="lineNum">     615 </span>                : 
+<span class="lineNum">     616 </span>                :         /* Request content, such as for POST requests */
+<span class="lineNum">     617 </span><span class="lineNoCov">              0 :         if (header_init &amp;&amp; context &amp;&amp;</span>
+<span class="lineNum">     618 </span><span class="lineNoCov">              0 :                 php_stream_context_get_option(context, &quot;http&quot;, &quot;content&quot;, &amp;tmpzval) == SUCCESS &amp;&amp;</span>
+<span class="lineNum">     619 </span><span class="lineNoCov">              0 :                 Z_TYPE_PP(tmpzval) == IS_STRING &amp;&amp; Z_STRLEN_PP(tmpzval) &gt; 0) {</span>
+<span class="lineNum">     620 </span><span class="lineNoCov">              0 :                 if (!(have_header &amp; HTTP_HEADER_CONTENT_LENGTH)) {</span>
+<span class="lineNum">     621 </span><span class="lineNoCov">              0 :                         scratch_len = slprintf(scratch, scratch_len, &quot;Content-Length: %d\r\n&quot;, Z_STRLEN_PP(tmpzval));</span>
+<span class="lineNum">     622 </span><span class="lineNoCov">              0 :                         php_stream_write(stream, scratch, scratch_len);</span>
+<span class="lineNum">     623 </span>                :                 }
+<span class="lineNum">     624 </span><span class="lineNoCov">              0 :                 if (!(have_header &amp; HTTP_HEADER_TYPE)) {</span>
+<span class="lineNum">     625 </span><span class="lineNoCov">              0 :                         php_stream_write(stream, &quot;Content-Type: application/x-www-form-urlencoded\r\n&quot;,</span>
+<span class="lineNum">     626 </span>                :                                 sizeof(&quot;Content-Type: application/x-www-form-urlencoded\r\n&quot;) - 1);
+<span class="lineNum">     627 </span><span class="lineNoCov">              0 :                         php_error_docref(NULL TSRMLS_CC, E_NOTICE, &quot;Content-type not specified assuming application/x-www-form-urlencoded&quot;);</span>
+<span class="lineNum">     628 </span>                :                 }
+<span class="lineNum">     629 </span><span class="lineNoCov">              0 :                 php_stream_write(stream, &quot;\r\n&quot;, sizeof(&quot;\r\n&quot;)-1);</span>
+<span class="lineNum">     630 </span><span class="lineNoCov">              0 :                 php_stream_write(stream, Z_STRVAL_PP(tmpzval), Z_STRLEN_PP(tmpzval));</span>
+<span class="lineNum">     631 </span>                :         } else {
+<span class="lineNum">     632 </span><span class="lineNoCov">              0 :                 php_stream_write(stream, &quot;\r\n&quot;, sizeof(&quot;\r\n&quot;)-1);</span>
+<span class="lineNum">     633 </span>                :         }
+<span class="lineNum">     634 </span>                : 
+<span class="lineNum">     635 </span><span class="lineNoCov">              0 :         location[0] = '\0';</span>
+<span class="lineNum">     636 </span>                : 
+<span class="lineNum">     637 </span><span class="lineNoCov">              0 :         if (!EG(active_symbol_table)) {</span>
+<span class="lineNum">     638 </span><span class="lineNoCov">              0 :                 zend_rebuild_symbol_table(TSRMLS_C);</span>
+<span class="lineNum">     639 </span>                :         }
+<span class="lineNum">     640 </span>                : 
+<span class="lineNum">     641 </span><span class="lineNoCov">              0 :         if (header_init) {</span>
+<span class="lineNum">     642 </span>                :                 zval *ztmp;
+<span class="lineNum">     643 </span><span class="lineNoCov">              0 :                 MAKE_STD_ZVAL(ztmp);</span>
+<span class="lineNum">     644 </span><span class="lineNoCov">              0 :                 array_init(ztmp);</span>
+<span class="lineNum">     645 </span><span class="lineNoCov">              0 :                 ZEND_SET_SYMBOL(EG(active_symbol_table), &quot;http_response_header&quot;, ztmp);</span>
+<span class="lineNum">     646 </span>                :         }
+<span class="lineNum">     647 </span>                : 
+<span class="lineNum">     648 </span>                :         {
+<span class="lineNum">     649 </span>                :                 zval **rh;
+<span class="lineNum">     650 </span><span class="lineNoCov">              0 :                 zend_hash_find(EG(active_symbol_table), &quot;http_response_header&quot;, sizeof(&quot;http_response_header&quot;), (void **) &amp;rh);</span>
+<span class="lineNum">     651 </span><span class="lineNoCov">              0 :                 response_header = *rh;</span>
+<span class="lineNum">     652 </span>                :         }
+<span class="lineNum">     653 </span>                : 
+<span class="lineNum">     654 </span><span class="lineNoCov">              0 :         if (!php_stream_eof(stream)) {</span>
+<span class="lineNum">     655 </span>                :                 size_t tmp_line_len;
+<span class="lineNum">     656 </span>                :                 /* get response header */
+<span class="lineNum">     657 </span>                : 
+<span class="lineNum">     658 </span><span class="lineNoCov">              0 :                 if (php_stream_get_line(stream, tmp_line, sizeof(tmp_line) - 1, &amp;tmp_line_len) != NULL) {</span>
+<span class="lineNum">     659 </span>                :                         zval *http_response;
+<span class="lineNum">     660 </span>                :                         int response_code;
+<span class="lineNum">     661 </span>                : 
+<span class="lineNum">     662 </span><span class="lineNoCov">              0 :                         if (tmp_line_len &gt; 9) {</span>
+<span class="lineNum">     663 </span><span class="lineNoCov">              0 :                                 response_code = atoi(tmp_line + 9);</span>
+<span class="lineNum">     664 </span>                :                         } else {
+<span class="lineNum">     665 </span><span class="lineNoCov">              0 :                                 response_code = 0;</span>
+<span class="lineNum">     666 </span>                :                         }
+<span class="lineNum">     667 </span><span class="lineNoCov">              0 :                         if (context &amp;&amp; SUCCESS==php_stream_context_get_option(context, &quot;http&quot;, &quot;ignore_errors&quot;, &amp;tmpzval)) {</span>
+<span class="lineNum">     668 </span><span class="lineNoCov">              0 :                                 ignore_errors = zend_is_true(*tmpzval);</span>
+<span class="lineNum">     669 </span>                :                         }
+<span class="lineNum">     670 </span>                :                         /* when we request only the header, don't fail even on error codes */
+<span class="lineNum">     671 </span><span class="lineNoCov">              0 :                         if ((options &amp; STREAM_ONLY_GET_HEADERS) || ignore_errors) {</span>
+<span class="lineNum">     672 </span><span class="lineNoCov">              0 :                                 reqok = 1;</span>
+<span class="lineNum">     673 </span>                :                         }
+<span class="lineNum">     674 </span>                :                         /* all status codes in the 2xx range are defined by the specification as successful;
+<span class="lineNum">     675 </span>                :                          * all status codes in the 3xx range are for redirection, and so also should never
+<span class="lineNum">     676 </span>                :                          * fail */
+<span class="lineNum">     677 </span><span class="lineNoCov">              0 :                         if (response_code &gt;= 200 &amp;&amp; response_code &lt; 400) {</span>
+<span class="lineNum">     678 </span><span class="lineNoCov">              0 :                                 reqok = 1;</span>
+<span class="lineNum">     679 </span>                :                         } else {
+<span class="lineNum">     680 </span><span class="lineNoCov">              0 :                                 switch(response_code) {</span>
+<span class="lineNum">     681 </span>                :                                         case 403:
+<span class="lineNum">     682 </span><span class="lineNoCov">              0 :                                                 php_stream_notify_error(context, PHP_STREAM_NOTIFY_AUTH_RESULT,</span>
+<span class="lineNum">     683 </span>                :                                                                 tmp_line, response_code);
+<span class="lineNum">     684 </span><span class="lineNoCov">              0 :                                                 break;</span>
+<span class="lineNum">     685 </span>                :                                         default:
+<span class="lineNum">     686 </span>                :                                                 /* safety net in the event tmp_line == NULL */
+<span class="lineNum">     687 </span><span class="lineNoCov">              0 :                                                 if (!tmp_line_len) {</span>
+<span class="lineNum">     688 </span><span class="lineNoCov">              0 :                                                         tmp_line[0] = '\0';</span>
+<span class="lineNum">     689 </span>                :                                                 }
+<span class="lineNum">     690 </span><span class="lineNoCov">              0 :                                                 php_stream_notify_error(context, PHP_STREAM_NOTIFY_FAILURE,</span>
+<span class="lineNum">     691 </span>                :                                                                 tmp_line, response_code);
+<span class="lineNum">     692 </span>                :                                 }
+<span class="lineNum">     693 </span>                :                         }
+<span class="lineNum">     694 </span><span class="lineNoCov">              0 :                         if (tmp_line[tmp_line_len - 1] == '\n') {</span>
+<span class="lineNum">     695 </span><span class="lineNoCov">              0 :                                 --tmp_line_len;</span>
+<span class="lineNum">     696 </span><span class="lineNoCov">              0 :                                 if (tmp_line[tmp_line_len - 1] == '\r') {</span>
+<span class="lineNum">     697 </span><span class="lineNoCov">              0 :                                         --tmp_line_len;</span>
+<span class="lineNum">     698 </span>                :                                 }
+<span class="lineNum">     699 </span>                :                         }
+<span class="lineNum">     700 </span><span class="lineNoCov">              0 :                         MAKE_STD_ZVAL(http_response);</span>
+<span class="lineNum">     701 </span><span class="lineNoCov">              0 :                         ZVAL_STRINGL(http_response, tmp_line, tmp_line_len, 1);</span>
+<span class="lineNum">     702 </span><span class="lineNoCov">              0 :                         zend_hash_next_index_insert(Z_ARRVAL_P(response_header), &amp;http_response, sizeof(zval *), NULL);</span>
+<span class="lineNum">     703 </span>                :                 }
+<span class="lineNum">     704 </span>                :         } else {
+<span class="lineNum">     705 </span><span class="lineNoCov">              0 :                 php_stream_wrapper_log_error(wrapper, options TSRMLS_CC, &quot;HTTP request failed, unexpected end of socket!&quot;);</span>
+<span class="lineNum">     706 </span><span class="lineNoCov">              0 :                 goto out;</span>
+<span class="lineNum">     707 </span>                :         }
+<span class="lineNum">     708 </span>                :         
+<span class="lineNum">     709 </span>                :         /* read past HTTP headers */
+<span class="lineNum">     710 </span>                :         
+<span class="lineNum">     711 </span><span class="lineNoCov">              0 :         http_header_line = emalloc(HTTP_HEADER_BLOCK_SIZE);</span>
+<span class="lineNum">     712 </span>                : 
+<span class="lineNum">     713 </span><span class="lineNoCov">              0 :         while (!body &amp;&amp; !php_stream_eof(stream)) {</span>
+<span class="lineNum">     714 </span>                :                 size_t http_header_line_length;
+<span class="lineNum">     715 </span><span class="lineNoCov">              0 :                 if (php_stream_get_line(stream, http_header_line, HTTP_HEADER_BLOCK_SIZE, &amp;http_header_line_length) &amp;&amp; *http_header_line != '\n' &amp;&amp; *http_header_line != '\r') {</span>
+<span class="lineNum">     716 </span><span class="lineNoCov">              0 :                         char *e = http_header_line + http_header_line_length - 1;</span>
+<span class="lineNum">     717 </span><span class="lineNoCov">              0 :                         if (*e != '\n') {</span>
+<span class="lineNum">     718 </span>                :                                 do { /* partial header */
+<span class="lineNum">     719 </span><span class="lineNoCov">              0 :                                         if (php_stream_get_line(stream, http_header_line, HTTP_HEADER_BLOCK_SIZE, &amp;http_header_line_length) == NULL) {</span>
+<span class="lineNum">     720 </span><span class="lineNoCov">              0 :                                                 php_stream_wrapper_log_error(wrapper, options TSRMLS_CC, &quot;Failed to read HTTP headers&quot;);</span>
+<span class="lineNum">     721 </span><span class="lineNoCov">              0 :                                                 goto out;</span>
+<span class="lineNum">     722 </span>                :                                         }
+<span class="lineNum">     723 </span><span class="lineNoCov">              0 :                                         e = http_header_line + http_header_line_length - 1;</span>
+<span class="lineNum">     724 </span><span class="lineNoCov">              0 :                                 } while (*e != '\n');</span>
+<span class="lineNum">     725 </span><span class="lineNoCov">              0 :                                 continue;</span>
+<span class="lineNum">     726 </span>                :                         }
+<span class="lineNum">     727 </span><span class="lineNoCov">              0 :                         while (*e == '\n' || *e == '\r') {</span>
+<span class="lineNum">     728 </span><span class="lineNoCov">              0 :                                 e--;</span>
+<span class="lineNum">     729 </span>                :                         }
+<span class="lineNum">     730 </span><span class="lineNoCov">              0 :                         http_header_line_length = e - http_header_line + 1;</span>
+<span class="lineNum">     731 </span><span class="lineNoCov">              0 :                         http_header_line[http_header_line_length] = '\0';</span>
+<span class="lineNum">     732 </span>                : 
+<span class="lineNum">     733 </span><span class="lineNoCov">              0 :                         if (!strncasecmp(http_header_line, &quot;Location: &quot;, 10)) {</span>
+<span class="lineNum">     734 </span><span class="lineNoCov">              0 :                                 if (context &amp;&amp; php_stream_context_get_option(context, &quot;http&quot;, &quot;follow_location&quot;, &amp;tmpzval) == SUCCESS) {</span>
+<span class="lineNum">     735 </span><span class="lineNoCov">              0 :                                         SEPARATE_ZVAL(tmpzval);</span>
+<span class="lineNum">     736 </span><span class="lineNoCov">              0 :                                         convert_to_long_ex(tmpzval);</span>
+<span class="lineNum">     737 </span><span class="lineNoCov">              0 :                                         follow_location = Z_LVAL_PP(tmpzval);</span>
+<span class="lineNum">     738 </span>                :                                 }
+<span class="lineNum">     739 </span><span class="lineNoCov">              0 :                                 strlcpy(location, http_header_line + 10, sizeof(location));</span>
+<span class="lineNum">     740 </span><span class="lineNoCov">              0 :                         } else if (!strncasecmp(http_header_line, &quot;Content-Type: &quot;, 14)) {</span>
+<span class="lineNum">     741 </span><span class="lineNoCov">              0 :                                 php_stream_notify_info(context, PHP_STREAM_NOTIFY_MIME_TYPE_IS, http_header_line + 14, 0);</span>
+<span class="lineNum">     742 </span><span class="lineNoCov">              0 :                         } else if (!strncasecmp(http_header_line, &quot;Content-Length: &quot;, 16)) {</span>
+<span class="lineNum">     743 </span><span class="lineNoCov">              0 :                                 file_size = atoi(http_header_line + 16);</span>
+<span class="lineNum">     744 </span><span class="lineNoCov">              0 :                                 php_stream_notify_file_size(context, file_size, http_header_line, 0);</span>
+<span class="lineNum">     745 </span><span class="lineNoCov">              0 :                         } else if (!strncasecmp(http_header_line, &quot;Transfer-Encoding: chunked&quot;, sizeof(&quot;Transfer-Encoding: chunked&quot;))) {</span>
+<span class="lineNum">     746 </span>                : 
+<span class="lineNum">     747 </span>                :                                 /* create filter to decode response body */
+<span class="lineNum">     748 </span><span class="lineNoCov">              0 :                                 if (!(options &amp; STREAM_ONLY_GET_HEADERS)) {</span>
+<span class="lineNum">     749 </span><span class="lineNoCov">              0 :                                         long decode = 1;</span>
+<span class="lineNum">     750 </span>                : 
+<span class="lineNum">     751 </span><span class="lineNoCov">              0 :                                         if (context &amp;&amp; php_stream_context_get_option(context, &quot;http&quot;, &quot;auto_decode&quot;, &amp;tmpzval) == SUCCESS) {</span>
+<span class="lineNum">     752 </span><span class="lineNoCov">              0 :                                                 SEPARATE_ZVAL(tmpzval);</span>
+<span class="lineNum">     753 </span><span class="lineNoCov">              0 :                                                 convert_to_boolean(*tmpzval);</span>
+<span class="lineNum">     754 </span><span class="lineNoCov">              0 :                                                 decode = Z_LVAL_PP(tmpzval);</span>
+<span class="lineNum">     755 </span>                :                                         }
+<span class="lineNum">     756 </span><span class="lineNoCov">              0 :                                         if (decode) {</span>
+<span class="lineNum">     757 </span><span class="lineNoCov">              0 :                                                 transfer_encoding = php_stream_filter_create(&quot;dechunk&quot;, NULL, php_stream_is_persistent(stream) TSRMLS_CC);</span>
+<span class="lineNum">     758 </span><span class="lineNoCov">              0 :                                                 if (transfer_encoding) {</span>
+<span class="lineNum">     759 </span>                :                                                         /* don't store transfer-encodeing header */
+<span class="lineNum">     760 </span><span class="lineNoCov">              0 :                                                         continue;</span>
+<span class="lineNum">     761 </span>                :                                                 }
+<span class="lineNum">     762 </span>                :                                         }
+<span class="lineNum">     763 </span>                :                                 }
+<span class="lineNum">     764 </span>                :                         }
+<span class="lineNum">     765 </span>                : 
+<span class="lineNum">     766 </span><span class="lineNoCov">              0 :                         if (http_header_line[0] == '\0') {</span>
+<span class="lineNum">     767 </span><span class="lineNoCov">              0 :                                 body = 1;</span>
+<span class="lineNum">     768 </span>                :                         } else {
+<span class="lineNum">     769 </span>                :                                 zval *http_header;
+<span class="lineNum">     770 </span>                : 
+<span class="lineNum">     771 </span><span class="lineNoCov">              0 :                                 MAKE_STD_ZVAL(http_header);</span>
+<span class="lineNum">     772 </span>                : 
+<span class="lineNum">     773 </span><span class="lineNoCov">              0 :                                 ZVAL_STRINGL(http_header, http_header_line, http_header_line_length, 1);</span>
+<span class="lineNum">     774 </span>                :                                 
+<span class="lineNum">     775 </span><span class="lineNoCov">              0 :                                 zend_hash_next_index_insert(Z_ARRVAL_P(response_header), &amp;http_header, sizeof(zval *), NULL);</span>
+<span class="lineNum">     776 </span>                :                         }
+<span class="lineNum">     777 </span>                :                 } else {
+<span class="lineNum">     778 </span>                :                         break;
+<span class="lineNum">     779 </span>                :                 }
+<span class="lineNum">     780 </span>                :         }
+<span class="lineNum">     781 </span>                : 
+<span class="lineNum">     782 </span><span class="lineNoCov">              0 :         if (!reqok || (location[0] != '\0' &amp;&amp; follow_location)) {</span>
+<span class="lineNum">     783 </span><span class="lineNoCov">              0 :                 if (!follow_location || (((options &amp; STREAM_ONLY_GET_HEADERS) || ignore_errors) &amp;&amp; redirect_max &lt;= 1)) {</span>
+<span class="lineNum">     784 </span>                :                         goto out;
+<span class="lineNum">     785 </span>                :                 }
+<span class="lineNum">     786 </span>                : 
+<span class="lineNum">     787 </span><span class="lineNoCov">              0 :                 if (location[0] != '\0')</span>
+<span class="lineNum">     788 </span><span class="lineNoCov">              0 :                         php_stream_notify_info(context, PHP_STREAM_NOTIFY_REDIRECTED, location, 0);</span>
+<span class="lineNum">     789 </span>                : 
+<span class="lineNum">     790 </span><span class="lineNoCov">              0 :                 php_stream_close(stream);</span>
+<span class="lineNum">     791 </span><span class="lineNoCov">              0 :                 stream = NULL;</span>
+<span class="lineNum">     792 </span>                : 
+<span class="lineNum">     793 </span><span class="lineNoCov">              0 :                 if (location[0] != '\0') {</span>
+<span class="lineNum">     794 </span>                : 
+<span class="lineNum">     795 </span>                :                         char new_path[HTTP_HEADER_BLOCK_SIZE];
+<span class="lineNum">     796 </span>                :                         char loc_path[HTTP_HEADER_BLOCK_SIZE];
+<span class="lineNum">     797 </span>                : 
+<span class="lineNum">     798 </span><span class="lineNoCov">              0 :                         *new_path='\0';</span>
+<span class="lineNum">     799 </span><span class="lineNoCov">              0 :                         if (strlen(location)&lt;8 || (strncasecmp(location, &quot;http://&quot;, sizeof(&quot;http://&quot;)-1) &amp;&amp; </span>
+<span class="lineNum">     800 </span><span class="lineNoCov">              0 :                                                         strncasecmp(location, &quot;https://&quot;, sizeof(&quot;https://&quot;)-1) &amp;&amp; </span>
+<span class="lineNum">     801 </span><span class="lineNoCov">              0 :                                                         strncasecmp(location, &quot;ftp://&quot;, sizeof(&quot;ftp://&quot;)-1) &amp;&amp; </span>
+<span class="lineNum">     802 </span><span class="lineNoCov">              0 :                                                         strncasecmp(location, &quot;ftps://&quot;, sizeof(&quot;ftps://&quot;)-1))) </span>
+<span class="lineNum">     803 </span>                :                         {
+<span class="lineNum">     804 </span><span class="lineNoCov">              0 :                                 if (*location != '/') {</span>
+<span class="lineNum">     805 </span><span class="lineNoCov">              0 :                                         if (*(location+1) != '\0' &amp;&amp; resource-&gt;path) {</span>
+<span class="lineNum">     806 </span><span class="lineNoCov">              0 :                                                 char *s = strrchr(resource-&gt;path, '/');</span>
+<span class="lineNum">     807 </span><span class="lineNoCov">              0 :                                                 if (!s) {</span>
+<span class="lineNum">     808 </span><span class="lineNoCov">              0 :                                                         s = resource-&gt;path;</span>
+<span class="lineNum">     809 </span><span class="lineNoCov">              0 :                                                         if (!s[0]) {</span>
+<span class="lineNum">     810 </span><span class="lineNoCov">              0 :                                                                 efree(s);</span>
+<span class="lineNum">     811 </span><span class="lineNoCov">              0 :                                                                 s = resource-&gt;path = estrdup(&quot;/&quot;);</span>
+<span class="lineNum">     812 </span>                :                                                         } else {
+<span class="lineNum">     813 </span><span class="lineNoCov">              0 :                                                                 *s = '/';</span>
+<span class="lineNum">     814 </span>                :                                                         }
+<span class="lineNum">     815 </span>                :                                                 }
+<span class="lineNum">     816 </span><span class="lineNoCov">              0 :                                                 s[1] = '\0'; </span>
+<span class="lineNum">     817 </span><span class="lineNoCov">              0 :                                                 if (resource-&gt;path &amp;&amp; *(resource-&gt;path) == '/' &amp;&amp; *(resource-&gt;path + 1) == '\0') {</span>
+<span class="lineNum">     818 </span><span class="lineNoCov">              0 :                                                         snprintf(loc_path, sizeof(loc_path) - 1, &quot;%s%s&quot;, resource-&gt;path, location);</span>
+<span class="lineNum">     819 </span>                :                                                 } else {
+<span class="lineNum">     820 </span><span class="lineNoCov">              0 :                                                         snprintf(loc_path, sizeof(loc_path) - 1, &quot;%s/%s&quot;, resource-&gt;path, location);</span>
+<span class="lineNum">     821 </span>                :                                                 }
+<span class="lineNum">     822 </span>                :                                         } else {
+<span class="lineNum">     823 </span><span class="lineNoCov">              0 :                                                 snprintf(loc_path, sizeof(loc_path) - 1, &quot;/%s&quot;, location);</span>
+<span class="lineNum">     824 </span>                :                                         }
+<span class="lineNum">     825 </span>                :                                 } else {
+<span class="lineNum">     826 </span><span class="lineNoCov">              0 :                                         strlcpy(loc_path, location, sizeof(loc_path));</span>
+<span class="lineNum">     827 </span>                :                                 }
+<span class="lineNum">     828 </span><span class="lineNoCov">              0 :                                 if ((use_ssl &amp;&amp; resource-&gt;port != 443) || (!use_ssl &amp;&amp; resource-&gt;port != 80)) {</span>
+<span class="lineNum">     829 </span><span class="lineNoCov">              0 :                                         snprintf(new_path, sizeof(new_path) - 1, &quot;%s://%s:%d%s&quot;, resource-&gt;scheme, resource-&gt;host, resource-&gt;port, loc_path);</span>
+<span class="lineNum">     830 </span>                :                                 } else {
+<span class="lineNum">     831 </span><span class="lineNoCov">              0 :                                         snprintf(new_path, sizeof(new_path) - 1, &quot;%s://%s%s&quot;, resource-&gt;scheme, resource-&gt;host, loc_path);</span>
+<span class="lineNum">     832 </span>                :                                 }
+<span class="lineNum">     833 </span>                :                         } else {
+<span class="lineNum">     834 </span><span class="lineNoCov">              0 :                                 strlcpy(new_path, location, sizeof(new_path));</span>
+<span class="lineNum">     835 </span>                :                         }
+<span class="lineNum">     836 </span>                : 
+<span class="lineNum">     837 </span><span class="lineNoCov">              0 :                         php_url_free(resource);</span>
+<span class="lineNum">     838 </span>                :                         /* check for invalid redirection URLs */
+<span class="lineNum">     839 </span><span class="lineNoCov">              0 :                         if ((resource = php_url_parse(new_path)) == NULL) {</span>
+<span class="lineNum">     840 </span><span class="lineNoCov">              0 :                                 php_stream_wrapper_log_error(wrapper, options TSRMLS_CC, &quot;Invalid redirect URL! %s&quot;, new_path);</span>
+<span class="lineNum">     841 </span><span class="lineNoCov">              0 :                                 goto out;</span>
+<span class="lineNum">     842 </span>                :                         }
+<span class="lineNum">     843 </span>                : 
+<span class="lineNum">     844 </span>                : #define CHECK_FOR_CNTRL_CHARS(val) { \
+<span class="lineNum">     845 </span>                :         if (val) { \
+<span class="lineNum">     846 </span>                :                 unsigned char *s, *e; \
+<span class="lineNum">     847 </span>                :                 int l; \
+<span class="lineNum">     848 </span>                :                 l = php_url_decode(val, strlen(val)); \
+<span class="lineNum">     849 </span>                :                 s = (unsigned char*)val; e = s + l; \
+<span class="lineNum">     850 </span>                :                 while (s &lt; e) { \
+<span class="lineNum">     851 </span>                :                         if (iscntrl(*s)) { \
+<span class="lineNum">     852 </span>                :                                 php_stream_wrapper_log_error(wrapper, options TSRMLS_CC, &quot;Invalid redirect URL! %s&quot;, new_path); \
+<span class="lineNum">     853 </span>                :                                 goto out; \
+<span class="lineNum">     854 </span>                :                         } \
+<span class="lineNum">     855 </span>                :                         s++; \
+<span class="lineNum">     856 </span>                :                 } \
+<span class="lineNum">     857 </span>                :         } \
+<span class="lineNum">     858 </span>                : }
+<span class="lineNum">     859 </span>                :                         /* check for control characters in login, password &amp; path */
+<span class="lineNum">     860 </span><span class="lineNoCov">              0 :                         if (strncasecmp(new_path, &quot;http://&quot;, sizeof(&quot;http://&quot;) - 1) || strncasecmp(new_path, &quot;https://&quot;, sizeof(&quot;https://&quot;) - 1)) {</span>
+<span class="lineNum">     861 </span><span class="lineNoCov">              0 :                                 CHECK_FOR_CNTRL_CHARS(resource-&gt;user)</span>
+<span class="lineNum">     862 </span><span class="lineNoCov">              0 :                                 CHECK_FOR_CNTRL_CHARS(resource-&gt;pass)</span>
+<span class="lineNum">     863 </span><span class="lineNoCov">              0 :                                 CHECK_FOR_CNTRL_CHARS(resource-&gt;path)</span>
+<span class="lineNum">     864 </span>                :                         }
+<span class="lineNum">     865 </span><span class="lineNoCov">              0 :                         stream = php_stream_url_wrap_http_ex(wrapper, new_path, mode, options, opened_path, context, --redirect_max, HTTP_WRAPPER_REDIRECTED STREAMS_CC TSRMLS_CC);</span>
+<span class="lineNum">     866 </span>                :                 } else {
+<span class="lineNum">     867 </span><span class="lineNoCov">              0 :                         php_stream_wrapper_log_error(wrapper, options TSRMLS_CC, &quot;HTTP request failed! %s&quot;, tmp_line);</span>
+<span class="lineNum">     868 </span>                :                 }
+<span class="lineNum">     869 </span>                :         }
+<span class="lineNum">     870 </span>                : out:
+<span class="lineNum">     871 </span><span class="lineNoCov">              0 :         if (protocol_version) {</span>
+<span class="lineNum">     872 </span><span class="lineNoCov">              0 :                 efree(protocol_version);</span>
+<span class="lineNum">     873 </span>                :         }
+<span class="lineNum">     874 </span>                : 
+<span class="lineNum">     875 </span><span class="lineNoCov">              0 :         if (http_header_line) {</span>
+<span class="lineNum">     876 </span><span class="lineNoCov">              0 :                 efree(http_header_line);</span>
+<span class="lineNum">     877 </span>                :         }
+<span class="lineNum">     878 </span>                : 
+<span class="lineNum">     879 </span><span class="lineNoCov">              0 :         if (scratch) {</span>
+<span class="lineNum">     880 </span><span class="lineNoCov">              0 :                 efree(scratch);</span>
+<span class="lineNum">     881 </span>                :         }
+<span class="lineNum">     882 </span>                : 
+<span class="lineNum">     883 </span><span class="lineNoCov">              0 :         if (resource) {</span>
+<span class="lineNum">     884 </span><span class="lineNoCov">              0 :                 php_url_free(resource);</span>
+<span class="lineNum">     885 </span>                :         }
+<span class="lineNum">     886 </span>                : 
+<span class="lineNum">     887 </span><span class="lineNoCov">              0 :         if (stream) {</span>
+<span class="lineNum">     888 </span><span class="lineNoCov">              0 :                 if (header_init) {</span>
+<span class="lineNum">     889 </span><span class="lineNoCov">              0 :                         zval_add_ref(&amp;response_header);</span>
+<span class="lineNum">     890 </span><span class="lineNoCov">              0 :                         stream-&gt;wrapperdata = response_header;</span>
+<span class="lineNum">     891 </span>                :                 }
+<span class="lineNum">     892 </span><span class="lineNoCov">              0 :                 php_stream_notify_progress_init(context, 0, file_size);</span>
+<span class="lineNum">     893 </span>                :                 
+<span class="lineNum">     894 </span>                :                 /* Restore original chunk size now that we're done with headers */
+<span class="lineNum">     895 </span><span class="lineNoCov">              0 :                 if (options &amp; STREAM_WILL_CAST)</span>
+<span class="lineNum">     896 </span><span class="lineNoCov">              0 :                         php_stream_set_chunk_size(stream, chunk_size);</span>
+<span class="lineNum">     897 </span>                : 
+<span class="lineNum">     898 </span>                :                 /* restore the users auto-detect-line-endings setting */
+<span class="lineNum">     899 </span><span class="lineNoCov">              0 :                 stream-&gt;flags |= eol_detect;</span>
+<span class="lineNum">     900 </span>                :                 
+<span class="lineNum">     901 </span>                :                 /* as far as streams are concerned, we are now at the start of
+<span class="lineNum">     902 </span>                :                  * the stream */
+<span class="lineNum">     903 </span><span class="lineNoCov">              0 :                 stream-&gt;position = 0;</span>
+<span class="lineNum">     904 </span>                : 
+<span class="lineNum">     905 </span>                :                 /* restore mode */
+<span class="lineNum">     906 </span><span class="lineNoCov">              0 :                 strlcpy(stream-&gt;mode, mode, sizeof(stream-&gt;mode));</span>
+<span class="lineNum">     907 </span>                : 
+<span class="lineNum">     908 </span><span class="lineNoCov">              0 :                 if (transfer_encoding) {</span>
+<span class="lineNum">     909 </span><span class="lineNoCov">              0 :                         php_stream_filter_append(&amp;stream-&gt;readfilters, transfer_encoding);</span>
+<span class="lineNum">     910 </span>                :                 }
+<span class="lineNum">     911 </span><span class="lineNoCov">              0 :         } else if (transfer_encoding) {</span>
+<span class="lineNum">     912 </span><span class="lineNoCov">              0 :                 php_stream_filter_free(transfer_encoding TSRMLS_CC);</span>
+<span class="lineNum">     913 </span>                :         }
+<span class="lineNum">     914 </span>                : 
+<span class="lineNum">     915 </span><span class="lineNoCov">              0 :         return stream;</span>
+<span class="lineNum">     916 </span>                : }
+<a name="917"><span class="lineNum">     917 </span>                : /* }}} */</a>
+<span class="lineNum">     918 </span>                : 
+<span class="lineNum">     919 </span><span class="lineNoCov">              0 : php_stream *php_stream_url_wrap_http(php_stream_wrapper *wrapper, char *path, char *mode, int options, char **opened_path, php_stream_context *context STREAMS_DC TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     920 </span>                : {
+<span class="lineNum">     921 </span><span class="lineNoCov">              0 :         return php_stream_url_wrap_http_ex(wrapper, path, mode, options, opened_path, context, PHP_URL_REDIRECT_MAX, HTTP_WRAPPER_HEADER_INIT STREAMS_CC TSRMLS_CC);</span>
+<span class="lineNum">     922 </span>                : }
+<a name="923"><span class="lineNum">     923 </span>                : /* }}} */</a>
+<span class="lineNum">     924 </span>                : 
+<span class="lineNum">     925 </span><span class="lineNoCov">              0 : static int php_stream_http_stream_stat(php_stream_wrapper *wrapper, php_stream *stream, php_stream_statbuf *ssb TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     926 </span>                : {
+<span class="lineNum">     927 </span>                :         /* one day, we could fill in the details based on Date: and Content-Length:
+<span class="lineNum">     928 </span>                :          * headers.  For now, we return with a failure code to prevent the underlying
+<span class="lineNum">     929 </span>                :          * file's details from being used instead. */
+<span class="lineNum">     930 </span><span class="lineNoCov">              0 :         return -1;</span>
+<span class="lineNum">     931 </span>                : }
+<span class="lineNum">     932 </span>                : /* }}} */
+<span class="lineNum">     933 </span>                : 
+<span class="lineNum">     934 </span>                : static php_stream_wrapper_ops http_stream_wops = {
+<span class="lineNum">     935 </span>                :         php_stream_url_wrap_http,
+<span class="lineNum">     936 </span>                :         NULL, /* stream_close */
+<span class="lineNum">     937 </span>                :         php_stream_http_stream_stat,
+<span class="lineNum">     938 </span>                :         NULL, /* stat_url */
+<span class="lineNum">     939 </span>                :         NULL, /* opendir */
+<span class="lineNum">     940 </span>                :         &quot;http&quot;,
+<span class="lineNum">     941 </span>                :         NULL, /* unlink */
+<span class="lineNum">     942 </span>                :         NULL, /* rename */
+<span class="lineNum">     943 </span>                :         NULL, /* mkdir */
+<span class="lineNum">     944 </span>                :         NULL  /* rmdir */
+<span class="lineNum">     945 </span>                : };
+<span class="lineNum">     946 </span>                : 
+<span class="lineNum">     947 </span>                : PHPAPI php_stream_wrapper php_stream_http_wrapper = {
+<span class="lineNum">     948 </span>                :         &amp;http_stream_wops,
+<span class="lineNum">     949 </span>                :         NULL,
+<span class="lineNum">     950 </span>                :         1 /* is_url */
+<span class="lineNum">     951 </span>                : };
+<span class="lineNum">     952 </span>                : 
+<span class="lineNum">     953 </span>                : /*
+<span class="lineNum">     954 </span>                :  * Local variables:
+<span class="lineNum">     955 </span>                :  * tab-width: 4
+<span class="lineNum">     956 </span>                :  * c-basic-offset: 4
+<span class="lineNum">     957 </span>                :  * End:
+<span class="lineNum">     958 </span>                :  * vim600: sw=4 ts=4 fdm=marker
+<span class="lineNum">     959 </span>                :  * vim&lt;600: sw=4 ts=4
+<span class="lineNum">     960 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

@@ -1,0 +1,948 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - Zend/zend_gc.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../index.html">directory</a> - <a href="index.html">Zend</a> - zend_gc.c (source / <a href="zend_gc.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">440</td>
+          <td class="headerCovTableEntry">208</td>
+          <td class="headerCovTableEntryMed">47.3 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">21</td>
+          <td class="headerCovTableEntry">17</td>
+          <td class="headerCovTableEntryMed">81.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | Zend Engine                                                          |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1998-2012 Zend Technologies Ltd. (http://www.zend.com) |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 2.00 of the Zend license,     |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.zend.com/license/2_00.txt.                                |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the Zend license and are unable to  |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@zend.com so we can mail you a copy immediately.              |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Authors: David Wang &lt;planetbeing@gmail.com&gt;                          |
+<span class="lineNum">      16 </span>                :    |          Dmitry Stogov &lt;dmitry@zend.com&gt;                             |
+<span class="lineNum">      17 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      18 </span>                : */
+<span class="lineNum">      19 </span>                : 
+<span class="lineNum">      20 </span>                : /* $Id$ */
+<span class="lineNum">      21 </span>                : 
+<span class="lineNum">      22 </span>                : #include &quot;zend.h&quot;
+<span class="lineNum">      23 </span>                : #include &quot;zend_API.h&quot;
+<span class="lineNum">      24 </span>                : 
+<span class="lineNum">      25 </span>                : #define GC_ROOT_BUFFER_MAX_ENTRIES 10000
+<span class="lineNum">      26 </span>                : 
+<span class="lineNum">      27 </span>                : #ifdef ZTS
+<span class="lineNum">      28 </span>                : ZEND_API int gc_globals_id;
+<span class="lineNum">      29 </span>                : #else
+<span class="lineNum">      30 </span>                : ZEND_API zend_gc_globals gc_globals;
+<a name="31"><span class="lineNum">      31 </span>                : #endif</a>
+<span class="lineNum">      32 </span>                : 
+<span class="lineNum">      33 </span><span class="lineCov">             48 : static void root_buffer_dtor(zend_gc_globals *gc_globals TSRMLS_DC)</span>
+<span class="lineNum">      34 </span>                : {
+<span class="lineNum">      35 </span><span class="lineCov">             48 :         if (gc_globals-&gt;buf) {</span>
+<span class="lineNum">      36 </span><span class="lineCov">             48 :                 free(gc_globals-&gt;buf);</span>
+<span class="lineNum">      37 </span><span class="lineCov">             48 :                 gc_globals-&gt;buf = NULL;</span>
+<span class="lineNum">      38 </span>                :         }       
+<a name="39"><span class="lineNum">      39 </span><span class="lineCov">             48 : }</span></a>
+<span class="lineNum">      40 </span>                : 
+<span class="lineNum">      41 </span><span class="lineCov">             48 : static void gc_globals_ctor_ex(zend_gc_globals *gc_globals TSRMLS_DC)</span>
+<span class="lineNum">      42 </span>                : {
+<span class="lineNum">      43 </span><span class="lineCov">             48 :         gc_globals-&gt;gc_enabled = 0;</span>
+<span class="lineNum">      44 </span><span class="lineCov">             48 :         gc_globals-&gt;gc_active = 0;</span>
+<span class="lineNum">      45 </span>                : 
+<span class="lineNum">      46 </span><span class="lineCov">             48 :         gc_globals-&gt;buf = NULL;</span>
+<span class="lineNum">      47 </span>                : 
+<span class="lineNum">      48 </span><span class="lineCov">             48 :         gc_globals-&gt;roots.next = &amp;gc_globals-&gt;roots;</span>
+<span class="lineNum">      49 </span><span class="lineCov">             48 :         gc_globals-&gt;roots.prev = &amp;gc_globals-&gt;roots;</span>
+<span class="lineNum">      50 </span><span class="lineCov">             48 :         gc_globals-&gt;unused = NULL;</span>
+<span class="lineNum">      51 </span><span class="lineCov">             48 :         gc_globals-&gt;zval_to_free = NULL;</span>
+<span class="lineNum">      52 </span><span class="lineCov">             48 :         gc_globals-&gt;free_list = NULL;</span>
+<span class="lineNum">      53 </span><span class="lineCov">             48 :         gc_globals-&gt;next_to_free = NULL;</span>
+<span class="lineNum">      54 </span>                : 
+<span class="lineNum">      55 </span><span class="lineCov">             48 :         gc_globals-&gt;gc_runs = 0;</span>
+<span class="lineNum">      56 </span><span class="lineCov">             48 :         gc_globals-&gt;collected = 0;</span>
+<span class="lineNum">      57 </span>                : 
+<span class="lineNum">      58 </span>                : #if GC_BENCH
+<span class="lineNum">      59 </span>                :         gc_globals-&gt;root_buf_length = 0;
+<span class="lineNum">      60 </span>                :         gc_globals-&gt;root_buf_peak = 0;
+<span class="lineNum">      61 </span>                :         gc_globals-&gt;zval_possible_root = 0;
+<span class="lineNum">      62 </span>                :         gc_globals-&gt;zobj_possible_root = 0;
+<span class="lineNum">      63 </span>                :         gc_globals-&gt;zval_buffered = 0;
+<span class="lineNum">      64 </span>                :         gc_globals-&gt;zobj_buffered = 0;
+<span class="lineNum">      65 </span>                :         gc_globals-&gt;zval_remove_from_buffer = 0;
+<span class="lineNum">      66 </span>                :         gc_globals-&gt;zobj_remove_from_buffer = 0;
+<span class="lineNum">      67 </span>                :         gc_globals-&gt;zval_marked_grey = 0;
+<span class="lineNum">      68 </span>                :         gc_globals-&gt;zobj_marked_grey = 0;
+<span class="lineNum">      69 </span>                : #endif
+<a name="70"><span class="lineNum">      70 </span><span class="lineCov">             48 : }</span></a>
+<span class="lineNum">      71 </span>                : 
+<span class="lineNum">      72 </span><span class="lineCov">             48 : ZEND_API void gc_globals_ctor(TSRMLS_D)</span>
+<span class="lineNum">      73 </span>                : {
+<span class="lineNum">      74 </span>                : #ifdef ZTS
+<span class="lineNum">      75 </span>                :         ts_allocate_id(&amp;gc_globals_id, sizeof(zend_gc_globals), (ts_allocate_ctor) gc_globals_ctor_ex, (ts_allocate_dtor) root_buffer_dtor);
+<span class="lineNum">      76 </span>                : #else
+<span class="lineNum">      77 </span><span class="lineCov">             48 :         gc_globals_ctor_ex(&amp;gc_globals);</span>
+<span class="lineNum">      78 </span>                : #endif
+<a name="79"><span class="lineNum">      79 </span><span class="lineCov">             48 : }</span></a>
+<span class="lineNum">      80 </span>                : 
+<span class="lineNum">      81 </span><span class="lineCov">             48 : ZEND_API void gc_globals_dtor(TSRMLS_D)</span>
+<span class="lineNum">      82 </span>                : {
+<span class="lineNum">      83 </span>                : #ifndef ZTS
+<span class="lineNum">      84 </span><span class="lineCov">             48 :         root_buffer_dtor(&amp;gc_globals TSRMLS_DC);</span>
+<span class="lineNum">      85 </span>                : #endif
+<a name="86"><span class="lineNum">      86 </span><span class="lineCov">             48 : }</span></a>
+<span class="lineNum">      87 </span>                : 
+<span class="lineNum">      88 </span><span class="lineCov">             96 : ZEND_API void gc_reset(TSRMLS_D)</span>
+<span class="lineNum">      89 </span>                : {
+<span class="lineNum">      90 </span><span class="lineCov">             96 :         GC_G(gc_runs) = 0;</span>
+<span class="lineNum">      91 </span><span class="lineCov">             96 :         GC_G(collected) = 0;</span>
+<span class="lineNum">      92 </span>                : 
+<span class="lineNum">      93 </span>                : #if GC_BENCH
+<span class="lineNum">      94 </span>                :         GC_G(root_buf_length) = 0;
+<span class="lineNum">      95 </span>                :         GC_G(root_buf_peak) = 0;
+<span class="lineNum">      96 </span>                :         GC_G(zval_possible_root) = 0;
+<span class="lineNum">      97 </span>                :         GC_G(zobj_possible_root) = 0;
+<span class="lineNum">      98 </span>                :         GC_G(zval_buffered) = 0;
+<span class="lineNum">      99 </span>                :         GC_G(zobj_buffered) = 0;
+<span class="lineNum">     100 </span>                :         GC_G(zval_remove_from_buffer) = 0;
+<span class="lineNum">     101 </span>                :         GC_G(zobj_remove_from_buffer) = 0;
+<span class="lineNum">     102 </span>                :         GC_G(zval_marked_grey) = 0;
+<span class="lineNum">     103 </span>                :         GC_G(zobj_marked_grey) = 0;
+<span class="lineNum">     104 </span>                : #endif
+<span class="lineNum">     105 </span>                : 
+<span class="lineNum">     106 </span><span class="lineCov">             96 :         GC_G(roots).next = &amp;GC_G(roots);</span>
+<span class="lineNum">     107 </span><span class="lineCov">             96 :         GC_G(roots).prev = &amp;GC_G(roots);</span>
+<span class="lineNum">     108 </span>                : 
+<span class="lineNum">     109 </span><span class="lineCov">             96 :         if (GC_G(buf)) {</span>
+<span class="lineNum">     110 </span><span class="lineCov">             96 :                 GC_G(unused) = NULL;</span>
+<span class="lineNum">     111 </span><span class="lineCov">             96 :                 GC_G(first_unused) = GC_G(buf);</span>
+<span class="lineNum">     112 </span>                : 
+<span class="lineNum">     113 </span><span class="lineCov">             96 :                 GC_G(zval_to_free) = NULL;</span>
+<span class="lineNum">     114 </span>                :         } else {
+<span class="lineNum">     115 </span><span class="lineNoCov">              0 :                 GC_G(unused) = NULL;</span>
+<span class="lineNum">     116 </span><span class="lineNoCov">              0 :                 GC_G(first_unused) = NULL;</span>
+<span class="lineNum">     117 </span><span class="lineNoCov">              0 :                 GC_G(last_unused) = NULL;</span>
+<span class="lineNum">     118 </span>                :         }
+<a name="119"><span class="lineNum">     119 </span><span class="lineCov">             96 : }</span></a>
+<span class="lineNum">     120 </span>                : 
+<span class="lineNum">     121 </span><span class="lineCov">             48 : ZEND_API void gc_init(TSRMLS_D)</span>
+<span class="lineNum">     122 </span>                : {
+<span class="lineNum">     123 </span><span class="lineCov">             48 :         if (GC_G(buf) == NULL &amp;&amp; GC_G(gc_enabled)) {</span>
+<span class="lineNum">     124 </span><span class="lineCov">             48 :                 GC_G(buf) = (gc_root_buffer*) malloc(sizeof(gc_root_buffer) * GC_ROOT_BUFFER_MAX_ENTRIES);</span>
+<span class="lineNum">     125 </span><span class="lineCov">             48 :                 GC_G(last_unused) = &amp;GC_G(buf)[GC_ROOT_BUFFER_MAX_ENTRIES];</span>
+<span class="lineNum">     126 </span><span class="lineCov">             48 :                 gc_reset(TSRMLS_C);</span>
+<span class="lineNum">     127 </span>                :         }
+<a name="128"><span class="lineNum">     128 </span><span class="lineCov">             48 : }</span></a>
+<span class="lineNum">     129 </span>                : 
+<span class="lineNum">     130 </span><span class="lineCov">          53380 : ZEND_API void gc_zval_possible_root(zval *zv TSRMLS_DC)</span>
+<span class="lineNum">     131 </span>                : {
+<span class="lineNum">     132 </span><span class="lineCov">          53380 :         if (UNEXPECTED(GC_G(free_list) != NULL &amp;&amp;</span>
+<span class="lineNum">     133 </span>                :                        GC_ZVAL_ADDRESS(zv) != NULL &amp;&amp;
+<span class="lineNum">     134 </span>                :                            GC_ZVAL_GET_COLOR(zv) == GC_BLACK) &amp;&amp;
+<span class="lineNum">     135 </span><span class="lineNoCov">              0 :                            (GC_ZVAL_ADDRESS(zv) &lt; GC_G(buf) ||</span>
+<span class="lineNum">     136 </span><span class="lineNoCov">              0 :                             GC_ZVAL_ADDRESS(zv) &gt;= GC_G(last_unused))) {</span>
+<span class="lineNum">     137 </span>                :                 /* The given zval is a garbage that is going to be deleted by
+<span class="lineNum">     138 </span>                :                  * currently running GC */
+<span class="lineNum">     139 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     140 </span>                :         }
+<span class="lineNum">     141 </span>                : 
+<span class="lineNum">     142 </span><span class="lineCov">          53380 :         if (zv-&gt;type == IS_OBJECT) {</span>
+<span class="lineNum">     143 </span><span class="lineCov">          12404 :                 GC_ZOBJ_CHECK_POSSIBLE_ROOT(zv);</span>
+<span class="lineNum">     144 </span><span class="lineCov">          12404 :                 return;</span>
+<span class="lineNum">     145 </span>                :         }
+<span class="lineNum">     146 </span>                : 
+<span class="lineNum">     147 </span>                :         GC_BENCH_INC(zval_possible_root);
+<span class="lineNum">     148 </span>                : 
+<span class="lineNum">     149 </span><span class="lineCov">          40976 :         if (GC_ZVAL_GET_COLOR(zv) != GC_PURPLE) {</span>
+<span class="lineNum">     150 </span><span class="lineCov">           4288 :                 GC_ZVAL_SET_PURPLE(zv);</span>
+<span class="lineNum">     151 </span>                : 
+<span class="lineNum">     152 </span><span class="lineCov">           4288 :                 if (!GC_ZVAL_ADDRESS(zv)) {</span>
+<span class="lineNum">     153 </span><span class="lineCov">           4288 :                         gc_root_buffer *newRoot = GC_G(unused);</span>
+<span class="lineNum">     154 </span>                : 
+<span class="lineNum">     155 </span><span class="lineCov">           4288 :                         if (newRoot) {</span>
+<span class="lineNum">     156 </span><span class="lineCov">           4043 :                                 GC_G(unused) = newRoot-&gt;prev;</span>
+<span class="lineNum">     157 </span><span class="lineCov">            245 :                         } else if (GC_G(first_unused) != GC_G(last_unused)) {</span>
+<span class="lineNum">     158 </span><span class="lineCov">            245 :                                 newRoot = GC_G(first_unused);</span>
+<span class="lineNum">     159 </span><span class="lineCov">            245 :                                 GC_G(first_unused)++;</span>
+<span class="lineNum">     160 </span>                :                         } else {
+<span class="lineNum">     161 </span><span class="lineNoCov">              0 :                                 if (!GC_G(gc_enabled)) {</span>
+<span class="lineNum">     162 </span><span class="lineNoCov">              0 :                                         GC_ZVAL_SET_BLACK(zv);</span>
+<span class="lineNum">     163 </span><span class="lineNoCov">              0 :                                         return;</span>
+<span class="lineNum">     164 </span>                :                                 }
+<span class="lineNum">     165 </span><span class="lineNoCov">              0 :                                 zv-&gt;refcount__gc++;</span>
+<span class="lineNum">     166 </span><span class="lineNoCov">              0 :                                 gc_collect_cycles(TSRMLS_C);</span>
+<span class="lineNum">     167 </span><span class="lineNoCov">              0 :                                 zv-&gt;refcount__gc--;</span>
+<span class="lineNum">     168 </span><span class="lineNoCov">              0 :                                 newRoot = GC_G(unused);</span>
+<span class="lineNum">     169 </span><span class="lineNoCov">              0 :                                 if (!newRoot) {</span>
+<span class="lineNum">     170 </span><span class="lineNoCov">              0 :                                         return;</span>
+<span class="lineNum">     171 </span>                :                                 }
+<span class="lineNum">     172 </span><span class="lineNoCov">              0 :                                 GC_ZVAL_SET_PURPLE(zv);</span>
+<span class="lineNum">     173 </span><span class="lineNoCov">              0 :                                 GC_G(unused) = newRoot-&gt;prev;</span>
+<span class="lineNum">     174 </span>                :                         }
+<span class="lineNum">     175 </span>                : 
+<span class="lineNum">     176 </span><span class="lineCov">           4288 :                         newRoot-&gt;next = GC_G(roots).next;</span>
+<span class="lineNum">     177 </span><span class="lineCov">           4288 :                         newRoot-&gt;prev = &amp;GC_G(roots);</span>
+<span class="lineNum">     178 </span><span class="lineCov">           4288 :                         GC_G(roots).next-&gt;prev = newRoot;</span>
+<span class="lineNum">     179 </span><span class="lineCov">           4288 :                         GC_G(roots).next = newRoot;</span>
+<span class="lineNum">     180 </span>                : 
+<span class="lineNum">     181 </span><span class="lineCov">           4288 :                         GC_ZVAL_SET_ADDRESS(zv, newRoot);</span>
+<span class="lineNum">     182 </span>                : 
+<span class="lineNum">     183 </span><span class="lineCov">           4288 :                         newRoot-&gt;handle = 0;</span>
+<span class="lineNum">     184 </span><span class="lineCov">           4288 :                         newRoot-&gt;u.pz = zv;</span>
+<span class="lineNum">     185 </span>                : 
+<span class="lineNum">     186 </span>                :                         GC_BENCH_INC(zval_buffered);
+<span class="lineNum">     187 </span>                :                         GC_BENCH_INC(root_buf_length);
+<span class="lineNum">     188 </span>                :                         GC_BENCH_PEAK(root_buf_peak, root_buf_length);
+<span class="lineNum">     189 </span>                :                 }
+<span class="lineNum">     190 </span>                :         }
+<a name="191"><span class="lineNum">     191 </span>                : }</a>
+<span class="lineNum">     192 </span>                : 
+<span class="lineNum">     193 </span><span class="lineCov">          14527 : ZEND_API void gc_zobj_possible_root(zval *zv TSRMLS_DC)</span>
+<span class="lineNum">     194 </span>                : {
+<span class="lineNum">     195 </span>                :         struct _store_object *obj;
+<span class="lineNum">     196 </span>                : 
+<span class="lineNum">     197 </span><span class="lineCov">          14527 :         if (UNEXPECTED(Z_OBJ_HT_P(zv)-&gt;get_gc == NULL ||</span>
+<span class="lineNum">     198 </span>                :             EG(objects_store).object_buckets == NULL)) {
+<span class="lineNum">     199 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     200 </span>                :         }
+<span class="lineNum">     201 </span>                : 
+<span class="lineNum">     202 </span>                :         GC_BENCH_INC(zobj_possible_root);
+<span class="lineNum">     203 </span>                : 
+<span class="lineNum">     204 </span><span class="lineCov">          14527 :         obj = &amp;EG(objects_store).object_buckets[Z_OBJ_HANDLE_P(zv)].bucket.obj;</span>
+<span class="lineNum">     205 </span><span class="lineCov">          14527 :         if (GC_GET_COLOR(obj-&gt;buffered) != GC_PURPLE) {</span>
+<span class="lineNum">     206 </span><span class="lineCov">           5475 :                 GC_SET_PURPLE(obj-&gt;buffered);</span>
+<span class="lineNum">     207 </span><span class="lineCov">           5475 :                 if (!GC_ADDRESS(obj-&gt;buffered)) {</span>
+<span class="lineNum">     208 </span><span class="lineCov">           5475 :                         gc_root_buffer *newRoot = GC_G(unused);</span>
+<span class="lineNum">     209 </span>                : 
+<span class="lineNum">     210 </span><span class="lineCov">           5475 :                         if (newRoot) {</span>
+<span class="lineNum">     211 </span><span class="lineCov">           5295 :                                 GC_G(unused) = newRoot-&gt;prev;</span>
+<span class="lineNum">     212 </span><span class="lineCov">            180 :                         } else if (GC_G(first_unused) != GC_G(last_unused)) {</span>
+<span class="lineNum">     213 </span><span class="lineCov">            180 :                                 newRoot = GC_G(first_unused);</span>
+<span class="lineNum">     214 </span><span class="lineCov">            180 :                                 GC_G(first_unused)++;</span>
+<span class="lineNum">     215 </span>                :                         } else {
+<span class="lineNum">     216 </span><span class="lineNoCov">              0 :                                 if (!GC_G(gc_enabled)) {</span>
+<span class="lineNum">     217 </span><span class="lineNoCov">              0 :                                         GC_ZVAL_SET_BLACK(zv);</span>
+<span class="lineNum">     218 </span><span class="lineNoCov">              0 :                                         return;</span>
+<span class="lineNum">     219 </span>                :                                 }
+<span class="lineNum">     220 </span><span class="lineNoCov">              0 :                                 zv-&gt;refcount__gc++;</span>
+<span class="lineNum">     221 </span><span class="lineNoCov">              0 :                                 gc_collect_cycles(TSRMLS_C);</span>
+<span class="lineNum">     222 </span><span class="lineNoCov">              0 :                                 zv-&gt;refcount__gc--;</span>
+<span class="lineNum">     223 </span><span class="lineNoCov">              0 :                                 newRoot = GC_G(unused);</span>
+<span class="lineNum">     224 </span><span class="lineNoCov">              0 :                                 if (!newRoot) {</span>
+<span class="lineNum">     225 </span><span class="lineNoCov">              0 :                                         return;</span>
+<span class="lineNum">     226 </span>                :                                 }
+<span class="lineNum">     227 </span><span class="lineNoCov">              0 :                                 obj = &amp;EG(objects_store).object_buckets[Z_OBJ_HANDLE_P(zv)].bucket.obj;</span>
+<span class="lineNum">     228 </span><span class="lineNoCov">              0 :                                 GC_SET_PURPLE(obj-&gt;buffered);</span>
+<span class="lineNum">     229 </span><span class="lineNoCov">              0 :                                 GC_G(unused) = newRoot-&gt;prev;</span>
+<span class="lineNum">     230 </span>                :                         }
+<span class="lineNum">     231 </span>                : 
+<span class="lineNum">     232 </span><span class="lineCov">           5475 :                         newRoot-&gt;next = GC_G(roots).next;</span>
+<span class="lineNum">     233 </span><span class="lineCov">           5475 :                         newRoot-&gt;prev = &amp;GC_G(roots);</span>
+<span class="lineNum">     234 </span><span class="lineCov">           5475 :                         GC_G(roots).next-&gt;prev = newRoot;</span>
+<span class="lineNum">     235 </span><span class="lineCov">           5475 :                         GC_G(roots).next = newRoot;</span>
+<span class="lineNum">     236 </span>                : 
+<span class="lineNum">     237 </span><span class="lineCov">           5475 :                         GC_SET_ADDRESS(obj-&gt;buffered, newRoot);</span>
+<span class="lineNum">     238 </span>                : 
+<span class="lineNum">     239 </span><span class="lineCov">           5475 :                         newRoot-&gt;handle = Z_OBJ_HANDLE_P(zv);</span>
+<span class="lineNum">     240 </span><span class="lineCov">           5475 :                         newRoot-&gt;u.handlers = Z_OBJ_HT_P(zv);</span>
+<span class="lineNum">     241 </span>                : 
+<span class="lineNum">     242 </span>                :                         GC_BENCH_INC(zobj_buffered);
+<span class="lineNum">     243 </span>                :                         GC_BENCH_INC(root_buf_length);
+<span class="lineNum">     244 </span>                :                         GC_BENCH_PEAK(root_buf_peak, root_buf_length);
+<span class="lineNum">     245 </span>                :                 }
+<span class="lineNum">     246 </span>                :         }
+<a name="247"><span class="lineNum">     247 </span>                : }</a>
+<span class="lineNum">     248 </span>                : 
+<span class="lineNum">     249 </span><span class="lineCov">           4284 : ZEND_API void gc_remove_zval_from_buffer(zval *zv TSRMLS_DC)</span>
+<span class="lineNum">     250 </span>                : {
+<span class="lineNum">     251 </span><span class="lineCov">           4284 :         gc_root_buffer* root_buffer = GC_ADDRESS(((zval_gc_info*)zv)-&gt;u.buffered);</span>
+<span class="lineNum">     252 </span>                : 
+<span class="lineNum">     253 </span><span class="lineCov">           4284 :         if (UNEXPECTED(GC_G(free_list) != NULL &amp;&amp;</span>
+<span class="lineNum">     254 </span>                :                            GC_ZVAL_GET_COLOR(zv) == GC_BLACK) &amp;&amp;
+<span class="lineNum">     255 </span><span class="lineNoCov">              0 :                            (GC_ZVAL_ADDRESS(zv) &lt; GC_G(buf) ||</span>
+<span class="lineNum">     256 </span><span class="lineNoCov">              0 :                             GC_ZVAL_ADDRESS(zv) &gt;= GC_G(last_unused))) {</span>
+<span class="lineNum">     257 </span>                :                 /* The given zval is a garbage that is going to be deleted by
+<span class="lineNum">     258 </span>                :                  * currently running GC */
+<span class="lineNum">     259 </span><span class="lineNoCov">              0 :                 if (GC_G(next_to_free) == (zval_gc_info*)zv) {</span>
+<span class="lineNum">     260 </span><span class="lineNoCov">              0 :                         GC_G(next_to_free) = ((zval_gc_info*)zv)-&gt;u.next;</span>
+<span class="lineNum">     261 </span>                :                 }
+<span class="lineNum">     262 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     263 </span>                :         }
+<span class="lineNum">     264 </span>                :         GC_BENCH_INC(zval_remove_from_buffer);
+<span class="lineNum">     265 </span>                :         GC_REMOVE_FROM_BUFFER(root_buffer);
+<span class="lineNum">     266 </span><span class="lineCov">           4284 :         ((zval_gc_info*)zv)-&gt;u.buffered = NULL;</span>
+<a name="267"><span class="lineNum">     267 </span>                : }</a>
+<span class="lineNum">     268 </span>                : 
+<span class="lineNum">     269 </span><span class="lineCov">              6 : static void zval_scan_black(zval *pz TSRMLS_DC)</span>
+<span class="lineNum">     270 </span>                : {
+<span class="lineNum">     271 </span>                :         Bucket *p;
+<span class="lineNum">     272 </span>                : 
+<span class="lineNum">     273 </span>                : tail_call:
+<span class="lineNum">     274 </span><span class="lineCov">              6 :         p = NULL;</span>
+<span class="lineNum">     275 </span><span class="lineCov">              6 :         GC_ZVAL_SET_BLACK(pz);</span>
+<span class="lineNum">     276 </span>                : 
+<span class="lineNum">     277 </span><span class="lineCov">              6 :         if (Z_TYPE_P(pz) == IS_OBJECT &amp;&amp; EG(objects_store).object_buckets) {</span>
+<span class="lineNum">     278 </span>                :                 zend_object_get_gc_t get_gc;
+<span class="lineNum">     279 </span><span class="lineNoCov">              0 :                 struct _store_object *obj = &amp;EG(objects_store).object_buckets[Z_OBJ_HANDLE_P(pz)].bucket.obj;</span>
+<span class="lineNum">     280 </span>                : 
+<span class="lineNum">     281 </span><span class="lineNoCov">              0 :                 obj-&gt;refcount++;</span>
+<span class="lineNum">     282 </span><span class="lineNoCov">              0 :                 if (GC_GET_COLOR(obj-&gt;buffered) != GC_BLACK) {</span>
+<span class="lineNum">     283 </span><span class="lineNoCov">              0 :                         GC_SET_BLACK(obj-&gt;buffered);</span>
+<span class="lineNum">     284 </span><span class="lineNoCov">              0 :                         if (EXPECTED(EG(objects_store).object_buckets[Z_OBJ_HANDLE_P(pz)].valid &amp;&amp;</span>
+<span class="lineNum">     285 </span>                :                                      (get_gc = Z_OBJ_HANDLER_P(pz, get_gc)) != NULL)) {
+<span class="lineNum">     286 </span>                :                                 int i, n;
+<span class="lineNum">     287 </span>                :                                 zval **table;
+<span class="lineNum">     288 </span><span class="lineNoCov">              0 :                                 HashTable *props = get_gc(pz, &amp;table, &amp;n TSRMLS_CC);</span>
+<span class="lineNum">     289 </span>                : 
+<span class="lineNum">     290 </span><span class="lineNoCov">              0 :                                 while (n &gt; 0 &amp;&amp; !table[n-1]) n--;</span>
+<span class="lineNum">     291 </span><span class="lineNoCov">              0 :                                 for (i = 0; i &lt; n; i++) {</span>
+<span class="lineNum">     292 </span><span class="lineNoCov">              0 :                                         if (table[i]) {</span>
+<span class="lineNum">     293 </span><span class="lineNoCov">              0 :                                                 pz = table[i];</span>
+<span class="lineNum">     294 </span><span class="lineNoCov">              0 :                                                 if (Z_TYPE_P(pz) != IS_ARRAY || Z_ARRVAL_P(pz) != &amp;EG(symbol_table)) {</span>
+<span class="lineNum">     295 </span><span class="lineNoCov">              0 :                                                         pz-&gt;refcount__gc++;</span>
+<span class="lineNum">     296 </span>                :                                                 }
+<span class="lineNum">     297 </span><span class="lineNoCov">              0 :                                                 if (GC_ZVAL_GET_COLOR(pz) != GC_BLACK) {</span>
+<span class="lineNum">     298 </span><span class="lineNoCov">              0 :                                                         if (!props &amp;&amp; i == n - 1) {</span>
+<span class="lineNum">     299 </span>                :                                                                 goto tail_call;
+<span class="lineNum">     300 </span>                :                                                         } else {
+<span class="lineNum">     301 </span><span class="lineNoCov">              0 :                                                                 zval_scan_black(pz TSRMLS_CC);</span>
+<span class="lineNum">     302 </span>                :                                                         }
+<span class="lineNum">     303 </span>                :                                                 }
+<span class="lineNum">     304 </span>                :                                         }
+<span class="lineNum">     305 </span>                :                                 }
+<span class="lineNum">     306 </span><span class="lineNoCov">              0 :                                 if (!props) {</span>
+<span class="lineNum">     307 </span><span class="lineNoCov">              0 :                                         return;</span>
+<span class="lineNum">     308 </span>                :                                 }
+<span class="lineNum">     309 </span><span class="lineNoCov">              0 :                                 p = props-&gt;pListHead;</span>
+<span class="lineNum">     310 </span>                :                         }
+<span class="lineNum">     311 </span>                :                 }
+<span class="lineNum">     312 </span><span class="lineCov">              6 :         } else if (Z_TYPE_P(pz) == IS_ARRAY) {</span>
+<span class="lineNum">     313 </span><span class="lineCov">              2 :                 if (Z_ARRVAL_P(pz) != &amp;EG(symbol_table)) {</span>
+<span class="lineNum">     314 </span><span class="lineCov">              2 :                         p = Z_ARRVAL_P(pz)-&gt;pListHead;</span>
+<span class="lineNum">     315 </span>                :                 }
+<span class="lineNum">     316 </span>                :         }
+<span class="lineNum">     317 </span><span class="lineCov">             14 :         while (p != NULL) {</span>
+<span class="lineNum">     318 </span><span class="lineCov">              4 :                 pz = *(zval**)p-&gt;pData;</span>
+<span class="lineNum">     319 </span><span class="lineCov">              4 :                 if (Z_TYPE_P(pz) != IS_ARRAY || Z_ARRVAL_P(pz) != &amp;EG(symbol_table)) {</span>
+<span class="lineNum">     320 </span><span class="lineCov">              4 :                         pz-&gt;refcount__gc++;</span>
+<span class="lineNum">     321 </span>                :                 }
+<span class="lineNum">     322 </span><span class="lineCov">              4 :                 if (GC_ZVAL_GET_COLOR(pz) != GC_BLACK) {</span>
+<span class="lineNum">     323 </span><span class="lineCov">              4 :                         if (p-&gt;pListNext == NULL) {</span>
+<span class="lineNum">     324 </span><span class="lineCov">              2 :                                 goto tail_call;</span>
+<span class="lineNum">     325 </span>                :                         } else {
+<span class="lineNum">     326 </span><span class="lineCov">              2 :                                 zval_scan_black(pz TSRMLS_CC);</span>
+<span class="lineNum">     327 </span>                :                         }
+<span class="lineNum">     328 </span>                :                 }
+<span class="lineNum">     329 </span><span class="lineCov">              2 :                 p = p-&gt;pListNext;</span>
+<span class="lineNum">     330 </span>                :         }
+<a name="331"><span class="lineNum">     331 </span>                : }</a>
+<span class="lineNum">     332 </span>                : 
+<span class="lineNum">     333 </span><span class="lineNoCov">              0 : static void zobj_scan_black(struct _store_object *obj, zval *pz TSRMLS_DC)</span>
+<span class="lineNum">     334 </span>                : {
+<span class="lineNum">     335 </span>                :         Bucket *p;
+<span class="lineNum">     336 </span>                :         zend_object_get_gc_t get_gc;
+<span class="lineNum">     337 </span>                : 
+<span class="lineNum">     338 </span><span class="lineNoCov">              0 :         GC_SET_BLACK(obj-&gt;buffered);</span>
+<span class="lineNum">     339 </span><span class="lineNoCov">              0 :         if (EXPECTED(EG(objects_store).object_buckets[Z_OBJ_HANDLE_P(pz)].valid &amp;&amp;</span>
+<span class="lineNum">     340 </span>                :                      (get_gc = Z_OBJ_HANDLER_P(pz, get_gc)) != NULL)) {
+<span class="lineNum">     341 </span>                :                 int i, n;
+<span class="lineNum">     342 </span>                :                 zval **table;
+<span class="lineNum">     343 </span><span class="lineNoCov">              0 :                 HashTable *props = get_gc(pz, &amp;table, &amp;n TSRMLS_CC);</span>
+<span class="lineNum">     344 </span>                : 
+<span class="lineNum">     345 </span><span class="lineNoCov">              0 :                 for (i = 0; i &lt; n; i++) {</span>
+<span class="lineNum">     346 </span><span class="lineNoCov">              0 :                         if (table[i]) {</span>
+<span class="lineNum">     347 </span><span class="lineNoCov">              0 :                                 pz = table[i];</span>
+<span class="lineNum">     348 </span><span class="lineNoCov">              0 :                                 if (Z_TYPE_P(pz) != IS_ARRAY || Z_ARRVAL_P(pz) != &amp;EG(symbol_table)) {</span>
+<span class="lineNum">     349 </span><span class="lineNoCov">              0 :                                         pz-&gt;refcount__gc++;</span>
+<span class="lineNum">     350 </span>                :                                 }
+<span class="lineNum">     351 </span><span class="lineNoCov">              0 :                                 if (GC_ZVAL_GET_COLOR(pz) != GC_BLACK) {</span>
+<span class="lineNum">     352 </span><span class="lineNoCov">              0 :                                         zval_scan_black(pz TSRMLS_CC);</span>
+<span class="lineNum">     353 </span>                :                                 }
+<span class="lineNum">     354 </span>                :                         }
+<span class="lineNum">     355 </span>                :                 }
+<span class="lineNum">     356 </span><span class="lineNoCov">              0 :                 if (!props) {</span>
+<span class="lineNum">     357 </span><span class="lineNoCov">              0 :                         return;</span>
+<span class="lineNum">     358 </span>                :                 }
+<span class="lineNum">     359 </span><span class="lineNoCov">              0 :                 p = props-&gt;pListHead;</span>
+<span class="lineNum">     360 </span><span class="lineNoCov">              0 :                 while (p != NULL) {</span>
+<span class="lineNum">     361 </span><span class="lineNoCov">              0 :                         pz = *(zval**)p-&gt;pData;</span>
+<span class="lineNum">     362 </span><span class="lineNoCov">              0 :                         if (Z_TYPE_P(pz) != IS_ARRAY || Z_ARRVAL_P(pz) != &amp;EG(symbol_table)) {</span>
+<span class="lineNum">     363 </span><span class="lineNoCov">              0 :                                 pz-&gt;refcount__gc++;</span>
+<span class="lineNum">     364 </span>                :                         }
+<span class="lineNum">     365 </span><span class="lineNoCov">              0 :                         if (GC_ZVAL_GET_COLOR(pz) != GC_BLACK) {</span>
+<span class="lineNum">     366 </span><span class="lineNoCov">              0 :                                 zval_scan_black(pz TSRMLS_CC);</span>
+<span class="lineNum">     367 </span>                :                         }
+<span class="lineNum">     368 </span><span class="lineNoCov">              0 :                         p = p-&gt;pListNext;</span>
+<span class="lineNum">     369 </span>                :                 }
+<span class="lineNum">     370 </span>                :         }
+<a name="371"><span class="lineNum">     371 </span>                : }</a>
+<span class="lineNum">     372 </span>                : 
+<span class="lineNum">     373 </span><span class="lineCov">             10 : static void zval_mark_grey(zval *pz TSRMLS_DC)</span>
+<span class="lineNum">     374 </span>                : {
+<span class="lineNum">     375 </span>                :         Bucket *p;
+<span class="lineNum">     376 </span>                : 
+<span class="lineNum">     377 </span>                : tail_call:
+<span class="lineNum">     378 </span><span class="lineCov">             10 :         if (GC_ZVAL_GET_COLOR(pz) != GC_GREY) {</span>
+<span class="lineNum">     379 </span><span class="lineCov">             10 :                 p = NULL;</span>
+<span class="lineNum">     380 </span>                :                 GC_BENCH_INC(zval_marked_grey);
+<span class="lineNum">     381 </span><span class="lineCov">             10 :                 GC_ZVAL_SET_COLOR(pz, GC_GREY);</span>
+<span class="lineNum">     382 </span>                : 
+<span class="lineNum">     383 </span><span class="lineCov">             10 :                 if (Z_TYPE_P(pz) == IS_OBJECT &amp;&amp; EG(objects_store).object_buckets) {</span>
+<span class="lineNum">     384 </span>                :                         zend_object_get_gc_t get_gc;
+<span class="lineNum">     385 </span><span class="lineNoCov">              0 :                         struct _store_object *obj = &amp;EG(objects_store).object_buckets[Z_OBJ_HANDLE_P(pz)].bucket.obj;</span>
+<span class="lineNum">     386 </span>                : 
+<span class="lineNum">     387 </span><span class="lineNoCov">              0 :                         obj-&gt;refcount--;</span>
+<span class="lineNum">     388 </span><span class="lineNoCov">              0 :                         if (GC_GET_COLOR(obj-&gt;buffered) != GC_GREY) {</span>
+<span class="lineNum">     389 </span>                :                                 GC_BENCH_INC(zobj_marked_grey);
+<span class="lineNum">     390 </span><span class="lineNoCov">              0 :                                 GC_SET_COLOR(obj-&gt;buffered, GC_GREY);</span>
+<span class="lineNum">     391 </span><span class="lineNoCov">              0 :                                 if (EXPECTED(EG(objects_store).object_buckets[Z_OBJ_HANDLE_P(pz)].valid &amp;&amp;</span>
+<span class="lineNum">     392 </span>                :                                              (get_gc = Z_OBJ_HANDLER_P(pz, get_gc)) != NULL)) {
+<span class="lineNum">     393 </span>                :                                         int i, n;
+<span class="lineNum">     394 </span>                :                                         zval **table;
+<span class="lineNum">     395 </span><span class="lineNoCov">              0 :                                         HashTable *props = get_gc(pz, &amp;table, &amp;n TSRMLS_CC);</span>
+<span class="lineNum">     396 </span>                : 
+<span class="lineNum">     397 </span><span class="lineNoCov">              0 :                                         while (n &gt; 0 &amp;&amp; !table[n-1]) n--;</span>
+<span class="lineNum">     398 </span><span class="lineNoCov">              0 :                                         for (i = 0; i &lt; n; i++) {</span>
+<span class="lineNum">     399 </span><span class="lineNoCov">              0 :                                                 if (table[i]) {</span>
+<span class="lineNum">     400 </span><span class="lineNoCov">              0 :                                                         pz = table[i];</span>
+<span class="lineNum">     401 </span><span class="lineNoCov">              0 :                                                         if (Z_TYPE_P(pz) != IS_ARRAY || Z_ARRVAL_P(pz) != &amp;EG(symbol_table)) {</span>
+<span class="lineNum">     402 </span><span class="lineNoCov">              0 :                                                                 pz-&gt;refcount__gc--;</span>
+<span class="lineNum">     403 </span>                :                                                         }
+<span class="lineNum">     404 </span><span class="lineNoCov">              0 :                                                         if (!props &amp;&amp; i == n - 1) {</span>
+<span class="lineNum">     405 </span>                :                                                                 goto tail_call;
+<span class="lineNum">     406 </span>                :                                                         } else {
+<span class="lineNum">     407 </span><span class="lineNoCov">              0 :                                                                 zval_mark_grey(pz TSRMLS_CC);</span>
+<span class="lineNum">     408 </span>                :                                                         }
+<span class="lineNum">     409 </span>                :                                                 }
+<span class="lineNum">     410 </span>                :                                         }
+<span class="lineNum">     411 </span><span class="lineNoCov">              0 :                                         if (!props) {</span>
+<span class="lineNum">     412 </span><span class="lineNoCov">              0 :                                                 return;</span>
+<span class="lineNum">     413 </span>                :                                         }
+<span class="lineNum">     414 </span><span class="lineNoCov">              0 :                                         p = props-&gt;pListHead;</span>
+<span class="lineNum">     415 </span>                :                                 }
+<span class="lineNum">     416 </span>                :                         }
+<span class="lineNum">     417 </span><span class="lineCov">             10 :                 } else if (Z_TYPE_P(pz) == IS_ARRAY) {</span>
+<span class="lineNum">     418 </span><span class="lineCov">              4 :                         if (Z_ARRVAL_P(pz) == &amp;EG(symbol_table)) {</span>
+<span class="lineNum">     419 </span><span class="lineNoCov">              0 :                                 GC_ZVAL_SET_BLACK(pz);</span>
+<span class="lineNum">     420 </span>                :                         } else {
+<span class="lineNum">     421 </span><span class="lineCov">              4 :                                 p = Z_ARRVAL_P(pz)-&gt;pListHead;</span>
+<span class="lineNum">     422 </span>                :                         }
+<span class="lineNum">     423 </span>                :                 }
+<span class="lineNum">     424 </span><span class="lineCov">             22 :                 while (p != NULL) {</span>
+<span class="lineNum">     425 </span><span class="lineCov">              6 :                         pz = *(zval**)p-&gt;pData;</span>
+<span class="lineNum">     426 </span><span class="lineCov">              6 :                         if (Z_TYPE_P(pz) != IS_ARRAY || Z_ARRVAL_P(pz) != &amp;EG(symbol_table)) {</span>
+<span class="lineNum">     427 </span><span class="lineCov">              6 :                                 pz-&gt;refcount__gc--;</span>
+<span class="lineNum">     428 </span>                :                         }
+<span class="lineNum">     429 </span><span class="lineCov">              6 :                         if (p-&gt;pListNext == NULL) {</span>
+<span class="lineNum">     430 </span><span class="lineCov">              4 :                                 goto tail_call;</span>
+<span class="lineNum">     431 </span>                :                         } else {
+<span class="lineNum">     432 </span><span class="lineCov">              2 :                                 zval_mark_grey(pz TSRMLS_CC);</span>
+<span class="lineNum">     433 </span>                :                         }
+<span class="lineNum">     434 </span><span class="lineCov">              2 :                         p = p-&gt;pListNext;</span>
+<span class="lineNum">     435 </span>                :                 }
+<span class="lineNum">     436 </span>                :         }
+<a name="437"><span class="lineNum">     437 </span>                : }</a>
+<span class="lineNum">     438 </span>                : 
+<span class="lineNum">     439 </span><span class="lineNoCov">              0 : static void zobj_mark_grey(struct _store_object *obj, zval *pz TSRMLS_DC)</span>
+<span class="lineNum">     440 </span>                : {
+<span class="lineNum">     441 </span>                :         Bucket *p;
+<span class="lineNum">     442 </span>                :         zend_object_get_gc_t get_gc;
+<span class="lineNum">     443 </span>                : 
+<span class="lineNum">     444 </span><span class="lineNoCov">              0 :         if (GC_GET_COLOR(obj-&gt;buffered) != GC_GREY) {</span>
+<span class="lineNum">     445 </span>                :                 GC_BENCH_INC(zobj_marked_grey);
+<span class="lineNum">     446 </span><span class="lineNoCov">              0 :                 GC_SET_COLOR(obj-&gt;buffered, GC_GREY);</span>
+<span class="lineNum">     447 </span><span class="lineNoCov">              0 :                 if (EXPECTED(EG(objects_store).object_buckets[Z_OBJ_HANDLE_P(pz)].valid &amp;&amp;</span>
+<span class="lineNum">     448 </span>                :                              (get_gc = Z_OBJ_HANDLER_P(pz, get_gc)) != NULL)) {
+<span class="lineNum">     449 </span>                :                         int i, n;
+<span class="lineNum">     450 </span>                :                         zval **table;
+<span class="lineNum">     451 </span><span class="lineNoCov">              0 :                         HashTable *props = get_gc(pz, &amp;table, &amp;n TSRMLS_CC);</span>
+<span class="lineNum">     452 </span>                : 
+<span class="lineNum">     453 </span><span class="lineNoCov">              0 :                         for (i = 0; i &lt; n; i++) {</span>
+<span class="lineNum">     454 </span><span class="lineNoCov">              0 :                                 if (table[i]) {</span>
+<span class="lineNum">     455 </span><span class="lineNoCov">              0 :                                         pz = table[i];</span>
+<span class="lineNum">     456 </span><span class="lineNoCov">              0 :                                         if (Z_TYPE_P(pz) != IS_ARRAY || Z_ARRVAL_P(pz) != &amp;EG(symbol_table)) {</span>
+<span class="lineNum">     457 </span><span class="lineNoCov">              0 :                                                 pz-&gt;refcount__gc--;</span>
+<span class="lineNum">     458 </span>                :                                         }
+<span class="lineNum">     459 </span><span class="lineNoCov">              0 :                                         zval_mark_grey(pz TSRMLS_CC);</span>
+<span class="lineNum">     460 </span>                :                                 }
+<span class="lineNum">     461 </span>                :                         }
+<span class="lineNum">     462 </span><span class="lineNoCov">              0 :                         if (!props) {</span>
+<span class="lineNum">     463 </span><span class="lineNoCov">              0 :                                 return;</span>
+<span class="lineNum">     464 </span>                :                         }
+<span class="lineNum">     465 </span><span class="lineNoCov">              0 :                         p = props-&gt;pListHead;</span>
+<span class="lineNum">     466 </span><span class="lineNoCov">              0 :                         while (p != NULL) {</span>
+<span class="lineNum">     467 </span><span class="lineNoCov">              0 :                                 pz = *(zval**)p-&gt;pData;</span>
+<span class="lineNum">     468 </span><span class="lineNoCov">              0 :                                 if (Z_TYPE_P(pz) != IS_ARRAY || Z_ARRVAL_P(pz) != &amp;EG(symbol_table)) {</span>
+<span class="lineNum">     469 </span><span class="lineNoCov">              0 :                                         pz-&gt;refcount__gc--;</span>
+<span class="lineNum">     470 </span>                :                                 }
+<span class="lineNum">     471 </span><span class="lineNoCov">              0 :                                 zval_mark_grey(pz TSRMLS_CC);</span>
+<span class="lineNum">     472 </span><span class="lineNoCov">              0 :                                 p = p-&gt;pListNext;</span>
+<span class="lineNum">     473 </span>                :                         }
+<span class="lineNum">     474 </span>                :                 }
+<span class="lineNum">     475 </span>                :         }
+<a name="476"><span class="lineNum">     476 </span>                : }</a>
+<span class="lineNum">     477 </span>                : 
+<span class="lineNum">     478 </span><span class="lineCov">              3 : static void gc_mark_roots(TSRMLS_D)</span>
+<span class="lineNum">     479 </span>                : {
+<span class="lineNum">     480 </span><span class="lineCov">              3 :         gc_root_buffer *current = GC_G(roots).next;</span>
+<span class="lineNum">     481 </span>                : 
+<span class="lineNum">     482 </span><span class="lineCov">             10 :         while (current != &amp;GC_G(roots)) {</span>
+<span class="lineNum">     483 </span><span class="lineCov">              4 :                 if (current-&gt;handle) {</span>
+<span class="lineNum">     484 </span><span class="lineNoCov">              0 :                         if (EG(objects_store).object_buckets) {</span>
+<span class="lineNum">     485 </span><span class="lineNoCov">              0 :                                 struct _store_object *obj = &amp;EG(objects_store).object_buckets[current-&gt;handle].bucket.obj;</span>
+<span class="lineNum">     486 </span>                : 
+<span class="lineNum">     487 </span><span class="lineNoCov">              0 :                                 if (GC_GET_COLOR(obj-&gt;buffered) == GC_PURPLE) {</span>
+<span class="lineNum">     488 </span>                :                                         zval z;
+<span class="lineNum">     489 </span>                : 
+<span class="lineNum">     490 </span><span class="lineNoCov">              0 :                                         INIT_PZVAL(&amp;z);</span>
+<span class="lineNum">     491 </span><span class="lineNoCov">              0 :                                         Z_OBJ_HANDLE(z) = current-&gt;handle;</span>
+<span class="lineNum">     492 </span><span class="lineNoCov">              0 :                                         Z_OBJ_HT(z) = current-&gt;u.handlers;</span>
+<span class="lineNum">     493 </span><span class="lineNoCov">              0 :                                         zobj_mark_grey(obj, &amp;z TSRMLS_CC);</span>
+<span class="lineNum">     494 </span>                :                                 } else {
+<span class="lineNum">     495 </span><span class="lineNoCov">              0 :                                         GC_SET_ADDRESS(obj-&gt;buffered, NULL);</span>
+<span class="lineNum">     496 </span>                :                                         GC_REMOVE_FROM_BUFFER(current);
+<span class="lineNum">     497 </span>                :                                 }
+<span class="lineNum">     498 </span>                :                         }
+<span class="lineNum">     499 </span>                :                 } else {
+<span class="lineNum">     500 </span><span class="lineCov">              4 :                         if (GC_ZVAL_GET_COLOR(current-&gt;u.pz) == GC_PURPLE) {</span>
+<span class="lineNum">     501 </span><span class="lineCov">              4 :                                 zval_mark_grey(current-&gt;u.pz TSRMLS_CC);</span>
+<span class="lineNum">     502 </span>                :                         } else {
+<span class="lineNum">     503 </span><span class="lineNoCov">              0 :                                 GC_ZVAL_SET_ADDRESS(current-&gt;u.pz, NULL);</span>
+<span class="lineNum">     504 </span>                :                                 GC_REMOVE_FROM_BUFFER(current);
+<span class="lineNum">     505 </span>                :                         }
+<span class="lineNum">     506 </span>                :                 }
+<span class="lineNum">     507 </span><span class="lineCov">              4 :                 current = current-&gt;next;</span>
+<span class="lineNum">     508 </span>                :         }
+<a name="509"><span class="lineNum">     509 </span><span class="lineCov">              3 : }</span></a>
+<span class="lineNum">     510 </span>                : 
+<span class="lineNum">     511 </span><span class="lineCov">              6 : static void zval_scan(zval *pz TSRMLS_DC)</span>
+<span class="lineNum">     512 </span>                : {
+<span class="lineNum">     513 </span>                :         Bucket *p;
+<span class="lineNum">     514 </span>                : 
+<span class="lineNum">     515 </span>                : tail_call:      
+<span class="lineNum">     516 </span><span class="lineCov">              6 :         if (GC_ZVAL_GET_COLOR(pz) == GC_GREY) {</span>
+<span class="lineNum">     517 </span><span class="lineCov">              6 :                 p = NULL;</span>
+<span class="lineNum">     518 </span><span class="lineCov">              6 :                 if (pz-&gt;refcount__gc &gt; 0) {</span>
+<span class="lineNum">     519 </span><span class="lineCov">              2 :                         zval_scan_black(pz TSRMLS_CC);</span>
+<span class="lineNum">     520 </span>                :                 } else {
+<span class="lineNum">     521 </span><span class="lineCov">              4 :                         GC_ZVAL_SET_COLOR(pz, GC_WHITE);</span>
+<span class="lineNum">     522 </span><span class="lineCov">              4 :                         if (Z_TYPE_P(pz) == IS_OBJECT &amp;&amp; EG(objects_store).object_buckets) {</span>
+<span class="lineNum">     523 </span>                :                                 zend_object_get_gc_t get_gc;
+<span class="lineNum">     524 </span><span class="lineNoCov">              0 :                                 struct _store_object *obj = &amp;EG(objects_store).object_buckets[Z_OBJ_HANDLE_P(pz)].bucket.obj;</span>
+<span class="lineNum">     525 </span>                : 
+<span class="lineNum">     526 </span><span class="lineNoCov">              0 :                                 if (GC_GET_COLOR(obj-&gt;buffered) == GC_GREY) {</span>
+<span class="lineNum">     527 </span><span class="lineNoCov">              0 :                                         if (obj-&gt;refcount &gt; 0) {</span>
+<span class="lineNum">     528 </span><span class="lineNoCov">              0 :                                                 zobj_scan_black(obj, pz TSRMLS_CC);</span>
+<span class="lineNum">     529 </span>                :                                         } else {
+<span class="lineNum">     530 </span><span class="lineNoCov">              0 :                                                 GC_SET_COLOR(obj-&gt;buffered, GC_WHITE);</span>
+<span class="lineNum">     531 </span><span class="lineNoCov">              0 :                                                 if (EXPECTED(EG(objects_store).object_buckets[Z_OBJ_HANDLE_P(pz)].valid &amp;&amp;</span>
+<span class="lineNum">     532 </span>                :                                                              (get_gc = Z_OBJ_HANDLER_P(pz, get_gc)) != NULL)) {
+<span class="lineNum">     533 </span>                :                                                         int i, n;
+<span class="lineNum">     534 </span>                :                                                         zval **table;
+<span class="lineNum">     535 </span><span class="lineNoCov">              0 :                                                         HashTable *props = get_gc(pz, &amp;table, &amp;n TSRMLS_CC);</span>
+<span class="lineNum">     536 </span>                : 
+<span class="lineNum">     537 </span><span class="lineNoCov">              0 :                                                         while (n &gt; 0 &amp;&amp; !table[n-1]) n--;</span>
+<span class="lineNum">     538 </span><span class="lineNoCov">              0 :                                                         for (i = 0; i &lt; n; i++) {</span>
+<span class="lineNum">     539 </span><span class="lineNoCov">              0 :                                                                 if (table[i]) {</span>
+<span class="lineNum">     540 </span><span class="lineNoCov">              0 :                                                                         pz = table[i];</span>
+<span class="lineNum">     541 </span><span class="lineNoCov">              0 :                                                                         if (!props &amp;&amp; i == n - 1) {</span>
+<span class="lineNum">     542 </span>                :                                                                                 goto tail_call;
+<span class="lineNum">     543 </span>                :                                                                         } else {
+<span class="lineNum">     544 </span><span class="lineNoCov">              0 :                                                                                 zval_scan(pz TSRMLS_CC);</span>
+<span class="lineNum">     545 </span>                :                                                                         }
+<span class="lineNum">     546 </span>                :                                                                 }
+<span class="lineNum">     547 </span>                :                                                         }
+<span class="lineNum">     548 </span><span class="lineNoCov">              0 :                                                         if (!props) {</span>
+<span class="lineNum">     549 </span><span class="lineNoCov">              0 :                                                                 return;</span>
+<span class="lineNum">     550 </span>                :                                                         }
+<span class="lineNum">     551 </span><span class="lineNoCov">              0 :                                                         p = props-&gt;pListHead;</span>
+<span class="lineNum">     552 </span>                :                                                 }
+<span class="lineNum">     553 </span>                :                                         }
+<span class="lineNum">     554 </span>                :                                 }
+<span class="lineNum">     555 </span><span class="lineCov">              4 :                         } else if (Z_TYPE_P(pz) == IS_ARRAY) {</span>
+<span class="lineNum">     556 </span><span class="lineCov">              2 :                                 if (Z_ARRVAL_P(pz) == &amp;EG(symbol_table)) {</span>
+<span class="lineNum">     557 </span><span class="lineNoCov">              0 :                                         GC_ZVAL_SET_BLACK(pz);</span>
+<span class="lineNum">     558 </span>                :                                 } else {
+<span class="lineNum">     559 </span><span class="lineCov">              2 :                                         p = Z_ARRVAL_P(pz)-&gt;pListHead;</span>
+<span class="lineNum">     560 </span>                :                                 }
+<span class="lineNum">     561 </span>                :                         }
+<span class="lineNum">     562 </span>                :                 }
+<span class="lineNum">     563 </span><span class="lineCov">             12 :                 while (p != NULL) {</span>
+<span class="lineNum">     564 </span><span class="lineCov">              2 :                         if (p-&gt;pListNext == NULL) {</span>
+<span class="lineNum">     565 </span><span class="lineCov">              2 :                                 pz = *(zval**)p-&gt;pData;</span>
+<span class="lineNum">     566 </span><span class="lineCov">              2 :                                 goto tail_call;</span>
+<span class="lineNum">     567 </span>                :                         } else {
+<span class="lineNum">     568 </span><span class="lineNoCov">              0 :                                 zval_scan(*(zval**)p-&gt;pData TSRMLS_CC);</span>
+<span class="lineNum">     569 </span>                :                         }
+<span class="lineNum">     570 </span><span class="lineNoCov">              0 :                         p = p-&gt;pListNext;</span>
+<span class="lineNum">     571 </span>                :                 }
+<span class="lineNum">     572 </span>                :         }
+<a name="573"><span class="lineNum">     573 </span>                : }</a>
+<span class="lineNum">     574 </span>                : 
+<span class="lineNum">     575 </span><span class="lineNoCov">              0 : static void zobj_scan(zval *pz TSRMLS_DC)</span>
+<span class="lineNum">     576 </span>                : {
+<span class="lineNum">     577 </span>                :         Bucket *p;
+<span class="lineNum">     578 </span>                :         zend_object_get_gc_t get_gc;
+<span class="lineNum">     579 </span>                : 
+<span class="lineNum">     580 </span><span class="lineNoCov">              0 :         if (EG(objects_store).object_buckets) {</span>
+<span class="lineNum">     581 </span><span class="lineNoCov">              0 :                 struct _store_object *obj = &amp;EG(objects_store).object_buckets[Z_OBJ_HANDLE_P(pz)].bucket.obj;</span>
+<span class="lineNum">     582 </span>                : 
+<span class="lineNum">     583 </span><span class="lineNoCov">              0 :                 if (GC_GET_COLOR(obj-&gt;buffered) == GC_GREY) {</span>
+<span class="lineNum">     584 </span><span class="lineNoCov">              0 :                         if (obj-&gt;refcount &gt; 0) {</span>
+<span class="lineNum">     585 </span><span class="lineNoCov">              0 :                                 zobj_scan_black(obj, pz TSRMLS_CC);</span>
+<span class="lineNum">     586 </span>                :                         } else {
+<span class="lineNum">     587 </span><span class="lineNoCov">              0 :                                 GC_SET_COLOR(obj-&gt;buffered, GC_WHITE);</span>
+<span class="lineNum">     588 </span><span class="lineNoCov">              0 :                                 if (EXPECTED(EG(objects_store).object_buckets[Z_OBJ_HANDLE_P(pz)].valid &amp;&amp;</span>
+<span class="lineNum">     589 </span>                :                                              (get_gc = Z_OBJ_HANDLER_P(pz, get_gc)) != NULL)) {
+<span class="lineNum">     590 </span>                :                                         int i, n;
+<span class="lineNum">     591 </span>                :                                         zval **table;
+<span class="lineNum">     592 </span><span class="lineNoCov">              0 :                                         HashTable *props = get_gc(pz, &amp;table, &amp;n TSRMLS_CC);</span>
+<span class="lineNum">     593 </span>                : 
+<span class="lineNum">     594 </span><span class="lineNoCov">              0 :                                         for (i = 0; i &lt; n; i++) {</span>
+<span class="lineNum">     595 </span><span class="lineNoCov">              0 :                                                 if (table[i]) {</span>
+<span class="lineNum">     596 </span><span class="lineNoCov">              0 :                                                         pz = table[i];</span>
+<span class="lineNum">     597 </span><span class="lineNoCov">              0 :                                                         zval_scan(pz TSRMLS_CC);</span>
+<span class="lineNum">     598 </span>                :                         }
+<span class="lineNum">     599 </span>                :                                         }
+<span class="lineNum">     600 </span><span class="lineNoCov">              0 :                                         if (!props) {</span>
+<span class="lineNum">     601 </span><span class="lineNoCov">              0 :                                                 return;</span>
+<span class="lineNum">     602 </span>                :                                         }
+<span class="lineNum">     603 </span><span class="lineNoCov">              0 :                                         p = props-&gt;pListHead;</span>
+<span class="lineNum">     604 </span><span class="lineNoCov">              0 :                                         while (p != NULL) {</span>
+<span class="lineNum">     605 </span><span class="lineNoCov">              0 :                                                 zval_scan(*(zval**)p-&gt;pData TSRMLS_CC);</span>
+<span class="lineNum">     606 </span><span class="lineNoCov">              0 :                                                 p = p-&gt;pListNext;</span>
+<span class="lineNum">     607 </span>                :                                         }
+<span class="lineNum">     608 </span>                :                                 }
+<span class="lineNum">     609 </span>                :                         }
+<span class="lineNum">     610 </span>                :                 }
+<span class="lineNum">     611 </span>                :         }
+<a name="612"><span class="lineNum">     612 </span>                : }</a>
+<span class="lineNum">     613 </span>                : 
+<span class="lineNum">     614 </span><span class="lineCov">              3 : static void gc_scan_roots(TSRMLS_D)</span>
+<span class="lineNum">     615 </span>                : {
+<span class="lineNum">     616 </span><span class="lineCov">              3 :         gc_root_buffer *current = GC_G(roots).next;</span>
+<span class="lineNum">     617 </span>                : 
+<span class="lineNum">     618 </span><span class="lineCov">             10 :         while (current != &amp;GC_G(roots)) {</span>
+<span class="lineNum">     619 </span><span class="lineCov">              4 :                 if (current-&gt;handle) {</span>
+<span class="lineNum">     620 </span>                :                         zval z;
+<span class="lineNum">     621 </span>                : 
+<span class="lineNum">     622 </span><span class="lineNoCov">              0 :                         INIT_PZVAL(&amp;z);</span>
+<span class="lineNum">     623 </span><span class="lineNoCov">              0 :                         Z_OBJ_HANDLE(z) = current-&gt;handle;</span>
+<span class="lineNum">     624 </span><span class="lineNoCov">              0 :                         Z_OBJ_HT(z) = current-&gt;u.handlers;</span>
+<span class="lineNum">     625 </span><span class="lineNoCov">              0 :                         zobj_scan(&amp;z TSRMLS_CC);</span>
+<span class="lineNum">     626 </span>                :                 } else {
+<span class="lineNum">     627 </span><span class="lineCov">              4 :                         zval_scan(current-&gt;u.pz TSRMLS_CC);</span>
+<span class="lineNum">     628 </span>                :                 }
+<span class="lineNum">     629 </span><span class="lineCov">              4 :                 current = current-&gt;next;</span>
+<span class="lineNum">     630 </span>                :         }
+<a name="631"><span class="lineNum">     631 </span><span class="lineCov">              3 : }</span></a>
+<span class="lineNum">     632 </span>                : 
+<span class="lineNum">     633 </span><span class="lineCov">              6 : static void zval_collect_white(zval *pz TSRMLS_DC)</span>
+<span class="lineNum">     634 </span>                : {
+<span class="lineNum">     635 </span>                :         Bucket *p;
+<span class="lineNum">     636 </span>                : 
+<span class="lineNum">     637 </span>                : tail_call:
+<span class="lineNum">     638 </span><span class="lineCov">              6 :         if (((zval_gc_info*)(pz))-&gt;u.buffered == (gc_root_buffer*)GC_WHITE) {</span>
+<span class="lineNum">     639 </span><span class="lineCov">              4 :                 p = NULL;</span>
+<span class="lineNum">     640 </span><span class="lineCov">              4 :                 GC_ZVAL_SET_BLACK(pz);</span>
+<span class="lineNum">     641 </span>                : 
+<span class="lineNum">     642 </span><span class="lineCov">              4 :                 if (Z_TYPE_P(pz) == IS_OBJECT &amp;&amp; EG(objects_store).object_buckets) {</span>
+<span class="lineNum">     643 </span>                :                         zend_object_get_gc_t get_gc;
+<span class="lineNum">     644 </span><span class="lineNoCov">              0 :                         struct _store_object *obj = &amp;EG(objects_store).object_buckets[Z_OBJ_HANDLE_P(pz)].bucket.obj;</span>
+<span class="lineNum">     645 </span>                : 
+<span class="lineNum">     646 </span><span class="lineNoCov">              0 :                         if (obj-&gt;buffered == (gc_root_buffer*)GC_WHITE) {</span>
+<span class="lineNum">     647 </span><span class="lineNoCov">              0 :                                 GC_SET_BLACK(obj-&gt;buffered);</span>
+<span class="lineNum">     648 </span>                : 
+<span class="lineNum">     649 </span><span class="lineNoCov">              0 :                                 if (EXPECTED(EG(objects_store).object_buckets[Z_OBJ_HANDLE_P(pz)].valid &amp;&amp;</span>
+<span class="lineNum">     650 </span>                :                                              (get_gc = Z_OBJ_HANDLER_P(pz, get_gc)) != NULL)) {
+<span class="lineNum">     651 </span>                :                                         int i, n;
+<span class="lineNum">     652 </span>                :                                         zval **table, *zv;
+<span class="lineNum">     653 </span><span class="lineNoCov">              0 :                                         HashTable *props = get_gc(pz, &amp;table, &amp;n TSRMLS_CC);</span>
+<span class="lineNum">     654 </span>                : 
+<span class="lineNum">     655 </span><span class="lineNoCov">              0 :                                         if (!props) {</span>
+<span class="lineNum">     656 </span>                :                                                 /* restore refcount and put into list to free */
+<span class="lineNum">     657 </span><span class="lineNoCov">              0 :                                                 pz-&gt;refcount__gc++;</span>
+<span class="lineNum">     658 </span><span class="lineNoCov">              0 :                                                 ((zval_gc_info*)pz)-&gt;u.next = GC_G(zval_to_free);</span>
+<span class="lineNum">     659 </span><span class="lineNoCov">              0 :                                                 GC_G(zval_to_free) = (zval_gc_info*)pz;</span>
+<span class="lineNum">     660 </span>                :                                         }
+<span class="lineNum">     661 </span>                : 
+<span class="lineNum">     662 </span><span class="lineNoCov">              0 :                                         while (n &gt; 0 &amp;&amp; !table[n-1]) n--;</span>
+<span class="lineNum">     663 </span><span class="lineNoCov">              0 :                                         for (i = 0; i &lt; n; i++) {</span>
+<span class="lineNum">     664 </span><span class="lineNoCov">              0 :                                                 if (table[i]) {</span>
+<span class="lineNum">     665 </span><span class="lineNoCov">              0 :                                                         zv = table[i];</span>
+<span class="lineNum">     666 </span><span class="lineNoCov">              0 :                                                         if (Z_TYPE_P(zv) != IS_ARRAY || Z_ARRVAL_P(zv) != &amp;EG(symbol_table)) {</span>
+<span class="lineNum">     667 </span><span class="lineNoCov">              0 :                                                                 zv-&gt;refcount__gc++;</span>
+<span class="lineNum">     668 </span>                :                                                         }
+<span class="lineNum">     669 </span><span class="lineNoCov">              0 :                                                         if (!props &amp;&amp; i == n - 1) {</span>
+<span class="lineNum">     670 </span><span class="lineNoCov">              0 :                                                                 pz = zv;</span>
+<span class="lineNum">     671 </span><span class="lineNoCov">              0 :                                                                 goto tail_call;</span>
+<span class="lineNum">     672 </span>                :                                                         } else {
+<span class="lineNum">     673 </span><span class="lineNoCov">              0 :                                                                 zval_collect_white(zv TSRMLS_CC);</span>
+<span class="lineNum">     674 </span>                :                                                         }
+<span class="lineNum">     675 </span>                :                                                 }
+<span class="lineNum">     676 </span>                :                                         }
+<span class="lineNum">     677 </span><span class="lineNoCov">              0 :                                         if (!props) {</span>
+<span class="lineNum">     678 </span><span class="lineNoCov">              0 :                                                 return;</span>
+<span class="lineNum">     679 </span>                :                                         }
+<span class="lineNum">     680 </span><span class="lineNoCov">              0 :                                         p = props-&gt;pListHead;</span>
+<span class="lineNum">     681 </span>                :                                 }
+<span class="lineNum">     682 </span>                :                         }
+<span class="lineNum">     683 </span>                :                 } else {
+<span class="lineNum">     684 </span><span class="lineCov">              4 :                         if (Z_TYPE_P(pz) == IS_ARRAY) {</span>
+<span class="lineNum">     685 </span><span class="lineCov">              2 :                                 p = Z_ARRVAL_P(pz)-&gt;pListHead;</span>
+<span class="lineNum">     686 </span>                :                         }
+<span class="lineNum">     687 </span>                :                 }
+<span class="lineNum">     688 </span>                : 
+<span class="lineNum">     689 </span>                :                 /* restore refcount and put into list to free */
+<span class="lineNum">     690 </span><span class="lineCov">              4 :                 pz-&gt;refcount__gc++;</span>
+<span class="lineNum">     691 </span><span class="lineCov">              4 :                 ((zval_gc_info*)pz)-&gt;u.next = GC_G(zval_to_free);</span>
+<span class="lineNum">     692 </span><span class="lineCov">              4 :                 GC_G(zval_to_free) = (zval_gc_info*)pz;</span>
+<span class="lineNum">     693 </span>                : 
+<span class="lineNum">     694 </span><span class="lineCov">              8 :                 while (p != NULL) {</span>
+<span class="lineNum">     695 </span><span class="lineCov">              2 :                         pz = *(zval**)p-&gt;pData;</span>
+<span class="lineNum">     696 </span><span class="lineCov">              2 :                         if (Z_TYPE_P(pz) != IS_ARRAY || Z_ARRVAL_P(pz) != &amp;EG(symbol_table)) {</span>
+<span class="lineNum">     697 </span><span class="lineCov">              2 :                                 pz-&gt;refcount__gc++;</span>
+<span class="lineNum">     698 </span>                :                         }
+<span class="lineNum">     699 </span><span class="lineCov">              2 :                         if (p-&gt;pListNext == NULL) {</span>
+<span class="lineNum">     700 </span><span class="lineCov">              2 :                                 goto tail_call;</span>
+<span class="lineNum">     701 </span>                :                         } else {
+<span class="lineNum">     702 </span><span class="lineNoCov">              0 :                                 zval_collect_white(pz TSRMLS_CC);</span>
+<span class="lineNum">     703 </span>                :                         }
+<span class="lineNum">     704 </span><span class="lineNoCov">              0 :                         p = p-&gt;pListNext;</span>
+<span class="lineNum">     705 </span>                :                 }
+<span class="lineNum">     706 </span>                :         }
+<a name="707"><span class="lineNum">     707 </span>                : }</a>
+<span class="lineNum">     708 </span>                : 
+<span class="lineNum">     709 </span><span class="lineNoCov">              0 : static void zobj_collect_white(zval *pz TSRMLS_DC)</span>
+<span class="lineNum">     710 </span>                : {
+<span class="lineNum">     711 </span>                :         Bucket *p;
+<span class="lineNum">     712 </span>                : 
+<span class="lineNum">     713 </span><span class="lineNoCov">              0 :         if (EG(objects_store).object_buckets) {</span>
+<span class="lineNum">     714 </span>                :                 zend_object_get_gc_t get_gc;
+<span class="lineNum">     715 </span><span class="lineNoCov">              0 :                 struct _store_object *obj = &amp;EG(objects_store).object_buckets[Z_OBJ_HANDLE_P(pz)].bucket.obj;</span>
+<span class="lineNum">     716 </span>                : 
+<span class="lineNum">     717 </span><span class="lineNoCov">              0 :                 if (obj-&gt;buffered == (gc_root_buffer*)GC_WHITE) {</span>
+<span class="lineNum">     718 </span><span class="lineNoCov">              0 :                         GC_SET_BLACK(obj-&gt;buffered);</span>
+<span class="lineNum">     719 </span>                : 
+<span class="lineNum">     720 </span><span class="lineNoCov">              0 :                         if (EXPECTED(EG(objects_store).object_buckets[Z_OBJ_HANDLE_P(pz)].valid &amp;&amp;</span>
+<span class="lineNum">     721 </span>                :                                      (get_gc = Z_OBJ_HANDLER_P(pz, get_gc)) != NULL)) {
+<span class="lineNum">     722 </span>                :                                 int i, n;
+<span class="lineNum">     723 </span>                :                                 zval **table;
+<span class="lineNum">     724 </span><span class="lineNoCov">              0 :                                 HashTable *props = get_gc(pz, &amp;table, &amp;n TSRMLS_CC);</span>
+<span class="lineNum">     725 </span>                : 
+<span class="lineNum">     726 </span><span class="lineNoCov">              0 :                                 for (i = 0; i &lt; n; i++) {</span>
+<span class="lineNum">     727 </span><span class="lineNoCov">              0 :                                         if (table[i]) {</span>
+<span class="lineNum">     728 </span><span class="lineNoCov">              0 :                                                 pz = table[i];</span>
+<span class="lineNum">     729 </span><span class="lineNoCov">              0 :                                                 if (Z_TYPE_P(pz) != IS_ARRAY || Z_ARRVAL_P(pz) != &amp;EG(symbol_table)) {</span>
+<span class="lineNum">     730 </span><span class="lineNoCov">              0 :                                                         pz-&gt;refcount__gc++;</span>
+<span class="lineNum">     731 </span>                :                                                 }
+<span class="lineNum">     732 </span><span class="lineNoCov">              0 :                                                 zval_collect_white(pz TSRMLS_CC);</span>
+<span class="lineNum">     733 </span>                :                                         }
+<span class="lineNum">     734 </span>                :                                 }
+<span class="lineNum">     735 </span><span class="lineNoCov">              0 :                                 if (!props) {</span>
+<span class="lineNum">     736 </span><span class="lineNoCov">              0 :                                         return;</span>
+<span class="lineNum">     737 </span>                :                                 }
+<span class="lineNum">     738 </span><span class="lineNoCov">              0 :                                 p = props-&gt;pListHead;</span>
+<span class="lineNum">     739 </span><span class="lineNoCov">              0 :                                 while (p != NULL) {</span>
+<span class="lineNum">     740 </span><span class="lineNoCov">              0 :                                         pz = *(zval**)p-&gt;pData;</span>
+<span class="lineNum">     741 </span><span class="lineNoCov">              0 :                                         if (Z_TYPE_P(pz) != IS_ARRAY || Z_ARRVAL_P(pz) != &amp;EG(symbol_table)) {</span>
+<span class="lineNum">     742 </span><span class="lineNoCov">              0 :                                                 pz-&gt;refcount__gc++;</span>
+<span class="lineNum">     743 </span>                :                                         }
+<span class="lineNum">     744 </span><span class="lineNoCov">              0 :                                         zval_collect_white(pz TSRMLS_CC);</span>
+<span class="lineNum">     745 </span><span class="lineNoCov">              0 :                                         p = p-&gt;pListNext;</span>
+<span class="lineNum">     746 </span>                :                                 }
+<span class="lineNum">     747 </span>                :                         }
+<span class="lineNum">     748 </span>                :                 }
+<span class="lineNum">     749 </span>                :         }
+<a name="750"><span class="lineNum">     750 </span>                : }</a>
+<span class="lineNum">     751 </span>                : 
+<span class="lineNum">     752 </span><span class="lineCov">              3 : static void gc_collect_roots(TSRMLS_D)</span>
+<span class="lineNum">     753 </span>                : {
+<span class="lineNum">     754 </span><span class="lineCov">              3 :         gc_root_buffer *current = GC_G(roots).next;</span>
+<span class="lineNum">     755 </span>                : 
+<span class="lineNum">     756 </span><span class="lineCov">             10 :         while (current != &amp;GC_G(roots)) {</span>
+<span class="lineNum">     757 </span><span class="lineCov">              4 :                 if (current-&gt;handle) {</span>
+<span class="lineNum">     758 </span><span class="lineNoCov">              0 :                         if (EG(objects_store).object_buckets) {</span>
+<span class="lineNum">     759 </span><span class="lineNoCov">              0 :                                 struct _store_object *obj = &amp;EG(objects_store).object_buckets[current-&gt;handle].bucket.obj;</span>
+<span class="lineNum">     760 </span>                :                                 zval z;
+<span class="lineNum">     761 </span>                : 
+<span class="lineNum">     762 </span><span class="lineNoCov">              0 :                                 GC_SET_ADDRESS(obj-&gt;buffered, NULL);</span>
+<span class="lineNum">     763 </span><span class="lineNoCov">              0 :                                 INIT_PZVAL(&amp;z);</span>
+<span class="lineNum">     764 </span><span class="lineNoCov">              0 :                                 Z_OBJ_HANDLE(z) = current-&gt;handle;</span>
+<span class="lineNum">     765 </span><span class="lineNoCov">              0 :                                 Z_OBJ_HT(z) = current-&gt;u.handlers;</span>
+<span class="lineNum">     766 </span><span class="lineNoCov">              0 :                                 zobj_collect_white(&amp;z TSRMLS_CC);</span>
+<span class="lineNum">     767 </span>                :                         }
+<span class="lineNum">     768 </span>                :                 } else {
+<span class="lineNum">     769 </span><span class="lineCov">              4 :                         GC_ZVAL_SET_ADDRESS(current-&gt;u.pz, NULL);</span>
+<span class="lineNum">     770 </span><span class="lineCov">              4 :                         zval_collect_white(current-&gt;u.pz TSRMLS_CC);</span>
+<span class="lineNum">     771 </span>                :                 }
+<span class="lineNum">     772 </span>                : 
+<span class="lineNum">     773 </span>                :                 GC_REMOVE_FROM_BUFFER(current);
+<span class="lineNum">     774 </span><span class="lineCov">              4 :                 current = current-&gt;next;</span>
+<span class="lineNum">     775 </span>                :         }
+<span class="lineNum">     776 </span><span class="lineCov">              3 : }</span>
+<span class="lineNum">     777 </span>                : 
+<a name="778"><span class="lineNum">     778 </span>                : #define FREE_LIST_END ((zval_gc_info*)(~(zend_uintptr_t)GC_COLOR))</a>
+<span class="lineNum">     779 </span>                : 
+<span class="lineNum">     780 </span><span class="lineCov">             43 : ZEND_API int gc_collect_cycles(TSRMLS_D)</span>
+<span class="lineNum">     781 </span>                : {
+<span class="lineNum">     782 </span><span class="lineCov">             43 :         int count = 0;</span>
+<span class="lineNum">     783 </span>                : 
+<span class="lineNum">     784 </span><span class="lineCov">             43 :         if (GC_G(roots).next != &amp;GC_G(roots)) {</span>
+<span class="lineNum">     785 </span>                :                 zval_gc_info *p, *q, *orig_free_list, *orig_next_to_free;
+<span class="lineNum">     786 </span>                : 
+<span class="lineNum">     787 </span><span class="lineCov">              3 :                 if (GC_G(gc_active)) {</span>
+<span class="lineNum">     788 </span><span class="lineNoCov">              0 :                         return 0;</span>
+<span class="lineNum">     789 </span>                :                 }
+<span class="lineNum">     790 </span><span class="lineCov">              3 :                 GC_G(gc_runs)++;</span>
+<span class="lineNum">     791 </span><span class="lineCov">              3 :                 GC_G(zval_to_free) = FREE_LIST_END;</span>
+<span class="lineNum">     792 </span><span class="lineCov">              3 :                 GC_G(gc_active) = 1;</span>
+<span class="lineNum">     793 </span><span class="lineCov">              3 :                 gc_mark_roots(TSRMLS_C);</span>
+<span class="lineNum">     794 </span><span class="lineCov">              3 :                 gc_scan_roots(TSRMLS_C);</span>
+<span class="lineNum">     795 </span><span class="lineCov">              3 :                 gc_collect_roots(TSRMLS_C);</span>
+<span class="lineNum">     796 </span>                : 
+<span class="lineNum">     797 </span><span class="lineCov">              3 :                 orig_free_list = GC_G(free_list);</span>
+<span class="lineNum">     798 </span><span class="lineCov">              3 :                 orig_next_to_free = GC_G(next_to_free);</span>
+<span class="lineNum">     799 </span><span class="lineCov">              3 :                 p = GC_G(free_list) = GC_G(zval_to_free);</span>
+<span class="lineNum">     800 </span><span class="lineCov">              3 :                 GC_G(zval_to_free) = NULL;</span>
+<span class="lineNum">     801 </span><span class="lineCov">              3 :                 GC_G(gc_active) = 0;</span>
+<span class="lineNum">     802 </span>                : 
+<span class="lineNum">     803 </span>                :                 /* First call destructors */
+<span class="lineNum">     804 </span><span class="lineCov">             10 :                 while (p != FREE_LIST_END) {</span>
+<span class="lineNum">     805 </span><span class="lineCov">              4 :                         if (Z_TYPE(p-&gt;z) == IS_OBJECT) {</span>
+<span class="lineNum">     806 </span><span class="lineNoCov">              0 :                                 if (EG(objects_store).object_buckets &amp;&amp;</span>
+<span class="lineNum">     807 </span><span class="lineNoCov">              0 :                                         EG(objects_store).object_buckets[Z_OBJ_HANDLE(p-&gt;z)].valid &amp;&amp;</span>
+<span class="lineNum">     808 </span><span class="lineNoCov">              0 :                                         EG(objects_store).object_buckets[Z_OBJ_HANDLE(p-&gt;z)].bucket.obj.refcount &lt;= 0 &amp;&amp;</span>
+<span class="lineNum">     809 </span><span class="lineNoCov">              0 :                                         EG(objects_store).object_buckets[Z_OBJ_HANDLE(p-&gt;z)].bucket.obj.dtor &amp;&amp;</span>
+<span class="lineNum">     810 </span><span class="lineNoCov">              0 :                                         !EG(objects_store).object_buckets[Z_OBJ_HANDLE(p-&gt;z)].destructor_called) {</span>
+<span class="lineNum">     811 </span>                : 
+<span class="lineNum">     812 </span><span class="lineNoCov">              0 :                                         EG(objects_store).object_buckets[Z_OBJ_HANDLE(p-&gt;z)].destructor_called = 1;</span>
+<span class="lineNum">     813 </span><span class="lineNoCov">              0 :                                         EG(objects_store).object_buckets[Z_OBJ_HANDLE(p-&gt;z)].bucket.obj.refcount++;</span>
+<span class="lineNum">     814 </span><span class="lineNoCov">              0 :                                         EG(objects_store).object_buckets[Z_OBJ_HANDLE(p-&gt;z)].bucket.obj.dtor(EG(objects_store).object_buckets[Z_OBJ_HANDLE(p-&gt;z)].bucket.obj.object, Z_OBJ_HANDLE(p-&gt;z) TSRMLS_CC);</span>
+<span class="lineNum">     815 </span><span class="lineNoCov">              0 :                                         EG(objects_store).object_buckets[Z_OBJ_HANDLE(p-&gt;z)].bucket.obj.refcount--;</span>
+<span class="lineNum">     816 </span>                :                                 }
+<span class="lineNum">     817 </span>                :                         }
+<span class="lineNum">     818 </span><span class="lineCov">              4 :                         count++;</span>
+<span class="lineNum">     819 </span><span class="lineCov">              4 :                         p = p-&gt;u.next;</span>
+<span class="lineNum">     820 </span>                :                 }
+<span class="lineNum">     821 </span>                : 
+<span class="lineNum">     822 </span>                :                 /* Destroy zvals */
+<span class="lineNum">     823 </span><span class="lineCov">              3 :                 p = GC_G(free_list);</span>
+<span class="lineNum">     824 </span><span class="lineCov">             10 :                 while (p != FREE_LIST_END) {</span>
+<span class="lineNum">     825 </span><span class="lineCov">              4 :                         GC_G(next_to_free) = p-&gt;u.next;</span>
+<span class="lineNum">     826 </span><span class="lineCov">              4 :                         if (Z_TYPE(p-&gt;z) == IS_OBJECT) {</span>
+<span class="lineNum">     827 </span><span class="lineNoCov">              0 :                                 if (EG(objects_store).object_buckets &amp;&amp;</span>
+<span class="lineNum">     828 </span><span class="lineNoCov">              0 :                                         EG(objects_store).object_buckets[Z_OBJ_HANDLE(p-&gt;z)].valid &amp;&amp;</span>
+<span class="lineNum">     829 </span><span class="lineNoCov">              0 :                                         EG(objects_store).object_buckets[Z_OBJ_HANDLE(p-&gt;z)].bucket.obj.refcount &lt;= 0) {</span>
+<span class="lineNum">     830 </span><span class="lineNoCov">              0 :                                         EG(objects_store).object_buckets[Z_OBJ_HANDLE(p-&gt;z)].bucket.obj.refcount = 1;</span>
+<span class="lineNum">     831 </span><span class="lineNoCov">              0 :                                         Z_TYPE(p-&gt;z) = IS_NULL;</span>
+<span class="lineNum">     832 </span><span class="lineNoCov">              0 :                                         zend_objects_store_del_ref_by_handle_ex(Z_OBJ_HANDLE(p-&gt;z), Z_OBJ_HT(p-&gt;z) TSRMLS_CC);</span>
+<span class="lineNum">     833 </span>                :                                 }
+<span class="lineNum">     834 </span><span class="lineCov">              4 :                         } else if (Z_TYPE(p-&gt;z) == IS_ARRAY) {</span>
+<span class="lineNum">     835 </span><span class="lineCov">              2 :                                 Z_TYPE(p-&gt;z) = IS_NULL;</span>
+<span class="lineNum">     836 </span><span class="lineCov">              2 :                                 zend_hash_destroy(Z_ARRVAL(p-&gt;z));</span>
+<span class="lineNum">     837 </span><span class="lineCov">              2 :                                 FREE_HASHTABLE(Z_ARRVAL(p-&gt;z));</span>
+<span class="lineNum">     838 </span>                :                         } else {
+<span class="lineNum">     839 </span><span class="lineCov">              2 :                                 zval_dtor(&amp;p-&gt;z);</span>
+<span class="lineNum">     840 </span><span class="lineCov">              2 :                                 Z_TYPE(p-&gt;z) = IS_NULL;</span>
+<span class="lineNum">     841 </span>                :                         }
+<span class="lineNum">     842 </span><span class="lineCov">              4 :                         p = GC_G(next_to_free);</span>
+<span class="lineNum">     843 </span>                :                 }
+<span class="lineNum">     844 </span>                : 
+<span class="lineNum">     845 </span>                :                 /* Free zvals */
+<span class="lineNum">     846 </span><span class="lineCov">              3 :                 p = GC_G(free_list);</span>
+<span class="lineNum">     847 </span><span class="lineCov">             10 :                 while (p != FREE_LIST_END) {</span>
+<span class="lineNum">     848 </span><span class="lineCov">              4 :                         q = p-&gt;u.next;</span>
+<span class="lineNum">     849 </span><span class="lineCov">              4 :                         FREE_ZVAL_EX(&amp;p-&gt;z);</span>
+<span class="lineNum">     850 </span><span class="lineCov">              4 :                         p = q;</span>
+<span class="lineNum">     851 </span>                :                 }
+<span class="lineNum">     852 </span><span class="lineCov">              3 :                 GC_G(collected) += count;</span>
+<span class="lineNum">     853 </span><span class="lineCov">              3 :                 GC_G(free_list) = orig_free_list;</span>
+<span class="lineNum">     854 </span><span class="lineCov">              3 :                 GC_G(next_to_free) = orig_next_to_free;</span>
+<span class="lineNum">     855 </span>                :         }
+<span class="lineNum">     856 </span>                : 
+<span class="lineNum">     857 </span><span class="lineCov">             43 :         return count;</span>
+<span class="lineNum">     858 </span>                : }
+<span class="lineNum">     859 </span>                : 
+<span class="lineNum">     860 </span>                : /*
+<span class="lineNum">     861 </span>                :  * Local variables:
+<span class="lineNum">     862 </span>                :  * tab-width: 4
+<span class="lineNum">     863 </span>                :  * c-basic-offset: 4
+<span class="lineNum">     864 </span>                :  * indent-tabs-mode: t
+<span class="lineNum">     865 </span>                :  * End:
+<span class="lineNum">     866 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

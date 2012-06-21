@@ -1,0 +1,385 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - ext/date/lib/astro.c</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../../index.html">directory</a> - <a href="index.html">ext/date/lib</a> - astro.c (source / <a href="astro.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">75</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">7</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2010 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Algorithms are taken from a public domain source by Paul             |
+<span class="lineNum">      16 </span>                :    | Schlyter, who wrote this in December 1992                            |
+<span class="lineNum">      17 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      18 </span>                :    | Authors: Derick Rethans &lt;derick@derickrethans.nl&gt;                    |
+<span class="lineNum">      19 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      20 </span>                :  */
+<span class="lineNum">      21 </span>                : 
+<span class="lineNum">      22 </span>                : /* $Id$ */
+<span class="lineNum">      23 </span>                : 
+<span class="lineNum">      24 </span>                : #include &lt;stdio.h&gt;
+<span class="lineNum">      25 </span>                : #include &lt;math.h&gt;
+<span class="lineNum">      26 </span>                : #include &quot;timelib.h&quot;
+<span class="lineNum">      27 </span>                : 
+<span class="lineNum">      28 </span>                : #define days_since_2000_Jan_0(y,m,d) \
+<span class="lineNum">      29 </span>                :         (367L*(y)-((7*((y)+(((m)+9)/12)))/4)+((275*(m))/9)+(d)-730530L)
+<span class="lineNum">      30 </span>                : 
+<span class="lineNum">      31 </span>                : #ifndef PI
+<span class="lineNum">      32 </span>                :  #define PI        3.1415926535897932384
+<span class="lineNum">      33 </span>                : #endif
+<span class="lineNum">      34 </span>                : 
+<span class="lineNum">      35 </span>                : #define RADEG     ( 180.0 / PI )
+<span class="lineNum">      36 </span>                : #define DEGRAD    ( PI / 180.0 )
+<span class="lineNum">      37 </span>                : 
+<span class="lineNum">      38 </span>                : /* The trigonometric functions in degrees */
+<span class="lineNum">      39 </span>                : 
+<span class="lineNum">      40 </span>                : #define sind(x)  sin((x)*DEGRAD)
+<span class="lineNum">      41 </span>                : #define cosd(x)  cos((x)*DEGRAD)
+<span class="lineNum">      42 </span>                : #define tand(x)  tan((x)*DEGRAD)
+<span class="lineNum">      43 </span>                : 
+<span class="lineNum">      44 </span>                : #define atand(x)    (RADEG*atan(x))
+<span class="lineNum">      45 </span>                : #define asind(x)    (RADEG*asin(x))
+<span class="lineNum">      46 </span>                : #define acosd(x)    (RADEG*acos(x))
+<span class="lineNum">      47 </span>                : #define atan2d(y,x) (RADEG*atan2(y,x))
+<span class="lineNum">      48 </span>                : 
+<span class="lineNum">      49 </span>                : 
+<span class="lineNum">      50 </span>                : /* Following are some macros around the &quot;workhorse&quot; function __daylen__ */
+<span class="lineNum">      51 </span>                : /* They mainly fill in the desired values for the reference altitude    */
+<span class="lineNum">      52 </span>                : /* below the horizon, and also selects whether this altitude should     */
+<span class="lineNum">      53 </span>                : /* refer to the Sun's center or its upper limb.                         */
+<span class="lineNum">      54 </span>                : 
+<span class="lineNum">      55 </span>                : 
+<span class="lineNum">      56 </span>                : #include &quot;astro.h&quot;
+<span class="lineNum">      57 </span>                : 
+<span class="lineNum">      58 </span>                : /******************************************************************/
+<span class="lineNum">      59 </span>                : /* This function reduces any angle to within the first revolution */
+<span class="lineNum">      60 </span>                : /* by subtracting or adding even multiples of 360.0 until the     */
+<span class="lineNum">      61 </span>                : /* result is &gt;= 0.0 and &lt; 360.0                                   */
+<span class="lineNum">      62 </span>                : /******************************************************************/
+<span class="lineNum">      63 </span>                : 
+<span class="lineNum">      64 </span>                : #define INV360    (1.0 / 360.0)
+<span class="lineNum">      65 </span>                : 
+<span class="lineNum">      66 </span>                : /*****************************************/
+<a name="67"><span class="lineNum">      67 </span>                : /* Reduce angle to within 0..360 degrees */</a>
+<span class="lineNum">      68 </span>                : /*****************************************/
+<span class="lineNum">      69 </span><span class="lineNoCov">              0 : static double astro_revolution(double x)</span>
+<span class="lineNum">      70 </span>                : {
+<span class="lineNum">      71 </span><span class="lineNoCov">              0 :         return (x - 360.0 * floor(x * INV360));</span>
+<span class="lineNum">      72 </span>                : }
+<span class="lineNum">      73 </span>                : 
+<span class="lineNum">      74 </span>                : /*********************************************/
+<a name="75"><span class="lineNum">      75 </span>                : /* Reduce angle to within +180..+180 degrees */</a>
+<span class="lineNum">      76 </span>                : /*********************************************/
+<span class="lineNum">      77 </span><span class="lineNoCov">              0 : static double astro_rev180( double x )</span>
+<span class="lineNum">      78 </span>                : {
+<span class="lineNum">      79 </span><span class="lineNoCov">              0 :         return (x - 360.0 * floor(x * INV360 + 0.5));</span>
+<span class="lineNum">      80 </span>                : }
+<span class="lineNum">      81 </span>                : 
+<span class="lineNum">      82 </span>                : /*******************************************************************/
+<span class="lineNum">      83 </span>                : /* This function computes GMST0, the Greenwich Mean Sidereal Time  */
+<span class="lineNum">      84 </span>                : /* at 0h UT (i.e. the sidereal time at the Greenwhich meridian at  */
+<span class="lineNum">      85 </span>                : /* 0h UT).  GMST is then the sidereal time at Greenwich at any     */
+<span class="lineNum">      86 </span>                : /* time of the day.  I've generalized GMST0 as well, and define it */
+<span class="lineNum">      87 </span>                : /* as:  GMST0 = GMST - UT  --  this allows GMST0 to be computed at */
+<span class="lineNum">      88 </span>                : /* other times than 0h UT as well.  While this sounds somewhat     */
+<span class="lineNum">      89 </span>                : /* contradictory, it is very practical:  instead of computing      */
+<span class="lineNum">      90 </span>                : /* GMST like:                                                      */
+<span class="lineNum">      91 </span>                : /*                                                                 */
+<span class="lineNum">      92 </span>                : /*  GMST = (GMST0) + UT * (366.2422/365.2422)                      */
+<span class="lineNum">      93 </span>                : /*                                                                 */
+<span class="lineNum">      94 </span>                : /* where (GMST0) is the GMST last time UT was 0 hours, one simply  */
+<span class="lineNum">      95 </span>                : /* computes:                                                       */
+<span class="lineNum">      96 </span>                : /*                                                                 */
+<span class="lineNum">      97 </span>                : /*  GMST = GMST0 + UT                                              */
+<span class="lineNum">      98 </span>                : /*                                                                 */
+<span class="lineNum">      99 </span>                : /* where GMST0 is the GMST &quot;at 0h UT&quot; but at the current moment!   */
+<span class="lineNum">     100 </span>                : /* Defined in this way, GMST0 will increase with about 4 min a     */
+<span class="lineNum">     101 </span>                : /* day.  It also happens that GMST0 (in degrees, 1 hr = 15 degr)   */
+<span class="lineNum">     102 </span>                : /* is equal to the Sun's mean longitude plus/minus 180 degrees!    */
+<span class="lineNum">     103 </span>                : /* (if we neglect aberration, which amounts to 20 seconds of arc   */
+<span class="lineNum">     104 </span>                : /* or 1.33 seconds of time)                                        */
+<span class="lineNum">     105 </span>                : /*                                                                 */
+<a name="106"><span class="lineNum">     106 </span>                : /*******************************************************************/</a>
+<span class="lineNum">     107 </span>                : 
+<span class="lineNum">     108 </span><span class="lineNoCov">              0 : static double astro_GMST0(double d)</span>
+<span class="lineNum">     109 </span>                : {
+<span class="lineNum">     110 </span>                :         double sidtim0;
+<span class="lineNum">     111 </span>                :         /* Sidtime at 0h UT = L (Sun's mean longitude) + 180.0 degr  */
+<span class="lineNum">     112 </span>                :         /* L = M + w, as defined in sunpos().  Since I'm too lazy to */
+<span class="lineNum">     113 </span>                :         /* add these numbers, I'll let the C compiler do it for me.  */
+<span class="lineNum">     114 </span>                :         /* Any decent C compiler will add the constants at compile   */
+<span class="lineNum">     115 </span>                :         /* time, imposing no runtime or code overhead.               */
+<span class="lineNum">     116 </span><span class="lineNoCov">              0 :         sidtim0 = astro_revolution((180.0 + 356.0470 + 282.9404) + (0.9856002585 + 4.70935E-5) * d);</span>
+<span class="lineNum">     117 </span><span class="lineNoCov">              0 :         return sidtim0;</span>
+<span class="lineNum">     118 </span>                : } 
+<span class="lineNum">     119 </span>                : 
+<span class="lineNum">     120 </span>                : /* This function computes the Sun's position at any instant */
+<span class="lineNum">     121 </span>                : 
+<span class="lineNum">     122 </span>                : /******************************************************/
+<span class="lineNum">     123 </span>                : /* Computes the Sun's ecliptic longitude and distance */
+<span class="lineNum">     124 </span>                : /* at an instant given in d, number of days since     */
+<span class="lineNum">     125 </span>                : /* 2000 Jan 0.0.  The Sun's ecliptic latitude is not  */
+<a name="126"><span class="lineNum">     126 </span>                : /* computed, since it's always very near 0.           */</a>
+<span class="lineNum">     127 </span>                : /******************************************************/
+<span class="lineNum">     128 </span><span class="lineNoCov">              0 : static void astro_sunpos(double d, double *lon, double *r)</span>
+<span class="lineNum">     129 </span>                : {
+<span class="lineNum">     130 </span>                :         double M,         /* Mean anomaly of the Sun */
+<span class="lineNum">     131 </span>                :                w,         /* Mean longitude of perihelion */
+<span class="lineNum">     132 </span>                :                           /* Note: Sun's mean longitude = M + w */
+<span class="lineNum">     133 </span>                :                e,         /* Eccentricity of Earth's orbit */
+<span class="lineNum">     134 </span>                :                E,         /* Eccentric anomaly */
+<span class="lineNum">     135 </span>                :                x, y,      /* x, y coordinates in orbit */
+<span class="lineNum">     136 </span>                :                v;         /* True anomaly */
+<span class="lineNum">     137 </span>                : 
+<span class="lineNum">     138 </span>                :         /* Compute mean elements */
+<span class="lineNum">     139 </span><span class="lineNoCov">              0 :         M = astro_revolution(356.0470 + 0.9856002585 * d);</span>
+<span class="lineNum">     140 </span><span class="lineNoCov">              0 :         w = 282.9404 + 4.70935E-5 * d;</span>
+<span class="lineNum">     141 </span><span class="lineNoCov">              0 :         e = 0.016709 - 1.151E-9 * d;</span>
+<span class="lineNum">     142 </span>                : 
+<span class="lineNum">     143 </span>                :         /* Compute true longitude and radius vector */
+<span class="lineNum">     144 </span><span class="lineNoCov">              0 :         E = M + e * RADEG * sind(M) * (1.0 + e * cosd(M));</span>
+<span class="lineNum">     145 </span><span class="lineNoCov">              0 :         x = cosd(E) - e;</span>
+<span class="lineNum">     146 </span><span class="lineNoCov">              0 :         y = sqrt(1.0 - e*e) * sind(E);</span>
+<span class="lineNum">     147 </span><span class="lineNoCov">              0 :         *r = sqrt(x*x + y*y);              /* Solar distance */</span>
+<span class="lineNum">     148 </span><span class="lineNoCov">              0 :         v = atan2d(y, x);                  /* True anomaly */</span>
+<span class="lineNum">     149 </span><span class="lineNoCov">              0 :         *lon = v + w;                        /* True solar longitude */</span>
+<span class="lineNum">     150 </span><span class="lineNoCov">              0 :         if (*lon &gt;= 360.0) {</span>
+<span class="lineNum">     151 </span><span class="lineNoCov">              0 :                 *lon -= 360.0;                   /* Make it 0..360 degrees */</span>
+<span class="lineNum">     152 </span>                :         }
+<a name="153"><span class="lineNum">     153 </span><span class="lineNoCov">              0 : }</span></a>
+<span class="lineNum">     154 </span>                : 
+<span class="lineNum">     155 </span><span class="lineNoCov">              0 : static void astro_sun_RA_dec(double d, double *RA, double *dec, double *r)</span>
+<span class="lineNum">     156 </span>                : {
+<span class="lineNum">     157 </span>                :         double lon, obl_ecl, x, y, z;
+<span class="lineNum">     158 </span>                : 
+<span class="lineNum">     159 </span>                :         /* Compute Sun's ecliptical coordinates */
+<span class="lineNum">     160 </span><span class="lineNoCov">              0 :         astro_sunpos(d, &amp;lon, r);</span>
+<span class="lineNum">     161 </span>                : 
+<span class="lineNum">     162 </span>                :         /* Compute ecliptic rectangular coordinates (z=0) */
+<span class="lineNum">     163 </span><span class="lineNoCov">              0 :         x = *r * cosd(lon);</span>
+<span class="lineNum">     164 </span><span class="lineNoCov">              0 :         y = *r * sind(lon);</span>
+<span class="lineNum">     165 </span>                : 
+<span class="lineNum">     166 </span>                :         /* Compute obliquity of ecliptic (inclination of Earth's axis) */
+<span class="lineNum">     167 </span><span class="lineNoCov">              0 :         obl_ecl = 23.4393 - 3.563E-7 * d;</span>
+<span class="lineNum">     168 </span>                : 
+<span class="lineNum">     169 </span>                :         /* Convert to equatorial rectangular coordinates - x is unchanged */
+<span class="lineNum">     170 </span><span class="lineNoCov">              0 :         z = y * sind(obl_ecl);</span>
+<span class="lineNum">     171 </span><span class="lineNoCov">              0 :         y = y * cosd(obl_ecl);</span>
+<span class="lineNum">     172 </span>                : 
+<span class="lineNum">     173 </span>                :         /* Convert to spherical coordinates */
+<span class="lineNum">     174 </span><span class="lineNoCov">              0 :         *RA = atan2d(y, x);</span>
+<span class="lineNum">     175 </span><span class="lineNoCov">              0 :         *dec = atan2d(z, sqrt(x*x + y*y));</span>
+<span class="lineNum">     176 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     177 </span>                : 
+<span class="lineNum">     178 </span>                : /**
+<span class="lineNum">     179 </span>                :  * Note: timestamp = unixtimestamp (NEEDS to be 00:00:00 UT)
+<span class="lineNum">     180 </span>                :  *       Eastern longitude positive, Western longitude negative       
+<span class="lineNum">     181 </span>                :  *       Northern latitude positive, Southern latitude negative       
+<span class="lineNum">     182 </span>                :  *       The longitude value IS critical in this function!            
+<span class="lineNum">     183 </span>                :  *       altit = the altitude which the Sun should cross              
+<span class="lineNum">     184 </span>                :  *               Set to -35/60 degrees for rise/set, -6 degrees       
+<span class="lineNum">     185 </span>                :  *               for civil, -12 degrees for nautical and -18          
+<span class="lineNum">     186 </span>                :  *               degrees for astronomical twilight.                   
+<span class="lineNum">     187 </span>                :  *         upper_limb: non-zero -&gt; upper limb, zero -&gt; center         
+<span class="lineNum">     188 </span>                :  *               Set to non-zero (e.g. 1) when computing rise/set     
+<span class="lineNum">     189 </span>                :  *               times, and to zero when computing start/end of       
+<span class="lineNum">     190 </span>                :  *               twilight.                                            
+<span class="lineNum">     191 </span>                :  *        *rise = where to store the rise time                        
+<span class="lineNum">     192 </span>                :  *        *set  = where to store the set  time                        
+<span class="lineNum">     193 </span>                :  *                Both times are relative to the specified altitude,  
+<span class="lineNum">     194 </span>                :  *                and thus this function can be used to compute       
+<span class="lineNum">     195 </span>                :  *                various twilight times, as well as rise/set times   
+<span class="lineNum">     196 </span>                :  * Return value:  0 = sun rises/sets this day, times stored at        
+<span class="lineNum">     197 </span>                :  *                    *trise and *tset.                               
+<span class="lineNum">     198 </span>                :  *               +1 = sun above the specified &quot;horizon&quot; 24 hours.     
+<span class="lineNum">     199 </span>                :  *                    *trise set to time when the sun is at south,    
+<span class="lineNum">     200 </span>                :  *                    minus 12 hours while *tset is set to the south  
+<span class="lineNum">     201 </span>                :  *                    time plus 12 hours. &quot;Day&quot; length = 24 hours     
+<span class="lineNum">     202 </span>                :  *               -1 = sun is below the specified &quot;horizon&quot; 24 hours   
+<span class="lineNum">     203 </span>                :  *                    &quot;Day&quot; length = 0 hours, *trise and *tset are    
+<span class="lineNum">     204 </span>                :  *                    both set to the time when the sun is at south.  
+<a name="205"><span class="lineNum">     205 </span>                :  *                                                                    </a>
+<span class="lineNum">     206 </span>                :  */
+<span class="lineNum">     207 </span><span class="lineNoCov">              0 : int timelib_astro_rise_set_altitude(timelib_time *t_loc, double lon, double lat, double altit, int upper_limb, double *h_rise, double *h_set, timelib_sll *ts_rise, timelib_sll *ts_set, timelib_sll *ts_transit)</span>
+<span class="lineNum">     208 </span>                : {
+<span class="lineNum">     209 </span>                :         double  d,  /* Days since 2000 Jan 0.0 (negative before) */
+<span class="lineNum">     210 </span>                :         sr,         /* Solar distance, astronomical units */
+<span class="lineNum">     211 </span>                :         sRA,        /* Sun's Right Ascension */
+<span class="lineNum">     212 </span>                :         sdec,       /* Sun's declination */
+<span class="lineNum">     213 </span>                :         sradius,    /* Sun's apparent radius */
+<span class="lineNum">     214 </span>                :         t,          /* Diurnal arc */
+<span class="lineNum">     215 </span>                :         tsouth,     /* Time when Sun is at south */
+<span class="lineNum">     216 </span>                :         sidtime;    /* Local sidereal time */
+<span class="lineNum">     217 </span>                :         timelib_time *t_utc;
+<span class="lineNum">     218 </span>                :         timelib_sll   timestamp, old_sse;
+<span class="lineNum">     219 </span>                : 
+<span class="lineNum">     220 </span><span class="lineNoCov">              0 :         int rc = 0; /* Return cde from function - usually 0 */</span>
+<span class="lineNum">     221 </span>                : 
+<span class="lineNum">     222 </span>                :         /* Normalize time */
+<span class="lineNum">     223 </span><span class="lineNoCov">              0 :         old_sse = t_loc-&gt;sse;</span>
+<span class="lineNum">     224 </span><span class="lineNoCov">              0 :         t_loc-&gt;h = 12;</span>
+<span class="lineNum">     225 </span><span class="lineNoCov">              0 :         t_loc-&gt;i = t_loc-&gt;s = 0;</span>
+<span class="lineNum">     226 </span><span class="lineNoCov">              0 :         timelib_update_ts(t_loc, NULL);</span>
+<span class="lineNum">     227 </span>                : 
+<span class="lineNum">     228 </span>                :         /* Calculate TS belonging to UTC 00:00 of the current day */
+<span class="lineNum">     229 </span><span class="lineNoCov">              0 :         t_utc = timelib_time_ctor();</span>
+<span class="lineNum">     230 </span><span class="lineNoCov">              0 :         t_utc-&gt;y = t_loc-&gt;y;</span>
+<span class="lineNum">     231 </span><span class="lineNoCov">              0 :         t_utc-&gt;m = t_loc-&gt;m;</span>
+<span class="lineNum">     232 </span><span class="lineNoCov">              0 :         t_utc-&gt;d = t_loc-&gt;d;</span>
+<span class="lineNum">     233 </span><span class="lineNoCov">              0 :         t_utc-&gt;h = t_utc-&gt;i = t_utc-&gt;s = 0;</span>
+<span class="lineNum">     234 </span><span class="lineNoCov">              0 :         timelib_update_ts(t_utc, NULL);</span>
+<span class="lineNum">     235 </span>                : 
+<span class="lineNum">     236 </span>                :         /* Compute d of 12h local mean solar time */
+<span class="lineNum">     237 </span><span class="lineNoCov">              0 :         timestamp = t_loc-&gt;sse;</span>
+<span class="lineNum">     238 </span><span class="lineNoCov">              0 :         d = timelib_ts_to_juliandate(timestamp) - lon/360.0;</span>
+<span class="lineNum">     239 </span>                : 
+<span class="lineNum">     240 </span>                :         /* Compute local sidereal time of this moment */
+<span class="lineNum">     241 </span><span class="lineNoCov">              0 :         sidtime = astro_revolution(astro_GMST0(d) + 180.0 + lon);</span>
+<span class="lineNum">     242 </span>                : 
+<span class="lineNum">     243 </span>                :         /* Compute Sun's RA + Decl at this moment */
+<span class="lineNum">     244 </span><span class="lineNoCov">              0 :         astro_sun_RA_dec( d, &amp;sRA, &amp;sdec, &amp;sr );</span>
+<span class="lineNum">     245 </span>                : 
+<span class="lineNum">     246 </span>                :         /* Compute time when Sun is at south - in hours UT */
+<span class="lineNum">     247 </span><span class="lineNoCov">              0 :         tsouth = 12.0 - astro_rev180(sidtime - sRA) / 15.0;</span>
+<span class="lineNum">     248 </span>                : 
+<span class="lineNum">     249 </span>                :         /* Compute the Sun's apparent radius, degrees */
+<span class="lineNum">     250 </span><span class="lineNoCov">              0 :         sradius = 0.2666 / sr;</span>
+<span class="lineNum">     251 </span>                : 
+<span class="lineNum">     252 </span>                :         /* Do correction to upper limb, if necessary */
+<span class="lineNum">     253 </span><span class="lineNoCov">              0 :         if (upper_limb) {</span>
+<span class="lineNum">     254 </span><span class="lineNoCov">              0 :                 altit -= sradius;</span>
+<span class="lineNum">     255 </span>                :         }
+<span class="lineNum">     256 </span>                : 
+<span class="lineNum">     257 </span>                :         /* Compute the diurnal arc that the Sun traverses to reach */
+<span class="lineNum">     258 </span>                :         /* the specified altitude altit: */
+<span class="lineNum">     259 </span>                :         {
+<span class="lineNum">     260 </span>                :                 double cost;
+<span class="lineNum">     261 </span><span class="lineNoCov">              0 :                 cost = (sind(altit) - sind(lat) * sind(sdec)) / (cosd(lat) * cosd(sdec));</span>
+<span class="lineNum">     262 </span><span class="lineNoCov">              0 :                 *ts_transit = t_utc-&gt;sse + (tsouth * 3600);</span>
+<span class="lineNum">     263 </span><span class="lineNoCov">              0 :                 if (cost &gt;= 1.0) {</span>
+<span class="lineNum">     264 </span><span class="lineNoCov">              0 :                         rc = -1;</span>
+<span class="lineNum">     265 </span><span class="lineNoCov">              0 :                         t = 0.0;       /* Sun always below altit */</span>
+<span class="lineNum">     266 </span>                : 
+<span class="lineNum">     267 </span><span class="lineNoCov">              0 :                         *ts_rise = *ts_set = t_utc-&gt;sse + (tsouth * 3600);</span>
+<span class="lineNum">     268 </span><span class="lineNoCov">              0 :                 } else if (cost &lt;= -1.0) {</span>
+<span class="lineNum">     269 </span><span class="lineNoCov">              0 :                         rc = +1;</span>
+<span class="lineNum">     270 </span><span class="lineNoCov">              0 :                         t = 12.0;      /* Sun always above altit */</span>
+<span class="lineNum">     271 </span>                : 
+<span class="lineNum">     272 </span><span class="lineNoCov">              0 :                         *ts_rise = t_loc-&gt;sse - (12 * 3600);</span>
+<span class="lineNum">     273 </span><span class="lineNoCov">              0 :                         *ts_set  = t_loc-&gt;sse + (12 * 3600);</span>
+<span class="lineNum">     274 </span>                :                 } else {
+<span class="lineNum">     275 </span><span class="lineNoCov">              0 :                         t = acosd(cost) / 15.0;   /* The diurnal arc, hours */</span>
+<span class="lineNum">     276 </span>                : 
+<span class="lineNum">     277 </span>                :                         /* Store rise and set times - as Unix Timestamp */
+<span class="lineNum">     278 </span><span class="lineNoCov">              0 :                         *ts_rise = ((tsouth - t) * 3600) + t_utc-&gt;sse;</span>
+<span class="lineNum">     279 </span><span class="lineNoCov">              0 :                         *ts_set  = ((tsouth + t) * 3600) + t_utc-&gt;sse;</span>
+<span class="lineNum">     280 </span>                : 
+<span class="lineNum">     281 </span><span class="lineNoCov">              0 :                         *h_rise = (tsouth - t);</span>
+<span class="lineNum">     282 </span><span class="lineNoCov">              0 :                         *h_set  = (tsouth + t);</span>
+<span class="lineNum">     283 </span>                :                 }
+<span class="lineNum">     284 </span>                :         }
+<span class="lineNum">     285 </span>                : 
+<span class="lineNum">     286 </span>                :         /* Kill temporary time and restore original sse */
+<span class="lineNum">     287 </span><span class="lineNoCov">              0 :         timelib_time_dtor(t_utc);</span>
+<span class="lineNum">     288 </span><span class="lineNoCov">              0 :         t_loc-&gt;sse = old_sse;</span>
+<span class="lineNum">     289 </span>                : 
+<span class="lineNum">     290 </span><span class="lineNoCov">              0 :         return rc;</span>
+<a name="291"><span class="lineNum">     291 </span>                : }</a>
+<span class="lineNum">     292 </span>                : 
+<span class="lineNum">     293 </span><span class="lineNoCov">              0 : double timelib_ts_to_juliandate(timelib_sll ts)</span>
+<span class="lineNum">     294 </span>                : {
+<span class="lineNum">     295 </span>                :         double tmp;
+<span class="lineNum">     296 </span>                : 
+<span class="lineNum">     297 </span><span class="lineNoCov">              0 :         tmp = ts;</span>
+<span class="lineNum">     298 </span><span class="lineNoCov">              0 :         tmp /= 86400;</span>
+<span class="lineNum">     299 </span><span class="lineNoCov">              0 :         tmp += 2440587.5;</span>
+<span class="lineNum">     300 </span><span class="lineNoCov">              0 :         tmp -= 2451543;</span>
+<span class="lineNum">     301 </span>                : 
+<span class="lineNum">     302 </span><span class="lineNoCov">              0 :         return tmp;</span>
+<span class="lineNum">     303 </span>                : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

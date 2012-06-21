@@ -1,0 +1,283 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - ext/standard/syslog.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../index.html">directory</a> - <a href="index.html">ext/standard</a> - syslog.c (source / <a href="syslog.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">67</td>
+          <td class="headerCovTableEntry">42</td>
+          <td class="headerCovTableEntryHi">62.7 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">6</td>
+          <td class="headerCovTableEntry">3</td>
+          <td class="headerCovTableEntryLo">50.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Author: Stig Sæther Bakken &lt;ssb@php.net&gt;                             |
+<span class="lineNum">      16 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      17 </span>                :  */
+<span class="lineNum">      18 </span>                : 
+<span class="lineNum">      19 </span>                : /* $Id$ */
+<span class="lineNum">      20 </span>                : 
+<span class="lineNum">      21 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">      22 </span>                : 
+<span class="lineNum">      23 </span>                : #ifdef HAVE_SYSLOG_H
+<span class="lineNum">      24 </span>                : #include &quot;php_ini.h&quot;
+<span class="lineNum">      25 </span>                : #include &quot;zend_globals.h&quot;
+<span class="lineNum">      26 </span>                : 
+<span class="lineNum">      27 </span>                : #include &lt;stdlib.h&gt;
+<span class="lineNum">      28 </span>                : #if HAVE_UNISTD_H
+<span class="lineNum">      29 </span>                : #include &lt;unistd.h&gt;
+<span class="lineNum">      30 </span>                : #endif
+<span class="lineNum">      31 </span>                : 
+<span class="lineNum">      32 </span>                : #include &lt;string.h&gt;
+<span class="lineNum">      33 </span>                : #include &lt;errno.h&gt;
+<span class="lineNum">      34 </span>                : 
+<span class="lineNum">      35 </span>                : #include &lt;stdio.h&gt;
+<span class="lineNum">      36 </span>                : #include &quot;basic_functions.h&quot;
+<span class="lineNum">      37 </span>                : #include &quot;php_ext_syslog.h&quot;
+<span class="lineNum">      38 </span>                : 
+<a name="39"><span class="lineNum">      39 </span>                : /* {{{ PHP_MINIT_FUNCTION</a>
+<span class="lineNum">      40 </span>                :  */
+<span class="lineNum">      41 </span><span class="lineCov">             48 : PHP_MINIT_FUNCTION(syslog)</span>
+<span class="lineNum">      42 </span>                : {
+<span class="lineNum">      43 </span>                :         /* error levels */
+<span class="lineNum">      44 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;LOG_EMERG&quot;, LOG_EMERG, CONST_CS | CONST_PERSISTENT); /* system unusable */</span>
+<span class="lineNum">      45 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;LOG_ALERT&quot;, LOG_ALERT, CONST_CS | CONST_PERSISTENT); /* immediate action required */</span>
+<span class="lineNum">      46 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;LOG_CRIT&quot;, LOG_CRIT, CONST_CS | CONST_PERSISTENT); /* critical conditions */</span>
+<span class="lineNum">      47 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;LOG_ERR&quot;, LOG_ERR, CONST_CS | CONST_PERSISTENT); </span>
+<span class="lineNum">      48 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;LOG_WARNING&quot;, LOG_WARNING, CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">      49 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;LOG_NOTICE&quot;, LOG_NOTICE, CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">      50 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;LOG_INFO&quot;, LOG_INFO, CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">      51 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;LOG_DEBUG&quot;, LOG_DEBUG, CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">      52 </span>                :         /* facility: type of program logging the message */
+<span class="lineNum">      53 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;LOG_KERN&quot;, LOG_KERN, CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">      54 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;LOG_USER&quot;, LOG_USER, CONST_CS | CONST_PERSISTENT); /* generic user level */</span>
+<span class="lineNum">      55 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;LOG_MAIL&quot;, LOG_MAIL, CONST_CS | CONST_PERSISTENT); /* log to email */</span>
+<span class="lineNum">      56 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;LOG_DAEMON&quot;, LOG_DAEMON, CONST_CS | CONST_PERSISTENT); /* other system daemons */</span>
+<span class="lineNum">      57 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;LOG_AUTH&quot;, LOG_AUTH, CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">      58 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;LOG_SYSLOG&quot;, LOG_SYSLOG, CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">      59 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;LOG_LPR&quot;, LOG_LPR, CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">      60 </span>                : #ifdef LOG_NEWS
+<span class="lineNum">      61 </span>                :         /* No LOG_NEWS on HP-UX */
+<span class="lineNum">      62 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;LOG_NEWS&quot;, LOG_NEWS, CONST_CS | CONST_PERSISTENT); /* usenet new */</span>
+<span class="lineNum">      63 </span>                : #endif
+<span class="lineNum">      64 </span>                : #ifdef LOG_UUCP
+<span class="lineNum">      65 </span>                :         /* No LOG_UUCP on HP-UX */
+<span class="lineNum">      66 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;LOG_UUCP&quot;, LOG_UUCP, CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">      67 </span>                : #endif
+<span class="lineNum">      68 </span>                : #ifdef LOG_CRON
+<span class="lineNum">      69 </span>                :         /* apparently some systems don't have this one */
+<span class="lineNum">      70 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;LOG_CRON&quot;, LOG_CRON, CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">      71 </span>                : #endif
+<span class="lineNum">      72 </span>                : #ifdef LOG_AUTHPRIV
+<span class="lineNum">      73 </span>                :         /* AIX doesn't have LOG_AUTHPRIV */
+<span class="lineNum">      74 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;LOG_AUTHPRIV&quot;, LOG_AUTHPRIV, CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">      75 </span>                : #endif
+<span class="lineNum">      76 </span>                : #ifndef PHP_WIN32
+<span class="lineNum">      77 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;LOG_LOCAL0&quot;, LOG_LOCAL0, CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">      78 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;LOG_LOCAL1&quot;, LOG_LOCAL1, CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">      79 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;LOG_LOCAL2&quot;, LOG_LOCAL2, CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">      80 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;LOG_LOCAL3&quot;, LOG_LOCAL3, CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">      81 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;LOG_LOCAL4&quot;, LOG_LOCAL4, CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">      82 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;LOG_LOCAL5&quot;, LOG_LOCAL5, CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">      83 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;LOG_LOCAL6&quot;, LOG_LOCAL6, CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">      84 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;LOG_LOCAL7&quot;, LOG_LOCAL7, CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">      85 </span>                : #endif
+<span class="lineNum">      86 </span>                :         /* options */
+<span class="lineNum">      87 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;LOG_PID&quot;, LOG_PID, CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">      88 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;LOG_CONS&quot;, LOG_CONS, CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">      89 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;LOG_ODELAY&quot;, LOG_ODELAY, CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">      90 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;LOG_NDELAY&quot;, LOG_NDELAY, CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">      91 </span>                : #ifdef LOG_NOWAIT
+<span class="lineNum">      92 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;LOG_NOWAIT&quot;, LOG_NOWAIT, CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">      93 </span>                : #endif
+<span class="lineNum">      94 </span>                : #ifdef LOG_PERROR
+<span class="lineNum">      95 </span>                :         /* AIX doesn't have LOG_PERROR */
+<span class="lineNum">      96 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;LOG_PERROR&quot;, LOG_PERROR, CONST_CS | CONST_PERSISTENT); /*log to stderr*/</span>
+<span class="lineNum">      97 </span>                : #endif
+<span class="lineNum">      98 </span><span class="lineCov">             48 :         BG(syslog_device)=NULL;</span>
+<span class="lineNum">      99 </span>                : 
+<span class="lineNum">     100 </span><span class="lineCov">             48 :         return SUCCESS;</span>
+<span class="lineNum">     101 </span>                : }
+<a name="102"><span class="lineNum">     102 </span>                : /* }}} */</a>
+<span class="lineNum">     103 </span>                : 
+<span class="lineNum">     104 </span><span class="lineCov">             48 : PHP_RINIT_FUNCTION(syslog)</span>
+<span class="lineNum">     105 </span>                : {
+<span class="lineNum">     106 </span><span class="lineCov">             48 :         BG(syslog_device) = NULL;</span>
+<span class="lineNum">     107 </span><span class="lineCov">             48 :         return SUCCESS;</span>
+<span class="lineNum">     108 </span>                : }
+<span class="lineNum">     109 </span>                : 
+<span class="lineNum">     110 </span>                : 
+<span class="lineNum">     111 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">     112 </span>                : PHP_RSHUTDOWN_FUNCTION(syslog)
+<span class="lineNum">     113 </span>                : {
+<span class="lineNum">     114 </span>                :         closelog();
+<span class="lineNum">     115 </span>                :         return SUCCESS;
+<span class="lineNum">     116 </span>                : }
+<a name="117"><span class="lineNum">     117 </span>                : #endif</a>
+<span class="lineNum">     118 </span>                : 
+<span class="lineNum">     119 </span><span class="lineCov">             48 : PHP_MSHUTDOWN_FUNCTION(syslog)</span>
+<span class="lineNum">     120 </span>                : {
+<span class="lineNum">     121 </span><span class="lineCov">             48 :         if (BG(syslog_device)) {</span>
+<span class="lineNum">     122 </span><span class="lineNoCov">              0 :                 free(BG(syslog_device));</span>
+<span class="lineNum">     123 </span><span class="lineNoCov">              0 :                 BG(syslog_device) = NULL;</span>
+<span class="lineNum">     124 </span>                :         }
+<span class="lineNum">     125 </span><span class="lineCov">             48 :         return SUCCESS;</span>
+<span class="lineNum">     126 </span>                : }
+<span class="lineNum">     127 </span>                : 
+<span class="lineNum">     128 </span>                : /* {{{ proto bool openlog(string ident, int option, int facility)
+<span class="lineNum">     129 </span>                :    Open connection to system logger */
+<span class="lineNum">     130 </span>                : /*
+<span class="lineNum">     131 </span>                :    ** OpenLog(&quot;nettopp&quot;, $LOG_PID, $LOG_LOCAL1);
+<span class="lineNum">     132 </span>                :    ** Syslog($LOG_EMERG, &quot;help me!&quot;)
+<a name="133"><span class="lineNum">     133 </span>                :    ** CloseLog();</a>
+<span class="lineNum">     134 </span>                :  */
+<span class="lineNum">     135 </span><span class="lineNoCov">              0 : PHP_FUNCTION(openlog)</span>
+<span class="lineNum">     136 </span>                : {
+<span class="lineNum">     137 </span>                :         char *ident;
+<span class="lineNum">     138 </span>                :         long option, facility;
+<span class="lineNum">     139 </span>                :         int ident_len;
+<span class="lineNum">     140 </span>                : 
+<span class="lineNum">     141 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;sll&quot;, &amp;ident,</span>
+<span class="lineNum">     142 </span>                :                                                           &amp;ident_len, &amp;option, &amp;facility) == FAILURE) {
+<span class="lineNum">     143 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     144 </span>                :         }
+<span class="lineNum">     145 </span><span class="lineNoCov">              0 :         if (BG(syslog_device)) {</span>
+<span class="lineNum">     146 </span><span class="lineNoCov">              0 :                 free(BG(syslog_device));</span>
+<span class="lineNum">     147 </span>                :         }
+<span class="lineNum">     148 </span><span class="lineNoCov">              0 :         BG(syslog_device) = zend_strndup(ident, ident_len);</span>
+<span class="lineNum">     149 </span><span class="lineNoCov">              0 :         if(BG(syslog_device) == NULL) {</span>
+<span class="lineNum">     150 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     151 </span>                :         }
+<span class="lineNum">     152 </span><span class="lineNoCov">              0 :         openlog(BG(syslog_device), option, facility);</span>
+<span class="lineNum">     153 </span><span class="lineNoCov">              0 :         RETURN_TRUE;</span>
+<span class="lineNum">     154 </span>                : }
+<span class="lineNum">     155 </span>                : /* }}} */
+<span class="lineNum">     156 </span>                : 
+<a name="157"><span class="lineNum">     157 </span>                : /* {{{ proto bool closelog(void)</a>
+<span class="lineNum">     158 </span>                :    Close connection to system logger */
+<span class="lineNum">     159 </span><span class="lineNoCov">              0 : PHP_FUNCTION(closelog)</span>
+<span class="lineNum">     160 </span>                : {
+<span class="lineNum">     161 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters_none() == FAILURE) {</span>
+<span class="lineNum">     162 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     163 </span>                :         }
+<span class="lineNum">     164 </span>                : 
+<span class="lineNum">     165 </span><span class="lineNoCov">              0 :         closelog();</span>
+<span class="lineNum">     166 </span><span class="lineNoCov">              0 :         if (BG(syslog_device)) {</span>
+<span class="lineNum">     167 </span><span class="lineNoCov">              0 :                 free(BG(syslog_device));</span>
+<span class="lineNum">     168 </span><span class="lineNoCov">              0 :                 BG(syslog_device)=NULL;</span>
+<span class="lineNum">     169 </span>                :         }
+<span class="lineNum">     170 </span><span class="lineNoCov">              0 :         RETURN_TRUE;</span>
+<span class="lineNum">     171 </span>                : }
+<span class="lineNum">     172 </span>                : /* }}} */
+<span class="lineNum">     173 </span>                : 
+<a name="174"><span class="lineNum">     174 </span>                : /* {{{ proto bool syslog(int priority, string message)</a>
+<span class="lineNum">     175 </span>                :    Generate a system log message */
+<span class="lineNum">     176 </span><span class="lineNoCov">              0 : PHP_FUNCTION(syslog)</span>
+<span class="lineNum">     177 </span>                : {
+<span class="lineNum">     178 </span>                :         long priority;
+<span class="lineNum">     179 </span>                :         char *message;
+<span class="lineNum">     180 </span>                :         int message_len;
+<span class="lineNum">     181 </span>                : 
+<span class="lineNum">     182 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;ls&quot;, &amp;priority,</span>
+<span class="lineNum">     183 </span>                :                                                           &amp;message, &amp;message_len) == FAILURE) {
+<span class="lineNum">     184 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     185 </span>                :         }
+<span class="lineNum">     186 </span>                : 
+<span class="lineNum">     187 </span><span class="lineNoCov">              0 :         php_syslog(priority, &quot;%s&quot;, message);</span>
+<span class="lineNum">     188 </span><span class="lineNoCov">              0 :         RETURN_TRUE;</span>
+<span class="lineNum">     189 </span>                : }
+<span class="lineNum">     190 </span>                : /* }}} */
+<span class="lineNum">     191 </span>                : 
+<span class="lineNum">     192 </span>                : #endif
+<span class="lineNum">     193 </span>                : 
+<span class="lineNum">     194 </span>                : /*
+<span class="lineNum">     195 </span>                :  * Local variables:
+<span class="lineNum">     196 </span>                :  * tab-width: 4
+<span class="lineNum">     197 </span>                :  * c-basic-offset: 4
+<span class="lineNum">     198 </span>                :  * End:
+<span class="lineNum">     199 </span>                :  * vim600: sw=4 ts=4 fdm=marker
+<span class="lineNum">     200 </span>                :  * vim&lt;600: sw=4 ts=4
+<span class="lineNum">     201 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

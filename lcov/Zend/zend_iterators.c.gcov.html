@@ -1,0 +1,189 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - Zend/zend_iterators.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../index.html">directory</a> - <a href="index.html">Zend</a> - zend_iterators.c (source / <a href="zend_iterators.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">27</td>
+          <td class="headerCovTableEntry">24</td>
+          <td class="headerCovTableEntryHi">88.9 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">4</td>
+          <td class="headerCovTableEntry">4</td>
+          <td class="headerCovTableEntryHi">100.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | Zend Engine                                                          |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1998-2012 Zend Technologies Ltd. (http://www.zend.com) |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 2.00 of the Zend license,     |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        | 
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.zend.com/license/2_00.txt.                                |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the Zend license and are unable to  |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@zend.com so we can mail you a copy immediately.              |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Author: Wez Furlong &lt;wez@thebrainroom.com&gt;                           |
+<span class="lineNum">      16 </span>                :    |         Marcus Boerger &lt;helly@php.net&gt;                               |
+<span class="lineNum">      17 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      18 </span>                : */
+<span class="lineNum">      19 </span>                : 
+<span class="lineNum">      20 </span>                : /* $Id$ */
+<span class="lineNum">      21 </span>                : 
+<span class="lineNum">      22 </span>                : #include &quot;zend.h&quot;
+<span class="lineNum">      23 </span>                : #include &quot;zend_API.h&quot;
+<span class="lineNum">      24 </span>                : 
+<span class="lineNum">      25 </span>                : static zend_class_entry zend_iterator_class_entry;
+<span class="lineNum">      26 </span>                : 
+<span class="lineNum">      27 </span>                : static zend_object_handlers iterator_object_handlers = {
+<span class="lineNum">      28 </span>                :         ZEND_OBJECTS_STORE_HANDLERS,
+<span class="lineNum">      29 </span>                :         NULL, /* prop read */
+<span class="lineNum">      30 </span>                :         NULL, /* prop write */
+<span class="lineNum">      31 </span>                :         NULL, /* read dim */
+<span class="lineNum">      32 </span>                :         NULL, /* write dim */
+<span class="lineNum">      33 </span>                :         NULL,
+<span class="lineNum">      34 </span>                :         NULL, /* get */
+<span class="lineNum">      35 </span>                :         NULL, /* set */
+<span class="lineNum">      36 </span>                :         NULL, /* has prop */
+<span class="lineNum">      37 </span>                :         NULL, /* unset prop */
+<span class="lineNum">      38 </span>                :         NULL, /* has dim */
+<span class="lineNum">      39 </span>                :         NULL, /* unset dim */
+<span class="lineNum">      40 </span>                :         NULL, /* props get */
+<span class="lineNum">      41 </span>                :         NULL, /* method get */
+<span class="lineNum">      42 </span>                :         NULL, /* call */
+<span class="lineNum">      43 </span>                :         NULL, /* get ctor */
+<span class="lineNum">      44 </span>                :         NULL, /* get_ce */
+<span class="lineNum">      45 </span>                :         NULL, /* get class name */
+<span class="lineNum">      46 </span>                :         NULL, /* compare */
+<span class="lineNum">      47 </span>                :         NULL, /* cast */
+<span class="lineNum">      48 </span>                :         NULL  /* count */
+<a name="49"><span class="lineNum">      49 </span>                : };</a>
+<span class="lineNum">      50 </span>                : 
+<span class="lineNum">      51 </span><span class="lineCov">             48 : ZEND_API void zend_register_iterator_wrapper(TSRMLS_D)</span>
+<span class="lineNum">      52 </span>                : {
+<span class="lineNum">      53 </span><span class="lineCov">             48 :         INIT_CLASS_ENTRY(zend_iterator_class_entry, &quot;__iterator_wrapper&quot;, NULL);</span>
+<span class="lineNum">      54 </span><span class="lineCov">             48 :         str_free(zend_iterator_class_entry.name);</span>
+<span class="lineNum">      55 </span><span class="lineCov">             48 :         zend_iterator_class_entry.name = &quot;__iterator_wrapper&quot;;</span>
+<a name="56"><span class="lineNum">      56 </span><span class="lineCov">             48 : }</span></a>
+<span class="lineNum">      57 </span>                : 
+<span class="lineNum">      58 </span><span class="lineCov">             18 : static void iter_wrapper_dtor(void *object, zend_object_handle handle TSRMLS_DC)</span>
+<span class="lineNum">      59 </span>                : {
+<span class="lineNum">      60 </span><span class="lineCov">             18 :         zend_object_iterator *iter = (zend_object_iterator*)object;</span>
+<span class="lineNum">      61 </span><span class="lineCov">             18 :         iter-&gt;funcs-&gt;dtor(iter TSRMLS_CC);</span>
+<a name="62"><span class="lineNum">      62 </span><span class="lineCov">             18 : }</span></a>
+<span class="lineNum">      63 </span>                : 
+<span class="lineNum">      64 </span><span class="lineCov">             18 : ZEND_API zval *zend_iterator_wrap(zend_object_iterator *iter TSRMLS_DC)</span>
+<span class="lineNum">      65 </span>                : {
+<span class="lineNum">      66 </span>                :         zval *wrapped;
+<span class="lineNum">      67 </span>                : 
+<span class="lineNum">      68 </span><span class="lineCov">             18 :         MAKE_STD_ZVAL(wrapped);</span>
+<span class="lineNum">      69 </span><span class="lineCov">             18 :         Z_TYPE_P(wrapped) = IS_OBJECT;</span>
+<span class="lineNum">      70 </span><span class="lineCov">             18 :         Z_OBJ_HANDLE_P(wrapped) = zend_objects_store_put(iter, iter_wrapper_dtor, NULL, NULL TSRMLS_CC);</span>
+<span class="lineNum">      71 </span><span class="lineCov">             18 :         Z_OBJ_HT_P(wrapped) = &amp;iterator_object_handlers;</span>
+<span class="lineNum">      72 </span>                : 
+<span class="lineNum">      73 </span><span class="lineCov">             18 :         return wrapped;</span>
+<a name="74"><span class="lineNum">      74 </span>                : }</a>
+<span class="lineNum">      75 </span>                : 
+<span class="lineNum">      76 </span><span class="lineCov">           3857 : ZEND_API enum zend_object_iterator_kind zend_iterator_unwrap(</span>
+<span class="lineNum">      77 </span>                :         zval *array_ptr, zend_object_iterator **iter TSRMLS_DC)
+<span class="lineNum">      78 </span>                : {
+<span class="lineNum">      79 </span><span class="lineCov">           3857 :         switch (Z_TYPE_P(array_ptr)) {</span>
+<span class="lineNum">      80 </span>                :                 case IS_OBJECT:
+<span class="lineNum">      81 </span><span class="lineCov">             20 :                         if (Z_OBJ_HT_P(array_ptr) == &amp;iterator_object_handlers) {</span>
+<span class="lineNum">      82 </span><span class="lineCov">             16 :                                 *iter = (zend_object_iterator *)zend_object_store_get_object(array_ptr TSRMLS_CC);</span>
+<span class="lineNum">      83 </span><span class="lineCov">             16 :                                 return ZEND_ITER_OBJECT;</span>
+<span class="lineNum">      84 </span>                :                         }
+<span class="lineNum">      85 </span><span class="lineCov">              4 :                         if (Z_OBJPROP_P(array_ptr)) {</span>
+<span class="lineNum">      86 </span><span class="lineCov">              4 :                                 return ZEND_ITER_PLAIN_OBJECT;</span>
+<span class="lineNum">      87 </span>                :                         }
+<span class="lineNum">      88 </span><span class="lineNoCov">              0 :                         return ZEND_ITER_INVALID;</span>
+<span class="lineNum">      89 </span>                : 
+<span class="lineNum">      90 </span>                :                 case IS_ARRAY:
+<span class="lineNum">      91 </span><span class="lineCov">           3837 :                         if (Z_ARRVAL_P(array_ptr)) {</span>
+<span class="lineNum">      92 </span><span class="lineCov">           3837 :                                 return ZEND_ITER_PLAIN_ARRAY;</span>
+<span class="lineNum">      93 </span>                :                         }
+<span class="lineNum">      94 </span><span class="lineNoCov">              0 :                         return ZEND_ITER_INVALID;</span>
+<span class="lineNum">      95 </span>                : 
+<span class="lineNum">      96 </span>                :                 default:
+<span class="lineNum">      97 </span><span class="lineNoCov">              0 :                         return ZEND_ITER_INVALID;</span>
+<span class="lineNum">      98 </span>                :         }
+<span class="lineNum">      99 </span>                : }
+<span class="lineNum">     100 </span>                : 
+<span class="lineNum">     101 </span>                : /*
+<span class="lineNum">     102 </span>                :  * Local variables:
+<span class="lineNum">     103 </span>                :  * tab-width: 4
+<span class="lineNum">     104 </span>                :  * c-basic-offset: 4
+<span class="lineNum">     105 </span>                :  * indent-tabs-mode: t
+<span class="lineNum">     106 </span>                :  * End:
+<span class="lineNum">     107 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

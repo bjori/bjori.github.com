@@ -1,0 +1,1130 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - ext/standard/dns.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../index.html">directory</a> - <a href="index.html">ext/standard</a> - dns.c (source / <a href="dns.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">468</td>
+          <td class="headerCovTableEntry">16</td>
+          <td class="headerCovTableEntryLo">3.4 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">12</td>
+          <td class="headerCovTableEntry">1</td>
+          <td class="headerCovTableEntryLo">8.3 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Authors: The typical suspects                                        |
+<span class="lineNum">      16 </span>                :    |          Pollita &lt;pollita@php.net&gt;                                   |
+<span class="lineNum">      17 </span>                :    |          Marcus Boerger &lt;helly@php.net&gt;                              |
+<span class="lineNum">      18 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      19 </span>                :  */
+<span class="lineNum">      20 </span>                : 
+<span class="lineNum">      21 </span>                : /* $Id$ */
+<span class="lineNum">      22 </span>                : 
+<span class="lineNum">      23 </span>                : /* {{{ includes */
+<span class="lineNum">      24 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">      25 </span>                : #include &quot;php_network.h&quot;
+<span class="lineNum">      26 </span>                : 
+<span class="lineNum">      27 </span>                : #if HAVE_SYS_SOCKET_H
+<span class="lineNum">      28 </span>                : #include &lt;sys/socket.h&gt;
+<span class="lineNum">      29 </span>                : #endif
+<span class="lineNum">      30 </span>                : 
+<span class="lineNum">      31 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">      32 </span>                : # include &quot;win32/inet.h&quot;
+<span class="lineNum">      33 </span>                : # include &lt;winsock2.h&gt;
+<span class="lineNum">      34 </span>                : # include &lt;windows.h&gt;
+<span class="lineNum">      35 </span>                : # include &lt;Ws2tcpip.h&gt;
+<span class="lineNum">      36 </span>                : #else   /* This holds good for NetWare too, both for Winsock and Berkeley sockets */
+<span class="lineNum">      37 </span>                : #include &lt;netinet/in.h&gt;
+<span class="lineNum">      38 </span>                : #if HAVE_ARPA_INET_H
+<span class="lineNum">      39 </span>                : #include &lt;arpa/inet.h&gt;
+<span class="lineNum">      40 </span>                : #endif
+<span class="lineNum">      41 </span>                : #include &lt;netdb.h&gt;
+<span class="lineNum">      42 </span>                : #ifdef _OSD_POSIX
+<span class="lineNum">      43 </span>                : #undef STATUS
+<span class="lineNum">      44 </span>                : #undef T_UNSPEC
+<span class="lineNum">      45 </span>                : #endif
+<span class="lineNum">      46 </span>                : #if HAVE_ARPA_NAMESER_H
+<span class="lineNum">      47 </span>                : #ifdef DARWIN
+<span class="lineNum">      48 </span>                : # define BIND_8_COMPAT 1
+<span class="lineNum">      49 </span>                : #endif
+<span class="lineNum">      50 </span>                : #include &lt;arpa/nameser.h&gt;
+<span class="lineNum">      51 </span>                : #endif
+<span class="lineNum">      52 </span>                : #if HAVE_RESOLV_H
+<span class="lineNum">      53 </span>                : #include &lt;resolv.h&gt;
+<span class="lineNum">      54 </span>                : #endif
+<span class="lineNum">      55 </span>                : #ifdef HAVE_DNS_H
+<span class="lineNum">      56 </span>                : #include &lt;dns.h&gt;
+<span class="lineNum">      57 </span>                : #endif
+<span class="lineNum">      58 </span>                : #endif
+<span class="lineNum">      59 </span>                : 
+<span class="lineNum">      60 </span>                : /* Borrowed from SYS/SOCKET.H */
+<span class="lineNum">      61 </span>                : #if defined(NETWARE) &amp;&amp; defined(USE_WINSOCK)
+<span class="lineNum">      62 </span>                : #define AF_INET 2   /* internetwork: UDP, TCP, etc. */
+<span class="lineNum">      63 </span>                : #endif
+<span class="lineNum">      64 </span>                : 
+<span class="lineNum">      65 </span>                : #ifndef MAXHOSTNAMELEN
+<span class="lineNum">      66 </span>                : #define MAXHOSTNAMELEN 255
+<span class="lineNum">      67 </span>                : #endif
+<span class="lineNum">      68 </span>                : 
+<span class="lineNum">      69 </span>                : /* For the local hostname obtained via gethostname which is different from the
+<span class="lineNum">      70 </span>                :    dns-related MAXHOSTNAMELEN constant above */
+<span class="lineNum">      71 </span>                : #ifndef HOST_NAME_MAX
+<span class="lineNum">      72 </span>                : #define HOST_NAME_MAX 255
+<span class="lineNum">      73 </span>                : #endif
+<span class="lineNum">      74 </span>                : 
+<span class="lineNum">      75 </span>                : #include &quot;php_dns.h&quot;
+<span class="lineNum">      76 </span>                : 
+<span class="lineNum">      77 </span>                : /* type compat */
+<span class="lineNum">      78 </span>                : #ifndef DNS_T_A
+<span class="lineNum">      79 </span>                : #define DNS_T_A         1
+<span class="lineNum">      80 </span>                : #endif
+<span class="lineNum">      81 </span>                : #ifndef DNS_T_NS
+<span class="lineNum">      82 </span>                : #define DNS_T_NS        2
+<span class="lineNum">      83 </span>                : #endif
+<span class="lineNum">      84 </span>                : #ifndef DNS_T_CNAME
+<span class="lineNum">      85 </span>                : #define DNS_T_CNAME     5
+<span class="lineNum">      86 </span>                : #endif
+<span class="lineNum">      87 </span>                : #ifndef DNS_T_SOA
+<span class="lineNum">      88 </span>                : #define DNS_T_SOA       6
+<span class="lineNum">      89 </span>                : #endif
+<span class="lineNum">      90 </span>                : #ifndef DNS_T_PTR
+<span class="lineNum">      91 </span>                : #define DNS_T_PTR       12
+<span class="lineNum">      92 </span>                : #endif
+<span class="lineNum">      93 </span>                : #ifndef DNS_T_HINFO
+<span class="lineNum">      94 </span>                : #define DNS_T_HINFO     13
+<span class="lineNum">      95 </span>                : #endif
+<span class="lineNum">      96 </span>                : #ifndef DNS_T_MINFO
+<span class="lineNum">      97 </span>                : #define DNS_T_MINFO     14
+<span class="lineNum">      98 </span>                : #endif
+<span class="lineNum">      99 </span>                : #ifndef DNS_T_MX
+<span class="lineNum">     100 </span>                : #define DNS_T_MX        15
+<span class="lineNum">     101 </span>                : #endif
+<span class="lineNum">     102 </span>                : #ifndef DNS_T_TXT
+<span class="lineNum">     103 </span>                : #define DNS_T_TXT       16
+<span class="lineNum">     104 </span>                : #endif
+<span class="lineNum">     105 </span>                : #ifndef DNS_T_AAAA
+<span class="lineNum">     106 </span>                : #define DNS_T_AAAA      28
+<span class="lineNum">     107 </span>                : #endif
+<span class="lineNum">     108 </span>                : #ifndef DNS_T_SRV
+<span class="lineNum">     109 </span>                : #define DNS_T_SRV       33
+<span class="lineNum">     110 </span>                : #endif
+<span class="lineNum">     111 </span>                : #ifndef DNS_T_NAPTR
+<span class="lineNum">     112 </span>                : #define DNS_T_NAPTR     35
+<span class="lineNum">     113 </span>                : #endif
+<span class="lineNum">     114 </span>                : #ifndef DNS_T_A6
+<span class="lineNum">     115 </span>                : #define DNS_T_A6        38
+<span class="lineNum">     116 </span>                : #endif
+<span class="lineNum">     117 </span>                : 
+<span class="lineNum">     118 </span>                : #ifndef DNS_T_ANY
+<span class="lineNum">     119 </span>                : #define DNS_T_ANY       255
+<span class="lineNum">     120 </span>                : #endif
+<span class="lineNum">     121 </span>                : /* }}} */
+<span class="lineNum">     122 </span>                : 
+<span class="lineNum">     123 </span>                : static char *php_gethostbyaddr(char *ip);
+<span class="lineNum">     124 </span>                : static char *php_gethostbyname(char *name);
+<span class="lineNum">     125 </span>                : 
+<span class="lineNum">     126 </span>                : #ifdef HAVE_GETHOSTNAME
+<a name="127"><span class="lineNum">     127 </span>                : /* {{{ proto string gethostname()</a>
+<span class="lineNum">     128 </span>                :    Get the host name of the current machine */
+<span class="lineNum">     129 </span><span class="lineNoCov">              0 : PHP_FUNCTION(gethostname)</span>
+<span class="lineNum">     130 </span>                : {
+<span class="lineNum">     131 </span>                :         char buf[HOST_NAME_MAX];
+<span class="lineNum">     132 </span>                : 
+<span class="lineNum">     133 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters_none() == FAILURE) {</span>
+<span class="lineNum">     134 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     135 </span>                :         }
+<span class="lineNum">     136 </span>                : 
+<span class="lineNum">     137 </span><span class="lineNoCov">              0 :         if (gethostname(buf, sizeof(buf) - 1)) {</span>
+<span class="lineNum">     138 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;unable to fetch host [%d]: %s&quot;, errno, strerror(errno));</span>
+<span class="lineNum">     139 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     140 </span>                :         }
+<span class="lineNum">     141 </span>                : 
+<span class="lineNum">     142 </span><span class="lineNoCov">              0 :         RETURN_STRING(buf, 1);</span>
+<span class="lineNum">     143 </span>                : }
+<span class="lineNum">     144 </span>                : /* }}} */
+<span class="lineNum">     145 </span>                : #endif
+<span class="lineNum">     146 </span>                : 
+<span class="lineNum">     147 </span>                : /* TODO: Reimplement the gethostby* functions using the new winxp+ API, in dns_win32.c, then
+<span class="lineNum">     148 </span>                :  we can have a dns.c, dns_unix.c and dns_win32.c instead of a messy dns.c full of #ifdef
+<span class="lineNum">     149 </span>                : */
+<span class="lineNum">     150 </span>                : 
+<a name="151"><span class="lineNum">     151 </span>                : /* {{{ proto string gethostbyaddr(string ip_address)</a>
+<span class="lineNum">     152 </span>                :    Get the Internet host name corresponding to a given IP address */
+<span class="lineNum">     153 </span><span class="lineNoCov">              0 : PHP_FUNCTION(gethostbyaddr)</span>
+<span class="lineNum">     154 </span>                : {
+<span class="lineNum">     155 </span>                :         char *addr;
+<span class="lineNum">     156 </span>                :         int addr_len;
+<span class="lineNum">     157 </span>                :         char *hostname;
+<span class="lineNum">     158 </span>                : 
+<span class="lineNum">     159 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;s&quot;, &amp;addr, &amp;addr_len) == FAILURE) {</span>
+<span class="lineNum">     160 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     161 </span>                :         }
+<span class="lineNum">     162 </span>                : 
+<span class="lineNum">     163 </span><span class="lineNoCov">              0 :         hostname = php_gethostbyaddr(addr);</span>
+<span class="lineNum">     164 </span>                : 
+<span class="lineNum">     165 </span><span class="lineNoCov">              0 :         if (hostname == NULL) {</span>
+<span class="lineNum">     166 </span>                : #if HAVE_IPV6 &amp;&amp; HAVE_INET_PTON
+<span class="lineNum">     167 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Address is not a valid IPv4 or IPv6 address&quot;);</span>
+<span class="lineNum">     168 </span>                : #else
+<span class="lineNum">     169 </span>                :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Address is not in a.b.c.d form&quot;);
+<span class="lineNum">     170 </span>                : #endif
+<span class="lineNum">     171 </span><span class="lineNoCov">              0 :                 RETVAL_FALSE;</span>
+<span class="lineNum">     172 </span>                :         } else {
+<span class="lineNum">     173 </span><span class="lineNoCov">              0 :                 RETVAL_STRING(hostname, 0);</span>
+<span class="lineNum">     174 </span>                :         }
+<span class="lineNum">     175 </span>                : }
+<span class="lineNum">     176 </span>                : /* }}} */
+<a name="177"><span class="lineNum">     177 </span>                : </a>
+<span class="lineNum">     178 </span>                : /* {{{ php_gethostbyaddr */
+<span class="lineNum">     179 </span><span class="lineNoCov">              0 : static char *php_gethostbyaddr(char *ip)</span>
+<span class="lineNum">     180 </span>                : {
+<span class="lineNum">     181 </span>                : #if HAVE_IPV6 &amp;&amp; HAVE_INET_PTON
+<span class="lineNum">     182 </span>                :         struct in6_addr addr6;
+<span class="lineNum">     183 </span>                : #endif
+<span class="lineNum">     184 </span>                :         struct in_addr addr;
+<span class="lineNum">     185 </span>                :         struct hostent *hp;
+<span class="lineNum">     186 </span>                : 
+<span class="lineNum">     187 </span>                : #if HAVE_IPV6 &amp;&amp; HAVE_INET_PTON
+<span class="lineNum">     188 </span><span class="lineNoCov">              0 :         if (inet_pton(AF_INET6, ip, &amp;addr6)) {</span>
+<span class="lineNum">     189 </span><span class="lineNoCov">              0 :                 hp = gethostbyaddr((char *) &amp;addr6, sizeof(addr6), AF_INET6);</span>
+<span class="lineNum">     190 </span><span class="lineNoCov">              0 :         } else if (inet_pton(AF_INET, ip, &amp;addr)) {</span>
+<span class="lineNum">     191 </span><span class="lineNoCov">              0 :                 hp = gethostbyaddr((char *) &amp;addr, sizeof(addr), AF_INET);</span>
+<span class="lineNum">     192 </span>                :         } else {
+<span class="lineNum">     193 </span><span class="lineNoCov">              0 :                 return NULL;</span>
+<span class="lineNum">     194 </span>                :         }
+<span class="lineNum">     195 </span>                : #else
+<span class="lineNum">     196 </span>                :         addr.s_addr = inet_addr(ip);
+<span class="lineNum">     197 </span>                : 
+<span class="lineNum">     198 </span>                :         if (addr.s_addr == -1) {
+<span class="lineNum">     199 </span>                :                 return NULL;
+<span class="lineNum">     200 </span>                :         }
+<span class="lineNum">     201 </span>                : 
+<span class="lineNum">     202 </span>                :         hp = gethostbyaddr((char *) &amp;addr, sizeof(addr), AF_INET);
+<span class="lineNum">     203 </span>                : #endif
+<span class="lineNum">     204 </span>                : 
+<span class="lineNum">     205 </span><span class="lineNoCov">              0 :         if (!hp || hp-&gt;h_name == NULL || hp-&gt;h_name[0] == '\0') {</span>
+<span class="lineNum">     206 </span><span class="lineNoCov">              0 :                 return estrdup(ip);</span>
+<span class="lineNum">     207 </span>                :         }
+<span class="lineNum">     208 </span>                : 
+<span class="lineNum">     209 </span><span class="lineNoCov">              0 :         return estrdup(hp-&gt;h_name);</span>
+<span class="lineNum">     210 </span>                : }
+<span class="lineNum">     211 </span>                : /* }}} */
+<span class="lineNum">     212 </span>                : 
+<a name="213"><span class="lineNum">     213 </span>                : /* {{{ proto string gethostbyname(string hostname)</a>
+<span class="lineNum">     214 </span>                :    Get the IP address corresponding to a given Internet host name */
+<span class="lineNum">     215 </span><span class="lineNoCov">              0 : PHP_FUNCTION(gethostbyname)</span>
+<span class="lineNum">     216 </span>                : {
+<span class="lineNum">     217 </span>                :         char *hostname;
+<span class="lineNum">     218 </span>                :         int hostname_len;
+<span class="lineNum">     219 </span>                :         char *addr;
+<span class="lineNum">     220 </span>                : 
+<span class="lineNum">     221 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;s&quot;, &amp;hostname, &amp;hostname_len) == FAILURE) {</span>
+<span class="lineNum">     222 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     223 </span>                :         }
+<span class="lineNum">     224 </span>                : 
+<span class="lineNum">     225 </span><span class="lineNoCov">              0 :         addr = php_gethostbyname(hostname);</span>
+<span class="lineNum">     226 </span>                : 
+<span class="lineNum">     227 </span><span class="lineNoCov">              0 :         RETVAL_STRING(addr, 0);</span>
+<span class="lineNum">     228 </span>                : }
+<span class="lineNum">     229 </span>                : /* }}} */
+<span class="lineNum">     230 </span>                : 
+<a name="231"><span class="lineNum">     231 </span>                : /* {{{ proto array gethostbynamel(string hostname)</a>
+<span class="lineNum">     232 </span>                :    Return a list of IP addresses that a given hostname resolves to. */
+<span class="lineNum">     233 </span><span class="lineNoCov">              0 : PHP_FUNCTION(gethostbynamel)</span>
+<span class="lineNum">     234 </span>                : {
+<span class="lineNum">     235 </span>                :         char *hostname;
+<span class="lineNum">     236 </span>                :         int hostname_len;
+<span class="lineNum">     237 </span>                :         struct hostent *hp;
+<span class="lineNum">     238 </span>                :         struct in_addr in;
+<span class="lineNum">     239 </span>                :         int i;
+<span class="lineNum">     240 </span>                : 
+<span class="lineNum">     241 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;s&quot;, &amp;hostname, &amp;hostname_len) == FAILURE) {</span>
+<span class="lineNum">     242 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     243 </span>                :         }
+<span class="lineNum">     244 </span>                : 
+<span class="lineNum">     245 </span><span class="lineNoCov">              0 :         hp = gethostbyname(hostname);</span>
+<span class="lineNum">     246 </span><span class="lineNoCov">              0 :         if (hp == NULL || hp-&gt;h_addr_list == NULL) {</span>
+<span class="lineNum">     247 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     248 </span>                :         }
+<span class="lineNum">     249 </span>                : 
+<span class="lineNum">     250 </span><span class="lineNoCov">              0 :         array_init(return_value);</span>
+<span class="lineNum">     251 </span>                : 
+<span class="lineNum">     252 </span><span class="lineNoCov">              0 :         for (i = 0 ; hp-&gt;h_addr_list[i] != 0 ; i++) {</span>
+<span class="lineNum">     253 </span><span class="lineNoCov">              0 :                 in = *(struct in_addr *) hp-&gt;h_addr_list[i];</span>
+<span class="lineNum">     254 </span><span class="lineNoCov">              0 :                 add_next_index_string(return_value, inet_ntoa(in), 1);</span>
+<span class="lineNum">     255 </span>                :         }
+<span class="lineNum">     256 </span>                : }
+<span class="lineNum">     257 </span>                : /* }}} */
+<a name="258"><span class="lineNum">     258 </span>                : </a>
+<span class="lineNum">     259 </span>                : /* {{{ php_gethostbyname */
+<span class="lineNum">     260 </span><span class="lineNoCov">              0 : static char *php_gethostbyname(char *name)</span>
+<span class="lineNum">     261 </span>                : {
+<span class="lineNum">     262 </span>                :         struct hostent *hp;
+<span class="lineNum">     263 </span>                :         struct in_addr in;
+<span class="lineNum">     264 </span>                : 
+<span class="lineNum">     265 </span><span class="lineNoCov">              0 :         hp = gethostbyname(name);</span>
+<span class="lineNum">     266 </span>                : 
+<span class="lineNum">     267 </span><span class="lineNoCov">              0 :         if (!hp || !*(hp-&gt;h_addr_list)) {</span>
+<span class="lineNum">     268 </span><span class="lineNoCov">              0 :                 return estrdup(name);</span>
+<span class="lineNum">     269 </span>                :         }
+<span class="lineNum">     270 </span>                : 
+<span class="lineNum">     271 </span><span class="lineNoCov">              0 :         memcpy(&amp;in.s_addr, *(hp-&gt;h_addr_list), sizeof(in.s_addr));</span>
+<span class="lineNum">     272 </span>                : 
+<span class="lineNum">     273 </span><span class="lineNoCov">              0 :         return estrdup(inet_ntoa(in));</span>
+<span class="lineNum">     274 </span>                : }
+<span class="lineNum">     275 </span>                : /* }}} */
+<span class="lineNum">     276 </span>                : 
+<span class="lineNum">     277 </span>                : #if HAVE_FULL_DNS_FUNCS || defined(PHP_WIN32)
+<span class="lineNum">     278 </span>                : # define PHP_DNS_NUM_TYPES      12      /* Number of DNS Types Supported by PHP currently */
+<span class="lineNum">     279 </span>                : 
+<span class="lineNum">     280 </span>                : # define PHP_DNS_A      0x00000001
+<span class="lineNum">     281 </span>                : # define PHP_DNS_NS     0x00000002
+<span class="lineNum">     282 </span>                : # define PHP_DNS_CNAME  0x00000010
+<span class="lineNum">     283 </span>                : # define PHP_DNS_SOA    0x00000020
+<span class="lineNum">     284 </span>                : # define PHP_DNS_PTR    0x00000800
+<span class="lineNum">     285 </span>                : # define PHP_DNS_HINFO  0x00001000
+<span class="lineNum">     286 </span>                : # define PHP_DNS_MX     0x00004000
+<span class="lineNum">     287 </span>                : # define PHP_DNS_TXT    0x00008000
+<span class="lineNum">     288 </span>                : # define PHP_DNS_A6     0x01000000
+<span class="lineNum">     289 </span>                : # define PHP_DNS_SRV    0x02000000
+<span class="lineNum">     290 </span>                : # define PHP_DNS_NAPTR  0x04000000
+<span class="lineNum">     291 </span>                : # define PHP_DNS_AAAA   0x08000000
+<span class="lineNum">     292 </span>                : # define PHP_DNS_ANY    0x10000000
+<span class="lineNum">     293 </span>                : # define PHP_DNS_ALL    (PHP_DNS_A|PHP_DNS_NS|PHP_DNS_CNAME|PHP_DNS_SOA|PHP_DNS_PTR|PHP_DNS_HINFO|PHP_DNS_MX|PHP_DNS_TXT|PHP_DNS_A6|PHP_DNS_SRV|PHP_DNS_NAPTR|PHP_DNS_AAAA)
+<span class="lineNum">     294 </span>                : #endif /* HAVE_FULL_DNS_FUNCS || defined(PHP_WIN32) */
+<span class="lineNum">     295 </span>                : 
+<span class="lineNum">     296 </span>                : /* Note: These functions are defined in ext/standard/dns_win32.c for Windows! */
+<span class="lineNum">     297 </span>                : #if !defined(PHP_WIN32) &amp;&amp; (HAVE_DNS_SEARCH_FUNC &amp;&amp; !(defined(__BEOS__) || defined(NETWARE)))
+<span class="lineNum">     298 </span>                :   
+<span class="lineNum">     299 </span>                : #ifndef HFIXEDSZ
+<span class="lineNum">     300 </span>                : #define HFIXEDSZ        12      /* fixed data in header &lt;arpa/nameser.h&gt; */
+<span class="lineNum">     301 </span>                : #endif /* HFIXEDSZ */
+<span class="lineNum">     302 </span>                : 
+<span class="lineNum">     303 </span>                : #ifndef QFIXEDSZ
+<span class="lineNum">     304 </span>                : #define QFIXEDSZ        4       /* fixed data in query &lt;arpa/nameser.h&gt; */
+<span class="lineNum">     305 </span>                : #endif /* QFIXEDSZ */
+<span class="lineNum">     306 </span>                : 
+<span class="lineNum">     307 </span>                : #undef MAXHOSTNAMELEN
+<span class="lineNum">     308 </span>                : #define MAXHOSTNAMELEN  1024
+<span class="lineNum">     309 </span>                : 
+<span class="lineNum">     310 </span>                : #ifndef MAXRESOURCERECORDS
+<span class="lineNum">     311 </span>                : #define MAXRESOURCERECORDS      64
+<span class="lineNum">     312 </span>                : #endif /* MAXRESOURCERECORDS */
+<span class="lineNum">     313 </span>                : 
+<span class="lineNum">     314 </span>                : typedef union {
+<span class="lineNum">     315 </span>                :         HEADER qb1;
+<span class="lineNum">     316 </span>                :         u_char qb2[65536];
+<span class="lineNum">     317 </span>                : } querybuf;
+<span class="lineNum">     318 </span>                : 
+<span class="lineNum">     319 </span>                : /* just a hack to free resources allocated by glibc in __res_nsend()
+<span class="lineNum">     320 </span>                :  * See also:
+<span class="lineNum">     321 </span>                :  *   res_thread_freeres() in glibc/resolv/res_init.c
+<span class="lineNum">     322 </span>                :  *   __libc_res_nsend()   in resolv/res_send.c
+<span class="lineNum">     323 </span>                :  * */
+<span class="lineNum">     324 </span>                : 
+<a name="325"><span class="lineNum">     325 </span>                : #if defined(__GLIBC__) &amp;&amp; !defined(HAVE_DEPRECATED_DNS_FUNCS)</a>
+<span class="lineNum">     326 </span>                : #define php_dns_free_res(__res__) _php_dns_free_res(__res__)
+<span class="lineNum">     327 </span><span class="lineNoCov">              0 : static void _php_dns_free_res(struct __res_state res) { /* {{{ */</span>
+<span class="lineNum">     328 </span>                :         int ns;
+<span class="lineNum">     329 </span><span class="lineNoCov">              0 :         for (ns = 0; ns &lt; MAXNS; ns++) {</span>
+<span class="lineNum">     330 </span><span class="lineNoCov">              0 :                 if (res._u._ext.nsaddrs[ns] != NULL) {</span>
+<span class="lineNum">     331 </span><span class="lineNoCov">              0 :                         free (res._u._ext.nsaddrs[ns]);</span>
+<span class="lineNum">     332 </span><span class="lineNoCov">              0 :                         res._u._ext.nsaddrs[ns] = NULL;</span>
+<span class="lineNum">     333 </span>                :                 }
+<span class="lineNum">     334 </span>                :         }
+<span class="lineNum">     335 </span><span class="lineNoCov">              0 : } /* }}} */</span>
+<span class="lineNum">     336 </span>                : #else
+<span class="lineNum">     337 </span>                : #define php_dns_free_res(__res__)
+<span class="lineNum">     338 </span>                : #endif
+<span class="lineNum">     339 </span>                : 
+<a name="340"><span class="lineNum">     340 </span>                : /* {{{ proto bool dns_check_record(string host [, string type])</a>
+<span class="lineNum">     341 </span>                :    Check DNS records corresponding to a given Internet host name or IP address */
+<span class="lineNum">     342 </span><span class="lineNoCov">              0 : PHP_FUNCTION(dns_check_record)</span>
+<span class="lineNum">     343 </span>                : {
+<span class="lineNum">     344 </span>                : #ifndef MAXPACKET
+<span class="lineNum">     345 </span>                : #define MAXPACKET  8192 /* max packet size used internally by BIND */
+<span class="lineNum">     346 </span>                : #endif
+<span class="lineNum">     347 </span>                :         u_char ans[MAXPACKET];
+<span class="lineNum">     348 </span><span class="lineNoCov">              0 :         char *hostname, *rectype = NULL;</span>
+<span class="lineNum">     349 </span><span class="lineNoCov">              0 :         int hostname_len, rectype_len = 0;</span>
+<span class="lineNum">     350 </span><span class="lineNoCov">              0 :         int type = T_MX, i;</span>
+<span class="lineNum">     351 </span>                : #if defined(HAVE_DNS_SEARCH)
+<span class="lineNum">     352 </span>                :         struct sockaddr_storage from;
+<span class="lineNum">     353 </span>                :         uint32_t fromsize = sizeof(from);
+<span class="lineNum">     354 </span>                :         dns_handle_t handle;
+<span class="lineNum">     355 </span>                : #elif defined(HAVE_RES_NSEARCH)
+<span class="lineNum">     356 </span>                :         struct __res_state state;
+<span class="lineNum">     357 </span><span class="lineNoCov">              0 :         struct __res_state *handle = &amp;state;</span>
+<span class="lineNum">     358 </span>                : #endif
+<span class="lineNum">     359 </span>                : 
+<span class="lineNum">     360 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;s|s&quot;, &amp;hostname, &amp;hostname_len, &amp;rectype, &amp;rectype_len) == FAILURE) {</span>
+<span class="lineNum">     361 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     362 </span>                :         }
+<span class="lineNum">     363 </span>                : 
+<span class="lineNum">     364 </span><span class="lineNoCov">              0 :         if (hostname_len == 0) {</span>
+<span class="lineNum">     365 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Host cannot be empty&quot;);</span>
+<span class="lineNum">     366 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     367 </span>                :         }
+<span class="lineNum">     368 </span>                : 
+<span class="lineNum">     369 </span><span class="lineNoCov">              0 :         if (rectype) {</span>
+<span class="lineNum">     370 </span><span class="lineNoCov">              0 :                 if (!strcasecmp(&quot;A&quot;,     rectype)) type = T_A;</span>
+<span class="lineNum">     371 </span><span class="lineNoCov">              0 :                 else if (!strcasecmp(&quot;NS&quot;,    rectype)) type = DNS_T_NS;</span>
+<span class="lineNum">     372 </span><span class="lineNoCov">              0 :                 else if (!strcasecmp(&quot;MX&quot;,    rectype)) type = DNS_T_MX;</span>
+<span class="lineNum">     373 </span><span class="lineNoCov">              0 :                 else if (!strcasecmp(&quot;PTR&quot;,   rectype)) type = DNS_T_PTR;</span>
+<span class="lineNum">     374 </span><span class="lineNoCov">              0 :                 else if (!strcasecmp(&quot;ANY&quot;,   rectype)) type = DNS_T_ANY;</span>
+<span class="lineNum">     375 </span><span class="lineNoCov">              0 :                 else if (!strcasecmp(&quot;SOA&quot;,   rectype)) type = DNS_T_SOA;</span>
+<span class="lineNum">     376 </span><span class="lineNoCov">              0 :                 else if (!strcasecmp(&quot;TXT&quot;,   rectype)) type = DNS_T_TXT;</span>
+<span class="lineNum">     377 </span><span class="lineNoCov">              0 :                 else if (!strcasecmp(&quot;CNAME&quot;, rectype)) type = DNS_T_CNAME;</span>
+<span class="lineNum">     378 </span><span class="lineNoCov">              0 :                 else if (!strcasecmp(&quot;AAAA&quot;,  rectype)) type = DNS_T_AAAA;</span>
+<span class="lineNum">     379 </span><span class="lineNoCov">              0 :                 else if (!strcasecmp(&quot;SRV&quot;,   rectype)) type = DNS_T_SRV;</span>
+<span class="lineNum">     380 </span><span class="lineNoCov">              0 :                 else if (!strcasecmp(&quot;NAPTR&quot;, rectype)) type = DNS_T_NAPTR;</span>
+<span class="lineNum">     381 </span><span class="lineNoCov">              0 :                 else if (!strcasecmp(&quot;A6&quot;,    rectype)) type = DNS_T_A6;</span>
+<span class="lineNum">     382 </span>                :                 else {
+<span class="lineNum">     383 </span><span class="lineNoCov">              0 :                         php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Type '%s' not supported&quot;, rectype);</span>
+<span class="lineNum">     384 </span><span class="lineNoCov">              0 :                         RETURN_FALSE;</span>
+<span class="lineNum">     385 </span>                :                 }
+<span class="lineNum">     386 </span>                :         }
+<span class="lineNum">     387 </span>                : 
+<span class="lineNum">     388 </span>                : #if defined(HAVE_DNS_SEARCH)
+<span class="lineNum">     389 </span>                :         handle = dns_open(NULL);
+<span class="lineNum">     390 </span>                :         if (handle == NULL) {
+<span class="lineNum">     391 </span>                :                 RETURN_FALSE;
+<span class="lineNum">     392 </span>                :         }
+<span class="lineNum">     393 </span>                : #elif defined(HAVE_RES_NSEARCH)
+<span class="lineNum">     394 </span><span class="lineNoCov">              0 :     memset(&amp;state, 0, sizeof(state));</span>
+<span class="lineNum">     395 </span><span class="lineNoCov">              0 :     if (res_ninit(handle)) {</span>
+<span class="lineNum">     396 </span><span class="lineNoCov">              0 :                         RETURN_FALSE;</span>
+<span class="lineNum">     397 </span>                :         }
+<span class="lineNum">     398 </span>                : #else
+<span class="lineNum">     399 </span>                :         res_init();
+<span class="lineNum">     400 </span>                : #endif
+<span class="lineNum">     401 </span>                : 
+<span class="lineNum">     402 </span><span class="lineNoCov">              0 :         RETVAL_TRUE;</span>
+<span class="lineNum">     403 </span><span class="lineNoCov">              0 :         i = php_dns_search(handle, hostname, C_IN, type, ans, sizeof(ans));</span>
+<span class="lineNum">     404 </span>                : 
+<span class="lineNum">     405 </span><span class="lineNoCov">              0 :         if (i &lt; 0) {</span>
+<span class="lineNum">     406 </span><span class="lineNoCov">              0 :                 RETVAL_FALSE;</span>
+<span class="lineNum">     407 </span>                :         }
+<span class="lineNum">     408 </span>                : 
+<span class="lineNum">     409 </span><span class="lineNoCov">              0 :         php_dns_free_handle(handle);</span>
+<span class="lineNum">     410 </span>                : }
+<span class="lineNum">     411 </span>                : /* }}} */
+<span class="lineNum">     412 </span>                : 
+<span class="lineNum">     413 </span>                : #if HAVE_FULL_DNS_FUNCS
+<a name="414"><span class="lineNum">     414 </span>                : </a>
+<span class="lineNum">     415 </span>                : /* {{{ php_parserr */
+<span class="lineNum">     416 </span><span class="lineNoCov">              0 : static u_char *php_parserr(u_char *cp, querybuf *answer, int type_to_fetch, int store, int raw, zval **subarray)</span>
+<span class="lineNum">     417 </span>                : {
+<span class="lineNum">     418 </span>                :         u_short type, class, dlen;
+<span class="lineNum">     419 </span>                :         u_long ttl;
+<span class="lineNum">     420 </span>                :         long n, i;
+<span class="lineNum">     421 </span>                :         u_short s;
+<span class="lineNum">     422 </span>                :         u_char *tp, *p;
+<span class="lineNum">     423 </span>                :         char name[MAXHOSTNAMELEN];
+<span class="lineNum">     424 </span><span class="lineNoCov">              0 :         int have_v6_break = 0, in_v6_break = 0;</span>
+<span class="lineNum">     425 </span>                : 
+<span class="lineNum">     426 </span><span class="lineNoCov">              0 :         *subarray = NULL;</span>
+<span class="lineNum">     427 </span>                : 
+<span class="lineNum">     428 </span><span class="lineNoCov">              0 :         n = dn_expand(answer-&gt;qb2, answer-&gt;qb2+65536, cp, name, sizeof(name) - 2);</span>
+<span class="lineNum">     429 </span><span class="lineNoCov">              0 :         if (n &lt; 0) {</span>
+<span class="lineNum">     430 </span><span class="lineNoCov">              0 :                 return NULL;</span>
+<span class="lineNum">     431 </span>                :         }
+<span class="lineNum">     432 </span><span class="lineNoCov">              0 :         cp += n;</span>
+<span class="lineNum">     433 </span>                : 
+<span class="lineNum">     434 </span><span class="lineNoCov">              0 :         GETSHORT(type, cp);</span>
+<span class="lineNum">     435 </span><span class="lineNoCov">              0 :         GETSHORT(class, cp);</span>
+<span class="lineNum">     436 </span><span class="lineNoCov">              0 :         GETLONG(ttl, cp);</span>
+<span class="lineNum">     437 </span><span class="lineNoCov">              0 :         GETSHORT(dlen, cp);</span>
+<span class="lineNum">     438 </span><span class="lineNoCov">              0 :         if (type_to_fetch != T_ANY &amp;&amp; type != type_to_fetch) {</span>
+<span class="lineNum">     439 </span><span class="lineNoCov">              0 :                 cp += dlen;</span>
+<span class="lineNum">     440 </span><span class="lineNoCov">              0 :                 return cp;</span>
+<span class="lineNum">     441 </span>                :         }
+<span class="lineNum">     442 </span>                : 
+<span class="lineNum">     443 </span><span class="lineNoCov">              0 :         if (!store) {</span>
+<span class="lineNum">     444 </span><span class="lineNoCov">              0 :                 cp += dlen;</span>
+<span class="lineNum">     445 </span><span class="lineNoCov">              0 :                 return cp;</span>
+<span class="lineNum">     446 </span>                :         }
+<span class="lineNum">     447 </span>                : 
+<span class="lineNum">     448 </span><span class="lineNoCov">              0 :         ALLOC_INIT_ZVAL(*subarray);</span>
+<span class="lineNum">     449 </span><span class="lineNoCov">              0 :         array_init(*subarray);</span>
+<span class="lineNum">     450 </span>                : 
+<span class="lineNum">     451 </span><span class="lineNoCov">              0 :         add_assoc_string(*subarray, &quot;host&quot;, name, 1);</span>
+<span class="lineNum">     452 </span><span class="lineNoCov">              0 :         add_assoc_string(*subarray, &quot;class&quot;, &quot;IN&quot;, 1);</span>
+<span class="lineNum">     453 </span><span class="lineNoCov">              0 :         add_assoc_long(*subarray, &quot;ttl&quot;, ttl);</span>
+<span class="lineNum">     454 </span>                : 
+<span class="lineNum">     455 </span><span class="lineNoCov">              0 :         if (raw) {</span>
+<span class="lineNum">     456 </span><span class="lineNoCov">              0 :                 add_assoc_long(*subarray, &quot;type&quot;, type);</span>
+<span class="lineNum">     457 </span><span class="lineNoCov">              0 :                 add_assoc_stringl(*subarray, &quot;data&quot;, (char*) cp, (uint) dlen, 1);</span>
+<span class="lineNum">     458 </span><span class="lineNoCov">              0 :                 cp += dlen;</span>
+<span class="lineNum">     459 </span><span class="lineNoCov">              0 :                 return cp;</span>
+<span class="lineNum">     460 </span>                :         }
+<span class="lineNum">     461 </span>                : 
+<span class="lineNum">     462 </span><span class="lineNoCov">              0 :         switch (type) {</span>
+<span class="lineNum">     463 </span>                :                 case DNS_T_A:
+<span class="lineNum">     464 </span><span class="lineNoCov">              0 :                         add_assoc_string(*subarray, &quot;type&quot;, &quot;A&quot;, 1);</span>
+<span class="lineNum">     465 </span><span class="lineNoCov">              0 :                         snprintf(name, sizeof(name), &quot;%d.%d.%d.%d&quot;, cp[0], cp[1], cp[2], cp[3]);</span>
+<span class="lineNum">     466 </span><span class="lineNoCov">              0 :                         add_assoc_string(*subarray, &quot;ip&quot;, name, 1);</span>
+<span class="lineNum">     467 </span><span class="lineNoCov">              0 :                         cp += dlen;</span>
+<span class="lineNum">     468 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     469 </span>                :                 case DNS_T_MX:
+<span class="lineNum">     470 </span><span class="lineNoCov">              0 :                         add_assoc_string(*subarray, &quot;type&quot;, &quot;MX&quot;, 1);</span>
+<span class="lineNum">     471 </span><span class="lineNoCov">              0 :                         GETSHORT(n, cp);</span>
+<span class="lineNum">     472 </span><span class="lineNoCov">              0 :                         add_assoc_long(*subarray, &quot;pri&quot;, n);</span>
+<span class="lineNum">     473 </span>                :                         /* no break; */
+<span class="lineNum">     474 </span>                :                 case DNS_T_CNAME:
+<span class="lineNum">     475 </span><span class="lineNoCov">              0 :                         if (type == DNS_T_CNAME) {</span>
+<span class="lineNum">     476 </span><span class="lineNoCov">              0 :                                 add_assoc_string(*subarray, &quot;type&quot;, &quot;CNAME&quot;, 1);</span>
+<span class="lineNum">     477 </span>                :                         }
+<span class="lineNum">     478 </span>                :                         /* no break; */
+<span class="lineNum">     479 </span>                :                 case DNS_T_NS:
+<span class="lineNum">     480 </span><span class="lineNoCov">              0 :                         if (type == DNS_T_NS) {</span>
+<span class="lineNum">     481 </span><span class="lineNoCov">              0 :                                 add_assoc_string(*subarray, &quot;type&quot;, &quot;NS&quot;, 1);</span>
+<span class="lineNum">     482 </span>                :                         }
+<span class="lineNum">     483 </span>                :                         /* no break; */
+<span class="lineNum">     484 </span>                :                 case DNS_T_PTR:
+<span class="lineNum">     485 </span><span class="lineNoCov">              0 :                         if (type == DNS_T_PTR) {</span>
+<span class="lineNum">     486 </span><span class="lineNoCov">              0 :                                 add_assoc_string(*subarray, &quot;type&quot;, &quot;PTR&quot;, 1);</span>
+<span class="lineNum">     487 </span>                :                         }
+<span class="lineNum">     488 </span><span class="lineNoCov">              0 :                         n = dn_expand(answer-&gt;qb2, answer-&gt;qb2+65536, cp, name, (sizeof name) - 2);</span>
+<span class="lineNum">     489 </span><span class="lineNoCov">              0 :                         if (n &lt; 0) {</span>
+<span class="lineNum">     490 </span><span class="lineNoCov">              0 :                                 return NULL;</span>
+<span class="lineNum">     491 </span>                :                         }
+<span class="lineNum">     492 </span><span class="lineNoCov">              0 :                         cp += n;</span>
+<span class="lineNum">     493 </span><span class="lineNoCov">              0 :                         add_assoc_string(*subarray, &quot;target&quot;, name, 1);</span>
+<span class="lineNum">     494 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     495 </span>                :                 case DNS_T_HINFO:
+<span class="lineNum">     496 </span>                :                         /* See RFC 1010 for values */
+<span class="lineNum">     497 </span><span class="lineNoCov">              0 :                         add_assoc_string(*subarray, &quot;type&quot;, &quot;HINFO&quot;, 1);</span>
+<span class="lineNum">     498 </span><span class="lineNoCov">              0 :                         n = *cp &amp; 0xFF;</span>
+<span class="lineNum">     499 </span><span class="lineNoCov">              0 :                         cp++;</span>
+<span class="lineNum">     500 </span><span class="lineNoCov">              0 :                         add_assoc_stringl(*subarray, &quot;cpu&quot;, (char*)cp, n, 1);</span>
+<span class="lineNum">     501 </span><span class="lineNoCov">              0 :                         cp += n;</span>
+<span class="lineNum">     502 </span><span class="lineNoCov">              0 :                         n = *cp &amp; 0xFF;</span>
+<span class="lineNum">     503 </span><span class="lineNoCov">              0 :                         cp++;</span>
+<span class="lineNum">     504 </span><span class="lineNoCov">              0 :                         add_assoc_stringl(*subarray, &quot;os&quot;, (char*)cp, n, 1);</span>
+<span class="lineNum">     505 </span><span class="lineNoCov">              0 :                         cp += n;</span>
+<span class="lineNum">     506 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     507 </span>                :                 case DNS_T_TXT:
+<span class="lineNum">     508 </span>                :                         {
+<span class="lineNum">     509 </span><span class="lineNoCov">              0 :                                 int ll = 0;</span>
+<span class="lineNum">     510 </span><span class="lineNoCov">              0 :                                 zval *entries = NULL;</span>
+<span class="lineNum">     511 </span>                : 
+<span class="lineNum">     512 </span><span class="lineNoCov">              0 :                                 add_assoc_string(*subarray, &quot;type&quot;, &quot;TXT&quot;, 1);</span>
+<span class="lineNum">     513 </span><span class="lineNoCov">              0 :                                 tp = emalloc(dlen + 1);</span>
+<span class="lineNum">     514 </span>                :                                 
+<span class="lineNum">     515 </span><span class="lineNoCov">              0 :                                 MAKE_STD_ZVAL(entries);</span>
+<span class="lineNum">     516 </span><span class="lineNoCov">              0 :                                 array_init(entries);</span>
+<span class="lineNum">     517 </span>                :                                 
+<span class="lineNum">     518 </span><span class="lineNoCov">              0 :                                 while (ll &lt; dlen) {</span>
+<span class="lineNum">     519 </span><span class="lineNoCov">              0 :                                         n = cp[ll];</span>
+<span class="lineNum">     520 </span><span class="lineNoCov">              0 :                                         memcpy(tp + ll , cp + ll + 1, n);</span>
+<span class="lineNum">     521 </span><span class="lineNoCov">              0 :                                         add_next_index_stringl(entries, cp + ll + 1, n, 1);</span>
+<span class="lineNum">     522 </span><span class="lineNoCov">              0 :                                         ll = ll + n + 1;</span>
+<span class="lineNum">     523 </span>                :                                 }
+<span class="lineNum">     524 </span><span class="lineNoCov">              0 :                                 tp[dlen] = '\0';</span>
+<span class="lineNum">     525 </span><span class="lineNoCov">              0 :                                 cp += dlen;</span>
+<span class="lineNum">     526 </span>                : 
+<span class="lineNum">     527 </span><span class="lineNoCov">              0 :                                 add_assoc_stringl(*subarray, &quot;txt&quot;, tp, dlen - 1, 0);</span>
+<span class="lineNum">     528 </span><span class="lineNoCov">              0 :                                 add_assoc_zval(*subarray, &quot;entries&quot;, entries);</span>
+<span class="lineNum">     529 </span>                :                         }
+<span class="lineNum">     530 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     531 </span>                :                 case DNS_T_SOA:
+<span class="lineNum">     532 </span><span class="lineNoCov">              0 :                         add_assoc_string(*subarray, &quot;type&quot;, &quot;SOA&quot;, 1);</span>
+<span class="lineNum">     533 </span><span class="lineNoCov">              0 :                         n = dn_expand(answer-&gt;qb2, answer-&gt;qb2+65536, cp, name, (sizeof name) -2);</span>
+<span class="lineNum">     534 </span><span class="lineNoCov">              0 :                         if (n &lt; 0) {</span>
+<span class="lineNum">     535 </span><span class="lineNoCov">              0 :                                 return NULL;</span>
+<span class="lineNum">     536 </span>                :                         }
+<span class="lineNum">     537 </span><span class="lineNoCov">              0 :                         cp += n;</span>
+<span class="lineNum">     538 </span><span class="lineNoCov">              0 :                         add_assoc_string(*subarray, &quot;mname&quot;, name, 1);</span>
+<span class="lineNum">     539 </span><span class="lineNoCov">              0 :                         n = dn_expand(answer-&gt;qb2, answer-&gt;qb2+65536, cp, name, (sizeof name) -2);</span>
+<span class="lineNum">     540 </span><span class="lineNoCov">              0 :                         if (n &lt; 0) {</span>
+<span class="lineNum">     541 </span><span class="lineNoCov">              0 :                                 return NULL;</span>
+<span class="lineNum">     542 </span>                :                         }
+<span class="lineNum">     543 </span><span class="lineNoCov">              0 :                         cp += n;</span>
+<span class="lineNum">     544 </span><span class="lineNoCov">              0 :                         add_assoc_string(*subarray, &quot;rname&quot;, name, 1);</span>
+<span class="lineNum">     545 </span><span class="lineNoCov">              0 :                         GETLONG(n, cp);</span>
+<span class="lineNum">     546 </span><span class="lineNoCov">              0 :                         add_assoc_long(*subarray, &quot;serial&quot;, n);</span>
+<span class="lineNum">     547 </span><span class="lineNoCov">              0 :                         GETLONG(n, cp);</span>
+<span class="lineNum">     548 </span><span class="lineNoCov">              0 :                         add_assoc_long(*subarray, &quot;refresh&quot;, n);</span>
+<span class="lineNum">     549 </span><span class="lineNoCov">              0 :                         GETLONG(n, cp);</span>
+<span class="lineNum">     550 </span><span class="lineNoCov">              0 :                         add_assoc_long(*subarray, &quot;retry&quot;, n);</span>
+<span class="lineNum">     551 </span><span class="lineNoCov">              0 :                         GETLONG(n, cp);</span>
+<span class="lineNum">     552 </span><span class="lineNoCov">              0 :                         add_assoc_long(*subarray, &quot;expire&quot;, n);</span>
+<span class="lineNum">     553 </span><span class="lineNoCov">              0 :                         GETLONG(n, cp);</span>
+<span class="lineNum">     554 </span><span class="lineNoCov">              0 :                         add_assoc_long(*subarray, &quot;minimum-ttl&quot;, n);</span>
+<span class="lineNum">     555 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     556 </span>                :                 case DNS_T_AAAA:
+<span class="lineNum">     557 </span><span class="lineNoCov">              0 :                         tp = (u_char*)name;</span>
+<span class="lineNum">     558 </span><span class="lineNoCov">              0 :                         for(i=0; i &lt; 8; i++) {</span>
+<span class="lineNum">     559 </span><span class="lineNoCov">              0 :                                 GETSHORT(s, cp);</span>
+<span class="lineNum">     560 </span><span class="lineNoCov">              0 :                                 if (s != 0) {</span>
+<span class="lineNum">     561 </span><span class="lineNoCov">              0 :                                         if (tp &gt; (u_char *)name) {</span>
+<span class="lineNum">     562 </span><span class="lineNoCov">              0 :                                                 in_v6_break = 0;</span>
+<span class="lineNum">     563 </span><span class="lineNoCov">              0 :                                                 tp[0] = ':';</span>
+<span class="lineNum">     564 </span><span class="lineNoCov">              0 :                                                 tp++;</span>
+<span class="lineNum">     565 </span>                :                                         }
+<span class="lineNum">     566 </span><span class="lineNoCov">              0 :                                         tp += sprintf((char*)tp,&quot;%x&quot;,s);</span>
+<span class="lineNum">     567 </span>                :                                 } else {
+<span class="lineNum">     568 </span><span class="lineNoCov">              0 :                                         if (!have_v6_break) {</span>
+<span class="lineNum">     569 </span><span class="lineNoCov">              0 :                                                 have_v6_break = 1;</span>
+<span class="lineNum">     570 </span><span class="lineNoCov">              0 :                                                 in_v6_break = 1;</span>
+<span class="lineNum">     571 </span><span class="lineNoCov">              0 :                                                 tp[0] = ':';</span>
+<span class="lineNum">     572 </span><span class="lineNoCov">              0 :                                                 tp++;</span>
+<span class="lineNum">     573 </span><span class="lineNoCov">              0 :                                         } else if (!in_v6_break) {</span>
+<span class="lineNum">     574 </span><span class="lineNoCov">              0 :                                                 tp[0] = ':';</span>
+<span class="lineNum">     575 </span><span class="lineNoCov">              0 :                                                 tp++;</span>
+<span class="lineNum">     576 </span><span class="lineNoCov">              0 :                                                 tp[0] = '0';</span>
+<span class="lineNum">     577 </span><span class="lineNoCov">              0 :                                                 tp++;</span>
+<span class="lineNum">     578 </span>                :                                         }
+<span class="lineNum">     579 </span>                :                                 }
+<span class="lineNum">     580 </span>                :                         }
+<span class="lineNum">     581 </span><span class="lineNoCov">              0 :                         if (have_v6_break &amp;&amp; in_v6_break) {</span>
+<span class="lineNum">     582 </span><span class="lineNoCov">              0 :                                 tp[0] = ':';</span>
+<span class="lineNum">     583 </span><span class="lineNoCov">              0 :                                 tp++;</span>
+<span class="lineNum">     584 </span>                :                         }
+<span class="lineNum">     585 </span><span class="lineNoCov">              0 :                         tp[0] = '\0';</span>
+<span class="lineNum">     586 </span><span class="lineNoCov">              0 :                         add_assoc_string(*subarray, &quot;type&quot;, &quot;AAAA&quot;, 1);</span>
+<span class="lineNum">     587 </span><span class="lineNoCov">              0 :                         add_assoc_string(*subarray, &quot;ipv6&quot;, name, 1);</span>
+<span class="lineNum">     588 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     589 </span>                :                 case DNS_T_A6:
+<span class="lineNum">     590 </span><span class="lineNoCov">              0 :                         p = cp;</span>
+<span class="lineNum">     591 </span><span class="lineNoCov">              0 :                         add_assoc_string(*subarray, &quot;type&quot;, &quot;A6&quot;, 1);</span>
+<span class="lineNum">     592 </span><span class="lineNoCov">              0 :                         n = ((int)cp[0]) &amp; 0xFF;</span>
+<span class="lineNum">     593 </span><span class="lineNoCov">              0 :                         cp++;</span>
+<span class="lineNum">     594 </span><span class="lineNoCov">              0 :                         add_assoc_long(*subarray, &quot;masklen&quot;, n);</span>
+<span class="lineNum">     595 </span><span class="lineNoCov">              0 :                         tp = (u_char*)name;</span>
+<span class="lineNum">     596 </span><span class="lineNoCov">              0 :                         if (n &gt; 15) {</span>
+<span class="lineNum">     597 </span><span class="lineNoCov">              0 :                                 have_v6_break = 1;</span>
+<span class="lineNum">     598 </span><span class="lineNoCov">              0 :                                 in_v6_break = 1;</span>
+<span class="lineNum">     599 </span><span class="lineNoCov">              0 :                                 tp[0] = ':';</span>
+<span class="lineNum">     600 </span><span class="lineNoCov">              0 :                                 tp++;</span>
+<span class="lineNum">     601 </span>                :                         }
+<span class="lineNum">     602 </span><span class="lineNoCov">              0 :                         if (n % 16 &gt; 8) {</span>
+<span class="lineNum">     603 </span>                :                                 /* Partial short */
+<span class="lineNum">     604 </span><span class="lineNoCov">              0 :                                 if (cp[0] != 0) {</span>
+<span class="lineNum">     605 </span><span class="lineNoCov">              0 :                                         if (tp &gt; (u_char *)name) {</span>
+<span class="lineNum">     606 </span><span class="lineNoCov">              0 :                                                 in_v6_break = 0;</span>
+<span class="lineNum">     607 </span><span class="lineNoCov">              0 :                                                 tp[0] = ':';</span>
+<span class="lineNum">     608 </span><span class="lineNoCov">              0 :                                                 tp++;</span>
+<span class="lineNum">     609 </span>                :                                         }
+<span class="lineNum">     610 </span><span class="lineNoCov">              0 :                                         sprintf((char*)tp, &quot;%x&quot;, cp[0] &amp; 0xFF);</span>
+<span class="lineNum">     611 </span>                :                                 } else {
+<span class="lineNum">     612 </span><span class="lineNoCov">              0 :                                         if (!have_v6_break) {</span>
+<span class="lineNum">     613 </span><span class="lineNoCov">              0 :                                                 have_v6_break = 1;</span>
+<span class="lineNum">     614 </span><span class="lineNoCov">              0 :                                                 in_v6_break = 1;</span>
+<span class="lineNum">     615 </span><span class="lineNoCov">              0 :                                                 tp[0] = ':';</span>
+<span class="lineNum">     616 </span><span class="lineNoCov">              0 :                                                 tp++;</span>
+<span class="lineNum">     617 </span><span class="lineNoCov">              0 :                                         } else if (!in_v6_break) {</span>
+<span class="lineNum">     618 </span><span class="lineNoCov">              0 :                                                 tp[0] = ':';</span>
+<span class="lineNum">     619 </span><span class="lineNoCov">              0 :                                                 tp++;</span>
+<span class="lineNum">     620 </span><span class="lineNoCov">              0 :                                                 tp[0] = '0';</span>
+<span class="lineNum">     621 </span><span class="lineNoCov">              0 :                                                 tp++;</span>
+<span class="lineNum">     622 </span>                :                                         }
+<span class="lineNum">     623 </span>                :                                 }
+<span class="lineNum">     624 </span><span class="lineNoCov">              0 :                                 cp++;</span>
+<span class="lineNum">     625 </span>                :                         }
+<span class="lineNum">     626 </span><span class="lineNoCov">              0 :                         for (i = (n + 8) / 16; i &lt; 8; i++) {</span>
+<span class="lineNum">     627 </span><span class="lineNoCov">              0 :                                 GETSHORT(s, cp);</span>
+<span class="lineNum">     628 </span><span class="lineNoCov">              0 :                                 if (s != 0) {</span>
+<span class="lineNum">     629 </span><span class="lineNoCov">              0 :                                         if (tp &gt; (u_char *)name) {</span>
+<span class="lineNum">     630 </span><span class="lineNoCov">              0 :                                                 in_v6_break = 0;</span>
+<span class="lineNum">     631 </span><span class="lineNoCov">              0 :                                                 tp[0] = ':';</span>
+<span class="lineNum">     632 </span><span class="lineNoCov">              0 :                                                 tp++;</span>
+<span class="lineNum">     633 </span>                :                                         }
+<span class="lineNum">     634 </span><span class="lineNoCov">              0 :                                         tp += sprintf((char*)tp,&quot;%x&quot;,s);</span>
+<span class="lineNum">     635 </span>                :                                 } else {
+<span class="lineNum">     636 </span><span class="lineNoCov">              0 :                                         if (!have_v6_break) {</span>
+<span class="lineNum">     637 </span><span class="lineNoCov">              0 :                                                 have_v6_break = 1;</span>
+<span class="lineNum">     638 </span><span class="lineNoCov">              0 :                                                 in_v6_break = 1;</span>
+<span class="lineNum">     639 </span><span class="lineNoCov">              0 :                                                 tp[0] = ':';</span>
+<span class="lineNum">     640 </span><span class="lineNoCov">              0 :                                                 tp++;</span>
+<span class="lineNum">     641 </span><span class="lineNoCov">              0 :                                         } else if (!in_v6_break) {</span>
+<span class="lineNum">     642 </span><span class="lineNoCov">              0 :                                                 tp[0] = ':';</span>
+<span class="lineNum">     643 </span><span class="lineNoCov">              0 :                                                 tp++;</span>
+<span class="lineNum">     644 </span><span class="lineNoCov">              0 :                                                 tp[0] = '0';</span>
+<span class="lineNum">     645 </span><span class="lineNoCov">              0 :                                                 tp++;</span>
+<span class="lineNum">     646 </span>                :                                         }
+<span class="lineNum">     647 </span>                :                                 }
+<span class="lineNum">     648 </span>                :                         }
+<span class="lineNum">     649 </span><span class="lineNoCov">              0 :                         if (have_v6_break &amp;&amp; in_v6_break) {</span>
+<span class="lineNum">     650 </span><span class="lineNoCov">              0 :                                 tp[0] = ':';</span>
+<span class="lineNum">     651 </span><span class="lineNoCov">              0 :                                 tp++;</span>
+<span class="lineNum">     652 </span>                :                         }
+<span class="lineNum">     653 </span><span class="lineNoCov">              0 :                         tp[0] = '\0';</span>
+<span class="lineNum">     654 </span><span class="lineNoCov">              0 :                         add_assoc_string(*subarray, &quot;ipv6&quot;, name, 1);</span>
+<span class="lineNum">     655 </span><span class="lineNoCov">              0 :                         if (cp &lt; p + dlen) {</span>
+<span class="lineNum">     656 </span><span class="lineNoCov">              0 :                                 n = dn_expand(answer-&gt;qb2, answer-&gt;qb2+65536, cp, name, (sizeof name) - 2);</span>
+<span class="lineNum">     657 </span><span class="lineNoCov">              0 :                                 if (n &lt; 0) {</span>
+<span class="lineNum">     658 </span><span class="lineNoCov">              0 :                                         return NULL;</span>
+<span class="lineNum">     659 </span>                :                                 }
+<span class="lineNum">     660 </span><span class="lineNoCov">              0 :                                 cp += n;</span>
+<span class="lineNum">     661 </span><span class="lineNoCov">              0 :                                 add_assoc_string(*subarray, &quot;chain&quot;, name, 1);</span>
+<span class="lineNum">     662 </span>                :                         }
+<span class="lineNum">     663 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     664 </span>                :                 case DNS_T_SRV:
+<span class="lineNum">     665 </span><span class="lineNoCov">              0 :                         add_assoc_string(*subarray, &quot;type&quot;, &quot;SRV&quot;, 1);</span>
+<span class="lineNum">     666 </span><span class="lineNoCov">              0 :                         GETSHORT(n, cp);</span>
+<span class="lineNum">     667 </span><span class="lineNoCov">              0 :                         add_assoc_long(*subarray, &quot;pri&quot;, n);</span>
+<span class="lineNum">     668 </span><span class="lineNoCov">              0 :                         GETSHORT(n, cp);</span>
+<span class="lineNum">     669 </span><span class="lineNoCov">              0 :                         add_assoc_long(*subarray, &quot;weight&quot;, n);</span>
+<span class="lineNum">     670 </span><span class="lineNoCov">              0 :                         GETSHORT(n, cp);</span>
+<span class="lineNum">     671 </span><span class="lineNoCov">              0 :                         add_assoc_long(*subarray, &quot;port&quot;, n);</span>
+<span class="lineNum">     672 </span><span class="lineNoCov">              0 :                         n = dn_expand(answer-&gt;qb2, answer-&gt;qb2+65536, cp, name, (sizeof name) - 2);</span>
+<span class="lineNum">     673 </span><span class="lineNoCov">              0 :                         if (n &lt; 0) {</span>
+<span class="lineNum">     674 </span><span class="lineNoCov">              0 :                                 return NULL;</span>
+<span class="lineNum">     675 </span>                :                         }
+<span class="lineNum">     676 </span><span class="lineNoCov">              0 :                         cp += n;</span>
+<span class="lineNum">     677 </span><span class="lineNoCov">              0 :                         add_assoc_string(*subarray, &quot;target&quot;, name, 1);</span>
+<span class="lineNum">     678 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     679 </span>                :                 case DNS_T_NAPTR:
+<span class="lineNum">     680 </span><span class="lineNoCov">              0 :                         add_assoc_string(*subarray, &quot;type&quot;, &quot;NAPTR&quot;, 1);</span>
+<span class="lineNum">     681 </span><span class="lineNoCov">              0 :                         GETSHORT(n, cp);</span>
+<span class="lineNum">     682 </span><span class="lineNoCov">              0 :                         add_assoc_long(*subarray, &quot;order&quot;, n);</span>
+<span class="lineNum">     683 </span><span class="lineNoCov">              0 :                         GETSHORT(n, cp);</span>
+<span class="lineNum">     684 </span><span class="lineNoCov">              0 :                         add_assoc_long(*subarray, &quot;pref&quot;, n);</span>
+<span class="lineNum">     685 </span><span class="lineNoCov">              0 :                         n = (cp[0] &amp; 0xFF);</span>
+<span class="lineNum">     686 </span><span class="lineNoCov">              0 :                         add_assoc_stringl(*subarray, &quot;flags&quot;, (char*)++cp, n, 1);</span>
+<span class="lineNum">     687 </span><span class="lineNoCov">              0 :                         cp += n;</span>
+<span class="lineNum">     688 </span><span class="lineNoCov">              0 :                         n = (cp[0] &amp; 0xFF);</span>
+<span class="lineNum">     689 </span><span class="lineNoCov">              0 :                         add_assoc_stringl(*subarray, &quot;services&quot;, (char*)++cp, n, 1);</span>
+<span class="lineNum">     690 </span><span class="lineNoCov">              0 :                         cp += n;</span>
+<span class="lineNum">     691 </span><span class="lineNoCov">              0 :                         n = (cp[0] &amp; 0xFF);</span>
+<span class="lineNum">     692 </span><span class="lineNoCov">              0 :                         add_assoc_stringl(*subarray, &quot;regex&quot;, (char*)++cp, n, 1);</span>
+<span class="lineNum">     693 </span><span class="lineNoCov">              0 :                         cp += n;</span>
+<span class="lineNum">     694 </span><span class="lineNoCov">              0 :                         n = dn_expand(answer-&gt;qb2, answer-&gt;qb2+65536, cp, name, (sizeof name) - 2);</span>
+<span class="lineNum">     695 </span><span class="lineNoCov">              0 :                         if (n &lt; 0) {</span>
+<span class="lineNum">     696 </span><span class="lineNoCov">              0 :                                 return NULL;</span>
+<span class="lineNum">     697 </span>                :                         }
+<span class="lineNum">     698 </span><span class="lineNoCov">              0 :                         cp += n;</span>
+<span class="lineNum">     699 </span><span class="lineNoCov">              0 :                         add_assoc_string(*subarray, &quot;replacement&quot;, name, 1);</span>
+<span class="lineNum">     700 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     701 </span>                :                 default:
+<span class="lineNum">     702 </span><span class="lineNoCov">              0 :                         zval_ptr_dtor(subarray);</span>
+<span class="lineNum">     703 </span><span class="lineNoCov">              0 :                         *subarray = NULL;</span>
+<span class="lineNum">     704 </span><span class="lineNoCov">              0 :                         cp += dlen;</span>
+<span class="lineNum">     705 </span>                :                         break;
+<span class="lineNum">     706 </span>                :         }
+<span class="lineNum">     707 </span>                : 
+<span class="lineNum">     708 </span><span class="lineNoCov">              0 :         return cp;</span>
+<span class="lineNum">     709 </span>                : }
+<span class="lineNum">     710 </span>                : /* }}} */
+<span class="lineNum">     711 </span>                : 
+<a name="712"><span class="lineNum">     712 </span>                : /* {{{ proto array|false dns_get_record(string hostname [, int type[, array authns, array addtl]])</a>
+<span class="lineNum">     713 </span>                :    Get any Resource Record corresponding to a given Internet host name */
+<span class="lineNum">     714 </span><span class="lineNoCov">              0 : PHP_FUNCTION(dns_get_record)</span>
+<span class="lineNum">     715 </span>                : {
+<span class="lineNum">     716 </span>                :         char *hostname;
+<span class="lineNum">     717 </span>                :         int hostname_len;
+<span class="lineNum">     718 </span><span class="lineNoCov">              0 :         long type_param = PHP_DNS_ANY;</span>
+<span class="lineNum">     719 </span><span class="lineNoCov">              0 :         zval *authns = NULL, *addtl = NULL;</span>
+<span class="lineNum">     720 </span>                :         int type_to_fetch;
+<span class="lineNum">     721 </span>                : #if defined(HAVE_DNS_SEARCH)
+<span class="lineNum">     722 </span>                :         struct sockaddr_storage from;
+<span class="lineNum">     723 </span>                :         uint32_t fromsize = sizeof(from);
+<span class="lineNum">     724 </span>                :         dns_handle_t handle;
+<span class="lineNum">     725 </span>                : #elif defined(HAVE_RES_NSEARCH)
+<span class="lineNum">     726 </span>                :         struct __res_state state;
+<span class="lineNum">     727 </span><span class="lineNoCov">              0 :         struct __res_state *handle = &amp;state;</span>
+<span class="lineNum">     728 </span>                : #endif
+<span class="lineNum">     729 </span>                :         HEADER *hp;
+<span class="lineNum">     730 </span>                :         querybuf answer;
+<span class="lineNum">     731 </span><span class="lineNoCov">              0 :         u_char *cp = NULL, *end = NULL;</span>
+<span class="lineNum">     732 </span><span class="lineNoCov">              0 :         int n, qd, an, ns = 0, ar = 0;</span>
+<span class="lineNum">     733 </span><span class="lineNoCov">              0 :         int type, first_query = 1, store_results = 1;</span>
+<span class="lineNum">     734 </span><span class="lineNoCov">              0 :         zend_bool raw = 0;</span>
+<span class="lineNum">     735 </span>                : 
+<span class="lineNum">     736 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;s|lz!z!b&quot;,</span>
+<span class="lineNum">     737 </span>                :                         &amp;hostname, &amp;hostname_len, &amp;type_param, &amp;authns, &amp;addtl, &amp;raw) == FAILURE) {
+<span class="lineNum">     738 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     739 </span>                :         }
+<span class="lineNum">     740 </span>                : 
+<span class="lineNum">     741 </span><span class="lineNoCov">              0 :         if (authns) {</span>
+<span class="lineNum">     742 </span><span class="lineNoCov">              0 :                 zval_dtor(authns);</span>
+<span class="lineNum">     743 </span><span class="lineNoCov">              0 :                 array_init(authns);</span>
+<span class="lineNum">     744 </span>                :         }
+<span class="lineNum">     745 </span><span class="lineNoCov">              0 :         if (addtl) {</span>
+<span class="lineNum">     746 </span><span class="lineNoCov">              0 :                 zval_dtor(addtl);</span>
+<span class="lineNum">     747 </span><span class="lineNoCov">              0 :                 array_init(addtl);</span>
+<span class="lineNum">     748 </span>                :         }
+<span class="lineNum">     749 </span>                : 
+<span class="lineNum">     750 </span><span class="lineNoCov">              0 :         if (!raw) {</span>
+<span class="lineNum">     751 </span><span class="lineNoCov">              0 :                 if ((type_param &amp; ~PHP_DNS_ALL) &amp;&amp; (type_param != PHP_DNS_ANY)) {</span>
+<span class="lineNum">     752 </span><span class="lineNoCov">              0 :                         php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Type '%ld' not supported&quot;, type_param);</span>
+<span class="lineNum">     753 </span><span class="lineNoCov">              0 :                         RETURN_FALSE;</span>
+<span class="lineNum">     754 </span>                :                 }
+<span class="lineNum">     755 </span>                :         } else {
+<span class="lineNum">     756 </span><span class="lineNoCov">              0 :                 if ((type_param &lt; 1) || (type_param &gt; 0xFFFF)) {</span>
+<span class="lineNum">     757 </span><span class="lineNoCov">              0 :                         php_error_docref(NULL TSRMLS_CC, E_WARNING,</span>
+<span class="lineNum">     758 </span>                :                                 &quot;Numeric DNS record type must be between 1 and 65535, '%ld' given&quot;, type_param);
+<span class="lineNum">     759 </span><span class="lineNoCov">              0 :                         RETURN_FALSE;</span>
+<span class="lineNum">     760 </span>                :                 }
+<span class="lineNum">     761 </span>                :         }
+<span class="lineNum">     762 </span>                : 
+<span class="lineNum">     763 </span>                :         /* Initialize the return array */
+<span class="lineNum">     764 </span><span class="lineNoCov">              0 :         array_init(return_value);</span>
+<span class="lineNum">     765 </span>                : 
+<span class="lineNum">     766 </span>                :         /* - We emulate an or'ed type mask by querying type by type. (Steps 0 - NUMTYPES-1 )
+<span class="lineNum">     767 </span>                :          *   If additional info is wanted we check again with DNS_T_ANY (step NUMTYPES / NUMTYPES+1 )
+<span class="lineNum">     768 </span>                :          *   store_results is used to skip storing the results retrieved in step
+<span class="lineNum">     769 </span>                :          *   NUMTYPES+1 when results were already fetched.
+<span class="lineNum">     770 </span>                :          * - In case of PHP_DNS_ANY we use the directly fetch DNS_T_ANY. (step NUMTYPES+1 )
+<span class="lineNum">     771 </span>                :          * - In case of raw mode, we query only the requestd type instead of looping type by type
+<span class="lineNum">     772 </span>                :          *   before going with the additional info stuff.
+<span class="lineNum">     773 </span>                :          */
+<span class="lineNum">     774 </span>                : 
+<span class="lineNum">     775 </span><span class="lineNoCov">              0 :         if (raw) {</span>
+<span class="lineNum">     776 </span><span class="lineNoCov">              0 :                 type = -1;</span>
+<span class="lineNum">     777 </span><span class="lineNoCov">              0 :         } else if (type_param == PHP_DNS_ANY) {</span>
+<span class="lineNum">     778 </span><span class="lineNoCov">              0 :                 type = PHP_DNS_NUM_TYPES + 1;</span>
+<span class="lineNum">     779 </span>                :         } else {
+<span class="lineNum">     780 </span><span class="lineNoCov">              0 :                 type = 0;</span>
+<span class="lineNum">     781 </span>                :         }
+<span class="lineNum">     782 </span>                : 
+<span class="lineNum">     783 </span><span class="lineNoCov">              0 :         for ( ;</span>
+<span class="lineNum">     784 </span><span class="lineNoCov">              0 :                 type &lt; (addtl ? (PHP_DNS_NUM_TYPES + 2) : PHP_DNS_NUM_TYPES) || first_query;</span>
+<span class="lineNum">     785 </span>                :                 type++
+<span class="lineNum">     786 </span><span class="lineNoCov">              0 :         ) {</span>
+<span class="lineNum">     787 </span><span class="lineNoCov">              0 :                 first_query = 0;</span>
+<span class="lineNum">     788 </span><span class="lineNoCov">              0 :                 switch (type) {</span>
+<span class="lineNum">     789 </span>                :                         case -1: /* raw */
+<span class="lineNum">     790 </span><span class="lineNoCov">              0 :                                 type_to_fetch = type_param;</span>
+<span class="lineNum">     791 </span>                :                                 /* skip over the rest and go directly to additional records */
+<span class="lineNum">     792 </span><span class="lineNoCov">              0 :                                 type = PHP_DNS_NUM_TYPES - 1;</span>
+<span class="lineNum">     793 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     794 </span>                :                         case 0:
+<span class="lineNum">     795 </span><span class="lineNoCov">              0 :                                 type_to_fetch = type_param&amp;PHP_DNS_A     ? DNS_T_A     : 0;</span>
+<span class="lineNum">     796 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     797 </span>                :                         case 1:
+<span class="lineNum">     798 </span><span class="lineNoCov">              0 :                                 type_to_fetch = type_param&amp;PHP_DNS_NS    ? DNS_T_NS    : 0;</span>
+<span class="lineNum">     799 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     800 </span>                :                         case 2:
+<span class="lineNum">     801 </span><span class="lineNoCov">              0 :                                 type_to_fetch = type_param&amp;PHP_DNS_CNAME ? DNS_T_CNAME : 0;</span>
+<span class="lineNum">     802 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     803 </span>                :                         case 3:
+<span class="lineNum">     804 </span><span class="lineNoCov">              0 :                                 type_to_fetch = type_param&amp;PHP_DNS_SOA   ? DNS_T_SOA   : 0;</span>
+<span class="lineNum">     805 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     806 </span>                :                         case 4:
+<span class="lineNum">     807 </span><span class="lineNoCov">              0 :                                 type_to_fetch = type_param&amp;PHP_DNS_PTR   ? DNS_T_PTR   : 0;</span>
+<span class="lineNum">     808 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     809 </span>                :                         case 5:
+<span class="lineNum">     810 </span><span class="lineNoCov">              0 :                                 type_to_fetch = type_param&amp;PHP_DNS_HINFO ? DNS_T_HINFO : 0;</span>
+<span class="lineNum">     811 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     812 </span>                :                         case 6:
+<span class="lineNum">     813 </span><span class="lineNoCov">              0 :                                 type_to_fetch = type_param&amp;PHP_DNS_MX    ? DNS_T_MX    : 0;</span>
+<span class="lineNum">     814 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     815 </span>                :                         case 7:
+<span class="lineNum">     816 </span><span class="lineNoCov">              0 :                                 type_to_fetch = type_param&amp;PHP_DNS_TXT   ? DNS_T_TXT   : 0;</span>
+<span class="lineNum">     817 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     818 </span>                :                         case 8:
+<span class="lineNum">     819 </span><span class="lineNoCov">              0 :                                 type_to_fetch = type_param&amp;PHP_DNS_AAAA      ? DNS_T_AAAA  : 0;</span>
+<span class="lineNum">     820 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     821 </span>                :                         case 9:
+<span class="lineNum">     822 </span><span class="lineNoCov">              0 :                                 type_to_fetch = type_param&amp;PHP_DNS_SRV   ? DNS_T_SRV   : 0;</span>
+<span class="lineNum">     823 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     824 </span>                :                         case 10:
+<span class="lineNum">     825 </span><span class="lineNoCov">              0 :                                 type_to_fetch = type_param&amp;PHP_DNS_NAPTR ? DNS_T_NAPTR : 0;</span>
+<span class="lineNum">     826 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     827 </span>                :                         case 11:
+<span class="lineNum">     828 </span><span class="lineNoCov">              0 :                                 type_to_fetch = type_param&amp;PHP_DNS_A6        ? DNS_T_A6 : 0;</span>
+<span class="lineNum">     829 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     830 </span>                :                         case PHP_DNS_NUM_TYPES:
+<span class="lineNum">     831 </span><span class="lineNoCov">              0 :                                 store_results = 0;</span>
+<span class="lineNum">     832 </span><span class="lineNoCov">              0 :                                 continue;</span>
+<span class="lineNum">     833 </span>                :                         default:
+<span class="lineNum">     834 </span>                :                         case (PHP_DNS_NUM_TYPES + 1):
+<span class="lineNum">     835 </span><span class="lineNoCov">              0 :                                 type_to_fetch = DNS_T_ANY;</span>
+<span class="lineNum">     836 </span>                :                                 break;
+<span class="lineNum">     837 </span>                :                 }
+<span class="lineNum">     838 </span>                : 
+<span class="lineNum">     839 </span><span class="lineNoCov">              0 :                 if (type_to_fetch) {</span>
+<span class="lineNum">     840 </span>                : #if defined(HAVE_DNS_SEARCH)
+<span class="lineNum">     841 </span>                :                         handle = dns_open(NULL);
+<span class="lineNum">     842 </span>                :                         if (handle == NULL) {
+<span class="lineNum">     843 </span>                :                                 zval_dtor(return_value);
+<span class="lineNum">     844 </span>                :                                 RETURN_FALSE;
+<span class="lineNum">     845 </span>                :                         }
+<span class="lineNum">     846 </span>                : #elif defined(HAVE_RES_NSEARCH)
+<span class="lineNum">     847 </span><span class="lineNoCov">              0 :                     memset(&amp;state, 0, sizeof(state));</span>
+<span class="lineNum">     848 </span><span class="lineNoCov">              0 :                     if (res_ninit(handle)) {</span>
+<span class="lineNum">     849 </span>                :                         zval_dtor(return_value);
+<span class="lineNum">     850 </span><span class="lineNoCov">              0 :                                 RETURN_FALSE;</span>
+<span class="lineNum">     851 </span>                :                         }
+<span class="lineNum">     852 </span>                : #else
+<span class="lineNum">     853 </span>                :                         res_init();
+<span class="lineNum">     854 </span>                : #endif
+<span class="lineNum">     855 </span>                : 
+<span class="lineNum">     856 </span><span class="lineNoCov">              0 :                         n = php_dns_search(handle, hostname, C_IN, type_to_fetch, answer.qb2, sizeof answer);</span>
+<span class="lineNum">     857 </span>                : 
+<span class="lineNum">     858 </span><span class="lineNoCov">              0 :                         if (n &lt; 0) {</span>
+<span class="lineNum">     859 </span><span class="lineNoCov">              0 :                                 php_dns_free_handle(handle);</span>
+<span class="lineNum">     860 </span><span class="lineNoCov">              0 :                                 continue;</span>
+<span class="lineNum">     861 </span>                :                         }
+<span class="lineNum">     862 </span>                : 
+<span class="lineNum">     863 </span><span class="lineNoCov">              0 :                         cp = answer.qb2 + HFIXEDSZ;</span>
+<span class="lineNum">     864 </span><span class="lineNoCov">              0 :                         end = answer.qb2 + n;</span>
+<span class="lineNum">     865 </span><span class="lineNoCov">              0 :                         hp = (HEADER *)&amp;answer;</span>
+<span class="lineNum">     866 </span><span class="lineNoCov">              0 :                         qd = ntohs(hp-&gt;qdcount);</span>
+<span class="lineNum">     867 </span><span class="lineNoCov">              0 :                         an = ntohs(hp-&gt;ancount);</span>
+<span class="lineNum">     868 </span><span class="lineNoCov">              0 :                         ns = ntohs(hp-&gt;nscount);</span>
+<span class="lineNum">     869 </span><span class="lineNoCov">              0 :                         ar = ntohs(hp-&gt;arcount);</span>
+<span class="lineNum">     870 </span>                : 
+<span class="lineNum">     871 </span>                :                         /* Skip QD entries, they're only used by dn_expand later on */
+<span class="lineNum">     872 </span><span class="lineNoCov">              0 :                         while (qd-- &gt; 0) {</span>
+<span class="lineNum">     873 </span><span class="lineNoCov">              0 :                                 n = dn_skipname(cp, end);</span>
+<span class="lineNum">     874 </span><span class="lineNoCov">              0 :                                 if (n &lt; 0) {</span>
+<span class="lineNum">     875 </span><span class="lineNoCov">              0 :                                         php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Unable to parse DNS data received&quot;);</span>
+<span class="lineNum">     876 </span>                :                                         zval_dtor(return_value);
+<span class="lineNum">     877 </span><span class="lineNoCov">              0 :                                         php_dns_free_handle(handle);</span>
+<span class="lineNum">     878 </span><span class="lineNoCov">              0 :                                         RETURN_FALSE;</span>
+<span class="lineNum">     879 </span>                :                                 }
+<span class="lineNum">     880 </span><span class="lineNoCov">              0 :                                 cp += n + QFIXEDSZ;</span>
+<span class="lineNum">     881 </span>                :                         }
+<span class="lineNum">     882 </span>                : 
+<span class="lineNum">     883 </span>                :                         /* YAY! Our real answers! */
+<span class="lineNum">     884 </span><span class="lineNoCov">              0 :                         while (an-- &amp;&amp; cp &amp;&amp; cp &lt; end) {</span>
+<span class="lineNum">     885 </span>                :                                 zval *retval;
+<span class="lineNum">     886 </span>                : 
+<span class="lineNum">     887 </span><span class="lineNoCov">              0 :                                 cp = php_parserr(cp, &amp;answer, type_to_fetch, store_results, raw, &amp;retval);</span>
+<span class="lineNum">     888 </span><span class="lineNoCov">              0 :                                 if (retval != NULL &amp;&amp; store_results) {</span>
+<span class="lineNum">     889 </span><span class="lineNoCov">              0 :                                         add_next_index_zval(return_value, retval);</span>
+<span class="lineNum">     890 </span>                :                                 }
+<span class="lineNum">     891 </span>                :                         }
+<span class="lineNum">     892 </span>                : 
+<span class="lineNum">     893 </span><span class="lineNoCov">              0 :                         if (authns || addtl) {</span>
+<span class="lineNum">     894 </span>                :                                 /* List of Authoritative Name Servers
+<span class="lineNum">     895 </span>                :                                  * Process when only requesting addtl so that we can skip through the section
+<span class="lineNum">     896 </span>                :                                  */
+<span class="lineNum">     897 </span><span class="lineNoCov">              0 :                                 while (ns-- &gt; 0 &amp;&amp; cp &amp;&amp; cp &lt; end) {</span>
+<span class="lineNum">     898 </span><span class="lineNoCov">              0 :                                         zval *retval = NULL;</span>
+<span class="lineNum">     899 </span>                : 
+<span class="lineNum">     900 </span><span class="lineNoCov">              0 :                                         cp = php_parserr(cp, &amp;answer, DNS_T_ANY, authns != NULL, raw, &amp;retval);</span>
+<span class="lineNum">     901 </span><span class="lineNoCov">              0 :                                         if (retval != NULL) {</span>
+<span class="lineNum">     902 </span><span class="lineNoCov">              0 :                                                 add_next_index_zval(authns, retval);</span>
+<span class="lineNum">     903 </span>                :                                         }
+<span class="lineNum">     904 </span>                :                                 }
+<span class="lineNum">     905 </span>                :                         }
+<span class="lineNum">     906 </span>                : 
+<span class="lineNum">     907 </span><span class="lineNoCov">              0 :                         if (addtl) {</span>
+<span class="lineNum">     908 </span>                :                                 /* Additional records associated with authoritative name servers */
+<span class="lineNum">     909 </span><span class="lineNoCov">              0 :                                 while (ar-- &gt; 0 &amp;&amp; cp &amp;&amp; cp &lt; end) {</span>
+<span class="lineNum">     910 </span><span class="lineNoCov">              0 :                                         zval *retval = NULL;</span>
+<span class="lineNum">     911 </span>                : 
+<span class="lineNum">     912 </span><span class="lineNoCov">              0 :                                         cp = php_parserr(cp, &amp;answer, DNS_T_ANY, 1, raw, &amp;retval);</span>
+<span class="lineNum">     913 </span><span class="lineNoCov">              0 :                                         if (retval != NULL) {</span>
+<span class="lineNum">     914 </span><span class="lineNoCov">              0 :                                                 add_next_index_zval(addtl, retval);</span>
+<span class="lineNum">     915 </span>                :                                         }
+<span class="lineNum">     916 </span>                :                                 }
+<span class="lineNum">     917 </span>                :                         }
+<span class="lineNum">     918 </span><span class="lineNoCov">              0 :                         php_dns_free_handle(handle);</span>
+<span class="lineNum">     919 </span>                :                 }
+<span class="lineNum">     920 </span>                :         }
+<span class="lineNum">     921 </span>                : }
+<span class="lineNum">     922 </span>                : /* }}} */
+<span class="lineNum">     923 </span>                : 
+<a name="924"><span class="lineNum">     924 </span>                : /* {{{ proto bool dns_get_mx(string hostname, array mxhosts [, array weight])</a>
+<span class="lineNum">     925 </span>                :    Get MX records corresponding to a given Internet host name */
+<span class="lineNum">     926 </span><span class="lineNoCov">              0 : PHP_FUNCTION(dns_get_mx)</span>
+<span class="lineNum">     927 </span>                : {
+<span class="lineNum">     928 </span>                :         char *hostname;
+<span class="lineNum">     929 </span>                :         int hostname_len;
+<span class="lineNum">     930 </span><span class="lineNoCov">              0 :         zval *mx_list, *weight_list = NULL;</span>
+<span class="lineNum">     931 </span>                :         int count, qdc;
+<span class="lineNum">     932 </span>                :         u_short type, weight;
+<span class="lineNum">     933 </span>                :         u_char ans[MAXPACKET];
+<span class="lineNum">     934 </span>                :         char buf[MAXHOSTNAMELEN];
+<span class="lineNum">     935 </span>                :         HEADER *hp;
+<span class="lineNum">     936 </span>                :         u_char *cp, *end;
+<span class="lineNum">     937 </span>                :         int i;
+<span class="lineNum">     938 </span>                : #if defined(HAVE_DNS_SEARCH)
+<span class="lineNum">     939 </span>                :         struct sockaddr_storage from;
+<span class="lineNum">     940 </span>                :         uint32_t fromsize = sizeof(from);
+<span class="lineNum">     941 </span>                :         dns_handle_t handle;
+<span class="lineNum">     942 </span>                : #elif defined(HAVE_RES_NSEARCH)
+<span class="lineNum">     943 </span>                :         struct __res_state state;
+<span class="lineNum">     944 </span><span class="lineNoCov">              0 :         struct __res_state *handle = &amp;state;</span>
+<span class="lineNum">     945 </span>                : #endif
+<span class="lineNum">     946 </span>                : 
+<span class="lineNum">     947 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;sz|z&quot;, &amp;hostname, &amp;hostname_len, &amp;mx_list, &amp;weight_list) == FAILURE) {</span>
+<span class="lineNum">     948 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     949 </span>                :         }
+<span class="lineNum">     950 </span>                : 
+<span class="lineNum">     951 </span><span class="lineNoCov">              0 :         zval_dtor(mx_list);</span>
+<span class="lineNum">     952 </span><span class="lineNoCov">              0 :         array_init(mx_list);</span>
+<span class="lineNum">     953 </span>                : 
+<span class="lineNum">     954 </span><span class="lineNoCov">              0 :         if (weight_list) {</span>
+<span class="lineNum">     955 </span><span class="lineNoCov">              0 :                 zval_dtor(weight_list);</span>
+<span class="lineNum">     956 </span><span class="lineNoCov">              0 :                 array_init(weight_list);</span>
+<span class="lineNum">     957 </span>                :         }
+<span class="lineNum">     958 </span>                : 
+<span class="lineNum">     959 </span>                : #if defined(HAVE_DNS_SEARCH)
+<span class="lineNum">     960 </span>                :         handle = dns_open(NULL);
+<span class="lineNum">     961 </span>                :         if (handle == NULL) {
+<span class="lineNum">     962 </span>                :                 RETURN_FALSE;
+<span class="lineNum">     963 </span>                :         }
+<span class="lineNum">     964 </span>                : #elif defined(HAVE_RES_NSEARCH)
+<span class="lineNum">     965 </span><span class="lineNoCov">              0 :     memset(&amp;state, 0, sizeof(state));</span>
+<span class="lineNum">     966 </span><span class="lineNoCov">              0 :     if (res_ninit(handle)) {</span>
+<span class="lineNum">     967 </span><span class="lineNoCov">              0 :                         RETURN_FALSE;</span>
+<span class="lineNum">     968 </span>                :         }
+<span class="lineNum">     969 </span>                : #else
+<span class="lineNum">     970 </span>                :         res_init();
+<span class="lineNum">     971 </span>                : #endif
+<span class="lineNum">     972 </span>                : 
+<span class="lineNum">     973 </span><span class="lineNoCov">              0 :         i = php_dns_search(handle, hostname, C_IN, DNS_T_MX, (u_char *)&amp;ans, sizeof(ans));</span>
+<span class="lineNum">     974 </span><span class="lineNoCov">              0 :         if (i &lt; 0) {</span>
+<span class="lineNum">     975 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     976 </span>                :         }
+<span class="lineNum">     977 </span><span class="lineNoCov">              0 :         if (i &gt; (int)sizeof(ans)) {</span>
+<span class="lineNum">     978 </span><span class="lineNoCov">              0 :                 i = sizeof(ans);</span>
+<span class="lineNum">     979 </span>                :         }
+<span class="lineNum">     980 </span><span class="lineNoCov">              0 :         hp = (HEADER *)&amp;ans;</span>
+<span class="lineNum">     981 </span><span class="lineNoCov">              0 :         cp = (u_char *)&amp;ans + HFIXEDSZ;</span>
+<span class="lineNum">     982 </span><span class="lineNoCov">              0 :         end = (u_char *)&amp;ans +i;</span>
+<span class="lineNum">     983 </span><span class="lineNoCov">              0 :         for (qdc = ntohs((unsigned short)hp-&gt;qdcount); qdc--; cp += i + QFIXEDSZ) {</span>
+<span class="lineNum">     984 </span><span class="lineNoCov">              0 :                 if ((i = dn_skipname(cp, end)) &lt; 0 ) {</span>
+<span class="lineNum">     985 </span><span class="lineNoCov">              0 :                         php_dns_free_handle(handle);</span>
+<span class="lineNum">     986 </span><span class="lineNoCov">              0 :                         RETURN_FALSE;</span>
+<span class="lineNum">     987 </span>                :                 }
+<span class="lineNum">     988 </span>                :         }
+<span class="lineNum">     989 </span><span class="lineNoCov">              0 :         count = ntohs((unsigned short)hp-&gt;ancount);</span>
+<span class="lineNum">     990 </span><span class="lineNoCov">              0 :         while (--count &gt;= 0 &amp;&amp; cp &lt; end) {</span>
+<span class="lineNum">     991 </span><span class="lineNoCov">              0 :                 if ((i = dn_skipname(cp, end)) &lt; 0 ) {</span>
+<span class="lineNum">     992 </span><span class="lineNoCov">              0 :                         php_dns_free_handle(handle);</span>
+<span class="lineNum">     993 </span><span class="lineNoCov">              0 :                         RETURN_FALSE;</span>
+<span class="lineNum">     994 </span>                :                 }
+<span class="lineNum">     995 </span><span class="lineNoCov">              0 :                 cp += i;</span>
+<span class="lineNum">     996 </span><span class="lineNoCov">              0 :                 GETSHORT(type, cp);</span>
+<span class="lineNum">     997 </span><span class="lineNoCov">              0 :                 cp += INT16SZ + INT32SZ;</span>
+<span class="lineNum">     998 </span><span class="lineNoCov">              0 :                 GETSHORT(i, cp);</span>
+<span class="lineNum">     999 </span><span class="lineNoCov">              0 :                 if (type != DNS_T_MX) {</span>
+<span class="lineNum">    1000 </span><span class="lineNoCov">              0 :                         cp += i;</span>
+<span class="lineNum">    1001 </span><span class="lineNoCov">              0 :                         continue;</span>
+<span class="lineNum">    1002 </span>                :                 }
+<span class="lineNum">    1003 </span><span class="lineNoCov">              0 :                 GETSHORT(weight, cp);</span>
+<span class="lineNum">    1004 </span><span class="lineNoCov">              0 :                 if ((i = dn_expand(ans, end, cp, buf, sizeof(buf)-1)) &lt; 0) {</span>
+<span class="lineNum">    1005 </span><span class="lineNoCov">              0 :                         php_dns_free_handle(handle);</span>
+<span class="lineNum">    1006 </span><span class="lineNoCov">              0 :                         RETURN_FALSE;</span>
+<span class="lineNum">    1007 </span>                :                 }
+<span class="lineNum">    1008 </span><span class="lineNoCov">              0 :                 cp += i;</span>
+<span class="lineNum">    1009 </span><span class="lineNoCov">              0 :                 add_next_index_string(mx_list, buf, 1);</span>
+<span class="lineNum">    1010 </span><span class="lineNoCov">              0 :                 if (weight_list) {</span>
+<span class="lineNum">    1011 </span><span class="lineNoCov">              0 :                         add_next_index_long(weight_list, weight);</span>
+<span class="lineNum">    1012 </span>                :                 }
+<span class="lineNum">    1013 </span>                :         }
+<span class="lineNum">    1014 </span><span class="lineNoCov">              0 :         php_dns_free_handle(handle);</span>
+<span class="lineNum">    1015 </span><span class="lineNoCov">              0 :         RETURN_TRUE;</span>
+<span class="lineNum">    1016 </span>                : }
+<span class="lineNum">    1017 </span>                : /* }}} */
+<span class="lineNum">    1018 </span>                : #endif /* HAVE_FULL_DNS_FUNCS */
+<span class="lineNum">    1019 </span>                : #endif /* !defined(PHP_WIN32) &amp;&amp; (HAVE_DNS_SEARCH_FUNC &amp;&amp; !(defined(__BEOS__) || defined(NETWARE))) */
+<a name="1020"><span class="lineNum">    1020 </span>                : </a>
+<span class="lineNum">    1021 </span>                : #if HAVE_FULL_DNS_FUNCS || defined(PHP_WIN32)
+<span class="lineNum">    1022 </span><span class="lineCov">             48 : PHP_MINIT_FUNCTION(dns) {</span>
+<span class="lineNum">    1023 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;DNS_A&quot;,     PHP_DNS_A,     CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">    1024 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;DNS_NS&quot;,    PHP_DNS_NS,    CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">    1025 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;DNS_CNAME&quot;, PHP_DNS_CNAME, CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">    1026 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;DNS_SOA&quot;,   PHP_DNS_SOA,   CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">    1027 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;DNS_PTR&quot;,   PHP_DNS_PTR,   CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">    1028 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;DNS_HINFO&quot;, PHP_DNS_HINFO, CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">    1029 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;DNS_MX&quot;,    PHP_DNS_MX,    CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">    1030 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;DNS_TXT&quot;,   PHP_DNS_TXT,   CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">    1031 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;DNS_SRV&quot;,   PHP_DNS_SRV,   CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">    1032 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;DNS_NAPTR&quot;, PHP_DNS_NAPTR, CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">    1033 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;DNS_AAAA&quot;,  PHP_DNS_AAAA,  CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">    1034 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;DNS_A6&quot;,    PHP_DNS_A6,    CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">    1035 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;DNS_ANY&quot;,   PHP_DNS_ANY,   CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">    1036 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;DNS_ALL&quot;,   PHP_DNS_ALL,   CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">    1037 </span><span class="lineCov">             48 :         return SUCCESS;</span>
+<span class="lineNum">    1038 </span>                : }
+<span class="lineNum">    1039 </span>                : #endif /* HAVE_FULL_DNS_FUNCS */
+<span class="lineNum">    1040 </span>                : 
+<span class="lineNum">    1041 </span>                : /*
+<span class="lineNum">    1042 </span>                :  * Local variables:
+<span class="lineNum">    1043 </span>                :  * tab-width: 4
+<span class="lineNum">    1044 </span>                :  * c-basic-offset: 4
+<span class="lineNum">    1045 </span>                :  * End:
+<span class="lineNum">    1046 </span>                :  * vim600: sw=4 ts=4 fdm=marker
+<span class="lineNum">    1047 </span>                :  * vim&lt;600: sw=4 ts=4
+<span class="lineNum">    1048 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

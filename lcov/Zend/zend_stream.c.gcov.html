@@ -1,0 +1,439 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - Zend/zend_stream.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../index.html">directory</a> - <a href="index.html">Zend</a> - zend_stream.c (source / <a href="zend_stream.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">159</td>
+          <td class="headerCovTableEntry">79</td>
+          <td class="headerCovTableEntryMed">49.7 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">13</td>
+          <td class="headerCovTableEntry">8</td>
+          <td class="headerCovTableEntryLo">61.5 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | Zend Engine                                                          |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1998-2012 Zend Technologies Ltd. (http://www.zend.com) |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 2.00 of the Zend license,     |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.zend.com/license/2_00.txt.                                |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the Zend license and are unable to  |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@zend.com so we can mail you a copy immediately.              |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Authors: Wez Furlong &lt;wez@thebrainroom.com&gt;                          |
+<span class="lineNum">      16 </span>                :    |          Scott MacVicar &lt;scottmac@php.net&gt;                           |
+<span class="lineNum">      17 </span>                :    |          Nuno Lopes &lt;nlopess@php.net&gt;                                |
+<span class="lineNum">      18 </span>                :    |          Marcus Boerger &lt;helly@php.net&gt;                              |
+<span class="lineNum">      19 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      20 </span>                : */
+<span class="lineNum">      21 </span>                : 
+<span class="lineNum">      22 </span>                : /* $Id$ */
+<span class="lineNum">      23 </span>                : 
+<span class="lineNum">      24 </span>                : 
+<span class="lineNum">      25 </span>                : #include &quot;zend.h&quot;
+<span class="lineNum">      26 </span>                : #include &quot;zend_compile.h&quot;
+<span class="lineNum">      27 </span>                : 
+<span class="lineNum">      28 </span>                : #include &lt;sys/types.h&gt;
+<span class="lineNum">      29 </span>                : #include &lt;sys/stat.h&gt;
+<span class="lineNum">      30 </span>                : #if HAVE_MMAP
+<span class="lineNum">      31 </span>                : # if HAVE_UNISTD_H
+<span class="lineNum">      32 </span>                : #  include &lt;unistd.h&gt;
+<span class="lineNum">      33 </span>                : #  if defined(_SC_PAGESIZE)
+<span class="lineNum">      34 </span>                : #    define REAL_PAGE_SIZE sysconf(_SC_PAGESIZE);
+<span class="lineNum">      35 </span>                : #  elif defined(_SC_PAGE_SIZE)
+<span class="lineNum">      36 </span>                : #    define REAL_PAGE_SIZE sysconf(_SC_PAGE_SIZE);
+<span class="lineNum">      37 </span>                : #  endif
+<span class="lineNum">      38 </span>                : # endif
+<span class="lineNum">      39 </span>                : # if HAVE_SYS_MMAN_H
+<span class="lineNum">      40 </span>                : #  include &lt;sys/mman.h&gt;
+<span class="lineNum">      41 </span>                : # endif
+<span class="lineNum">      42 </span>                : # ifndef REAL_PAGE_SIZE
+<span class="lineNum">      43 </span>                : #  ifdef PAGE_SIZE
+<span class="lineNum">      44 </span>                : #   define REAL_PAGE_SIZE PAGE_SIZE
+<span class="lineNum">      45 </span>                : #  else
+<span class="lineNum">      46 </span>                : #   define REAL_PAGE_SIZE 4096
+<span class="lineNum">      47 </span>                : #  endif
+<span class="lineNum">      48 </span>                : # endif
+<span class="lineNum">      49 </span>                : #endif
+<span class="lineNum">      50 </span>                : 
+<a name="51"><span class="lineNum">      51 </span>                : ZEND_DLIMPORT int isatty(int fd);</a>
+<span class="lineNum">      52 </span>                : 
+<span class="lineNum">      53 </span><span class="lineNoCov">              0 : static size_t zend_stream_stdio_reader(void *handle, char *buf, size_t len TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">      54 </span>                : {
+<span class="lineNum">      55 </span><span class="lineNoCov">              0 :         return fread(buf, 1, len, (FILE*)handle);</span>
+<a name="56"><span class="lineNum">      56 </span>                : } /* }}} */</a>
+<span class="lineNum">      57 </span>                : 
+<span class="lineNum">      58 </span><span class="lineCov">             90 : static void zend_stream_stdio_closer(void *handle TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">      59 </span>                : {
+<span class="lineNum">      60 </span><span class="lineCov">             90 :         if (handle &amp;&amp; (FILE*)handle != stdin) {</span>
+<span class="lineNum">      61 </span><span class="lineCov">             90 :                 fclose((FILE*)handle);</span>
+<span class="lineNum">      62 </span>                :         }
+<a name="63"><span class="lineNum">      63 </span><span class="lineCov">             90 : } /* }}} */</span></a>
+<span class="lineNum">      64 </span>                : 
+<span class="lineNum">      65 </span><span class="lineNoCov">              0 : static size_t zend_stream_stdio_fsizer(void *handle TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">      66 </span>                : {
+<span class="lineNum">      67 </span>                :         struct stat buf;
+<span class="lineNum">      68 </span><span class="lineNoCov">              0 :         if (handle &amp;&amp; fstat(fileno((FILE*)handle), &amp;buf) == 0) {</span>
+<span class="lineNum">      69 </span>                : #ifdef S_ISREG
+<span class="lineNum">      70 </span><span class="lineNoCov">              0 :                 if (!S_ISREG(buf.st_mode)) {</span>
+<span class="lineNum">      71 </span><span class="lineNoCov">              0 :                         return 0;</span>
+<span class="lineNum">      72 </span>                :                 }
+<span class="lineNum">      73 </span>                : #endif
+<span class="lineNum">      74 </span><span class="lineNoCov">              0 :                 return buf.st_size;</span>
+<span class="lineNum">      75 </span>                :         }
+<span class="lineNum">      76 </span><span class="lineNoCov">              0 :         return 0;</span>
+<a name="77"><span class="lineNum">      77 </span>                : } /* }}} */</a>
+<span class="lineNum">      78 </span>                : 
+<span class="lineNum">      79 </span><span class="lineCov">             90 : static void zend_stream_unmap(zend_stream *stream TSRMLS_DC) { /* {{{ */</span>
+<span class="lineNum">      80 </span>                : #if HAVE_MMAP
+<span class="lineNum">      81 </span><span class="lineCov">             90 :         if (stream-&gt;mmap.map) {</span>
+<span class="lineNum">      82 </span><span class="lineCov">             90 :                 munmap(stream-&gt;mmap.map, stream-&gt;mmap.len);</span>
+<span class="lineNum">      83 </span>                :         } else
+<span class="lineNum">      84 </span>                : #endif
+<span class="lineNum">      85 </span><span class="lineNoCov">              0 :         if (stream-&gt;mmap.buf) {</span>
+<span class="lineNum">      86 </span><span class="lineNoCov">              0 :                 efree(stream-&gt;mmap.buf);</span>
+<span class="lineNum">      87 </span>                :         }
+<span class="lineNum">      88 </span><span class="lineCov">             90 :         stream-&gt;mmap.len = 0;</span>
+<span class="lineNum">      89 </span><span class="lineCov">             90 :         stream-&gt;mmap.pos = 0;</span>
+<span class="lineNum">      90 </span><span class="lineCov">             90 :         stream-&gt;mmap.map = 0;</span>
+<span class="lineNum">      91 </span><span class="lineCov">             90 :         stream-&gt;mmap.buf = 0;</span>
+<span class="lineNum">      92 </span><span class="lineCov">             90 :         stream-&gt;handle   = stream-&gt;mmap.old_handle;</span>
+<a name="93"><span class="lineNum">      93 </span><span class="lineCov">             90 : } /* }}} */</span></a>
+<span class="lineNum">      94 </span>                : 
+<span class="lineNum">      95 </span><span class="lineCov">             90 : static void zend_stream_mmap_closer(zend_stream *stream TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">      96 </span>                : {
+<span class="lineNum">      97 </span><span class="lineCov">             90 :         zend_stream_unmap(stream TSRMLS_CC);</span>
+<span class="lineNum">      98 </span><span class="lineCov">             90 :         if (stream-&gt;mmap.old_closer &amp;&amp; stream-&gt;handle) {</span>
+<span class="lineNum">      99 </span><span class="lineCov">             90 :                 stream-&gt;mmap.old_closer(stream-&gt;handle TSRMLS_CC);</span>
+<span class="lineNum">     100 </span>                :         }
+<a name="101"><span class="lineNum">     101 </span><span class="lineCov">             90 : } /* }}} */</span></a>
+<span class="lineNum">     102 </span>                : 
+<span class="lineNum">     103 </span><span class="lineCov">             90 : static inline int zend_stream_is_mmap(zend_file_handle *file_handle) { /* {{{ */</span>
+<span class="lineNum">     104 </span><span class="lineCov">             90 :         return file_handle-&gt;type == ZEND_HANDLE_MAPPED;</span>
+<a name="105"><span class="lineNum">     105 </span>                : } /* }}} */</a>
+<span class="lineNum">     106 </span>                : 
+<span class="lineNum">     107 </span><span class="lineCov">             90 : static size_t zend_stream_fsize(zend_file_handle *file_handle TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     108 </span>                : {
+<span class="lineNum">     109 </span>                :         struct stat buf;
+<span class="lineNum">     110 </span>                : 
+<span class="lineNum">     111 </span><span class="lineCov">             90 :         if (zend_stream_is_mmap(file_handle)) {</span>
+<span class="lineNum">     112 </span><span class="lineNoCov">              0 :                 return file_handle-&gt;handle.stream.mmap.len;</span>
+<span class="lineNum">     113 </span>                :         }
+<span class="lineNum">     114 </span><span class="lineCov">             90 :         if (file_handle-&gt;type == ZEND_HANDLE_STREAM || file_handle-&gt;type == ZEND_HANDLE_MAPPED) {</span>
+<span class="lineNum">     115 </span><span class="lineNoCov">              0 :                 return file_handle-&gt;handle.stream.fsizer(file_handle-&gt;handle.stream.handle TSRMLS_CC);</span>
+<span class="lineNum">     116 </span>                :         }
+<span class="lineNum">     117 </span><span class="lineCov">             90 :         if (file_handle-&gt;handle.fp &amp;&amp; fstat(fileno(file_handle-&gt;handle.fp), &amp;buf) == 0) {</span>
+<span class="lineNum">     118 </span>                : #ifdef S_ISREG
+<span class="lineNum">     119 </span><span class="lineCov">             90 :                 if (!S_ISREG(buf.st_mode)) {</span>
+<span class="lineNum">     120 </span><span class="lineNoCov">              0 :                         return 0;</span>
+<span class="lineNum">     121 </span>                :                 }
+<span class="lineNum">     122 </span>                : #endif
+<span class="lineNum">     123 </span><span class="lineCov">             90 :                 return buf.st_size;</span>
+<span class="lineNum">     124 </span>                :         }
+<span class="lineNum">     125 </span>                : 
+<span class="lineNum">     126 </span><span class="lineNoCov">              0 :         return -1;</span>
+<a name="127"><span class="lineNum">     127 </span>                : } /* }}} */</a>
+<span class="lineNum">     128 </span>                : 
+<span class="lineNum">     129 </span><span class="lineNoCov">              0 : ZEND_API int zend_stream_open(const char *filename, zend_file_handle *handle TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     130 </span>                : {
+<span class="lineNum">     131 </span><span class="lineNoCov">              0 :         if (zend_stream_open_function) {</span>
+<span class="lineNum">     132 </span><span class="lineNoCov">              0 :                 return zend_stream_open_function(filename, handle TSRMLS_CC);</span>
+<span class="lineNum">     133 </span>                :         }
+<span class="lineNum">     134 </span><span class="lineNoCov">              0 :         handle-&gt;type = ZEND_HANDLE_FP;</span>
+<span class="lineNum">     135 </span><span class="lineNoCov">              0 :         handle-&gt;opened_path = NULL;</span>
+<span class="lineNum">     136 </span><span class="lineNoCov">              0 :         handle-&gt;handle.fp = zend_fopen(filename, &amp;handle-&gt;opened_path TSRMLS_CC);</span>
+<span class="lineNum">     137 </span><span class="lineNoCov">              0 :         handle-&gt;filename = filename;</span>
+<span class="lineNum">     138 </span><span class="lineNoCov">              0 :         handle-&gt;free_filename = 0;</span>
+<span class="lineNum">     139 </span><span class="lineNoCov">              0 :         memset(&amp;handle-&gt;handle.stream.mmap, 0, sizeof(zend_mmap));</span>
+<span class="lineNum">     140 </span>                :         
+<span class="lineNum">     141 </span><span class="lineNoCov">              0 :         return (handle-&gt;handle.fp) ? SUCCESS : FAILURE;</span>
+<a name="142"><span class="lineNum">     142 </span>                : } /* }}} */</a>
+<span class="lineNum">     143 </span>                : 
+<span class="lineNum">     144 </span><span class="lineNoCov">              0 : static int zend_stream_getc(zend_file_handle *file_handle TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     145 </span>                : {
+<span class="lineNum">     146 </span>                :         char buf;
+<span class="lineNum">     147 </span>                : 
+<span class="lineNum">     148 </span><span class="lineNoCov">              0 :         if (file_handle-&gt;handle.stream.reader(file_handle-&gt;handle.stream.handle, &amp;buf, sizeof(buf) TSRMLS_CC)) {</span>
+<span class="lineNum">     149 </span><span class="lineNoCov">              0 :                 return (int)buf;</span>
+<span class="lineNum">     150 </span>                :         }
+<span class="lineNum">     151 </span><span class="lineNoCov">              0 :         return EOF;</span>
+<a name="152"><span class="lineNum">     152 </span>                : } /* }}} */</a>
+<span class="lineNum">     153 </span>                : 
+<span class="lineNum">     154 </span><span class="lineNoCov">              0 : static size_t zend_stream_read(zend_file_handle *file_handle, char *buf, size_t len TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     155 </span>                : {
+<span class="lineNum">     156 </span><span class="lineNoCov">              0 :         if (!zend_stream_is_mmap(file_handle) &amp;&amp; file_handle-&gt;handle.stream.isatty) {</span>
+<span class="lineNum">     157 </span><span class="lineNoCov">              0 :                 int c = '*';</span>
+<span class="lineNum">     158 </span>                :                 size_t n;
+<span class="lineNum">     159 </span>                : 
+<span class="lineNum">     160 </span>                : #ifdef NETWARE
+<span class="lineNum">     161 </span>                :                 /*
+<span class="lineNum">     162 </span>                :                         c != 4 check is there as fread of a character in NetWare LibC gives 4 upon ^D character.
+<span class="lineNum">     163 </span>                :                         Ascii value 4 is actually EOT character which is not defined anywhere in the LibC
+<span class="lineNum">     164 </span>                :                         or else we can use instead of hardcoded 4.
+<span class="lineNum">     165 </span>                :                 */
+<span class="lineNum">     166 </span>                :                 for (n = 0; n &lt; len &amp;&amp; (c = zend_stream_getc(file_handle TSRMLS_CC)) != EOF &amp;&amp; c != 4 &amp;&amp; c != '\n'; ++n) {
+<span class="lineNum">     167 </span>                : #else
+<span class="lineNum">     168 </span><span class="lineNoCov">              0 :                 for (n = 0; n &lt; len &amp;&amp; (c = zend_stream_getc(file_handle TSRMLS_CC)) != EOF &amp;&amp; c != '\n'; ++n)  {</span>
+<span class="lineNum">     169 </span>                : #endif
+<span class="lineNum">     170 </span><span class="lineNoCov">              0 :                         buf[n] = (char)c;</span>
+<span class="lineNum">     171 </span>                :                 }
+<span class="lineNum">     172 </span><span class="lineNoCov">              0 :                 if (c == '\n') {</span>
+<span class="lineNum">     173 </span><span class="lineNoCov">              0 :                         buf[n++] = (char)c; </span>
+<span class="lineNum">     174 </span>                :                 }
+<span class="lineNum">     175 </span>                : 
+<span class="lineNum">     176 </span><span class="lineNoCov">              0 :                 return n;</span>
+<span class="lineNum">     177 </span>                :         }
+<span class="lineNum">     178 </span><span class="lineNoCov">              0 :         return file_handle-&gt;handle.stream.reader(file_handle-&gt;handle.stream.handle, buf, len TSRMLS_CC);</span>
+<a name="179"><span class="lineNum">     179 </span>                : } /* }}} */</a>
+<span class="lineNum">     180 </span>                : 
+<span class="lineNum">     181 </span><span class="lineCov">             90 : ZEND_API int zend_stream_fixup(zend_file_handle *file_handle, char **buf, size_t *len TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     182 </span>                : {
+<span class="lineNum">     183 </span>                :         size_t size;
+<span class="lineNum">     184 </span>                :         zend_stream_type old_type;
+<span class="lineNum">     185 </span>                : 
+<span class="lineNum">     186 </span><span class="lineCov">             90 :         if (file_handle-&gt;type == ZEND_HANDLE_FILENAME) {</span>
+<span class="lineNum">     187 </span><span class="lineNoCov">              0 :                 if (zend_stream_open(file_handle-&gt;filename, file_handle TSRMLS_CC) == FAILURE) {</span>
+<span class="lineNum">     188 </span><span class="lineNoCov">              0 :                         return FAILURE;</span>
+<span class="lineNum">     189 </span>                :                 }
+<span class="lineNum">     190 </span>                :         }
+<span class="lineNum">     191 </span>                : 
+<span class="lineNum">     192 </span><span class="lineCov">             90 :         switch (file_handle-&gt;type) {         </span>
+<span class="lineNum">     193 </span>                :                 case ZEND_HANDLE_FD:
+<span class="lineNum">     194 </span><span class="lineNoCov">              0 :                         file_handle-&gt;type = ZEND_HANDLE_FP;</span>
+<span class="lineNum">     195 </span><span class="lineNoCov">              0 :                         file_handle-&gt;handle.fp = fdopen(file_handle-&gt;handle.fd, &quot;rb&quot;);</span>
+<span class="lineNum">     196 </span>                :                         /* no break; */                 
+<span class="lineNum">     197 </span>                :                 case ZEND_HANDLE_FP:
+<span class="lineNum">     198 </span><span class="lineCov">             90 :                         if (!file_handle-&gt;handle.fp) {</span>
+<span class="lineNum">     199 </span><span class="lineNoCov">              0 :                                 return FAILURE;</span>
+<span class="lineNum">     200 </span>                :                         }
+<span class="lineNum">     201 </span><span class="lineCov">             90 :                         memset(&amp;file_handle-&gt;handle.stream.mmap, 0, sizeof(zend_mmap));</span>
+<span class="lineNum">     202 </span><span class="lineCov">             90 :                         file_handle-&gt;handle.stream.isatty     = isatty(fileno((FILE *)file_handle-&gt;handle.stream.handle)) ? 1 : 0;</span>
+<span class="lineNum">     203 </span><span class="lineCov">             90 :                         file_handle-&gt;handle.stream.reader     = (zend_stream_reader_t)zend_stream_stdio_reader;</span>
+<span class="lineNum">     204 </span><span class="lineCov">             90 :                         file_handle-&gt;handle.stream.closer     = (zend_stream_closer_t)zend_stream_stdio_closer;</span>
+<span class="lineNum">     205 </span><span class="lineCov">             90 :                         file_handle-&gt;handle.stream.fsizer     = (zend_stream_fsizer_t)zend_stream_stdio_fsizer;</span>
+<span class="lineNum">     206 </span><span class="lineCov">             90 :                         memset(&amp;file_handle-&gt;handle.stream.mmap, 0, sizeof(file_handle-&gt;handle.stream.mmap));</span>
+<span class="lineNum">     207 </span>                :                         /* no break; */                 
+<span class="lineNum">     208 </span>                :                 case ZEND_HANDLE_STREAM:
+<span class="lineNum">     209 </span>                :                         /* nothing to do */
+<span class="lineNum">     210 </span>                :                         break;
+<span class="lineNum">     211 </span>                :                 
+<span class="lineNum">     212 </span>                :                 case ZEND_HANDLE_MAPPED:
+<span class="lineNum">     213 </span><span class="lineNoCov">              0 :                         file_handle-&gt;handle.stream.mmap.pos = 0;</span>
+<span class="lineNum">     214 </span><span class="lineNoCov">              0 :                         *buf = file_handle-&gt;handle.stream.mmap.buf;</span>
+<span class="lineNum">     215 </span><span class="lineNoCov">              0 :                         *len = file_handle-&gt;handle.stream.mmap.len;</span>
+<span class="lineNum">     216 </span><span class="lineNoCov">              0 :                         return SUCCESS;</span>
+<span class="lineNum">     217 </span>                :                         
+<span class="lineNum">     218 </span>                :                 default:
+<span class="lineNum">     219 </span><span class="lineNoCov">              0 :                         return FAILURE;</span>
+<span class="lineNum">     220 </span>                :         }
+<span class="lineNum">     221 </span>                : 
+<span class="lineNum">     222 </span><span class="lineCov">             90 :         size = zend_stream_fsize(file_handle TSRMLS_CC);</span>
+<span class="lineNum">     223 </span><span class="lineCov">             90 :         if (size == (size_t)-1) {</span>
+<span class="lineNum">     224 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">     225 </span>                :         }
+<span class="lineNum">     226 </span>                : 
+<span class="lineNum">     227 </span><span class="lineCov">             90 :         old_type = file_handle-&gt;type;</span>
+<span class="lineNum">     228 </span><span class="lineCov">             90 :         file_handle-&gt;type = ZEND_HANDLE_STREAM;  /* we might still be _FP but we need fsize() work */</span>
+<span class="lineNum">     229 </span>                : 
+<span class="lineNum">     230 </span><span class="lineCov">             90 :         if (old_type == ZEND_HANDLE_FP &amp;&amp; !file_handle-&gt;handle.stream.isatty &amp;&amp; size) {</span>
+<span class="lineNum">     231 </span>                : #if HAVE_MMAP
+<span class="lineNum">     232 </span><span class="lineCov">             90 :                 size_t page_size = REAL_PAGE_SIZE;</span>
+<span class="lineNum">     233 </span>                : 
+<span class="lineNum">     234 </span><span class="lineCov">            180 :                 if (file_handle-&gt;handle.fp &amp;&amp;</span>
+<span class="lineNum">     235 </span>                :                     size != 0 &amp;&amp;
+<span class="lineNum">     236 </span><span class="lineCov">             90 :                     ((size - 1) % page_size) &lt;= page_size - ZEND_MMAP_AHEAD) {</span>
+<span class="lineNum">     237 </span>                :                         /*  *buf[size] is zeroed automatically by the kernel */
+<span class="lineNum">     238 </span><span class="lineCov">             90 :                         *buf = mmap(0, size + ZEND_MMAP_AHEAD, PROT_READ, MAP_PRIVATE, fileno(file_handle-&gt;handle.fp), 0);</span>
+<span class="lineNum">     239 </span><span class="lineCov">             90 :                         if (*buf != MAP_FAILED) {</span>
+<span class="lineNum">     240 </span><span class="lineCov">             90 :                                 long offset = ftell(file_handle-&gt;handle.fp);</span>
+<span class="lineNum">     241 </span><span class="lineCov">             90 :                                 file_handle-&gt;handle.stream.mmap.map = *buf;</span>
+<span class="lineNum">     242 </span>                : 
+<span class="lineNum">     243 </span><span class="lineCov">             90 :                                 if (offset != -1) {</span>
+<span class="lineNum">     244 </span><span class="lineCov">             90 :                                         *buf += offset;</span>
+<span class="lineNum">     245 </span><span class="lineCov">             90 :                                         size -= offset;</span>
+<span class="lineNum">     246 </span>                :                                 }
+<span class="lineNum">     247 </span><span class="lineCov">             90 :                                 file_handle-&gt;handle.stream.mmap.buf = *buf;</span>
+<span class="lineNum">     248 </span><span class="lineCov">             90 :                                 file_handle-&gt;handle.stream.mmap.len = size;</span>
+<span class="lineNum">     249 </span>                : 
+<span class="lineNum">     250 </span><span class="lineCov">             90 :                                 goto return_mapped;</span>
+<span class="lineNum">     251 </span>                :                         }
+<span class="lineNum">     252 </span>                :                 }
+<span class="lineNum">     253 </span>                : #endif
+<span class="lineNum">     254 </span><span class="lineNoCov">              0 :                 file_handle-&gt;handle.stream.mmap.map = 0;</span>
+<span class="lineNum">     255 </span><span class="lineNoCov">              0 :                 file_handle-&gt;handle.stream.mmap.buf = *buf = safe_emalloc(1, size, ZEND_MMAP_AHEAD);</span>
+<span class="lineNum">     256 </span><span class="lineNoCov">              0 :                 file_handle-&gt;handle.stream.mmap.len = zend_stream_read(file_handle, *buf, size TSRMLS_CC);</span>
+<span class="lineNum">     257 </span>                :         } else {
+<span class="lineNum">     258 </span><span class="lineNoCov">              0 :                 size_t read, remain = 4*1024;</span>
+<span class="lineNum">     259 </span><span class="lineNoCov">              0 :                 *buf = emalloc(remain);</span>
+<span class="lineNum">     260 </span><span class="lineNoCov">              0 :                 size = 0;</span>
+<span class="lineNum">     261 </span>                : 
+<span class="lineNum">     262 </span><span class="lineNoCov">              0 :                 while ((read = zend_stream_read(file_handle, *buf + size, remain TSRMLS_CC)) &gt; 0) {</span>
+<span class="lineNum">     263 </span><span class="lineNoCov">              0 :                         size   += read;</span>
+<span class="lineNum">     264 </span><span class="lineNoCov">              0 :                         remain -= read;</span>
+<span class="lineNum">     265 </span>                : 
+<span class="lineNum">     266 </span><span class="lineNoCov">              0 :                         if (remain == 0) {</span>
+<span class="lineNum">     267 </span><span class="lineNoCov">              0 :                                 *buf   = safe_erealloc(*buf, size, 2, 0);</span>
+<span class="lineNum">     268 </span><span class="lineNoCov">              0 :                                 remain = size;</span>
+<span class="lineNum">     269 </span>                :                         }
+<span class="lineNum">     270 </span>                :                 }
+<span class="lineNum">     271 </span><span class="lineNoCov">              0 :                 file_handle-&gt;handle.stream.mmap.map = 0;</span>
+<span class="lineNum">     272 </span><span class="lineNoCov">              0 :                 file_handle-&gt;handle.stream.mmap.len = size;</span>
+<span class="lineNum">     273 </span><span class="lineNoCov">              0 :                 if (size &amp;&amp; remain &lt; ZEND_MMAP_AHEAD) {</span>
+<span class="lineNum">     274 </span><span class="lineNoCov">              0 :                         *buf = safe_erealloc(*buf, size, 1, ZEND_MMAP_AHEAD);</span>
+<span class="lineNum">     275 </span>                :                 }
+<span class="lineNum">     276 </span><span class="lineNoCov">              0 :                 file_handle-&gt;handle.stream.mmap.buf = *buf;</span>
+<span class="lineNum">     277 </span>                :         }
+<span class="lineNum">     278 </span>                : 
+<span class="lineNum">     279 </span><span class="lineNoCov">              0 :         if (file_handle-&gt;handle.stream.mmap.len == 0) {</span>
+<span class="lineNum">     280 </span><span class="lineNoCov">              0 :                 *buf = erealloc(*buf, ZEND_MMAP_AHEAD);</span>
+<span class="lineNum">     281 </span><span class="lineNoCov">              0 :                 file_handle-&gt;handle.stream.mmap.buf = *buf;</span>
+<span class="lineNum">     282 </span>                :         }
+<span class="lineNum">     283 </span>                : 
+<span class="lineNum">     284 </span>                :         if (ZEND_MMAP_AHEAD) {
+<span class="lineNum">     285 </span><span class="lineNoCov">              0 :                 memset(file_handle-&gt;handle.stream.mmap.buf + file_handle-&gt;handle.stream.mmap.len, 0, ZEND_MMAP_AHEAD);</span>
+<span class="lineNum">     286 </span>                :         }
+<span class="lineNum">     287 </span>                : #if HAVE_MMAP
+<span class="lineNum">     288 </span>                : return_mapped:
+<span class="lineNum">     289 </span>                : #endif
+<span class="lineNum">     290 </span><span class="lineCov">             90 :         file_handle-&gt;type = ZEND_HANDLE_MAPPED;</span>
+<span class="lineNum">     291 </span><span class="lineCov">             90 :         file_handle-&gt;handle.stream.mmap.pos        = 0;</span>
+<span class="lineNum">     292 </span><span class="lineCov">             90 :         file_handle-&gt;handle.stream.mmap.old_handle = file_handle-&gt;handle.stream.handle;</span>
+<span class="lineNum">     293 </span><span class="lineCov">             90 :         file_handle-&gt;handle.stream.mmap.old_closer = file_handle-&gt;handle.stream.closer;</span>
+<span class="lineNum">     294 </span><span class="lineCov">             90 :         file_handle-&gt;handle.stream.handle          = &amp;file_handle-&gt;handle.stream;</span>
+<span class="lineNum">     295 </span><span class="lineCov">             90 :         file_handle-&gt;handle.stream.closer          = (zend_stream_closer_t)zend_stream_mmap_closer;</span>
+<span class="lineNum">     296 </span>                : 
+<span class="lineNum">     297 </span><span class="lineCov">             90 :         *buf = file_handle-&gt;handle.stream.mmap.buf;</span>
+<span class="lineNum">     298 </span><span class="lineCov">             90 :         *len = file_handle-&gt;handle.stream.mmap.len;</span>
+<span class="lineNum">     299 </span>                : 
+<span class="lineNum">     300 </span><span class="lineCov">             90 :         return SUCCESS;</span>
+<a name="301"><span class="lineNum">     301 </span>                : } /* }}} */</a>
+<span class="lineNum">     302 </span>                : 
+<span class="lineNum">     303 </span><span class="lineCov">             90 : ZEND_API void zend_file_handle_dtor(zend_file_handle *fh TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     304 </span>                : {
+<span class="lineNum">     305 </span><span class="lineCov">             90 :         switch (fh-&gt;type) {</span>
+<span class="lineNum">     306 </span>                :                 case ZEND_HANDLE_FD:
+<span class="lineNum">     307 </span>                :                         /* nothing to do */
+<span class="lineNum">     308 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     309 </span>                :                 case ZEND_HANDLE_FP:
+<span class="lineNum">     310 </span><span class="lineNoCov">              0 :                         fclose(fh-&gt;handle.fp);</span>
+<span class="lineNum">     311 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     312 </span>                :                 case ZEND_HANDLE_STREAM:
+<span class="lineNum">     313 </span>                :                 case ZEND_HANDLE_MAPPED:
+<span class="lineNum">     314 </span><span class="lineCov">             90 :                         if (fh-&gt;handle.stream.closer &amp;&amp; fh-&gt;handle.stream.handle) {</span>
+<span class="lineNum">     315 </span><span class="lineCov">             90 :                                 fh-&gt;handle.stream.closer(fh-&gt;handle.stream.handle TSRMLS_CC);</span>
+<span class="lineNum">     316 </span>                :                         }
+<span class="lineNum">     317 </span><span class="lineCov">             90 :                         fh-&gt;handle.stream.handle = NULL;</span>
+<span class="lineNum">     318 </span>                :                         break;
+<span class="lineNum">     319 </span>                :                 case ZEND_HANDLE_FILENAME:
+<span class="lineNum">     320 </span>                :                         /* We're only supposed to get here when destructing the used_files hash,
+<span class="lineNum">     321 </span>                :                          * which doesn't really contain open files, but references to their names/paths
+<span class="lineNum">     322 </span>                :                          */
+<span class="lineNum">     323 </span>                :                         break;
+<span class="lineNum">     324 </span>                :         }
+<span class="lineNum">     325 </span><span class="lineCov">             90 :         if (fh-&gt;opened_path) {</span>
+<span class="lineNum">     326 </span><span class="lineCov">             45 :                 efree(fh-&gt;opened_path);</span>
+<span class="lineNum">     327 </span><span class="lineCov">             45 :                 fh-&gt;opened_path = NULL;</span>
+<span class="lineNum">     328 </span>                :         }
+<span class="lineNum">     329 </span><span class="lineCov">             90 :         if (fh-&gt;free_filename &amp;&amp; fh-&gt;filename) {</span>
+<span class="lineNum">     330 </span><span class="lineNoCov">              0 :                 efree((char*)fh-&gt;filename);</span>
+<span class="lineNum">     331 </span><span class="lineNoCov">              0 :                 fh-&gt;filename = NULL;</span>
+<span class="lineNum">     332 </span>                :         }
+<span class="lineNum">     333 </span><span class="lineCov">             90 : }</span>
+<a name="334"><span class="lineNum">     334 </span>                : /* }}} */</a>
+<span class="lineNum">     335 </span>                : 
+<span class="lineNum">     336 </span><span class="lineCov">             45 : ZEND_API int zend_compare_file_handles(zend_file_handle *fh1, zend_file_handle *fh2) /* {{{ */</span>
+<span class="lineNum">     337 </span>                : {
+<span class="lineNum">     338 </span><span class="lineCov">             45 :         if (fh1-&gt;type != fh2-&gt;type) {</span>
+<span class="lineNum">     339 </span><span class="lineNoCov">              0 :                 return 0;</span>
+<span class="lineNum">     340 </span>                :         }
+<span class="lineNum">     341 </span><span class="lineCov">             45 :         switch (fh1-&gt;type) {</span>
+<span class="lineNum">     342 </span>                :                 case ZEND_HANDLE_FD:
+<span class="lineNum">     343 </span><span class="lineNoCov">              0 :                         return fh1-&gt;handle.fd == fh2-&gt;handle.fd;</span>
+<span class="lineNum">     344 </span>                :                 case ZEND_HANDLE_FP:
+<span class="lineNum">     345 </span><span class="lineNoCov">              0 :                         return fh1-&gt;handle.fp == fh2-&gt;handle.fp;</span>
+<span class="lineNum">     346 </span>                :                 case ZEND_HANDLE_STREAM:
+<span class="lineNum">     347 </span><span class="lineNoCov">              0 :                         return fh1-&gt;handle.stream.handle == fh2-&gt;handle.stream.handle;</span>
+<span class="lineNum">     348 </span>                :                 case ZEND_HANDLE_MAPPED:
+<span class="lineNum">     349 </span><span class="lineCov">            135 :                         return (fh1-&gt;handle.stream.handle == &amp;fh1-&gt;handle.stream &amp;&amp;</span>
+<span class="lineNum">     350 </span><span class="lineCov">             45 :                                 fh2-&gt;handle.stream.handle == &amp;fh2-&gt;handle.stream &amp;&amp;</span>
+<span class="lineNum">     351 </span><span class="lineNoCov">              0 :                                 fh1-&gt;handle.stream.mmap.old_handle == fh2-&gt;handle.stream.mmap.old_handle)</span>
+<span class="lineNum">     352 </span><span class="lineCov">             45 :                                 || fh1-&gt;handle.stream.handle == fh2-&gt;handle.stream.handle;</span>
+<span class="lineNum">     353 </span>                :                 default:
+<span class="lineNum">     354 </span><span class="lineNoCov">              0 :                         return 0;</span>
+<span class="lineNum">     355 </span>                :         }
+<span class="lineNum">     356 </span>                :         return 0;
+<span class="lineNum">     357 </span>                : } /* }}} */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

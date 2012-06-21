@@ -1,0 +1,1478 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - sapi/cli/php_cli.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../index.html">directory</a> - <a href="index.html">sapi/cli</a> - php_cli.c (source / <a href="php_cli.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">564</td>
+          <td class="headerCovTableEntry">252</td>
+          <td class="headerCovTableEntryMed">44.7 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">25</td>
+          <td class="headerCovTableEntry">13</td>
+          <td class="headerCovTableEntryLo">52.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Author: Edin Kadribasic &lt;edink@php.net&gt;                              |
+<span class="lineNum">      16 </span>                :    |         Marcus Boerger &lt;helly@php.net&gt;                               |
+<span class="lineNum">      17 </span>                :    |         Johannes Schlueter &lt;johannes@php.net&gt;                        |
+<span class="lineNum">      18 </span>                :    |         Parts based on CGI SAPI Module by                            |
+<span class="lineNum">      19 </span>                :    |         Rasmus Lerdorf, Stig Bakken and Zeev Suraski                 |
+<span class="lineNum">      20 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      21 </span>                : */
+<span class="lineNum">      22 </span>                : 
+<span class="lineNum">      23 </span>                : /* $Id$ */
+<span class="lineNum">      24 </span>                : 
+<span class="lineNum">      25 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">      26 </span>                : #include &quot;php_globals.h&quot;
+<span class="lineNum">      27 </span>                : #include &quot;php_variables.h&quot;
+<span class="lineNum">      28 </span>                : #include &quot;zend_hash.h&quot;
+<span class="lineNum">      29 </span>                : #include &quot;zend_modules.h&quot;
+<span class="lineNum">      30 </span>                : #include &quot;zend_interfaces.h&quot;
+<span class="lineNum">      31 </span>                : 
+<span class="lineNum">      32 </span>                : #include &quot;ext/reflection/php_reflection.h&quot;
+<span class="lineNum">      33 </span>                : 
+<span class="lineNum">      34 </span>                : #include &quot;SAPI.h&quot;
+<span class="lineNum">      35 </span>                : 
+<span class="lineNum">      36 </span>                : #include &lt;stdio.h&gt;
+<span class="lineNum">      37 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">      38 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">      39 </span>                : #include &quot;win32/time.h&quot;
+<span class="lineNum">      40 </span>                : #include &quot;win32/signal.h&quot;
+<span class="lineNum">      41 </span>                : #include &lt;process.h&gt;
+<span class="lineNum">      42 </span>                : #endif
+<span class="lineNum">      43 </span>                : #if HAVE_SYS_TIME_H
+<span class="lineNum">      44 </span>                : #include &lt;sys/time.h&gt;
+<span class="lineNum">      45 </span>                : #endif
+<span class="lineNum">      46 </span>                : #if HAVE_UNISTD_H
+<span class="lineNum">      47 </span>                : #include &lt;unistd.h&gt;
+<span class="lineNum">      48 </span>                : #endif
+<span class="lineNum">      49 </span>                : #if HAVE_SIGNAL_H
+<span class="lineNum">      50 </span>                : #include &lt;signal.h&gt;
+<span class="lineNum">      51 </span>                : #endif
+<span class="lineNum">      52 </span>                : #if HAVE_SETLOCALE
+<span class="lineNum">      53 </span>                : #include &lt;locale.h&gt;
+<span class="lineNum">      54 </span>                : #endif
+<span class="lineNum">      55 </span>                : #include &quot;zend.h&quot;
+<span class="lineNum">      56 </span>                : #include &quot;zend_extensions.h&quot;
+<span class="lineNum">      57 </span>                : #include &quot;php_ini.h&quot;
+<span class="lineNum">      58 </span>                : #include &quot;php_globals.h&quot;
+<span class="lineNum">      59 </span>                : #include &quot;php_main.h&quot;
+<span class="lineNum">      60 </span>                : #include &quot;fopen_wrappers.h&quot;
+<span class="lineNum">      61 </span>                : #include &quot;ext/standard/php_standard.h&quot;
+<span class="lineNum">      62 </span>                : #include &quot;cli.h&quot;
+<span class="lineNum">      63 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">      64 </span>                : #include &lt;io.h&gt;
+<span class="lineNum">      65 </span>                : #include &lt;fcntl.h&gt;
+<span class="lineNum">      66 </span>                : #include &quot;win32/php_registry.h&quot;
+<span class="lineNum">      67 </span>                : #endif
+<span class="lineNum">      68 </span>                : 
+<span class="lineNum">      69 </span>                : #if HAVE_SIGNAL_H
+<span class="lineNum">      70 </span>                : #include &lt;signal.h&gt;
+<span class="lineNum">      71 </span>                : #endif
+<span class="lineNum">      72 </span>                : 
+<span class="lineNum">      73 </span>                : #ifdef __riscos__
+<span class="lineNum">      74 </span>                : #include &lt;unixlib/local.h&gt;
+<span class="lineNum">      75 </span>                : #endif
+<span class="lineNum">      76 </span>                : 
+<span class="lineNum">      77 </span>                : #include &quot;zend_compile.h&quot;
+<span class="lineNum">      78 </span>                : #include &quot;zend_execute.h&quot;
+<span class="lineNum">      79 </span>                : #include &quot;zend_highlight.h&quot;
+<span class="lineNum">      80 </span>                : #include &quot;zend_indent.h&quot;
+<span class="lineNum">      81 </span>                : #include &quot;zend_exceptions.h&quot;
+<span class="lineNum">      82 </span>                : 
+<span class="lineNum">      83 </span>                : #include &quot;php_getopt.h&quot;
+<span class="lineNum">      84 </span>                : 
+<span class="lineNum">      85 </span>                : #ifndef PHP_CLI_WIN32_NO_CONSOLE
+<span class="lineNum">      86 </span>                : #include &quot;php_cli_server.h&quot;
+<span class="lineNum">      87 </span>                : #endif
+<span class="lineNum">      88 </span>                : 
+<span class="lineNum">      89 </span>                : #ifndef PHP_WIN32
+<span class="lineNum">      90 </span>                : # define php_select(m, r, w, e, t)      select(m, r, w, e, t)
+<span class="lineNum">      91 </span>                : #else
+<span class="lineNum">      92 </span>                : # include &quot;win32/select.h&quot;
+<span class="lineNum">      93 </span>                : #endif
+<span class="lineNum">      94 </span>                : 
+<span class="lineNum">      95 </span>                : PHPAPI extern char *php_ini_opened_path;
+<span class="lineNum">      96 </span>                : PHPAPI extern char *php_ini_scanned_path;
+<span class="lineNum">      97 </span>                : PHPAPI extern char *php_ini_scanned_files;
+<span class="lineNum">      98 </span>                : 
+<span class="lineNum">      99 </span>                : #ifndef O_BINARY
+<span class="lineNum">     100 </span>                : #define O_BINARY 0
+<span class="lineNum">     101 </span>                : #endif
+<span class="lineNum">     102 </span>                : 
+<span class="lineNum">     103 </span>                : #define PHP_MODE_STANDARD      1
+<span class="lineNum">     104 </span>                : #define PHP_MODE_HIGHLIGHT     2
+<span class="lineNum">     105 </span>                : #define PHP_MODE_INDENT        3
+<span class="lineNum">     106 </span>                : #define PHP_MODE_LINT          4
+<span class="lineNum">     107 </span>                : #define PHP_MODE_STRIP         5
+<span class="lineNum">     108 </span>                : #define PHP_MODE_CLI_DIRECT    6
+<span class="lineNum">     109 </span>                : #define PHP_MODE_PROCESS_STDIN 7
+<span class="lineNum">     110 </span>                : #define PHP_MODE_REFLECTION_FUNCTION    8
+<span class="lineNum">     111 </span>                : #define PHP_MODE_REFLECTION_CLASS       9
+<span class="lineNum">     112 </span>                : #define PHP_MODE_REFLECTION_EXTENSION   10
+<span class="lineNum">     113 </span>                : #define PHP_MODE_REFLECTION_EXT_INFO    11
+<span class="lineNum">     114 </span>                : #define PHP_MODE_REFLECTION_ZEND_EXTENSION 12
+<span class="lineNum">     115 </span>                : #define PHP_MODE_SHOW_INI_CONFIG        13
+<a name="116"><span class="lineNum">     116 </span>                : </a>
+<span class="lineNum">     117 </span>                : cli_shell_callbacks_t cli_shell_callbacks = { NULL, NULL, NULL };
+<span class="lineNum">     118 </span><span class="lineNoCov">              0 : PHP_CLI_API cli_shell_callbacks_t *php_cli_get_shell_callbacks()</span>
+<span class="lineNum">     119 </span>                : {
+<span class="lineNum">     120 </span><span class="lineNoCov">              0 :         return &amp;cli_shell_callbacks;</span>
+<span class="lineNum">     121 </span>                : }
+<span class="lineNum">     122 </span>                : 
+<span class="lineNum">     123 </span>                : const char HARDCODED_INI[] =
+<span class="lineNum">     124 </span>                :         &quot;html_errors=0\n&quot;
+<span class="lineNum">     125 </span>                :         &quot;register_argc_argv=1\n&quot;
+<span class="lineNum">     126 </span>                :         &quot;implicit_flush=1\n&quot;
+<span class="lineNum">     127 </span>                :         &quot;output_buffering=0\n&quot;
+<span class="lineNum">     128 </span>                :         &quot;max_execution_time=0\n&quot;
+<span class="lineNum">     129 </span>                :         &quot;max_input_time=-1\n\0&quot;;
+<span class="lineNum">     130 </span>                : 
+<span class="lineNum">     131 </span>                : 
+<span class="lineNum">     132 </span>                : const opt_struct OPTIONS[] = {
+<span class="lineNum">     133 </span>                :         {'a', 0, &quot;interactive&quot;},
+<span class="lineNum">     134 </span>                :         {'B', 1, &quot;process-begin&quot;},
+<span class="lineNum">     135 </span>                :         {'C', 0, &quot;no-chdir&quot;}, /* for compatibility with CGI (do not chdir to script directory) */
+<span class="lineNum">     136 </span>                :         {'c', 1, &quot;php-ini&quot;},
+<span class="lineNum">     137 </span>                :         {'d', 1, &quot;define&quot;},
+<span class="lineNum">     138 </span>                :         {'E', 1, &quot;process-end&quot;},
+<span class="lineNum">     139 </span>                :         {'e', 0, &quot;profile-info&quot;},
+<span class="lineNum">     140 </span>                :         {'F', 1, &quot;process-file&quot;},
+<span class="lineNum">     141 </span>                :         {'f', 1, &quot;file&quot;},
+<span class="lineNum">     142 </span>                :         {'h', 0, &quot;help&quot;},
+<span class="lineNum">     143 </span>                :         {'i', 0, &quot;info&quot;},
+<span class="lineNum">     144 </span>                :         {'l', 0, &quot;syntax-check&quot;},
+<span class="lineNum">     145 </span>                :         {'m', 0, &quot;modules&quot;},
+<span class="lineNum">     146 </span>                :         {'n', 0, &quot;no-php-ini&quot;},
+<span class="lineNum">     147 </span>                :         {'q', 0, &quot;no-header&quot;}, /* for compatibility with CGI (do not generate HTTP headers) */
+<span class="lineNum">     148 </span>                :         {'R', 1, &quot;process-code&quot;},
+<span class="lineNum">     149 </span>                :         {'H', 0, &quot;hide-args&quot;},
+<span class="lineNum">     150 </span>                :         {'r', 1, &quot;run&quot;},
+<span class="lineNum">     151 </span>                :         {'s', 0, &quot;syntax-highlight&quot;},
+<span class="lineNum">     152 </span>                :         {'s', 0, &quot;syntax-highlighting&quot;},
+<span class="lineNum">     153 </span>                :         {'S', 1, &quot;server&quot;},
+<span class="lineNum">     154 </span>                :         {'t', 1, &quot;docroot&quot;},
+<span class="lineNum">     155 </span>                :         {'w', 0, &quot;strip&quot;},
+<span class="lineNum">     156 </span>                :         {'?', 0, &quot;usage&quot;},/* help alias (both '?' and 'usage') */
+<span class="lineNum">     157 </span>                :         {'v', 0, &quot;version&quot;},
+<span class="lineNum">     158 </span>                :         {'z', 1, &quot;zend-extension&quot;},
+<span class="lineNum">     159 </span>                :         {10,  1, &quot;rf&quot;},
+<span class="lineNum">     160 </span>                :         {10,  1, &quot;rfunction&quot;},
+<span class="lineNum">     161 </span>                :         {11,  1, &quot;rc&quot;},
+<span class="lineNum">     162 </span>                :         {11,  1, &quot;rclass&quot;},
+<span class="lineNum">     163 </span>                :         {12,  1, &quot;re&quot;},
+<span class="lineNum">     164 </span>                :         {12,  1, &quot;rextension&quot;},
+<span class="lineNum">     165 </span>                :         {13,  1, &quot;rz&quot;},
+<span class="lineNum">     166 </span>                :         {13,  1, &quot;rzendextension&quot;},
+<span class="lineNum">     167 </span>                :         {14,  1, &quot;ri&quot;},
+<span class="lineNum">     168 </span>                :         {14,  1, &quot;rextinfo&quot;},
+<span class="lineNum">     169 </span>                :         {15,  0, &quot;ini&quot;},
+<span class="lineNum">     170 </span>                :         {'-', 0, NULL} /* end of args */
+<a name="171"><span class="lineNum">     171 </span>                : };</a>
+<span class="lineNum">     172 </span>                : 
+<span class="lineNum">     173 </span><span class="lineNoCov">              0 : static int print_module_info(zend_module_entry *module TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     174 </span>                : {
+<span class="lineNum">     175 </span><span class="lineNoCov">              0 :         php_printf(&quot;%s\n&quot;, module-&gt;name);</span>
+<span class="lineNum">     176 </span><span class="lineNoCov">              0 :         return ZEND_HASH_APPLY_KEEP;</span>
+<span class="lineNum">     177 </span>                : }
+<a name="178"><span class="lineNum">     178 </span>                : /* }}} */</a>
+<span class="lineNum">     179 </span>                : 
+<span class="lineNum">     180 </span><span class="lineNoCov">              0 : static int module_name_cmp(const void *a, const void *b TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     181 </span>                : {
+<span class="lineNum">     182 </span><span class="lineNoCov">              0 :         Bucket *f = *((Bucket **) a);</span>
+<span class="lineNum">     183 </span><span class="lineNoCov">              0 :         Bucket *s = *((Bucket **) b);</span>
+<span class="lineNum">     184 </span>                : 
+<span class="lineNum">     185 </span><span class="lineNoCov">              0 :         return strcasecmp(((zend_module_entry *)f-&gt;pData)-&gt;name,</span>
+<span class="lineNum">     186 </span><span class="lineNoCov">              0 :                                   ((zend_module_entry *)s-&gt;pData)-&gt;name);</span>
+<span class="lineNum">     187 </span>                : }
+<a name="188"><span class="lineNum">     188 </span>                : /* }}} */</a>
+<span class="lineNum">     189 </span>                : 
+<span class="lineNum">     190 </span><span class="lineNoCov">              0 : static void print_modules(TSRMLS_D) /* {{{ */</span>
+<span class="lineNum">     191 </span>                : {
+<span class="lineNum">     192 </span>                :         HashTable sorted_registry;
+<span class="lineNum">     193 </span>                :         zend_module_entry tmp;
+<span class="lineNum">     194 </span>                : 
+<span class="lineNum">     195 </span><span class="lineNoCov">              0 :         zend_hash_init(&amp;sorted_registry, 50, NULL, NULL, 1);</span>
+<span class="lineNum">     196 </span><span class="lineNoCov">              0 :         zend_hash_copy(&amp;sorted_registry, &amp;module_registry, NULL, &amp;tmp, sizeof(zend_module_entry));</span>
+<span class="lineNum">     197 </span><span class="lineNoCov">              0 :         zend_hash_sort(&amp;sorted_registry, zend_qsort, module_name_cmp, 0 TSRMLS_CC);</span>
+<span class="lineNum">     198 </span><span class="lineNoCov">              0 :         zend_hash_apply(&amp;sorted_registry, (apply_func_t) print_module_info TSRMLS_CC);</span>
+<span class="lineNum">     199 </span><span class="lineNoCov">              0 :         zend_hash_destroy(&amp;sorted_registry);</span>
+<span class="lineNum">     200 </span><span class="lineNoCov">              0 : }</span>
+<a name="201"><span class="lineNum">     201 </span>                : /* }}} */</a>
+<span class="lineNum">     202 </span>                : 
+<span class="lineNum">     203 </span><span class="lineNoCov">              0 : static int print_extension_info(zend_extension *ext, void *arg TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     204 </span>                : {
+<span class="lineNum">     205 </span><span class="lineNoCov">              0 :         php_printf(&quot;%s\n&quot;, ext-&gt;name);</span>
+<span class="lineNum">     206 </span><span class="lineNoCov">              0 :         return ZEND_HASH_APPLY_KEEP;</span>
+<span class="lineNum">     207 </span>                : }
+<a name="208"><span class="lineNum">     208 </span>                : /* }}} */</a>
+<span class="lineNum">     209 </span>                : 
+<span class="lineNum">     210 </span><span class="lineNoCov">              0 : static int extension_name_cmp(const zend_llist_element **f, const zend_llist_element **s TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     211 </span>                : {
+<span class="lineNum">     212 </span><span class="lineNoCov">              0 :         return strcmp(((zend_extension *)(*f)-&gt;data)-&gt;name,</span>
+<span class="lineNum">     213 </span><span class="lineNoCov">              0 :                                   ((zend_extension *)(*s)-&gt;data)-&gt;name);</span>
+<span class="lineNum">     214 </span>                : }
+<a name="215"><span class="lineNum">     215 </span>                : /* }}} */</a>
+<span class="lineNum">     216 </span>                : 
+<span class="lineNum">     217 </span><span class="lineNoCov">              0 : static void print_extensions(TSRMLS_D) /* {{{ */</span>
+<span class="lineNum">     218 </span>                : {
+<span class="lineNum">     219 </span>                :         zend_llist sorted_exts;
+<span class="lineNum">     220 </span>                : 
+<span class="lineNum">     221 </span><span class="lineNoCov">              0 :         zend_llist_copy(&amp;sorted_exts, &amp;zend_extensions);</span>
+<span class="lineNum">     222 </span><span class="lineNoCov">              0 :         sorted_exts.dtor = NULL;</span>
+<span class="lineNum">     223 </span><span class="lineNoCov">              0 :         zend_llist_sort(&amp;sorted_exts, extension_name_cmp TSRMLS_CC);</span>
+<span class="lineNum">     224 </span><span class="lineNoCov">              0 :         zend_llist_apply(&amp;sorted_exts, (llist_apply_func_t) print_extension_info TSRMLS_CC);</span>
+<span class="lineNum">     225 </span><span class="lineNoCov">              0 :         zend_llist_destroy(&amp;sorted_exts);</span>
+<span class="lineNum">     226 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     227 </span>                : /* }}} */
+<span class="lineNum">     228 </span>                : 
+<span class="lineNum">     229 </span>                : #ifndef STDOUT_FILENO
+<span class="lineNum">     230 </span>                : #define STDOUT_FILENO 1
+<a name="231"><span class="lineNum">     231 </span>                : #endif</a>
+<span class="lineNum">     232 </span>                : 
+<span class="lineNum">     233 </span><span class="lineNoCov">              0 : static inline int sapi_cli_select(int fd TSRMLS_DC)</span>
+<span class="lineNum">     234 </span>                : {
+<span class="lineNum">     235 </span>                :         fd_set wfd, dfd;
+<span class="lineNum">     236 </span>                :         struct timeval tv;
+<span class="lineNum">     237 </span>                :         int ret;
+<span class="lineNum">     238 </span>                : 
+<span class="lineNum">     239 </span><span class="lineNoCov">              0 :         FD_ZERO(&amp;wfd);</span>
+<span class="lineNum">     240 </span><span class="lineNoCov">              0 :         FD_ZERO(&amp;dfd);</span>
+<span class="lineNum">     241 </span>                : 
+<span class="lineNum">     242 </span><span class="lineNoCov">              0 :         PHP_SAFE_FD_SET(fd, &amp;wfd);</span>
+<span class="lineNum">     243 </span>                : 
+<span class="lineNum">     244 </span><span class="lineNoCov">              0 :         tv.tv_sec = FG(default_socket_timeout);</span>
+<span class="lineNum">     245 </span><span class="lineNoCov">              0 :         tv.tv_usec = 0;</span>
+<span class="lineNum">     246 </span>                : 
+<span class="lineNum">     247 </span><span class="lineNoCov">              0 :         ret = php_select(fd+1, &amp;dfd, &amp;wfd, &amp;dfd, &amp;tv);</span>
+<span class="lineNum">     248 </span>                : 
+<span class="lineNum">     249 </span><span class="lineNoCov">              0 :         return ret != -1;</span>
+<a name="250"><span class="lineNum">     250 </span>                : }</a>
+<span class="lineNum">     251 </span>                : 
+<span class="lineNum">     252 </span><span class="lineCov">           1159 : PHP_CLI_API size_t sapi_cli_single_write(const char *str, uint str_length TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     253 </span>                : {
+<span class="lineNum">     254 </span>                : #ifdef PHP_WRITE_STDOUT
+<span class="lineNum">     255 </span>                :         long ret;
+<span class="lineNum">     256 </span>                : #else
+<span class="lineNum">     257 </span>                :         size_t ret;
+<span class="lineNum">     258 </span>                : #endif
+<span class="lineNum">     259 </span>                : 
+<span class="lineNum">     260 </span><span class="lineCov">           1159 :         if (cli_shell_callbacks.cli_shell_write) {</span>
+<span class="lineNum">     261 </span>                :                 size_t shell_wrote;
+<span class="lineNum">     262 </span><span class="lineNoCov">              0 :                 shell_wrote = cli_shell_callbacks.cli_shell_write(str, str_length TSRMLS_CC);</span>
+<span class="lineNum">     263 </span><span class="lineNoCov">              0 :                 if (shell_wrote &gt; -1) {</span>
+<span class="lineNum">     264 </span>                :                         return shell_wrote;
+<span class="lineNum">     265 </span>                :                 }
+<span class="lineNum">     266 </span>                :         }
+<span class="lineNum">     267 </span>                : 
+<span class="lineNum">     268 </span>                : #ifdef PHP_WRITE_STDOUT
+<span class="lineNum">     269 </span>                :         do {
+<span class="lineNum">     270 </span><span class="lineCov">           1159 :                 ret = write(STDOUT_FILENO, str, str_length);</span>
+<span class="lineNum">     271 </span><span class="lineCov">           1159 :         } while (ret &lt;= 0 &amp;&amp; errno == EAGAIN &amp;&amp; sapi_cli_select(STDOUT_FILENO TSRMLS_CC));</span>
+<span class="lineNum">     272 </span>                : 
+<span class="lineNum">     273 </span><span class="lineCov">           1159 :         if (ret &lt;= 0) {</span>
+<span class="lineNum">     274 </span><span class="lineNoCov">              0 :                 return 0;</span>
+<span class="lineNum">     275 </span>                :         }
+<span class="lineNum">     276 </span>                : 
+<span class="lineNum">     277 </span><span class="lineCov">           1159 :         return ret;</span>
+<span class="lineNum">     278 </span>                : #else
+<span class="lineNum">     279 </span>                :         ret = fwrite(str, 1, MIN(str_length, 16384), stdout);
+<span class="lineNum">     280 </span>                :         return ret;
+<span class="lineNum">     281 </span>                : #endif
+<span class="lineNum">     282 </span>                : }
+<a name="283"><span class="lineNum">     283 </span>                : /* }}} */</a>
+<span class="lineNum">     284 </span>                : 
+<span class="lineNum">     285 </span><span class="lineCov">           1159 : static int sapi_cli_ub_write(const char *str, uint str_length TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     286 </span>                : {
+<span class="lineNum">     287 </span><span class="lineCov">           1159 :         const char *ptr = str;</span>
+<span class="lineNum">     288 </span><span class="lineCov">           1159 :         uint remaining = str_length;</span>
+<span class="lineNum">     289 </span>                :         size_t ret;
+<span class="lineNum">     290 </span>                : 
+<span class="lineNum">     291 </span><span class="lineCov">           1159 :         if (!str_length) {</span>
+<span class="lineNum">     292 </span><span class="lineNoCov">              0 :                 return 0;</span>
+<span class="lineNum">     293 </span>                :         }
+<span class="lineNum">     294 </span>                : 
+<span class="lineNum">     295 </span><span class="lineCov">           1159 :         if (cli_shell_callbacks.cli_shell_ub_write) {</span>
+<span class="lineNum">     296 </span>                :                 int ub_wrote;
+<span class="lineNum">     297 </span><span class="lineNoCov">              0 :                 ub_wrote = cli_shell_callbacks.cli_shell_ub_write(str, str_length TSRMLS_CC);</span>
+<span class="lineNum">     298 </span><span class="lineNoCov">              0 :                 if (ub_wrote &gt; -1) {</span>
+<span class="lineNum">     299 </span><span class="lineNoCov">              0 :                         return ub_wrote;</span>
+<span class="lineNum">     300 </span>                :                 }
+<span class="lineNum">     301 </span>                :         }
+<span class="lineNum">     302 </span>                : 
+<span class="lineNum">     303 </span><span class="lineCov">           3477 :         while (remaining &gt; 0)</span>
+<span class="lineNum">     304 </span>                :         {
+<span class="lineNum">     305 </span><span class="lineCov">           1159 :                 ret = sapi_cli_single_write(ptr, remaining TSRMLS_CC);</span>
+<span class="lineNum">     306 </span><span class="lineCov">           1159 :                 if (!ret) {</span>
+<span class="lineNum">     307 </span>                : #ifndef PHP_CLI_WIN32_NO_CONSOLE
+<span class="lineNum">     308 </span><span class="lineNoCov">              0 :                         php_handle_aborted_connection();</span>
+<span class="lineNum">     309 </span>                : #endif
+<span class="lineNum">     310 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     311 </span>                :                 }
+<span class="lineNum">     312 </span><span class="lineCov">           1159 :                 ptr += ret;</span>
+<span class="lineNum">     313 </span><span class="lineCov">           1159 :                 remaining -= ret;</span>
+<span class="lineNum">     314 </span>                :         }
+<span class="lineNum">     315 </span>                : 
+<span class="lineNum">     316 </span><span class="lineCov">           1159 :         return (ptr - str);</span>
+<span class="lineNum">     317 </span>                : }
+<a name="318"><span class="lineNum">     318 </span>                : /* }}} */</a>
+<span class="lineNum">     319 </span>                : 
+<span class="lineNum">     320 </span><span class="lineCov">           1249 : static void sapi_cli_flush(void *server_context) /* {{{ */</span>
+<span class="lineNum">     321 </span>                : {
+<span class="lineNum">     322 </span>                :         /* Ignore EBADF here, it's caused by the fact that STDIN/STDOUT/STDERR streams
+<span class="lineNum">     323 </span>                :          * are/could be closed before fflush() is called.
+<span class="lineNum">     324 </span>                :          */
+<span class="lineNum">     325 </span><span class="lineCov">           1249 :         if (fflush(stdout)==EOF &amp;&amp; errno!=EBADF) {</span>
+<span class="lineNum">     326 </span>                : #ifndef PHP_CLI_WIN32_NO_CONSOLE
+<span class="lineNum">     327 </span><span class="lineNoCov">              0 :                 php_handle_aborted_connection();</span>
+<span class="lineNum">     328 </span>                : #endif
+<span class="lineNum">     329 </span>                :         }
+<span class="lineNum">     330 </span><span class="lineCov">           1249 : }</span>
+<span class="lineNum">     331 </span>                : /* }}} */
+<span class="lineNum">     332 </span>                : 
+<span class="lineNum">     333 </span>                : static char *php_self = &quot;&quot;;
+<a name="334"><span class="lineNum">     334 </span>                : static char *script_filename = &quot;&quot;;</a>
+<span class="lineNum">     335 </span>                : 
+<span class="lineNum">     336 </span><span class="lineCov">             48 : static void sapi_cli_register_variables(zval *track_vars_array TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     337 </span>                : {
+<span class="lineNum">     338 </span>                :         unsigned int len;
+<span class="lineNum">     339 </span><span class="lineCov">             48 :         char   *docroot = &quot;&quot;;</span>
+<span class="lineNum">     340 </span>                : 
+<span class="lineNum">     341 </span>                :         /* In CGI mode, we consider the environment to be a part of the server
+<span class="lineNum">     342 </span>                :          * variables
+<span class="lineNum">     343 </span>                :          */
+<span class="lineNum">     344 </span><span class="lineCov">             48 :         php_import_environment_variables(track_vars_array TSRMLS_CC);</span>
+<span class="lineNum">     345 </span>                : 
+<span class="lineNum">     346 </span>                :         /* Build the special-case PHP_SELF variable for the CLI version */
+<span class="lineNum">     347 </span><span class="lineCov">             48 :         len = strlen(php_self);</span>
+<span class="lineNum">     348 </span><span class="lineCov">             48 :         if (sapi_module.input_filter(PARSE_SERVER, &quot;PHP_SELF&quot;, &amp;php_self, len, &amp;len TSRMLS_CC)) {</span>
+<span class="lineNum">     349 </span><span class="lineCov">             48 :                 php_register_variable(&quot;PHP_SELF&quot;, php_self, track_vars_array TSRMLS_CC);</span>
+<span class="lineNum">     350 </span>                :         }
+<span class="lineNum">     351 </span><span class="lineCov">             48 :         if (sapi_module.input_filter(PARSE_SERVER, &quot;SCRIPT_NAME&quot;, &amp;php_self, len, &amp;len TSRMLS_CC)) {</span>
+<span class="lineNum">     352 </span><span class="lineCov">             48 :                 php_register_variable(&quot;SCRIPT_NAME&quot;, php_self, track_vars_array TSRMLS_CC);</span>
+<span class="lineNum">     353 </span>                :         }
+<span class="lineNum">     354 </span>                :         /* filenames are empty for stdin */
+<span class="lineNum">     355 </span><span class="lineCov">             48 :         len = strlen(script_filename);</span>
+<span class="lineNum">     356 </span><span class="lineCov">             48 :         if (sapi_module.input_filter(PARSE_SERVER, &quot;SCRIPT_FILENAME&quot;, &amp;script_filename, len, &amp;len TSRMLS_CC)) {</span>
+<span class="lineNum">     357 </span><span class="lineCov">             48 :                 php_register_variable(&quot;SCRIPT_FILENAME&quot;, script_filename, track_vars_array TSRMLS_CC);</span>
+<span class="lineNum">     358 </span>                :         }
+<span class="lineNum">     359 </span><span class="lineCov">             48 :         if (sapi_module.input_filter(PARSE_SERVER, &quot;PATH_TRANSLATED&quot;, &amp;script_filename, len, &amp;len TSRMLS_CC)) {</span>
+<span class="lineNum">     360 </span><span class="lineCov">             48 :                 php_register_variable(&quot;PATH_TRANSLATED&quot;, script_filename, track_vars_array TSRMLS_CC);</span>
+<span class="lineNum">     361 </span>                :         }
+<span class="lineNum">     362 </span>                :         /* just make it available */
+<span class="lineNum">     363 </span><span class="lineCov">             48 :         len = 0U;</span>
+<span class="lineNum">     364 </span><span class="lineCov">             48 :         if (sapi_module.input_filter(PARSE_SERVER, &quot;DOCUMENT_ROOT&quot;, &amp;docroot, len, &amp;len TSRMLS_CC)) {</span>
+<span class="lineNum">     365 </span><span class="lineCov">             48 :                 php_register_variable(&quot;DOCUMENT_ROOT&quot;, docroot, track_vars_array TSRMLS_CC);</span>
+<span class="lineNum">     366 </span>                :         }
+<span class="lineNum">     367 </span><span class="lineCov">             48 : }</span>
+<a name="368"><span class="lineNum">     368 </span>                : /* }}} */</a>
+<span class="lineNum">     369 </span>                : 
+<span class="lineNum">     370 </span><span class="lineNoCov">              0 : static void sapi_cli_log_message(char *message TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     371 </span>                : {
+<span class="lineNum">     372 </span><span class="lineNoCov">              0 :         fprintf(stderr, &quot;%s\n&quot;, message);</span>
+<span class="lineNum">     373 </span><span class="lineNoCov">              0 : }</span>
+<a name="374"><span class="lineNum">     374 </span>                : /* }}} */</a>
+<span class="lineNum">     375 </span>                : 
+<span class="lineNum">     376 </span><span class="lineCov">             96 : static int sapi_cli_deactivate(TSRMLS_D) /* {{{ */</span>
+<span class="lineNum">     377 </span>                : {
+<span class="lineNum">     378 </span><span class="lineCov">             96 :         fflush(stdout);</span>
+<span class="lineNum">     379 </span><span class="lineCov">             96 :         if(SG(request_info).argv0) {</span>
+<span class="lineNum">     380 </span><span class="lineNoCov">              0 :                 free(SG(request_info).argv0);</span>
+<span class="lineNum">     381 </span><span class="lineNoCov">              0 :                 SG(request_info).argv0 = NULL;</span>
+<span class="lineNum">     382 </span>                :         }
+<span class="lineNum">     383 </span><span class="lineCov">             96 :         return SUCCESS;</span>
+<span class="lineNum">     384 </span>                : }
+<a name="385"><span class="lineNum">     385 </span>                : /* }}} */</a>
+<span class="lineNum">     386 </span>                : 
+<span class="lineNum">     387 </span><span class="lineNoCov">              0 : static char* sapi_cli_read_cookies(TSRMLS_D) /* {{{ */</span>
+<span class="lineNum">     388 </span>                : {
+<span class="lineNum">     389 </span><span class="lineNoCov">              0 :         return NULL;</span>
+<span class="lineNum">     390 </span>                : }
+<a name="391"><span class="lineNum">     391 </span>                : /* }}} */</a>
+<span class="lineNum">     392 </span>                : 
+<span class="lineNum">     393 </span><span class="lineCov">             96 : static int sapi_cli_header_handler(sapi_header_struct *h, sapi_header_op_enum op, sapi_headers_struct *s TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     394 </span>                : {
+<span class="lineNum">     395 </span><span class="lineCov">             96 :         return 0;</span>
+<span class="lineNum">     396 </span>                : }
+<a name="397"><span class="lineNum">     397 </span>                : /* }}} */</a>
+<span class="lineNum">     398 </span>                : 
+<span class="lineNum">     399 </span><span class="lineCov">             48 : static int sapi_cli_send_headers(sapi_headers_struct *sapi_headers TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     400 </span>                : {
+<span class="lineNum">     401 </span>                :         /* We do nothing here, this function is needed to prevent that the fallback
+<span class="lineNum">     402 </span>                :          * header handling is called. */
+<span class="lineNum">     403 </span><span class="lineCov">             48 :         return SAPI_HEADER_SENT_SUCCESSFULLY;</span>
+<span class="lineNum">     404 </span>                : }
+<a name="405"><span class="lineNum">     405 </span>                : /* }}} */</a>
+<span class="lineNum">     406 </span>                : 
+<span class="lineNum">     407 </span><span class="lineNoCov">              0 : static void sapi_cli_send_header(sapi_header_struct *sapi_header, void *server_context TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     408 </span>                : {
+<span class="lineNum">     409 </span><span class="lineNoCov">              0 : }</span>
+<a name="410"><span class="lineNum">     410 </span>                : /* }}} */</a>
+<span class="lineNum">     411 </span>                : 
+<span class="lineNum">     412 </span><span class="lineCov">             48 : static int php_cli_startup(sapi_module_struct *sapi_module) /* {{{ */</span>
+<span class="lineNum">     413 </span>                : {
+<span class="lineNum">     414 </span><span class="lineCov">             48 :         if (php_module_startup(sapi_module, NULL, 0)==FAILURE) {</span>
+<span class="lineNum">     415 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">     416 </span>                :         }
+<span class="lineNum">     417 </span><span class="lineCov">             48 :         return SUCCESS;</span>
+<span class="lineNum">     418 </span>                : }
+<span class="lineNum">     419 </span>                : /* }}} */
+<span class="lineNum">     420 </span>                : 
+<span class="lineNum">     421 </span>                : /* {{{ sapi_cli_ini_defaults */
+<span class="lineNum">     422 </span>                : 
+<span class="lineNum">     423 </span>                : /* overwriteable ini defaults must be set in sapi_cli_ini_defaults() */
+<span class="lineNum">     424 </span>                : #define INI_DEFAULT(name,value)\
+<span class="lineNum">     425 </span>                :         Z_SET_REFCOUNT(tmp, 0);\
+<span class="lineNum">     426 </span>                :         Z_UNSET_ISREF(tmp);     \
+<span class="lineNum">     427 </span>                :         ZVAL_STRINGL(&amp;tmp, zend_strndup(value, sizeof(value)-1), sizeof(value)-1, 0);\
+<a name="428"><span class="lineNum">     428 </span>                :         zend_hash_update(configuration_hash, name, sizeof(name), &amp;tmp, sizeof(zval), NULL);\</a>
+<span class="lineNum">     429 </span>                : 
+<span class="lineNum">     430 </span><span class="lineCov">             48 : static void sapi_cli_ini_defaults(HashTable *configuration_hash)</span>
+<span class="lineNum">     431 </span>                : {
+<span class="lineNum">     432 </span>                :         zval tmp;
+<span class="lineNum">     433 </span><span class="lineCov">             48 :         INI_DEFAULT(&quot;report_zend_debug&quot;, &quot;0&quot;);</span>
+<span class="lineNum">     434 </span><span class="lineCov">             48 :         INI_DEFAULT(&quot;display_errors&quot;, &quot;1&quot;);</span>
+<span class="lineNum">     435 </span><span class="lineCov">             48 : }</span>
+<span class="lineNum">     436 </span>                : /* }}} */
+<span class="lineNum">     437 </span>                : 
+<span class="lineNum">     438 </span>                : /* {{{ sapi_module_struct cli_sapi_module
+<span class="lineNum">     439 </span>                :  */
+<span class="lineNum">     440 </span>                : static sapi_module_struct cli_sapi_module = {
+<span class="lineNum">     441 </span>                :         &quot;cli&quot;,                                                        /* name */
+<span class="lineNum">     442 </span>                :         &quot;Command Line Interface&quot;,     /* pretty name */
+<span class="lineNum">     443 </span>                : 
+<span class="lineNum">     444 </span>                :         php_cli_startup,                                /* startup */
+<span class="lineNum">     445 </span>                :         php_module_shutdown_wrapper,    /* shutdown */
+<span class="lineNum">     446 </span>                : 
+<span class="lineNum">     447 </span>                :         NULL,                                                   /* activate */
+<span class="lineNum">     448 </span>                :         sapi_cli_deactivate,                    /* deactivate */
+<span class="lineNum">     449 </span>                : 
+<span class="lineNum">     450 </span>                :         sapi_cli_ub_write,                      /* unbuffered write */
+<span class="lineNum">     451 </span>                :         sapi_cli_flush,                             /* flush */
+<span class="lineNum">     452 </span>                :         NULL,                                                   /* get uid */
+<span class="lineNum">     453 </span>                :         NULL,                                                   /* getenv */
+<span class="lineNum">     454 </span>                : 
+<span class="lineNum">     455 </span>                :         php_error,                                              /* error handler */
+<span class="lineNum">     456 </span>                : 
+<span class="lineNum">     457 </span>                :         sapi_cli_header_handler,                /* header handler */
+<span class="lineNum">     458 </span>                :         sapi_cli_send_headers,                  /* send headers handler */
+<span class="lineNum">     459 </span>                :         sapi_cli_send_header,                   /* send header handler */
+<span class="lineNum">     460 </span>                : 
+<span class="lineNum">     461 </span>                :         NULL,                                       /* read POST data */
+<span class="lineNum">     462 </span>                :         sapi_cli_read_cookies,          /* read Cookies */
+<span class="lineNum">     463 </span>                : 
+<span class="lineNum">     464 </span>                :         sapi_cli_register_variables,    /* register server variables */
+<span class="lineNum">     465 </span>                :         sapi_cli_log_message,                   /* Log message */
+<span class="lineNum">     466 </span>                :         NULL,                                                   /* Get request time */
+<span class="lineNum">     467 </span>                :         NULL,                                                   /* Child terminate */
+<span class="lineNum">     468 </span>                :         
+<span class="lineNum">     469 </span>                :         STANDARD_SAPI_MODULE_PROPERTIES
+<span class="lineNum">     470 </span>                : };
+<span class="lineNum">     471 </span>                : /* }}} */
+<span class="lineNum">     472 </span>                : 
+<span class="lineNum">     473 </span>                : /* {{{ arginfo ext/standard/dl.c */
+<span class="lineNum">     474 </span>                : ZEND_BEGIN_ARG_INFO(arginfo_dl, 0)
+<span class="lineNum">     475 </span>                :         ZEND_ARG_INFO(0, extension_filename)
+<span class="lineNum">     476 </span>                : ZEND_END_ARG_INFO()
+<span class="lineNum">     477 </span>                : /* }}} */
+<span class="lineNum">     478 </span>                : 
+<span class="lineNum">     479 </span>                : static const zend_function_entry additional_functions[] = {
+<span class="lineNum">     480 </span>                :         ZEND_FE(dl, arginfo_dl)
+<span class="lineNum">     481 </span>                :         {NULL, NULL, NULL}
+<span class="lineNum">     482 </span>                : };
+<span class="lineNum">     483 </span>                : 
+<a name="484"><span class="lineNum">     484 </span>                : /* {{{ php_cli_usage</a>
+<span class="lineNum">     485 </span>                :  */
+<span class="lineNum">     486 </span><span class="lineNoCov">              0 : static void php_cli_usage(char *argv0)</span>
+<span class="lineNum">     487 </span>                : {
+<span class="lineNum">     488 </span>                :         char *prog;
+<span class="lineNum">     489 </span>                : 
+<span class="lineNum">     490 </span><span class="lineNoCov">              0 :         prog = strrchr(argv0, '/');</span>
+<span class="lineNum">     491 </span><span class="lineNoCov">              0 :         if (prog) {</span>
+<span class="lineNum">     492 </span><span class="lineNoCov">              0 :                 prog++;</span>
+<span class="lineNum">     493 </span>                :         } else {
+<span class="lineNum">     494 </span><span class="lineNoCov">              0 :                 prog = &quot;php&quot;;</span>
+<span class="lineNum">     495 </span>                :         }
+<span class="lineNum">     496 </span>                :         
+<span class="lineNum">     497 </span><span class="lineNoCov">              0 :         printf( &quot;Usage: %s [options] [-f] &lt;file&gt; [--] [args...]\n&quot;</span>
+<span class="lineNum">     498 </span>                :                                 &quot;   %s [options] -r &lt;code&gt; [--] [args...]\n&quot;
+<span class="lineNum">     499 </span>                :                                 &quot;   %s [options] [-B &lt;begin_code&gt;] -R &lt;code&gt; [-E &lt;end_code&gt;] [--] [args...]\n&quot;
+<span class="lineNum">     500 </span>                :                                 &quot;   %s [options] [-B &lt;begin_code&gt;] -F &lt;file&gt; [-E &lt;end_code&gt;] [--] [args...]\n&quot;
+<span class="lineNum">     501 </span>                :                                 &quot;   %s [options] -- [args...]\n&quot;
+<span class="lineNum">     502 </span>                :                                 &quot;   %s [options] -a\n&quot;
+<span class="lineNum">     503 </span>                :                                 &quot;\n&quot;
+<span class="lineNum">     504 </span>                : #if (HAVE_LIBREADLINE || HAVE_LIBEDIT) &amp;&amp; !defined(COMPILE_DL_READLINE)
+<span class="lineNum">     505 </span>                :                                 &quot;  -a               Run as interactive shell\n&quot;
+<span class="lineNum">     506 </span>                : #else
+<span class="lineNum">     507 </span>                :                                 &quot;  -a               Run interactively\n&quot;
+<span class="lineNum">     508 </span>                : #endif
+<span class="lineNum">     509 </span>                :                                 &quot;  -c &lt;path&gt;|&lt;file&gt; Look for php.ini file in this directory\n&quot;
+<span class="lineNum">     510 </span>                :                                 &quot;  -n               No php.ini file will be used\n&quot;
+<span class="lineNum">     511 </span>                :                                 &quot;  -d foo[=bar]     Define INI entry foo with value 'bar'\n&quot;
+<span class="lineNum">     512 </span>                :                                 &quot;  -e               Generate extended information for debugger/profiler\n&quot;
+<span class="lineNum">     513 </span>                :                                 &quot;  -f &lt;file&gt;        Parse and execute &lt;file&gt;.\n&quot;
+<span class="lineNum">     514 </span>                :                                 &quot;  -h               This help\n&quot;
+<span class="lineNum">     515 </span>                :                                 &quot;  -i               PHP information\n&quot;
+<span class="lineNum">     516 </span>                :                                 &quot;  -l               Syntax check only (lint)\n&quot;
+<span class="lineNum">     517 </span>                :                                 &quot;  -m               Show compiled in modules\n&quot;
+<span class="lineNum">     518 </span>                :                                 &quot;  -r &lt;code&gt;        Run PHP &lt;code&gt; without using script tags &lt;?..?&gt;\n&quot;
+<span class="lineNum">     519 </span>                :                                 &quot;  -B &lt;begin_code&gt;  Run PHP &lt;begin_code&gt; before processing input lines\n&quot;
+<span class="lineNum">     520 </span>                :                                 &quot;  -R &lt;code&gt;        Run PHP &lt;code&gt; for every input line\n&quot;
+<span class="lineNum">     521 </span>                :                                 &quot;  -F &lt;file&gt;        Parse and execute &lt;file&gt; for every input line\n&quot;
+<span class="lineNum">     522 </span>                :                                 &quot;  -E &lt;end_code&gt;    Run PHP &lt;end_code&gt; after processing all input lines\n&quot;
+<span class="lineNum">     523 </span>                :                                 &quot;  -H               Hide any passed arguments from external tools.\n&quot;
+<span class="lineNum">     524 </span>                :                                 &quot;  -S &lt;addr&gt;:&lt;port&gt; Run with built-in web server.\n&quot;
+<span class="lineNum">     525 </span>                :                                 &quot;  -t &lt;docroot&gt;     Specify document root &lt;docroot&gt; for built-in web server.\n&quot;
+<span class="lineNum">     526 </span>                :                                 &quot;  -s               Output HTML syntax highlighted source.\n&quot;
+<span class="lineNum">     527 </span>                :                                 &quot;  -v               Version number\n&quot;
+<span class="lineNum">     528 </span>                :                                 &quot;  -w               Output source with stripped comments and whitespace.\n&quot;
+<span class="lineNum">     529 </span>                :                                 &quot;  -z &lt;file&gt;        Load Zend extension &lt;file&gt;.\n&quot;
+<span class="lineNum">     530 </span>                :                                 &quot;\n&quot;
+<span class="lineNum">     531 </span>                :                                 &quot;  args...          Arguments passed to script. Use -- args when first argument\n&quot;
+<span class="lineNum">     532 </span>                :                                 &quot;                   starts with - or script is read from stdin\n&quot;
+<span class="lineNum">     533 </span>                :                                 &quot;\n&quot;
+<span class="lineNum">     534 </span>                :                                 &quot;  --ini            Show configuration file names\n&quot;
+<span class="lineNum">     535 </span>                :                                 &quot;\n&quot;
+<span class="lineNum">     536 </span>                :                                 &quot;  --rf &lt;name&gt;      Show information about function &lt;name&gt;.\n&quot;
+<span class="lineNum">     537 </span>                :                                 &quot;  --rc &lt;name&gt;      Show information about class &lt;name&gt;.\n&quot;
+<span class="lineNum">     538 </span>                :                                 &quot;  --re &lt;name&gt;      Show information about extension &lt;name&gt;.\n&quot;
+<span class="lineNum">     539 </span>                :                                 &quot;  --rz &lt;name&gt;      Show information about Zend extension &lt;name&gt;.\n&quot;
+<span class="lineNum">     540 </span>                :                                 &quot;  --ri &lt;name&gt;      Show configuration for extension &lt;name&gt;.\n&quot;
+<span class="lineNum">     541 </span>                :                                 &quot;\n&quot;
+<span class="lineNum">     542 </span>                :                                 , prog, prog, prog, prog, prog, prog);
+<span class="lineNum">     543 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     544 </span>                : /* }}} */
+<span class="lineNum">     545 </span>                : 
+<a name="546"><span class="lineNum">     546 </span>                : static php_stream *s_in_process = NULL;</a>
+<span class="lineNum">     547 </span>                : 
+<span class="lineNum">     548 </span><span class="lineCov">             48 : static void cli_register_file_handles(TSRMLS_D) /* {{{ */</span>
+<span class="lineNum">     549 </span>                : {
+<span class="lineNum">     550 </span>                :         zval *zin, *zout, *zerr;
+<span class="lineNum">     551 </span>                :         php_stream *s_in, *s_out, *s_err;
+<span class="lineNum">     552 </span><span class="lineCov">             48 :         php_stream_context *sc_in=NULL, *sc_out=NULL, *sc_err=NULL;</span>
+<span class="lineNum">     553 </span>                :         zend_constant ic, oc, ec;
+<span class="lineNum">     554 </span>                :         
+<span class="lineNum">     555 </span><span class="lineCov">             48 :         MAKE_STD_ZVAL(zin);</span>
+<span class="lineNum">     556 </span><span class="lineCov">             48 :         MAKE_STD_ZVAL(zout);</span>
+<span class="lineNum">     557 </span><span class="lineCov">             48 :         MAKE_STD_ZVAL(zerr);</span>
+<span class="lineNum">     558 </span>                : 
+<span class="lineNum">     559 </span><span class="lineCov">             48 :         s_in  = php_stream_open_wrapper_ex(&quot;php://stdin&quot;,  &quot;rb&quot;, 0, NULL, sc_in);</span>
+<span class="lineNum">     560 </span><span class="lineCov">             48 :         s_out = php_stream_open_wrapper_ex(&quot;php://stdout&quot;, &quot;wb&quot;, 0, NULL, sc_out);</span>
+<span class="lineNum">     561 </span><span class="lineCov">             48 :         s_err = php_stream_open_wrapper_ex(&quot;php://stderr&quot;, &quot;wb&quot;, 0, NULL, sc_err);</span>
+<span class="lineNum">     562 </span>                : 
+<span class="lineNum">     563 </span><span class="lineCov">             48 :         if (s_in==NULL || s_out==NULL || s_err==NULL) {</span>
+<span class="lineNum">     564 </span><span class="lineNoCov">              0 :                 FREE_ZVAL(zin);</span>
+<span class="lineNum">     565 </span><span class="lineNoCov">              0 :                 FREE_ZVAL(zout);</span>
+<span class="lineNum">     566 </span><span class="lineNoCov">              0 :                 FREE_ZVAL(zerr);</span>
+<span class="lineNum">     567 </span><span class="lineNoCov">              0 :                 if (s_in) php_stream_close(s_in);</span>
+<span class="lineNum">     568 </span><span class="lineNoCov">              0 :                 if (s_out) php_stream_close(s_out);</span>
+<span class="lineNum">     569 </span><span class="lineNoCov">              0 :                 if (s_err) php_stream_close(s_err);</span>
+<span class="lineNum">     570 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     571 </span>                :         }
+<span class="lineNum">     572 </span>                :         
+<span class="lineNum">     573 </span>                : #if PHP_DEBUG
+<span class="lineNum">     574 </span>                :         /* do not close stdout and stderr */
+<span class="lineNum">     575 </span>                :         s_out-&gt;flags |= PHP_STREAM_FLAG_NO_CLOSE;
+<span class="lineNum">     576 </span>                :         s_err-&gt;flags |= PHP_STREAM_FLAG_NO_CLOSE;
+<span class="lineNum">     577 </span>                : #endif
+<span class="lineNum">     578 </span>                : 
+<span class="lineNum">     579 </span><span class="lineCov">             48 :         s_in_process = s_in;</span>
+<span class="lineNum">     580 </span>                : 
+<span class="lineNum">     581 </span><span class="lineCov">             48 :         php_stream_to_zval(s_in,  zin);</span>
+<span class="lineNum">     582 </span><span class="lineCov">             48 :         php_stream_to_zval(s_out, zout);</span>
+<span class="lineNum">     583 </span><span class="lineCov">             48 :         php_stream_to_zval(s_err, zerr);</span>
+<span class="lineNum">     584 </span>                :         
+<span class="lineNum">     585 </span><span class="lineCov">             48 :         ic.value = *zin;</span>
+<span class="lineNum">     586 </span><span class="lineCov">             48 :         ic.flags = CONST_CS;</span>
+<span class="lineNum">     587 </span><span class="lineCov">             48 :         ic.name = zend_strndup(ZEND_STRL(&quot;STDIN&quot;));</span>
+<span class="lineNum">     588 </span><span class="lineCov">             48 :         ic.name_len = sizeof(&quot;STDIN&quot;);</span>
+<span class="lineNum">     589 </span><span class="lineCov">             48 :         ic.module_number = 0;</span>
+<span class="lineNum">     590 </span><span class="lineCov">             48 :         zend_register_constant(&amp;ic TSRMLS_CC);</span>
+<span class="lineNum">     591 </span>                : 
+<span class="lineNum">     592 </span><span class="lineCov">             48 :         oc.value = *zout;</span>
+<span class="lineNum">     593 </span><span class="lineCov">             48 :         oc.flags = CONST_CS;</span>
+<span class="lineNum">     594 </span><span class="lineCov">             48 :         oc.name = zend_strndup(ZEND_STRL(&quot;STDOUT&quot;));</span>
+<span class="lineNum">     595 </span><span class="lineCov">             48 :         oc.name_len = sizeof(&quot;STDOUT&quot;);</span>
+<span class="lineNum">     596 </span><span class="lineCov">             48 :         oc.module_number = 0;</span>
+<span class="lineNum">     597 </span><span class="lineCov">             48 :         zend_register_constant(&amp;oc TSRMLS_CC);</span>
+<span class="lineNum">     598 </span>                : 
+<span class="lineNum">     599 </span><span class="lineCov">             48 :         ec.value = *zerr;</span>
+<span class="lineNum">     600 </span><span class="lineCov">             48 :         ec.flags = CONST_CS;</span>
+<span class="lineNum">     601 </span><span class="lineCov">             48 :         ec.name = zend_strndup(ZEND_STRL(&quot;STDERR&quot;));</span>
+<span class="lineNum">     602 </span><span class="lineCov">             48 :         ec.name_len = sizeof(&quot;STDERR&quot;);</span>
+<span class="lineNum">     603 </span><span class="lineCov">             48 :         ec.module_number = 0;</span>
+<span class="lineNum">     604 </span><span class="lineCov">             48 :         zend_register_constant(&amp;ec TSRMLS_CC);</span>
+<span class="lineNum">     605 </span>                : 
+<span class="lineNum">     606 </span><span class="lineCov">             48 :         FREE_ZVAL(zin);</span>
+<span class="lineNum">     607 </span><span class="lineCov">             48 :         FREE_ZVAL(zout);</span>
+<span class="lineNum">     608 </span><span class="lineCov">             48 :         FREE_ZVAL(zerr);</span>
+<span class="lineNum">     609 </span>                : }
+<span class="lineNum">     610 </span>                : /* }}} */
+<span class="lineNum">     611 </span>                : 
+<span class="lineNum">     612 </span>                : static const char *param_mode_conflict = &quot;Either execute direct code, process stdin or use a file.\n&quot;;
+<span class="lineNum">     613 </span>                : 
+<a name="614"><span class="lineNum">     614 </span>                : /* {{{ cli_seek_file_begin</a>
+<span class="lineNum">     615 </span>                :  */
+<span class="lineNum">     616 </span><span class="lineCov">             45 : static int cli_seek_file_begin(zend_file_handle *file_handle, char *script_file, int *lineno TSRMLS_DC)</span>
+<span class="lineNum">     617 </span>                : {
+<span class="lineNum">     618 </span>                :         int c;
+<span class="lineNum">     619 </span>                : 
+<span class="lineNum">     620 </span><span class="lineCov">             45 :         *lineno = 1;</span>
+<span class="lineNum">     621 </span>                : 
+<span class="lineNum">     622 </span><span class="lineCov">             45 :         file_handle-&gt;type = ZEND_HANDLE_FP;</span>
+<span class="lineNum">     623 </span><span class="lineCov">             45 :         file_handle-&gt;opened_path = NULL;</span>
+<span class="lineNum">     624 </span><span class="lineCov">             45 :         file_handle-&gt;free_filename = 0;</span>
+<span class="lineNum">     625 </span><span class="lineCov">             45 :         if (!(file_handle-&gt;handle.fp = VCWD_FOPEN(script_file, &quot;rb&quot;))) {</span>
+<span class="lineNum">     626 </span><span class="lineNoCov">              0 :                 php_printf(&quot;Could not open input file: %s\n&quot;, script_file);</span>
+<span class="lineNum">     627 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">     628 </span>                :         }
+<span class="lineNum">     629 </span><span class="lineCov">             45 :         file_handle-&gt;filename = script_file;</span>
+<span class="lineNum">     630 </span>                : 
+<span class="lineNum">     631 </span>                :         /* #!php support */
+<span class="lineNum">     632 </span><span class="lineCov">             45 :         c = fgetc(file_handle-&gt;handle.fp);</span>
+<span class="lineNum">     633 </span><span class="lineCov">             46 :         if (c == '#' &amp;&amp; (c = fgetc(file_handle-&gt;handle.fp)) == '!') {</span>
+<span class="lineNum">     634 </span><span class="lineCov">             19 :                 while (c != '\n' &amp;&amp; c != '\r' &amp;&amp; c != EOF) {</span>
+<span class="lineNum">     635 </span><span class="lineCov">             17 :                         c = fgetc(file_handle-&gt;handle.fp);   /* skip to end of line */</span>
+<span class="lineNum">     636 </span>                :                 }
+<span class="lineNum">     637 </span>                :                 /* handle situations where line is terminated by \r\n */
+<span class="lineNum">     638 </span><span class="lineCov">              1 :                 if (c == '\r') {</span>
+<span class="lineNum">     639 </span><span class="lineNoCov">              0 :                         if (fgetc(file_handle-&gt;handle.fp) != '\n') {</span>
+<span class="lineNum">     640 </span><span class="lineNoCov">              0 :                                 long pos = ftell(file_handle-&gt;handle.fp);</span>
+<span class="lineNum">     641 </span><span class="lineNoCov">              0 :                                 fseek(file_handle-&gt;handle.fp, pos - 1, SEEK_SET);</span>
+<span class="lineNum">     642 </span>                :                         }
+<span class="lineNum">     643 </span>                :                 }
+<span class="lineNum">     644 </span><span class="lineCov">              1 :                 *lineno = 2;</span>
+<span class="lineNum">     645 </span>                :         } else {
+<span class="lineNum">     646 </span><span class="lineCov">             44 :                 rewind(file_handle-&gt;handle.fp);</span>
+<span class="lineNum">     647 </span>                :         }
+<span class="lineNum">     648 </span>                : 
+<span class="lineNum">     649 </span><span class="lineCov">             45 :         return SUCCESS;</span>
+<span class="lineNum">     650 </span>                : }
+<a name="651"><span class="lineNum">     651 </span>                : /* }}} */</a>
+<span class="lineNum">     652 </span>                : 
+<span class="lineNum">     653 </span><span class="lineCov">             48 : static int do_cli(int argc, char **argv TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     654 </span>                : {
+<span class="lineNum">     655 </span>                :         int c;
+<span class="lineNum">     656 </span>                :         zend_file_handle file_handle;
+<span class="lineNum">     657 </span><span class="lineCov">             48 :         int behavior = PHP_MODE_STANDARD;</span>
+<span class="lineNum">     658 </span><span class="lineCov">             48 :         char *reflection_what = NULL;</span>
+<span class="lineNum">     659 </span><span class="lineCov">             48 :         volatile int request_started = 0;</span>
+<span class="lineNum">     660 </span><span class="lineCov">             48 :         volatile int exit_status = 0;</span>
+<span class="lineNum">     661 </span><span class="lineCov">             48 :         char *php_optarg = NULL, *orig_optarg = NULL;</span>
+<span class="lineNum">     662 </span><span class="lineCov">             48 :         int php_optind = 1, orig_optind = 1;</span>
+<span class="lineNum">     663 </span><span class="lineCov">             48 :         char *exec_direct=NULL, *exec_run=NULL, *exec_begin=NULL, *exec_end=NULL;</span>
+<span class="lineNum">     664 </span><span class="lineCov">             48 :         char *arg_free=NULL, **arg_excp=&amp;arg_free;</span>
+<span class="lineNum">     665 </span><span class="lineCov">             48 :         char *script_file=NULL, *translated_path = NULL;</span>
+<span class="lineNum">     666 </span><span class="lineCov">             48 :         int interactive=0;</span>
+<span class="lineNum">     667 </span><span class="lineCov">             48 :         int lineno = 0;</span>
+<span class="lineNum">     668 </span><span class="lineCov">             48 :         const char *param_error=NULL;</span>
+<span class="lineNum">     669 </span><span class="lineCov">             48 :         int hide_argv = 0;</span>
+<span class="lineNum">     670 </span>                : 
+<span class="lineNum">     671 </span><span class="lineCov">             48 :         zend_try {</span>
+<span class="lineNum">     672 </span>                :         
+<span class="lineNum">     673 </span><span class="lineCov">             48 :                 CG(in_compilation) = 0; /* not initialized but needed for several options */</span>
+<span class="lineNum">     674 </span><span class="lineCov">             48 :                 EG(uninitialized_zval_ptr) = NULL;</span>
+<span class="lineNum">     675 </span>                : 
+<span class="lineNum">     676 </span><span class="lineCov">           1294 :                 while ((c = php_getopt(argc, argv, OPTIONS, &amp;php_optarg, &amp;php_optind, 0, 2)) != -1) {</span>
+<span class="lineNum">     677 </span><span class="lineCov">           1198 :                         switch (c) {</span>
+<span class="lineNum">     678 </span>                : 
+<span class="lineNum">     679 </span>                :                         case 'i': /* php info &amp; quit */
+<span class="lineNum">     680 </span><span class="lineNoCov">              0 :                                 if (php_request_startup(TSRMLS_C)==FAILURE) {</span>
+<span class="lineNum">     681 </span><span class="lineNoCov">              0 :                                         goto err;</span>
+<span class="lineNum">     682 </span>                :                                 }
+<span class="lineNum">     683 </span><span class="lineNoCov">              0 :                                 request_started = 1;</span>
+<span class="lineNum">     684 </span><span class="lineNoCov">              0 :                                 php_print_info(0xFFFFFFFF TSRMLS_CC);</span>
+<span class="lineNum">     685 </span><span class="lineNoCov">              0 :                                 php_output_end_all(TSRMLS_C);</span>
+<span class="lineNum">     686 </span><span class="lineNoCov">              0 :                                 exit_status = (c == '?' &amp;&amp; argc &gt; 1 &amp;&amp; !strchr(argv[1],  c));</span>
+<span class="lineNum">     687 </span><span class="lineNoCov">              0 :                                 goto out;</span>
+<span class="lineNum">     688 </span>                : 
+<span class="lineNum">     689 </span>                :                         case 'v': /* show php version &amp; quit */
+<span class="lineNum">     690 </span><span class="lineNoCov">              0 :                                 php_printf(&quot;PHP %s (%s) (built: %s %s) %s\nCopyright (c) 1997-2012 The PHP Group\n%s&quot;,</span>
+<span class="lineNum">     691 </span>                :                                         PHP_VERSION, cli_sapi_module.name, __DATE__, __TIME__,
+<span class="lineNum">     692 </span>                : #if ZEND_DEBUG &amp;&amp; defined(HAVE_GCOV)
+<span class="lineNum">     693 </span>                :                                         &quot;(DEBUG GCOV)&quot;,
+<span class="lineNum">     694 </span>                : #elif ZEND_DEBUG
+<span class="lineNum">     695 </span>                :                                         &quot;(DEBUG)&quot;,
+<span class="lineNum">     696 </span>                : #elif defined(HAVE_GCOV)
+<span class="lineNum">     697 </span>                :                                         &quot;(GCOV)&quot;,
+<span class="lineNum">     698 </span>                : #else
+<span class="lineNum">     699 </span>                :                                         &quot;&quot;,
+<span class="lineNum">     700 </span>                : #endif
+<span class="lineNum">     701 </span>                :                                         get_zend_version()
+<span class="lineNum">     702 </span>                :                                 );
+<span class="lineNum">     703 </span><span class="lineNoCov">              0 :                                 sapi_deactivate(TSRMLS_C);</span>
+<span class="lineNum">     704 </span><span class="lineNoCov">              0 :                                 goto out;</span>
+<span class="lineNum">     705 </span>                : 
+<span class="lineNum">     706 </span>                :                         case 'm': /* list compiled in modules */
+<span class="lineNum">     707 </span><span class="lineNoCov">              0 :                                 if (php_request_startup(TSRMLS_C)==FAILURE) {</span>
+<span class="lineNum">     708 </span><span class="lineNoCov">              0 :                                         goto err;</span>
+<span class="lineNum">     709 </span>                :                                 }
+<span class="lineNum">     710 </span><span class="lineNoCov">              0 :                                 request_started = 1;</span>
+<span class="lineNum">     711 </span><span class="lineNoCov">              0 :                                 php_printf(&quot;[PHP Modules]\n&quot;);</span>
+<span class="lineNum">     712 </span><span class="lineNoCov">              0 :                                 print_modules(TSRMLS_C);</span>
+<span class="lineNum">     713 </span><span class="lineNoCov">              0 :                                 php_printf(&quot;\n[Zend Modules]\n&quot;);</span>
+<span class="lineNum">     714 </span><span class="lineNoCov">              0 :                                 print_extensions(TSRMLS_C);</span>
+<span class="lineNum">     715 </span><span class="lineNoCov">              0 :                                 php_printf(&quot;\n&quot;);</span>
+<span class="lineNum">     716 </span><span class="lineNoCov">              0 :                                 php_output_end_all(TSRMLS_C);</span>
+<span class="lineNum">     717 </span><span class="lineNoCov">              0 :                                 exit_status=0;</span>
+<span class="lineNum">     718 </span><span class="lineNoCov">              0 :                                 goto out;</span>
+<span class="lineNum">     719 </span>                : 
+<span class="lineNum">     720 </span>                :                         default:
+<span class="lineNum">     721 </span>                :                                 break;
+<span class="lineNum">     722 </span>                :                         }
+<span class="lineNum">     723 </span>                :                 }
+<span class="lineNum">     724 </span>                : 
+<span class="lineNum">     725 </span>                :                 /* Set some CLI defaults */
+<span class="lineNum">     726 </span><span class="lineCov">             48 :                 SG(options) |= SAPI_OPTION_NO_CHDIR;</span>
+<span class="lineNum">     727 </span>                : 
+<span class="lineNum">     728 </span><span class="lineCov">             48 :                 php_optind = orig_optind;</span>
+<span class="lineNum">     729 </span><span class="lineCov">             48 :                 php_optarg = orig_optarg;</span>
+<span class="lineNum">     730 </span><span class="lineCov">           1294 :                 while ((c = php_getopt(argc, argv, OPTIONS, &amp;php_optarg, &amp;php_optind, 0, 2)) != -1) {</span>
+<span class="lineNum">     731 </span><span class="lineCov">           1198 :                         switch (c) {</span>
+<span class="lineNum">     732 </span>                : 
+<span class="lineNum">     733 </span>                :                         case 'a':       /* interactive mode */
+<span class="lineNum">     734 </span><span class="lineNoCov">              0 :                                 if (!interactive) {</span>
+<span class="lineNum">     735 </span><span class="lineNoCov">              0 :                                         if (behavior != PHP_MODE_STANDARD) {</span>
+<span class="lineNum">     736 </span><span class="lineNoCov">              0 :                                                 param_error = param_mode_conflict;</span>
+<span class="lineNum">     737 </span><span class="lineNoCov">              0 :                                                 break;</span>
+<span class="lineNum">     738 </span>                :                                         }
+<span class="lineNum">     739 </span>                : 
+<span class="lineNum">     740 </span><span class="lineNoCov">              0 :                                         interactive=1;</span>
+<span class="lineNum">     741 </span>                :                                 }
+<span class="lineNum">     742 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     743 </span>                : 
+<span class="lineNum">     744 </span>                :                         case 'C': /* don't chdir to the script directory */
+<span class="lineNum">     745 </span>                :                                 /* This is default so NOP */
+<span class="lineNum">     746 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     747 </span>                : 
+<span class="lineNum">     748 </span>                :                         case 'F':
+<span class="lineNum">     749 </span><span class="lineNoCov">              0 :                                 if (behavior == PHP_MODE_PROCESS_STDIN) {</span>
+<span class="lineNum">     750 </span><span class="lineNoCov">              0 :                                         if (exec_run || script_file) {</span>
+<span class="lineNum">     751 </span><span class="lineNoCov">              0 :                                                 param_error = &quot;You can use -R or -F only once.\n&quot;;</span>
+<span class="lineNum">     752 </span><span class="lineNoCov">              0 :                                                 break;</span>
+<span class="lineNum">     753 </span>                :                                         }
+<span class="lineNum">     754 </span><span class="lineNoCov">              0 :                                 } else if (behavior != PHP_MODE_STANDARD) {</span>
+<span class="lineNum">     755 </span><span class="lineNoCov">              0 :                                         param_error = param_mode_conflict;</span>
+<span class="lineNum">     756 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">     757 </span>                :                                 }
+<span class="lineNum">     758 </span><span class="lineNoCov">              0 :                                 behavior=PHP_MODE_PROCESS_STDIN;</span>
+<span class="lineNum">     759 </span><span class="lineNoCov">              0 :                                 script_file = php_optarg;</span>
+<span class="lineNum">     760 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     761 </span>                : 
+<span class="lineNum">     762 </span>                :                         case 'f': /* parse file */
+<span class="lineNum">     763 </span><span class="lineCov">             42 :                                 if (behavior == PHP_MODE_CLI_DIRECT || behavior == PHP_MODE_PROCESS_STDIN) {</span>
+<span class="lineNum">     764 </span><span class="lineNoCov">              0 :                                         param_error = param_mode_conflict;</span>
+<span class="lineNum">     765 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">     766 </span><span class="lineCov">             42 :                                 } else if (script_file) {</span>
+<span class="lineNum">     767 </span><span class="lineNoCov">              0 :                                         param_error = &quot;You can use -f only once.\n&quot;;</span>
+<span class="lineNum">     768 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">     769 </span>                :                                 }
+<span class="lineNum">     770 </span><span class="lineCov">             42 :                                 script_file = php_optarg;</span>
+<span class="lineNum">     771 </span><span class="lineCov">             42 :                                 break;</span>
+<span class="lineNum">     772 </span>                : 
+<span class="lineNum">     773 </span>                :                         case 'l': /* syntax check mode */
+<span class="lineNum">     774 </span><span class="lineNoCov">              0 :                                 if (behavior != PHP_MODE_STANDARD) {</span>
+<span class="lineNum">     775 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">     776 </span>                :                                 }
+<span class="lineNum">     777 </span><span class="lineNoCov">              0 :                                 behavior=PHP_MODE_LINT;</span>
+<span class="lineNum">     778 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     779 </span>                : 
+<span class="lineNum">     780 </span>                : #if 0 /* not yet operational, see also below ... */
+<span class="lineNum">     781 </span>                :                         case '': /* generate indented source mode*/
+<span class="lineNum">     782 </span>                :                                 if (behavior == PHP_MODE_CLI_DIRECT || behavior == PHP_MODE_PROCESS_STDIN) {
+<span class="lineNum">     783 </span>                :                                         param_error = &quot;Source indenting only works for files.\n&quot;;
+<span class="lineNum">     784 </span>                :                                         break;
+<span class="lineNum">     785 </span>                :                                 }
+<span class="lineNum">     786 </span>                :                                 behavior=PHP_MODE_INDENT;
+<span class="lineNum">     787 </span>                :                                 break;
+<span class="lineNum">     788 </span>                : #endif
+<span class="lineNum">     789 </span>                : 
+<span class="lineNum">     790 </span>                :                         case 'q': /* do not generate HTTP headers */
+<span class="lineNum">     791 </span>                :                                 /* This is default so NOP */
+<span class="lineNum">     792 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     793 </span>                : 
+<span class="lineNum">     794 </span>                :                         case 'r': /* run code from command line */
+<span class="lineNum">     795 </span><span class="lineCov">              3 :                                 if (behavior == PHP_MODE_CLI_DIRECT) {</span>
+<span class="lineNum">     796 </span><span class="lineNoCov">              0 :                                         if (exec_direct || script_file) {</span>
+<span class="lineNum">     797 </span><span class="lineNoCov">              0 :                                                 param_error = &quot;You can use -r only once.\n&quot;;</span>
+<span class="lineNum">     798 </span><span class="lineNoCov">              0 :                                                 break;</span>
+<span class="lineNum">     799 </span>                :                                         }
+<span class="lineNum">     800 </span><span class="lineCov">              3 :                                 } else if (behavior != PHP_MODE_STANDARD || interactive) {</span>
+<span class="lineNum">     801 </span><span class="lineNoCov">              0 :                                         param_error = param_mode_conflict;</span>
+<span class="lineNum">     802 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">     803 </span>                :                                 }
+<span class="lineNum">     804 </span><span class="lineCov">              3 :                                 behavior=PHP_MODE_CLI_DIRECT;</span>
+<span class="lineNum">     805 </span><span class="lineCov">              3 :                                 exec_direct=php_optarg;</span>
+<span class="lineNum">     806 </span><span class="lineCov">              3 :                                 break;</span>
+<span class="lineNum">     807 </span>                :                         
+<span class="lineNum">     808 </span>                :                         case 'R':
+<span class="lineNum">     809 </span><span class="lineNoCov">              0 :                                 if (behavior == PHP_MODE_PROCESS_STDIN) {</span>
+<span class="lineNum">     810 </span><span class="lineNoCov">              0 :                                         if (exec_run || script_file) {</span>
+<span class="lineNum">     811 </span><span class="lineNoCov">              0 :                                                 param_error = &quot;You can use -R or -F only once.\n&quot;;</span>
+<span class="lineNum">     812 </span><span class="lineNoCov">              0 :                                                 break;</span>
+<span class="lineNum">     813 </span>                :                                         }
+<span class="lineNum">     814 </span><span class="lineNoCov">              0 :                                 } else if (behavior != PHP_MODE_STANDARD) {</span>
+<span class="lineNum">     815 </span><span class="lineNoCov">              0 :                                         param_error = param_mode_conflict;</span>
+<span class="lineNum">     816 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">     817 </span>                :                                 }
+<span class="lineNum">     818 </span><span class="lineNoCov">              0 :                                 behavior=PHP_MODE_PROCESS_STDIN;</span>
+<span class="lineNum">     819 </span><span class="lineNoCov">              0 :                                 exec_run=php_optarg;</span>
+<span class="lineNum">     820 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     821 </span>                : 
+<span class="lineNum">     822 </span>                :                         case 'B':
+<span class="lineNum">     823 </span><span class="lineNoCov">              0 :                                 if (behavior == PHP_MODE_PROCESS_STDIN) {</span>
+<span class="lineNum">     824 </span><span class="lineNoCov">              0 :                                         if (exec_begin) {</span>
+<span class="lineNum">     825 </span><span class="lineNoCov">              0 :                                                 param_error = &quot;You can use -B only once.\n&quot;;</span>
+<span class="lineNum">     826 </span><span class="lineNoCov">              0 :                                                 break;</span>
+<span class="lineNum">     827 </span>                :                                         }
+<span class="lineNum">     828 </span><span class="lineNoCov">              0 :                                 } else if (behavior != PHP_MODE_STANDARD || interactive) {</span>
+<span class="lineNum">     829 </span><span class="lineNoCov">              0 :                                         param_error = param_mode_conflict;</span>
+<span class="lineNum">     830 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">     831 </span>                :                                 }
+<span class="lineNum">     832 </span><span class="lineNoCov">              0 :                                 behavior=PHP_MODE_PROCESS_STDIN;</span>
+<span class="lineNum">     833 </span><span class="lineNoCov">              0 :                                 exec_begin=php_optarg;</span>
+<span class="lineNum">     834 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     835 </span>                : 
+<span class="lineNum">     836 </span>                :                         case 'E':
+<span class="lineNum">     837 </span><span class="lineNoCov">              0 :                                 if (behavior == PHP_MODE_PROCESS_STDIN) {</span>
+<span class="lineNum">     838 </span><span class="lineNoCov">              0 :                                         if (exec_end) {</span>
+<span class="lineNum">     839 </span><span class="lineNoCov">              0 :                                                 param_error = &quot;You can use -E only once.\n&quot;;</span>
+<span class="lineNum">     840 </span><span class="lineNoCov">              0 :                                                 break;</span>
+<span class="lineNum">     841 </span>                :                                         }
+<span class="lineNum">     842 </span><span class="lineNoCov">              0 :                                 } else if (behavior != PHP_MODE_STANDARD || interactive) {</span>
+<span class="lineNum">     843 </span><span class="lineNoCov">              0 :                                         param_error = param_mode_conflict;</span>
+<span class="lineNum">     844 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">     845 </span>                :                                 }
+<span class="lineNum">     846 </span><span class="lineNoCov">              0 :                                 behavior=PHP_MODE_PROCESS_STDIN;</span>
+<span class="lineNum">     847 </span><span class="lineNoCov">              0 :                                 exec_end=php_optarg;</span>
+<span class="lineNum">     848 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     849 </span>                : 
+<span class="lineNum">     850 </span>                :                         case 's': /* generate highlighted HTML from source */
+<span class="lineNum">     851 </span><span class="lineNoCov">              0 :                                 if (behavior == PHP_MODE_CLI_DIRECT || behavior == PHP_MODE_PROCESS_STDIN) {</span>
+<span class="lineNum">     852 </span><span class="lineNoCov">              0 :                                         param_error = &quot;Source highlighting only works for files.\n&quot;;</span>
+<span class="lineNum">     853 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">     854 </span>                :                                 }
+<span class="lineNum">     855 </span><span class="lineNoCov">              0 :                                 behavior=PHP_MODE_HIGHLIGHT;</span>
+<span class="lineNum">     856 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     857 </span>                : 
+<span class="lineNum">     858 </span>                :                         case 'w':
+<span class="lineNum">     859 </span><span class="lineNoCov">              0 :                                 if (behavior == PHP_MODE_CLI_DIRECT || behavior == PHP_MODE_PROCESS_STDIN) {</span>
+<span class="lineNum">     860 </span><span class="lineNoCov">              0 :                                         param_error = &quot;Source stripping only works for files.\n&quot;;</span>
+<span class="lineNum">     861 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">     862 </span>                :                                 }
+<span class="lineNum">     863 </span><span class="lineNoCov">              0 :                                 behavior=PHP_MODE_STRIP;</span>
+<span class="lineNum">     864 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     865 </span>                : 
+<span class="lineNum">     866 </span>                :                         case 'z': /* load extension file */
+<span class="lineNum">     867 </span><span class="lineNoCov">              0 :                                 zend_load_extension(php_optarg);</span>
+<span class="lineNum">     868 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     869 </span>                :                         case 'H':
+<span class="lineNum">     870 </span><span class="lineNoCov">              0 :                                 hide_argv = 1;</span>
+<span class="lineNum">     871 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     872 </span>                :                         case 10:
+<span class="lineNum">     873 </span><span class="lineNoCov">              0 :                                 behavior=PHP_MODE_REFLECTION_FUNCTION;</span>
+<span class="lineNum">     874 </span><span class="lineNoCov">              0 :                                 reflection_what = php_optarg;</span>
+<span class="lineNum">     875 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     876 </span>                :                         case 11:
+<span class="lineNum">     877 </span><span class="lineNoCov">              0 :                                 behavior=PHP_MODE_REFLECTION_CLASS;</span>
+<span class="lineNum">     878 </span><span class="lineNoCov">              0 :                                 reflection_what = php_optarg;</span>
+<span class="lineNum">     879 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     880 </span>                :                         case 12:
+<span class="lineNum">     881 </span><span class="lineNoCov">              0 :                                 behavior=PHP_MODE_REFLECTION_EXTENSION;</span>
+<span class="lineNum">     882 </span><span class="lineNoCov">              0 :                                 reflection_what = php_optarg;</span>
+<span class="lineNum">     883 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     884 </span>                :                         case 13:
+<span class="lineNum">     885 </span><span class="lineNoCov">              0 :                                 behavior=PHP_MODE_REFLECTION_ZEND_EXTENSION;</span>
+<span class="lineNum">     886 </span><span class="lineNoCov">              0 :                                 reflection_what = php_optarg;</span>
+<span class="lineNum">     887 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     888 </span>                :                         case 14:
+<span class="lineNum">     889 </span><span class="lineNoCov">              0 :                                 behavior=PHP_MODE_REFLECTION_EXT_INFO;</span>
+<span class="lineNum">     890 </span><span class="lineNoCov">              0 :                                 reflection_what = php_optarg;</span>
+<span class="lineNum">     891 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     892 </span>                :                         case 15:
+<span class="lineNum">     893 </span><span class="lineNoCov">              0 :                                 behavior = PHP_MODE_SHOW_INI_CONFIG;</span>
+<span class="lineNum">     894 </span>                :                                 break;
+<span class="lineNum">     895 </span>                :                         default:
+<span class="lineNum">     896 </span>                :                                 break;
+<span class="lineNum">     897 </span>                :                         }
+<span class="lineNum">     898 </span>                :                 }
+<span class="lineNum">     899 </span>                : 
+<span class="lineNum">     900 </span><span class="lineCov">             48 :                 if (param_error) {</span>
+<span class="lineNum">     901 </span><span class="lineNoCov">              0 :                         PUTS(param_error);</span>
+<span class="lineNum">     902 </span><span class="lineNoCov">              0 :                         exit_status=1;</span>
+<span class="lineNum">     903 </span><span class="lineNoCov">              0 :                         goto err;</span>
+<span class="lineNum">     904 </span>                :                 }
+<span class="lineNum">     905 </span>                : 
+<span class="lineNum">     906 </span><span class="lineCov">             48 :                 if (interactive) {</span>
+<span class="lineNum">     907 </span>                : #if (HAVE_LIBREADLINE || HAVE_LIBEDIT) &amp;&amp; !defined(COMPILE_DL_READLINE)
+<span class="lineNum">     908 </span>                :                         printf(&quot;Interactive shell\n\n&quot;);
+<span class="lineNum">     909 </span>                : #else
+<span class="lineNum">     910 </span><span class="lineNoCov">              0 :                         printf(&quot;Interactive mode enabled\n\n&quot;);</span>
+<span class="lineNum">     911 </span>                : #endif
+<span class="lineNum">     912 </span><span class="lineNoCov">              0 :                         fflush(stdout);</span>
+<span class="lineNum">     913 </span>                :                 }
+<span class="lineNum">     914 </span>                : 
+<span class="lineNum">     915 </span><span class="lineCov">             48 :                 CG(interactive) = interactive;</span>
+<span class="lineNum">     916 </span>                : 
+<span class="lineNum">     917 </span>                :                 /* only set script_file if not set already and not in direct mode and not at end of parameter list */
+<span class="lineNum">     918 </span><span class="lineCov">             51 :                 if (argc &gt; php_optind </span>
+<span class="lineNum">     919 </span><span class="lineCov">             48 :                   &amp;&amp; !script_file </span>
+<span class="lineNum">     920 </span>                :                   &amp;&amp; behavior!=PHP_MODE_CLI_DIRECT 
+<span class="lineNum">     921 </span>                :                   &amp;&amp; behavior!=PHP_MODE_PROCESS_STDIN 
+<span class="lineNum">     922 </span><span class="lineCov">              3 :                   &amp;&amp; strcmp(argv[php_optind-1],&quot;--&quot;)) </span>
+<span class="lineNum">     923 </span>                :                 {
+<span class="lineNum">     924 </span><span class="lineCov">              3 :                         script_file=argv[php_optind];</span>
+<span class="lineNum">     925 </span><span class="lineCov">              3 :                         php_optind++;</span>
+<span class="lineNum">     926 </span>                :                 }
+<span class="lineNum">     927 </span><span class="lineCov">             48 :                 if (script_file) {</span>
+<span class="lineNum">     928 </span><span class="lineCov">             45 :                         if (cli_seek_file_begin(&amp;file_handle, script_file, &amp;lineno TSRMLS_CC) != SUCCESS) {</span>
+<span class="lineNum">     929 </span><span class="lineNoCov">              0 :                                 goto err;</span>
+<span class="lineNum">     930 </span>                :                         } else {
+<span class="lineNum">     931 </span>                :                                 char real_path[MAXPATHLEN];
+<span class="lineNum">     932 </span><span class="lineCov">             45 :                                 if (VCWD_REALPATH(script_file, real_path)) {</span>
+<span class="lineNum">     933 </span><span class="lineCov">             45 :                                         translated_path = strdup(real_path);</span>
+<span class="lineNum">     934 </span>                :                                 }
+<span class="lineNum">     935 </span><span class="lineCov">             45 :                                 script_filename = script_file;</span>
+<span class="lineNum">     936 </span>                :                         }
+<span class="lineNum">     937 </span>                :                 } else {
+<span class="lineNum">     938 </span>                :                         /* We could handle PHP_MODE_PROCESS_STDIN in a different manner  */
+<span class="lineNum">     939 </span>                :                         /* here but this would make things only more complicated. And it */
+<span class="lineNum">     940 </span>                :                         /* is consitent with the way -R works where the stdin file handle*/
+<span class="lineNum">     941 </span>                :                         /* is also accessible. */
+<span class="lineNum">     942 </span><span class="lineCov">              3 :                         file_handle.filename = &quot;-&quot;;</span>
+<span class="lineNum">     943 </span><span class="lineCov">              3 :                         file_handle.handle.fp = stdin;</span>
+<span class="lineNum">     944 </span>                :                 }
+<span class="lineNum">     945 </span><span class="lineCov">             48 :                 file_handle.type = ZEND_HANDLE_FP;</span>
+<span class="lineNum">     946 </span><span class="lineCov">             48 :                 file_handle.opened_path = NULL;</span>
+<span class="lineNum">     947 </span><span class="lineCov">             48 :                 file_handle.free_filename = 0;</span>
+<span class="lineNum">     948 </span><span class="lineCov">             48 :                 php_self = (char*)file_handle.filename;</span>
+<span class="lineNum">     949 </span>                : 
+<span class="lineNum">     950 </span>                :                 /* before registering argv to module exchange the *new* argv[0] */
+<span class="lineNum">     951 </span>                :                 /* we can achieve this without allocating more memory */
+<span class="lineNum">     952 </span><span class="lineCov">             48 :                 SG(request_info).argc=argc-php_optind+1;</span>
+<span class="lineNum">     953 </span><span class="lineCov">             48 :                 arg_excp = argv+php_optind-1;</span>
+<span class="lineNum">     954 </span><span class="lineCov">             48 :                 arg_free = argv[php_optind-1];</span>
+<span class="lineNum">     955 </span><span class="lineCov">             48 :                 SG(request_info).path_translated = translated_path? translated_path: (char*)file_handle.filename;</span>
+<span class="lineNum">     956 </span><span class="lineCov">             48 :                 argv[php_optind-1] = (char*)file_handle.filename;</span>
+<span class="lineNum">     957 </span><span class="lineCov">             48 :                 SG(request_info).argv=argv+php_optind-1;</span>
+<span class="lineNum">     958 </span>                : 
+<span class="lineNum">     959 </span><span class="lineCov">             48 :                 if (php_request_startup(TSRMLS_C)==FAILURE) {</span>
+<span class="lineNum">     960 </span><span class="lineNoCov">              0 :                         *arg_excp = arg_free;</span>
+<span class="lineNum">     961 </span><span class="lineNoCov">              0 :                         fclose(file_handle.handle.fp);</span>
+<span class="lineNum">     962 </span><span class="lineNoCov">              0 :                         PUTS(&quot;Could not startup.\n&quot;);</span>
+<span class="lineNum">     963 </span><span class="lineNoCov">              0 :                         goto err;</span>
+<span class="lineNum">     964 </span>                :                 }
+<span class="lineNum">     965 </span><span class="lineCov">             48 :                 request_started = 1;</span>
+<span class="lineNum">     966 </span><span class="lineCov">             48 :                 CG(start_lineno) = lineno;</span>
+<span class="lineNum">     967 </span><span class="lineCov">             48 :                 *arg_excp = arg_free; /* reconstuct argv */</span>
+<span class="lineNum">     968 </span>                : 
+<span class="lineNum">     969 </span><span class="lineCov">             48 :                 if (hide_argv) {</span>
+<span class="lineNum">     970 </span>                :                         int i;
+<span class="lineNum">     971 </span><span class="lineNoCov">              0 :                         for (i = 1; i &lt; argc; i++) {</span>
+<span class="lineNum">     972 </span><span class="lineNoCov">              0 :                                 memset(argv[i], 0, strlen(argv[i]));</span>
+<span class="lineNum">     973 </span>                :                         }
+<span class="lineNum">     974 </span>                :                 }
+<span class="lineNum">     975 </span>                : 
+<span class="lineNum">     976 </span><span class="lineCov">             48 :                 zend_is_auto_global(&quot;_SERVER&quot;, sizeof(&quot;_SERVER&quot;)-1 TSRMLS_CC);</span>
+<span class="lineNum">     977 </span>                : 
+<span class="lineNum">     978 </span><span class="lineCov">             48 :                 PG(during_request_startup) = 0;</span>
+<span class="lineNum">     979 </span><span class="lineCov">             48 :                 switch (behavior) {</span>
+<span class="lineNum">     980 </span>                :                 case PHP_MODE_STANDARD:
+<span class="lineNum">     981 </span><span class="lineCov">             45 :                         if (strcmp(file_handle.filename, &quot;-&quot;)) {</span>
+<span class="lineNum">     982 </span><span class="lineCov">             45 :                                 cli_register_file_handles(TSRMLS_C);</span>
+<span class="lineNum">     983 </span>                :                         }
+<span class="lineNum">     984 </span>                : 
+<span class="lineNum">     985 </span><span class="lineCov">             45 :                         if (interactive &amp;&amp; cli_shell_callbacks.cli_shell_run) {</span>
+<span class="lineNum">     986 </span><span class="lineNoCov">              0 :                                 exit_status = cli_shell_callbacks.cli_shell_run(TSRMLS_C);</span>
+<span class="lineNum">     987 </span>                :                         } else {
+<span class="lineNum">     988 </span><span class="lineCov">             45 :                                 php_execute_script(&amp;file_handle TSRMLS_CC);</span>
+<span class="lineNum">     989 </span><span class="lineCov">             45 :                                 exit_status = EG(exit_status);</span>
+<span class="lineNum">     990 </span>                :                         }
+<span class="lineNum">     991 </span><span class="lineCov">             45 :                         break;</span>
+<span class="lineNum">     992 </span>                :                 case PHP_MODE_LINT:
+<span class="lineNum">     993 </span><span class="lineNoCov">              0 :                         exit_status = php_lint_script(&amp;file_handle TSRMLS_CC);</span>
+<span class="lineNum">     994 </span><span class="lineNoCov">              0 :                         if (exit_status==SUCCESS) {</span>
+<span class="lineNum">     995 </span><span class="lineNoCov">              0 :                                 zend_printf(&quot;No syntax errors detected in %s\n&quot;, file_handle.filename);</span>
+<span class="lineNum">     996 </span>                :                         } else {
+<span class="lineNum">     997 </span><span class="lineNoCov">              0 :                                 zend_printf(&quot;Errors parsing %s\n&quot;, file_handle.filename);</span>
+<span class="lineNum">     998 </span>                :                         }
+<span class="lineNum">     999 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">    1000 </span>                :                 case PHP_MODE_STRIP:
+<span class="lineNum">    1001 </span><span class="lineNoCov">              0 :                         if (open_file_for_scanning(&amp;file_handle TSRMLS_CC)==SUCCESS) {</span>
+<span class="lineNum">    1002 </span><span class="lineNoCov">              0 :                                 zend_strip(TSRMLS_C);</span>
+<span class="lineNum">    1003 </span>                :                         }
+<span class="lineNum">    1004 </span><span class="lineNoCov">              0 :                         goto out;</span>
+<span class="lineNum">    1005 </span>                :                         break;
+<span class="lineNum">    1006 </span>                :                 case PHP_MODE_HIGHLIGHT:
+<span class="lineNum">    1007 </span>                :                         {
+<span class="lineNum">    1008 </span>                :                                 zend_syntax_highlighter_ini syntax_highlighter_ini;
+<span class="lineNum">    1009 </span>                : 
+<span class="lineNum">    1010 </span><span class="lineNoCov">              0 :                                 if (open_file_for_scanning(&amp;file_handle TSRMLS_CC)==SUCCESS) {</span>
+<span class="lineNum">    1011 </span><span class="lineNoCov">              0 :                                         php_get_highlight_struct(&amp;syntax_highlighter_ini);</span>
+<span class="lineNum">    1012 </span><span class="lineNoCov">              0 :                                         zend_highlight(&amp;syntax_highlighter_ini TSRMLS_CC);</span>
+<span class="lineNum">    1013 </span>                :                                 }
+<span class="lineNum">    1014 </span><span class="lineNoCov">              0 :                                 goto out;</span>
+<span class="lineNum">    1015 </span>                :                         }
+<span class="lineNum">    1016 </span>                :                         break;
+<span class="lineNum">    1017 </span>                : #if 0
+<span class="lineNum">    1018 </span>                :                         /* Zeev might want to do something with this one day */
+<span class="lineNum">    1019 </span>                :                 case PHP_MODE_INDENT:
+<span class="lineNum">    1020 </span>                :                         open_file_for_scanning(&amp;file_handle TSRMLS_CC);
+<span class="lineNum">    1021 </span>                :                         zend_indent();
+<span class="lineNum">    1022 </span>                :                         zend_file_handle_dtor(file_handle.handle TSRMLS_CC);
+<span class="lineNum">    1023 </span>                :                         goto out;
+<span class="lineNum">    1024 </span>                :                         break;
+<span class="lineNum">    1025 </span>                : #endif
+<span class="lineNum">    1026 </span>                :                 case PHP_MODE_CLI_DIRECT:
+<span class="lineNum">    1027 </span><span class="lineCov">              3 :                         cli_register_file_handles(TSRMLS_C);</span>
+<span class="lineNum">    1028 </span><span class="lineCov">              3 :                         if (zend_eval_string_ex(exec_direct, NULL, &quot;Command line code&quot;, 1 TSRMLS_CC) == FAILURE) {</span>
+<span class="lineNum">    1029 </span><span class="lineNoCov">              0 :                                 exit_status=254;</span>
+<span class="lineNum">    1030 </span>                :                         }
+<span class="lineNum">    1031 </span><span class="lineCov">              3 :                         break;</span>
+<span class="lineNum">    1032 </span>                :                         
+<span class="lineNum">    1033 </span>                :                 case PHP_MODE_PROCESS_STDIN:
+<span class="lineNum">    1034 </span>                :                         {
+<span class="lineNum">    1035 </span>                :                                 char *input;
+<span class="lineNum">    1036 </span><span class="lineNoCov">              0 :                                 size_t len, index = 0;</span>
+<span class="lineNum">    1037 </span>                :                                 zval *argn, *argi;
+<span class="lineNum">    1038 </span>                : 
+<span class="lineNum">    1039 </span><span class="lineNoCov">              0 :                                 cli_register_file_handles(TSRMLS_C);</span>
+<span class="lineNum">    1040 </span>                : 
+<span class="lineNum">    1041 </span><span class="lineNoCov">              0 :                                 if (exec_begin &amp;&amp; zend_eval_string_ex(exec_begin, NULL, &quot;Command line begin code&quot;, 1 TSRMLS_CC) == FAILURE) {</span>
+<span class="lineNum">    1042 </span><span class="lineNoCov">              0 :                                         exit_status=254;</span>
+<span class="lineNum">    1043 </span>                :                                 }
+<span class="lineNum">    1044 </span><span class="lineNoCov">              0 :                                 ALLOC_ZVAL(argi);</span>
+<span class="lineNum">    1045 </span><span class="lineNoCov">              0 :                                 Z_TYPE_P(argi) = IS_LONG;</span>
+<span class="lineNum">    1046 </span><span class="lineNoCov">              0 :                                 Z_LVAL_P(argi) = index;</span>
+<span class="lineNum">    1047 </span><span class="lineNoCov">              0 :                                 INIT_PZVAL(argi);</span>
+<span class="lineNum">    1048 </span><span class="lineNoCov">              0 :                                 zend_hash_update(&amp;EG(symbol_table), &quot;argi&quot;, sizeof(&quot;argi&quot;), &amp;argi, sizeof(zval *), NULL);</span>
+<span class="lineNum">    1049 </span><span class="lineNoCov">              0 :                                 while (exit_status == SUCCESS &amp;&amp; (input=php_stream_gets(s_in_process, NULL, 0)) != NULL) {</span>
+<span class="lineNum">    1050 </span><span class="lineNoCov">              0 :                                         len = strlen(input);</span>
+<span class="lineNum">    1051 </span><span class="lineNoCov">              0 :                                         while (len-- &amp;&amp; (input[len]=='\n' || input[len]=='\r')) {</span>
+<span class="lineNum">    1052 </span><span class="lineNoCov">              0 :                                                 input[len] = '\0';</span>
+<span class="lineNum">    1053 </span>                :                                         }
+<span class="lineNum">    1054 </span><span class="lineNoCov">              0 :                                         ALLOC_ZVAL(argn);</span>
+<span class="lineNum">    1055 </span><span class="lineNoCov">              0 :                                         Z_TYPE_P(argn) = IS_STRING;</span>
+<span class="lineNum">    1056 </span><span class="lineNoCov">              0 :                                         Z_STRLEN_P(argn) = ++len;</span>
+<span class="lineNum">    1057 </span><span class="lineNoCov">              0 :                                         Z_STRVAL_P(argn) = estrndup(input, len);</span>
+<span class="lineNum">    1058 </span><span class="lineNoCov">              0 :                                         INIT_PZVAL(argn);</span>
+<span class="lineNum">    1059 </span><span class="lineNoCov">              0 :                                         zend_hash_update(&amp;EG(symbol_table), &quot;argn&quot;, sizeof(&quot;argn&quot;), &amp;argn, sizeof(zval *), NULL);</span>
+<span class="lineNum">    1060 </span><span class="lineNoCov">              0 :                                         Z_LVAL_P(argi) = ++index;</span>
+<span class="lineNum">    1061 </span><span class="lineNoCov">              0 :                                         if (exec_run) {</span>
+<span class="lineNum">    1062 </span><span class="lineNoCov">              0 :                                                 if (zend_eval_string_ex(exec_run, NULL, &quot;Command line run code&quot;, 1 TSRMLS_CC) == FAILURE) {</span>
+<span class="lineNum">    1063 </span><span class="lineNoCov">              0 :                                                         exit_status=254;</span>
+<span class="lineNum">    1064 </span>                :                                                 }
+<span class="lineNum">    1065 </span>                :                                         } else {
+<span class="lineNum">    1066 </span><span class="lineNoCov">              0 :                                                 if (script_file) {</span>
+<span class="lineNum">    1067 </span><span class="lineNoCov">              0 :                                                         if (cli_seek_file_begin(&amp;file_handle, script_file, &amp;lineno TSRMLS_CC) != SUCCESS) {</span>
+<span class="lineNum">    1068 </span><span class="lineNoCov">              0 :                                                                 exit_status = 1;</span>
+<span class="lineNum">    1069 </span>                :                                                         } else {
+<span class="lineNum">    1070 </span><span class="lineNoCov">              0 :                                                                 CG(start_lineno) = lineno;</span>
+<span class="lineNum">    1071 </span><span class="lineNoCov">              0 :                                                                 php_execute_script(&amp;file_handle TSRMLS_CC);</span>
+<span class="lineNum">    1072 </span><span class="lineNoCov">              0 :                                                                 exit_status = EG(exit_status);</span>
+<span class="lineNum">    1073 </span>                :                                                         }
+<span class="lineNum">    1074 </span>                :                                                 }
+<span class="lineNum">    1075 </span>                :                                         }
+<span class="lineNum">    1076 </span><span class="lineNoCov">              0 :                                         efree(input);</span>
+<span class="lineNum">    1077 </span>                :                                 }
+<span class="lineNum">    1078 </span><span class="lineNoCov">              0 :                                 if (exec_end &amp;&amp; zend_eval_string_ex(exec_end, NULL, &quot;Command line end code&quot;, 1 TSRMLS_CC) == FAILURE) {</span>
+<span class="lineNum">    1079 </span><span class="lineNoCov">              0 :                                         exit_status=254;</span>
+<span class="lineNum">    1080 </span>                :                                 }
+<span class="lineNum">    1081 </span>                : 
+<span class="lineNum">    1082 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">    1083 </span>                :                         }
+<span class="lineNum">    1084 </span>                :                         case PHP_MODE_REFLECTION_FUNCTION:
+<span class="lineNum">    1085 </span>                :                         case PHP_MODE_REFLECTION_CLASS:
+<span class="lineNum">    1086 </span>                :                         case PHP_MODE_REFLECTION_EXTENSION:
+<span class="lineNum">    1087 </span>                :                         case PHP_MODE_REFLECTION_ZEND_EXTENSION:
+<span class="lineNum">    1088 </span>                :                                 {
+<span class="lineNum">    1089 </span><span class="lineNoCov">              0 :                                         zend_class_entry *pce = NULL;</span>
+<span class="lineNum">    1090 </span>                :                                         zval *arg, *ref;
+<span class="lineNum">    1091 </span>                :                                         zend_execute_data execute_data;
+<span class="lineNum">    1092 </span>                : 
+<span class="lineNum">    1093 </span><span class="lineNoCov">              0 :                                         switch (behavior) {</span>
+<span class="lineNum">    1094 </span>                :                                                 default:
+<span class="lineNum">    1095 </span><span class="lineNoCov">              0 :                                                         break;</span>
+<span class="lineNum">    1096 </span>                :                                                 case PHP_MODE_REFLECTION_FUNCTION:
+<span class="lineNum">    1097 </span><span class="lineNoCov">              0 :                                                         if (strstr(reflection_what, &quot;::&quot;)) {</span>
+<span class="lineNum">    1098 </span><span class="lineNoCov">              0 :                                                                 pce = reflection_method_ptr;</span>
+<span class="lineNum">    1099 </span>                :                                                         } else {
+<span class="lineNum">    1100 </span><span class="lineNoCov">              0 :                                                                 pce = reflection_function_ptr;</span>
+<span class="lineNum">    1101 </span>                :                                                         }
+<span class="lineNum">    1102 </span><span class="lineNoCov">              0 :                                                         break;</span>
+<span class="lineNum">    1103 </span>                :                                                 case PHP_MODE_REFLECTION_CLASS:
+<span class="lineNum">    1104 </span><span class="lineNoCov">              0 :                                                         pce = reflection_class_ptr;</span>
+<span class="lineNum">    1105 </span><span class="lineNoCov">              0 :                                                         break;</span>
+<span class="lineNum">    1106 </span>                :                                                 case PHP_MODE_REFLECTION_EXTENSION:
+<span class="lineNum">    1107 </span><span class="lineNoCov">              0 :                                                         pce = reflection_extension_ptr;</span>
+<span class="lineNum">    1108 </span><span class="lineNoCov">              0 :                                                         break;</span>
+<span class="lineNum">    1109 </span>                :                                                 case PHP_MODE_REFLECTION_ZEND_EXTENSION:
+<span class="lineNum">    1110 </span><span class="lineNoCov">              0 :                                                         pce = reflection_zend_extension_ptr;</span>
+<span class="lineNum">    1111 </span>                :                                                         break;
+<span class="lineNum">    1112 </span>                :                                         }
+<span class="lineNum">    1113 </span>                :                                         
+<span class="lineNum">    1114 </span><span class="lineNoCov">              0 :                                         MAKE_STD_ZVAL(arg);</span>
+<span class="lineNum">    1115 </span><span class="lineNoCov">              0 :                                         ZVAL_STRING(arg, reflection_what, 1);</span>
+<span class="lineNum">    1116 </span><span class="lineNoCov">              0 :                                         ALLOC_ZVAL(ref);</span>
+<span class="lineNum">    1117 </span><span class="lineNoCov">              0 :                                         object_init_ex(ref, pce);</span>
+<span class="lineNum">    1118 </span><span class="lineNoCov">              0 :                                         INIT_PZVAL(ref);</span>
+<span class="lineNum">    1119 </span>                : 
+<span class="lineNum">    1120 </span><span class="lineNoCov">              0 :                                         memset(&amp;execute_data, 0, sizeof(zend_execute_data));</span>
+<span class="lineNum">    1121 </span><span class="lineNoCov">              0 :                                         EG(current_execute_data) = &amp;execute_data;</span>
+<span class="lineNum">    1122 </span><span class="lineNoCov">              0 :                                         EX(function_state).function = pce-&gt;constructor;</span>
+<span class="lineNum">    1123 </span><span class="lineNoCov">              0 :                                         zend_call_method_with_1_params(&amp;ref, pce, &amp;pce-&gt;constructor, &quot;__construct&quot;, NULL, arg);</span>
+<span class="lineNum">    1124 </span>                : 
+<span class="lineNum">    1125 </span><span class="lineNoCov">              0 :                                         if (EG(exception)) {</span>
+<span class="lineNum">    1126 </span><span class="lineNoCov">              0 :                                                 zval *msg = zend_read_property(zend_exception_get_default(TSRMLS_C), EG(exception), &quot;message&quot;, sizeof(&quot;message&quot;)-1, 0 TSRMLS_CC);</span>
+<span class="lineNum">    1127 </span><span class="lineNoCov">              0 :                                                 zend_printf(&quot;Exception: %s\n&quot;, Z_STRVAL_P(msg));</span>
+<span class="lineNum">    1128 </span><span class="lineNoCov">              0 :                                                 zval_ptr_dtor(&amp;EG(exception));</span>
+<span class="lineNum">    1129 </span><span class="lineNoCov">              0 :                                                 EG(exception) = NULL;</span>
+<span class="lineNum">    1130 </span>                :                                         } else {
+<span class="lineNum">    1131 </span><span class="lineNoCov">              0 :                                                 zend_call_method_with_1_params(NULL, reflection_ptr, NULL, &quot;export&quot;, NULL, ref);</span>
+<span class="lineNum">    1132 </span>                :                                         }
+<span class="lineNum">    1133 </span><span class="lineNoCov">              0 :                                         zval_ptr_dtor(&amp;ref);</span>
+<span class="lineNum">    1134 </span><span class="lineNoCov">              0 :                                         zval_ptr_dtor(&amp;arg);</span>
+<span class="lineNum">    1135 </span>                : 
+<span class="lineNum">    1136 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">    1137 </span>                :                                 }
+<span class="lineNum">    1138 </span>                :                         case PHP_MODE_REFLECTION_EXT_INFO:
+<span class="lineNum">    1139 </span>                :                                 {
+<span class="lineNum">    1140 </span><span class="lineNoCov">              0 :                                         int len = strlen(reflection_what);</span>
+<span class="lineNum">    1141 </span><span class="lineNoCov">              0 :                                         char *lcname = zend_str_tolower_dup(reflection_what, len);</span>
+<span class="lineNum">    1142 </span>                :                                         zend_module_entry *module;
+<span class="lineNum">    1143 </span>                : 
+<span class="lineNum">    1144 </span><span class="lineNoCov">              0 :                                         if (zend_hash_find(&amp;module_registry, lcname, len+1, (void**)&amp;module) == FAILURE) {</span>
+<span class="lineNum">    1145 </span><span class="lineNoCov">              0 :                                                 if (!strcmp(reflection_what, &quot;main&quot;)) {</span>
+<span class="lineNum">    1146 </span><span class="lineNoCov">              0 :                                                         display_ini_entries(NULL);</span>
+<span class="lineNum">    1147 </span>                :                                                 } else {
+<span class="lineNum">    1148 </span><span class="lineNoCov">              0 :                                                         zend_printf(&quot;Extension '%s' not present.\n&quot;, reflection_what);</span>
+<span class="lineNum">    1149 </span><span class="lineNoCov">              0 :                                                         exit_status = 1;</span>
+<span class="lineNum">    1150 </span>                :                                                 }
+<span class="lineNum">    1151 </span>                :                                         } else {
+<span class="lineNum">    1152 </span><span class="lineNoCov">              0 :                                                 php_info_print_module(module TSRMLS_CC);</span>
+<span class="lineNum">    1153 </span>                :                                         }
+<span class="lineNum">    1154 </span>                :                                         
+<span class="lineNum">    1155 </span><span class="lineNoCov">              0 :                                         efree(lcname);</span>
+<span class="lineNum">    1156 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">    1157 </span>                :                                 }
+<span class="lineNum">    1158 </span>                :                         case PHP_MODE_SHOW_INI_CONFIG:
+<span class="lineNum">    1159 </span>                :                                 {
+<span class="lineNum">    1160 </span><span class="lineNoCov">              0 :                                         zend_printf(&quot;Configuration File (php.ini) Path: %s\n&quot;, PHP_CONFIG_FILE_PATH);</span>
+<span class="lineNum">    1161 </span><span class="lineNoCov">              0 :                                         zend_printf(&quot;Loaded Configuration File:         %s\n&quot;, php_ini_opened_path ? php_ini_opened_path : &quot;(none)&quot;);</span>
+<span class="lineNum">    1162 </span><span class="lineNoCov">              0 :                                         zend_printf(&quot;Scan for additional .ini files in: %s\n&quot;, php_ini_scanned_path  ? php_ini_scanned_path : &quot;(none)&quot;);</span>
+<span class="lineNum">    1163 </span><span class="lineNoCov">              0 :                                         zend_printf(&quot;Additional .ini files parsed:      %s\n&quot;, php_ini_scanned_files ? php_ini_scanned_files : &quot;(none)&quot;);</span>
+<span class="lineNum">    1164 </span>                :                                         break;
+<span class="lineNum">    1165 </span>                :                                 }
+<span class="lineNum">    1166 </span>                :                 }
+<span class="lineNum">    1167 </span><span class="lineCov">             48 :         } zend_end_try();</span>
+<span class="lineNum">    1168 </span>                : 
+<span class="lineNum">    1169 </span>                : out:
+<span class="lineNum">    1170 </span><span class="lineCov">             48 :         if (exit_status == 0) {</span>
+<span class="lineNum">    1171 </span><span class="lineCov">             44 :                 exit_status = EG(exit_status);</span>
+<span class="lineNum">    1172 </span>                :         }
+<span class="lineNum">    1173 </span><span class="lineCov">             48 :         if (request_started) {</span>
+<span class="lineNum">    1174 </span><span class="lineCov">             48 :                 php_request_shutdown((void *) 0);</span>
+<span class="lineNum">    1175 </span>                :         }
+<span class="lineNum">    1176 </span><span class="lineCov">             48 :         return exit_status;</span>
+<span class="lineNum">    1177 </span>                : err:
+<span class="lineNum">    1178 </span><span class="lineNoCov">              0 :         sapi_deactivate(TSRMLS_C);</span>
+<span class="lineNum">    1179 </span><span class="lineNoCov">              0 :         zend_ini_deactivate(TSRMLS_C);</span>
+<span class="lineNum">    1180 </span><span class="lineNoCov">              0 :         exit_status = 1;</span>
+<span class="lineNum">    1181 </span><span class="lineNoCov">              0 :         goto out;</span>
+<span class="lineNum">    1182 </span>                : }
+<span class="lineNum">    1183 </span>                : /* }}} */
+<span class="lineNum">    1184 </span>                : 
+<span class="lineNum">    1185 </span>                : /* {{{ main
+<span class="lineNum">    1186 </span>                :  */
+<span class="lineNum">    1187 </span>                : #ifdef PHP_CLI_WIN32_NO_CONSOLE
+<a name="1188"><span class="lineNum">    1188 </span>                : int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)</a>
+<span class="lineNum">    1189 </span>                : #else
+<span class="lineNum">    1190 </span><span class="lineCov">             48 : int main(int argc, char *argv[])</span>
+<span class="lineNum">    1191 </span>                : #endif
+<span class="lineNum">    1192 </span>                : {
+<span class="lineNum">    1193 </span>                : #ifdef ZTS
+<span class="lineNum">    1194 </span>                :         void ***tsrm_ls;
+<span class="lineNum">    1195 </span>                : #endif
+<span class="lineNum">    1196 </span>                : #ifdef PHP_CLI_WIN32_NO_CONSOLE
+<span class="lineNum">    1197 </span>                :         int argc = __argc;
+<span class="lineNum">    1198 </span>                :         char **argv = __argv;
+<span class="lineNum">    1199 </span>                : #endif
+<span class="lineNum">    1200 </span>                :         int c;
+<span class="lineNum">    1201 </span><span class="lineCov">             48 :         int exit_status = SUCCESS;</span>
+<span class="lineNum">    1202 </span><span class="lineCov">             48 :         int module_started = 0, sapi_started = 0;</span>
+<span class="lineNum">    1203 </span><span class="lineCov">             48 :         char *php_optarg = NULL;</span>
+<span class="lineNum">    1204 </span><span class="lineCov">             48 :         int php_optind = 1, use_extended_info = 0;</span>
+<span class="lineNum">    1205 </span><span class="lineCov">             48 :         char *ini_path_override = NULL;</span>
+<span class="lineNum">    1206 </span><span class="lineCov">             48 :         char *ini_entries = NULL;</span>
+<span class="lineNum">    1207 </span><span class="lineCov">             48 :         int ini_entries_len = 0;</span>
+<span class="lineNum">    1208 </span><span class="lineCov">             48 :         int ini_ignore = 0;</span>
+<span class="lineNum">    1209 </span><span class="lineCov">             48 :         sapi_module_struct *sapi_module = &amp;cli_sapi_module;</span>
+<span class="lineNum">    1210 </span>                : 
+<span class="lineNum">    1211 </span><span class="lineCov">             48 :         cli_sapi_module.additional_functions = additional_functions;</span>
+<span class="lineNum">    1212 </span>                : 
+<span class="lineNum">    1213 </span>                : #if defined(PHP_WIN32) &amp;&amp; defined(_DEBUG) &amp;&amp; defined(PHP_WIN32_DEBUG_HEAP)
+<span class="lineNum">    1214 </span>                :         {
+<span class="lineNum">    1215 </span>                :                 int tmp_flag;
+<span class="lineNum">    1216 </span>                :                 _CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_FILE);
+<span class="lineNum">    1217 </span>                :                 _CrtSetReportFile(_CRT_WARN, _CRTDBG_FILE_STDERR);
+<span class="lineNum">    1218 </span>                :                 _CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_FILE);
+<span class="lineNum">    1219 </span>                :                 _CrtSetReportFile(_CRT_ERROR, _CRTDBG_FILE_STDERR);
+<span class="lineNum">    1220 </span>                :                 _CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_FILE);
+<span class="lineNum">    1221 </span>                :                 _CrtSetReportFile(_CRT_ASSERT, _CRTDBG_FILE_STDERR);
+<span class="lineNum">    1222 </span>                :                 tmp_flag = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG);
+<span class="lineNum">    1223 </span>                :                 tmp_flag |= _CRTDBG_DELAY_FREE_MEM_DF;
+<span class="lineNum">    1224 </span>                :                 tmp_flag |= _CRTDBG_LEAK_CHECK_DF;
+<span class="lineNum">    1225 </span>                : 
+<span class="lineNum">    1226 </span>                :                 _CrtSetDbgFlag(tmp_flag);
+<span class="lineNum">    1227 </span>                :         }
+<span class="lineNum">    1228 </span>                : #endif
+<span class="lineNum">    1229 </span>                : 
+<span class="lineNum">    1230 </span>                : #ifdef HAVE_SIGNAL_H
+<span class="lineNum">    1231 </span>                : #if defined(SIGPIPE) &amp;&amp; defined(SIG_IGN)
+<span class="lineNum">    1232 </span><span class="lineCov">             48 :         signal(SIGPIPE, SIG_IGN); /* ignore SIGPIPE in standalone mode so</span>
+<span class="lineNum">    1233 </span>                :                                                                 that sockets created via fsockopen()
+<span class="lineNum">    1234 </span>                :                                                                 don't kill PHP if the remote site
+<span class="lineNum">    1235 </span>                :                                                                 closes it.  in apache|apxs mode apache
+<span class="lineNum">    1236 </span>                :                                                                 does that for us!  thies@thieso.net
+<span class="lineNum">    1237 </span>                :                                                                 20000419 */
+<span class="lineNum">    1238 </span>                : #endif
+<span class="lineNum">    1239 </span>                : #endif
+<span class="lineNum">    1240 </span>                : 
+<span class="lineNum">    1241 </span>                : 
+<span class="lineNum">    1242 </span>                : #ifdef ZTS
+<span class="lineNum">    1243 </span>                :         tsrm_startup(1, 1, 0, NULL);
+<span class="lineNum">    1244 </span>                :         tsrm_ls = ts_resource(0);
+<span class="lineNum">    1245 </span>                : #endif
+<span class="lineNum">    1246 </span>                : 
+<span class="lineNum">    1247 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">    1248 </span>                :         _fmode = _O_BINARY;                     /*sets default for file streams to binary */
+<span class="lineNum">    1249 </span>                :         setmode(_fileno(stdin), O_BINARY);              /* make the stdio mode be binary */
+<span class="lineNum">    1250 </span>                :         setmode(_fileno(stdout), O_BINARY);             /* make the stdio mode be binary */
+<span class="lineNum">    1251 </span>                :         setmode(_fileno(stderr), O_BINARY);             /* make the stdio mode be binary */
+<span class="lineNum">    1252 </span>                : #endif
+<span class="lineNum">    1253 </span>                : 
+<span class="lineNum">    1254 </span><span class="lineCov">           1294 :         while ((c = php_getopt(argc, argv, OPTIONS, &amp;php_optarg, &amp;php_optind, 0, 2))!=-1) {</span>
+<span class="lineNum">    1255 </span><span class="lineCov">           1198 :                 switch (c) {</span>
+<span class="lineNum">    1256 </span>                :                         case 'c':
+<span class="lineNum">    1257 </span><span class="lineCov">             45 :                                 if (ini_path_override) {</span>
+<span class="lineNum">    1258 </span><span class="lineNoCov">              0 :                                         free(ini_path_override);</span>
+<span class="lineNum">    1259 </span>                :                                 }
+<span class="lineNum">    1260 </span><span class="lineCov">             45 :                                 ini_path_override = strdup(php_optarg);</span>
+<span class="lineNum">    1261 </span><span class="lineCov">             45 :                                 break;</span>
+<span class="lineNum">    1262 </span>                :                         case 'n':
+<span class="lineNum">    1263 </span><span class="lineCov">             46 :                                 ini_ignore = 1;</span>
+<span class="lineNum">    1264 </span><span class="lineCov">             46 :                                 break;</span>
+<span class="lineNum">    1265 </span>                :                         case 'd': {
+<span class="lineNum">    1266 </span>                :                                 /* define ini entries on command line */
+<span class="lineNum">    1267 </span><span class="lineCov">           1062 :                                 int len = strlen(php_optarg);</span>
+<span class="lineNum">    1268 </span>                :                                 char *val;
+<span class="lineNum">    1269 </span>                : 
+<span class="lineNum">    1270 </span><span class="lineCov">           1062 :                                 if ((val = strchr(php_optarg, '='))) {</span>
+<span class="lineNum">    1271 </span><span class="lineCov">           1062 :                                         val++;</span>
+<span class="lineNum">    1272 </span><span class="lineCov">           1151 :                                         if (!isalnum(*val) &amp;&amp; *val != '&quot;' &amp;&amp; *val != '\'' &amp;&amp; *val != '\0') {</span>
+<span class="lineNum">    1273 </span><span class="lineCov">             89 :                                                 ini_entries = realloc(ini_entries, ini_entries_len + len + sizeof(&quot;\&quot;\&quot;\n\0&quot;));</span>
+<span class="lineNum">    1274 </span><span class="lineCov">             89 :                                                 memcpy(ini_entries + ini_entries_len, php_optarg, (val - php_optarg));</span>
+<span class="lineNum">    1275 </span><span class="lineCov">             89 :                                                 ini_entries_len += (val - php_optarg);</span>
+<span class="lineNum">    1276 </span><span class="lineCov">             89 :                                                 memcpy(ini_entries + ini_entries_len, &quot;\&quot;&quot;, 1);</span>
+<span class="lineNum">    1277 </span><span class="lineCov">             89 :                                                 ini_entries_len++;</span>
+<span class="lineNum">    1278 </span><span class="lineCov">             89 :                                                 memcpy(ini_entries + ini_entries_len, val, len - (val - php_optarg));</span>
+<span class="lineNum">    1279 </span><span class="lineCov">             89 :                                                 ini_entries_len += len - (val - php_optarg);</span>
+<span class="lineNum">    1280 </span><span class="lineCov">             89 :                                                 memcpy(ini_entries + ini_entries_len, &quot;\&quot;\n\0&quot;, sizeof(&quot;\&quot;\n\0&quot;));</span>
+<span class="lineNum">    1281 </span><span class="lineCov">             89 :                                                 ini_entries_len += sizeof(&quot;\n\0\&quot;&quot;) - 2;</span>
+<span class="lineNum">    1282 </span>                :                                         } else {
+<span class="lineNum">    1283 </span><span class="lineCov">            973 :                                                 ini_entries = realloc(ini_entries, ini_entries_len + len + sizeof(&quot;\n\0&quot;));</span>
+<span class="lineNum">    1284 </span><span class="lineCov">            973 :                                                 memcpy(ini_entries + ini_entries_len, php_optarg, len);</span>
+<span class="lineNum">    1285 </span><span class="lineCov">            973 :                                                 memcpy(ini_entries + ini_entries_len + len, &quot;\n\0&quot;, sizeof(&quot;\n\0&quot;));</span>
+<span class="lineNum">    1286 </span><span class="lineCov">            973 :                                                 ini_entries_len += len + sizeof(&quot;\n\0&quot;) - 2;</span>
+<span class="lineNum">    1287 </span>                :                                         }
+<span class="lineNum">    1288 </span>                :                                 } else {
+<span class="lineNum">    1289 </span><span class="lineNoCov">              0 :                                         ini_entries = realloc(ini_entries, ini_entries_len + len + sizeof(&quot;=1\n\0&quot;));</span>
+<span class="lineNum">    1290 </span><span class="lineNoCov">              0 :                                         memcpy(ini_entries + ini_entries_len, php_optarg, len);</span>
+<span class="lineNum">    1291 </span><span class="lineNoCov">              0 :                                         memcpy(ini_entries + ini_entries_len + len, &quot;=1\n\0&quot;, sizeof(&quot;=1\n\0&quot;));</span>
+<span class="lineNum">    1292 </span><span class="lineNoCov">              0 :                                         ini_entries_len += len + sizeof(&quot;=1\n\0&quot;) - 2;</span>
+<span class="lineNum">    1293 </span>                :                                 }
+<span class="lineNum">    1294 </span><span class="lineCov">           1062 :                                 break;</span>
+<span class="lineNum">    1295 </span>                :                         }
+<span class="lineNum">    1296 </span>                : #ifndef PHP_CLI_WIN32_NO_CONSOLE
+<span class="lineNum">    1297 </span>                :                         case 'S':
+<span class="lineNum">    1298 </span><span class="lineNoCov">              0 :                                 sapi_module = &amp;cli_server_sapi_module;</span>
+<span class="lineNum">    1299 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">    1300 </span>                : #endif
+<span class="lineNum">    1301 </span>                :                         case 'h': /* help &amp; quit */
+<span class="lineNum">    1302 </span>                :                         case '?':
+<span class="lineNum">    1303 </span><span class="lineNoCov">              0 :                                 php_cli_usage(argv[0]);</span>
+<span class="lineNum">    1304 </span><span class="lineNoCov">              0 :                                 goto out;</span>
+<span class="lineNum">    1305 </span>                :                         case 'i': case 'v': case 'm':
+<span class="lineNum">    1306 </span><span class="lineNoCov">              0 :                                 sapi_module = &amp;cli_sapi_module;</span>
+<span class="lineNum">    1307 </span><span class="lineNoCov">              0 :                                 goto exit_loop;</span>
+<span class="lineNum">    1308 </span>                :                         case 'e': /* enable extended info output */
+<span class="lineNum">    1309 </span><span class="lineNoCov">              0 :                                 use_extended_info = 1;</span>
+<span class="lineNum">    1310 </span>                :                                 break;
+<span class="lineNum">    1311 </span>                :                 }
+<span class="lineNum">    1312 </span>                :         }
+<span class="lineNum">    1313 </span>                : exit_loop:
+<span class="lineNum">    1314 </span>                : 
+<span class="lineNum">    1315 </span><span class="lineCov">             48 :         sapi_module-&gt;ini_defaults = sapi_cli_ini_defaults;</span>
+<span class="lineNum">    1316 </span><span class="lineCov">             48 :         sapi_module-&gt;php_ini_path_override = ini_path_override;</span>
+<span class="lineNum">    1317 </span><span class="lineCov">             48 :         sapi_module-&gt;phpinfo_as_text = 1;</span>
+<span class="lineNum">    1318 </span><span class="lineCov">             48 :         sapi_module-&gt;php_ini_ignore_cwd = 1;</span>
+<span class="lineNum">    1319 </span><span class="lineCov">             48 :         sapi_startup(sapi_module);</span>
+<span class="lineNum">    1320 </span><span class="lineCov">             48 :         sapi_started = 1;</span>
+<span class="lineNum">    1321 </span>                : 
+<span class="lineNum">    1322 </span><span class="lineCov">             48 :         sapi_module-&gt;php_ini_ignore = ini_ignore;</span>
+<span class="lineNum">    1323 </span>                : 
+<span class="lineNum">    1324 </span><span class="lineCov">             48 :         sapi_module-&gt;executable_location = argv[0];</span>
+<span class="lineNum">    1325 </span>                : 
+<span class="lineNum">    1326 </span><span class="lineCov">             48 :         if (sapi_module == &amp;cli_sapi_module) {</span>
+<span class="lineNum">    1327 </span><span class="lineCov">             48 :                 if (ini_entries) {</span>
+<span class="lineNum">    1328 </span><span class="lineCov">             47 :                         ini_entries = realloc(ini_entries, ini_entries_len + sizeof(HARDCODED_INI));</span>
+<span class="lineNum">    1329 </span><span class="lineCov">             47 :                         memmove(ini_entries + sizeof(HARDCODED_INI) - 2, ini_entries, ini_entries_len + 1);</span>
+<span class="lineNum">    1330 </span><span class="lineCov">             47 :                         memcpy(ini_entries, HARDCODED_INI, sizeof(HARDCODED_INI) - 2);</span>
+<span class="lineNum">    1331 </span>                :                 } else {
+<span class="lineNum">    1332 </span><span class="lineCov">              1 :                         ini_entries = malloc(sizeof(HARDCODED_INI));</span>
+<span class="lineNum">    1333 </span><span class="lineCov">              1 :                         memcpy(ini_entries, HARDCODED_INI, sizeof(HARDCODED_INI));</span>
+<span class="lineNum">    1334 </span>                :                 }
+<span class="lineNum">    1335 </span><span class="lineCov">             48 :                 ini_entries_len += sizeof(HARDCODED_INI) - 2;</span>
+<span class="lineNum">    1336 </span>                :         }
+<span class="lineNum">    1337 </span>                : 
+<span class="lineNum">    1338 </span><span class="lineCov">             48 :         sapi_module-&gt;ini_entries = ini_entries;</span>
+<span class="lineNum">    1339 </span>                : 
+<span class="lineNum">    1340 </span>                :         /* startup after we get the above ini override se we get things right */
+<span class="lineNum">    1341 </span><span class="lineCov">             48 :         if (sapi_module-&gt;startup(sapi_module) == FAILURE) {</span>
+<span class="lineNum">    1342 </span>                :                 /* there is no way to see if we must call zend_ini_deactivate()
+<span class="lineNum">    1343 </span>                :                  * since we cannot check if EG(ini_directives) has been initialised
+<span class="lineNum">    1344 </span>                :                  * because the executor's constructor does not set initialize it.
+<span class="lineNum">    1345 </span>                :                  * Apart from that there seems no need for zend_ini_deactivate() yet.
+<span class="lineNum">    1346 </span>                :                  * So we goto out_err.*/
+<span class="lineNum">    1347 </span><span class="lineNoCov">              0 :                 exit_status = 1;</span>
+<span class="lineNum">    1348 </span><span class="lineNoCov">              0 :                 goto out;</span>
+<span class="lineNum">    1349 </span>                :         }
+<span class="lineNum">    1350 </span><span class="lineCov">             48 :         module_started = 1;</span>
+<span class="lineNum">    1351 </span>                :         
+<span class="lineNum">    1352 </span>                :         /* -e option */
+<span class="lineNum">    1353 </span><span class="lineCov">             48 :         if (use_extended_info) {</span>
+<span class="lineNum">    1354 </span><span class="lineNoCov">              0 :                 CG(compiler_options) |= ZEND_COMPILE_EXTENDED_INFO;</span>
+<span class="lineNum">    1355 </span>                :         }
+<span class="lineNum">    1356 </span>                : 
+<span class="lineNum">    1357 </span><span class="lineCov">             48 :         zend_first_try {</span>
+<span class="lineNum">    1358 </span>                : #ifndef PHP_CLI_WIN32_NO_CONSOLE
+<span class="lineNum">    1359 </span><span class="lineCov">             48 :                 if (sapi_module == &amp;cli_sapi_module) {</span>
+<span class="lineNum">    1360 </span>                : #endif
+<span class="lineNum">    1361 </span><span class="lineCov">             48 :                         exit_status = do_cli(argc, argv TSRMLS_CC);</span>
+<span class="lineNum">    1362 </span>                : #ifndef PHP_CLI_WIN32_NO_CONSOLE
+<span class="lineNum">    1363 </span>                :                 } else {
+<span class="lineNum">    1364 </span><span class="lineNoCov">              0 :                         exit_status = do_cli_server(argc, argv TSRMLS_CC);</span>
+<span class="lineNum">    1365 </span>                :                 }
+<span class="lineNum">    1366 </span>                : #endif
+<span class="lineNum">    1367 </span><span class="lineCov">             48 :         } zend_end_try();</span>
+<span class="lineNum">    1368 </span>                : out:
+<span class="lineNum">    1369 </span><span class="lineCov">             48 :         if (ini_path_override) {</span>
+<span class="lineNum">    1370 </span><span class="lineCov">             45 :                 free(ini_path_override);</span>
+<span class="lineNum">    1371 </span>                :         }
+<span class="lineNum">    1372 </span><span class="lineCov">             48 :         if (ini_entries) {</span>
+<span class="lineNum">    1373 </span><span class="lineCov">             48 :                 free(ini_entries);</span>
+<span class="lineNum">    1374 </span>                :         }
+<span class="lineNum">    1375 </span><span class="lineCov">             48 :         if (module_started) {</span>
+<span class="lineNum">    1376 </span><span class="lineCov">             48 :                 php_module_shutdown(TSRMLS_C);</span>
+<span class="lineNum">    1377 </span>                :         }
+<span class="lineNum">    1378 </span><span class="lineCov">             48 :         if (sapi_started) {</span>
+<span class="lineNum">    1379 </span><span class="lineCov">             48 :                 sapi_shutdown();</span>
+<span class="lineNum">    1380 </span>                :         }
+<span class="lineNum">    1381 </span>                : #ifdef ZTS
+<span class="lineNum">    1382 </span>                :         tsrm_shutdown();
+<span class="lineNum">    1383 </span>                : #endif
+<span class="lineNum">    1384 </span>                : 
+<span class="lineNum">    1385 </span><span class="lineCov">             48 :         exit(exit_status);</span>
+<span class="lineNum">    1386 </span>                : }
+<span class="lineNum">    1387 </span>                : /* }}} */
+<span class="lineNum">    1388 </span>                : 
+<span class="lineNum">    1389 </span>                : /*
+<span class="lineNum">    1390 </span>                :  * Local variables:
+<span class="lineNum">    1391 </span>                :  * tab-width: 4
+<span class="lineNum">    1392 </span>                :  * c-basic-offset: 4
+<span class="lineNum">    1393 </span>                :  * End:
+<span class="lineNum">    1394 </span>                :  * vim600: sw=4 ts=4 fdm=marker
+<span class="lineNum">    1395 </span>                :  * vim&lt;600: sw=4 ts=4
+<span class="lineNum">    1396 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

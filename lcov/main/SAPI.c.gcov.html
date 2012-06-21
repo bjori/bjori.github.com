@@ -1,0 +1,1176 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - main/SAPI.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../index.html">directory</a> - <a href="index.html">main</a> - SAPI.c (source / <a href="SAPI.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">540</td>
+          <td class="headerCovTableEntry">190</td>
+          <td class="headerCovTableEntryMed">35.2 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">41</td>
+          <td class="headerCovTableEntry">22</td>
+          <td class="headerCovTableEntryLo">53.7 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /* </a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Original design:  Shane Caraveo &lt;shane@caraveo.com&gt;                  |
+<span class="lineNum">      16 </span>                :    | Authors: Andi Gutmans &lt;andi@zend.com&gt;                                |
+<span class="lineNum">      17 </span>                :    |          Zeev Suraski &lt;zeev@zend.com&gt;                                |
+<span class="lineNum">      18 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      19 </span>                : */
+<span class="lineNum">      20 </span>                : 
+<span class="lineNum">      21 </span>                : /* $Id$ */
+<span class="lineNum">      22 </span>                : 
+<span class="lineNum">      23 </span>                : #include &lt;ctype.h&gt;
+<span class="lineNum">      24 </span>                : #include &lt;sys/stat.h&gt;
+<span class="lineNum">      25 </span>                : 
+<span class="lineNum">      26 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">      27 </span>                : #include &quot;SAPI.h&quot;
+<span class="lineNum">      28 </span>                : #include &quot;php_variables.h&quot;
+<span class="lineNum">      29 </span>                : #include &quot;php_ini.h&quot;
+<span class="lineNum">      30 </span>                : #include &quot;ext/standard/php_string.h&quot;
+<span class="lineNum">      31 </span>                : #include &quot;ext/standard/pageinfo.h&quot;
+<span class="lineNum">      32 </span>                : #if (HAVE_PCRE || HAVE_BUNDLED_PCRE) &amp;&amp; !defined(COMPILE_DL_PCRE)
+<span class="lineNum">      33 </span>                : #include &quot;ext/pcre/php_pcre.h&quot;
+<span class="lineNum">      34 </span>                : #endif
+<span class="lineNum">      35 </span>                : #ifdef ZTS
+<span class="lineNum">      36 </span>                : #include &quot;TSRM.h&quot;
+<span class="lineNum">      37 </span>                : #endif
+<span class="lineNum">      38 </span>                : #ifdef HAVE_SYS_TIME_H
+<span class="lineNum">      39 </span>                : #include &lt;sys/time.h&gt;
+<span class="lineNum">      40 </span>                : #elif defined(PHP_WIN32)
+<span class="lineNum">      41 </span>                : #include &quot;win32/time.h&quot;
+<span class="lineNum">      42 </span>                : #endif
+<span class="lineNum">      43 </span>                : 
+<span class="lineNum">      44 </span>                : #include &quot;rfc1867.h&quot;
+<span class="lineNum">      45 </span>                : 
+<span class="lineNum">      46 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">      47 </span>                : #define STRCASECMP stricmp
+<span class="lineNum">      48 </span>                : #else
+<span class="lineNum">      49 </span>                : #define STRCASECMP strcasecmp
+<span class="lineNum">      50 </span>                : #endif
+<span class="lineNum">      51 </span>                : 
+<span class="lineNum">      52 </span>                : #include &quot;php_content_types.h&quot;
+<span class="lineNum">      53 </span>                : 
+<span class="lineNum">      54 </span>                : #ifdef ZTS
+<span class="lineNum">      55 </span>                : SAPI_API int sapi_globals_id;
+<span class="lineNum">      56 </span>                : #else
+<span class="lineNum">      57 </span>                : sapi_globals_struct sapi_globals;
+<a name="58"><span class="lineNum">      58 </span>                : #endif</a>
+<span class="lineNum">      59 </span>                : 
+<span class="lineNum">      60 </span><span class="lineCov">             48 : static void sapi_globals_ctor(sapi_globals_struct *sapi_globals TSRMLS_DC)</span>
+<span class="lineNum">      61 </span>                : {
+<span class="lineNum">      62 </span><span class="lineCov">             48 :         memset(sapi_globals, 0, sizeof(*sapi_globals));</span>
+<span class="lineNum">      63 </span><span class="lineCov">             48 :         zend_hash_init_ex(&amp;sapi_globals-&gt;known_post_content_types, 5, NULL, NULL, 1, 0);</span>
+<span class="lineNum">      64 </span><span class="lineCov">             48 :         php_setup_sapi_content_types(TSRMLS_C);</span>
+<a name="65"><span class="lineNum">      65 </span><span class="lineCov">             48 : }</span></a>
+<span class="lineNum">      66 </span>                : 
+<span class="lineNum">      67 </span><span class="lineCov">             48 : static void sapi_globals_dtor(sapi_globals_struct *sapi_globals TSRMLS_DC)</span>
+<span class="lineNum">      68 </span>                : {
+<span class="lineNum">      69 </span><span class="lineCov">             48 :         zend_hash_destroy(&amp;sapi_globals-&gt;known_post_content_types);</span>
+<span class="lineNum">      70 </span><span class="lineCov">             48 : }</span>
+<span class="lineNum">      71 </span>                : 
+<span class="lineNum">      72 </span>                : /* True globals (no need for thread safety) */
+<span class="lineNum">      73 </span>                : SAPI_API sapi_module_struct sapi_module;
+<a name="74"><span class="lineNum">      74 </span>                : </a>
+<span class="lineNum">      75 </span>                : 
+<span class="lineNum">      76 </span><span class="lineCov">             48 : SAPI_API void sapi_startup(sapi_module_struct *sf)</span>
+<span class="lineNum">      77 </span>                : {
+<span class="lineNum">      78 </span>                : #ifdef ZEND_SIGNALS
+<span class="lineNum">      79 </span>                :         zend_signal_startup();
+<span class="lineNum">      80 </span>                : #endif
+<span class="lineNum">      81 </span>                : 
+<span class="lineNum">      82 </span><span class="lineCov">             48 :         sf-&gt;ini_entries = NULL;</span>
+<span class="lineNum">      83 </span><span class="lineCov">             48 :         sapi_module = *sf;</span>
+<span class="lineNum">      84 </span>                : 
+<span class="lineNum">      85 </span>                : #ifdef ZTS
+<span class="lineNum">      86 </span>                :         ts_allocate_id(&amp;sapi_globals_id, sizeof(sapi_globals_struct), (ts_allocate_ctor) sapi_globals_ctor, (ts_allocate_dtor) sapi_globals_dtor);
+<span class="lineNum">      87 </span>                : # ifdef PHP_WIN32
+<span class="lineNum">      88 </span>                :         _configthreadlocale(_ENABLE_PER_THREAD_LOCALE);
+<span class="lineNum">      89 </span>                : # endif
+<span class="lineNum">      90 </span>                : #else
+<span class="lineNum">      91 </span><span class="lineCov">             48 :         sapi_globals_ctor(&amp;sapi_globals);</span>
+<span class="lineNum">      92 </span>                : #endif
+<span class="lineNum">      93 </span>                : 
+<span class="lineNum">      94 </span><span class="lineCov">             48 :         virtual_cwd_startup(); /* Could use shutdown to free the main cwd but it would just slow it down for CGI */</span>
+<span class="lineNum">      95 </span>                : 
+<span class="lineNum">      96 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">      97 </span>                :         tsrm_win32_startup();
+<span class="lineNum">      98 </span>                : #endif
+<span class="lineNum">      99 </span>                : 
+<span class="lineNum">     100 </span>                :         reentrancy_startup();
+<a name="101"><span class="lineNum">     101 </span><span class="lineCov">             48 : }</span></a>
+<span class="lineNum">     102 </span>                : 
+<span class="lineNum">     103 </span><span class="lineCov">             48 : SAPI_API void sapi_shutdown(void)</span>
+<span class="lineNum">     104 </span>                : {
+<span class="lineNum">     105 </span>                : #ifdef ZTS
+<span class="lineNum">     106 </span>                :         ts_free_id(sapi_globals_id);
+<span class="lineNum">     107 </span>                : #else
+<span class="lineNum">     108 </span><span class="lineCov">             48 :         sapi_globals_dtor(&amp;sapi_globals);</span>
+<span class="lineNum">     109 </span>                : #endif
+<span class="lineNum">     110 </span>                : 
+<span class="lineNum">     111 </span>                :         reentrancy_shutdown();
+<span class="lineNum">     112 </span>                : 
+<span class="lineNum">     113 </span><span class="lineCov">             48 :         virtual_cwd_shutdown();</span>
+<span class="lineNum">     114 </span>                : 
+<span class="lineNum">     115 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">     116 </span>                :         tsrm_win32_shutdown();
+<span class="lineNum">     117 </span>                : #endif
+<span class="lineNum">     118 </span><span class="lineCov">             48 : }</span>
+<a name="119"><span class="lineNum">     119 </span>                : </a>
+<span class="lineNum">     120 </span>                : 
+<span class="lineNum">     121 </span><span class="lineCov">             96 : SAPI_API void sapi_free_header(sapi_header_struct *sapi_header)</span>
+<span class="lineNum">     122 </span>                : {
+<span class="lineNum">     123 </span><span class="lineCov">             96 :         efree(sapi_header-&gt;header);</span>
+<span class="lineNum">     124 </span><span class="lineCov">             96 : }</span>
+<span class="lineNum">     125 </span>                : 
+<a name="126"><span class="lineNum">     126 </span>                : /* {{{ proto bool header_register_callback(mixed callback)</a>
+<span class="lineNum">     127 </span>                :    call a header function */
+<span class="lineNum">     128 </span><span class="lineNoCov">              0 : PHP_FUNCTION(header_register_callback)</span>
+<span class="lineNum">     129 </span>                : {
+<span class="lineNum">     130 </span>                :         zval *callback_func;
+<span class="lineNum">     131 </span>                :         char *callback_name;
+<span class="lineNum">     132 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;z&quot;, &amp;callback_func) == FAILURE) {</span>
+<span class="lineNum">     133 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     134 </span>                :         }
+<span class="lineNum">     135 </span>                :         
+<span class="lineNum">     136 </span><span class="lineNoCov">              0 :         if (!zend_is_callable(callback_func, 0, &amp;callback_name TSRMLS_CC)) {</span>
+<span class="lineNum">     137 </span><span class="lineNoCov">              0 :                 efree(callback_name);</span>
+<span class="lineNum">     138 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     139 </span>                :         }
+<span class="lineNum">     140 </span><span class="lineNoCov">              0 :         efree(callback_name);</span>
+<span class="lineNum">     141 </span>                : 
+<span class="lineNum">     142 </span><span class="lineNoCov">              0 :         if (SG(callback_func)) {</span>
+<span class="lineNum">     143 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;SG(callback_func));</span>
+<span class="lineNum">     144 </span><span class="lineNoCov">              0 :                 SG(fci_cache) = empty_fcall_info_cache;</span>
+<span class="lineNum">     145 </span>                :         }
+<span class="lineNum">     146 </span>                : 
+<span class="lineNum">     147 </span><span class="lineNoCov">              0 :         Z_ADDREF_P(callback_func);</span>
+<span class="lineNum">     148 </span>                : 
+<span class="lineNum">     149 </span><span class="lineNoCov">              0 :         SG(callback_func) = callback_func;</span>
+<span class="lineNum">     150 </span>                :         
+<span class="lineNum">     151 </span><span class="lineNoCov">              0 :         RETURN_TRUE;</span>
+<span class="lineNum">     152 </span>                : }
+<a name="153"><span class="lineNum">     153 </span>                : /* }}} */</a>
+<span class="lineNum">     154 </span>                : 
+<span class="lineNum">     155 </span><span class="lineNoCov">              0 : static void sapi_run_header_callback(TSRMLS_D)</span>
+<span class="lineNum">     156 </span>                : {
+<span class="lineNum">     157 </span>                :         int   error;
+<span class="lineNum">     158 </span>                :         zend_fcall_info fci;
+<span class="lineNum">     159 </span><span class="lineNoCov">              0 :         zval *retval_ptr = NULL;</span>
+<span class="lineNum">     160 </span>                : 
+<span class="lineNum">     161 </span><span class="lineNoCov">              0 :         fci.size = sizeof(fci);</span>
+<span class="lineNum">     162 </span><span class="lineNoCov">              0 :         fci.function_table = EG(function_table);</span>
+<span class="lineNum">     163 </span><span class="lineNoCov">              0 :         fci.object_ptr = NULL;</span>
+<span class="lineNum">     164 </span><span class="lineNoCov">              0 :         fci.function_name = SG(callback_func);</span>
+<span class="lineNum">     165 </span><span class="lineNoCov">              0 :         fci.retval_ptr_ptr = &amp;retval_ptr;</span>
+<span class="lineNum">     166 </span><span class="lineNoCov">              0 :         fci.param_count = 0;</span>
+<span class="lineNum">     167 </span><span class="lineNoCov">              0 :         fci.params = NULL;</span>
+<span class="lineNum">     168 </span><span class="lineNoCov">              0 :         fci.no_separation = 0;</span>
+<span class="lineNum">     169 </span><span class="lineNoCov">              0 :         fci.symbol_table = NULL;</span>
+<span class="lineNum">     170 </span>                : 
+<span class="lineNum">     171 </span><span class="lineNoCov">              0 :         error = zend_call_function(&amp;fci, &amp;SG(fci_cache) TSRMLS_CC);</span>
+<span class="lineNum">     172 </span><span class="lineNoCov">              0 :         if (error == FAILURE) {</span>
+<span class="lineNum">     173 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Could not call the sapi_header_callback&quot;);</span>
+<span class="lineNum">     174 </span><span class="lineNoCov">              0 :         } else if (retval_ptr) {</span>
+<span class="lineNum">     175 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;retval_ptr);</span>
+<span class="lineNum">     176 </span>                :         }
+<a name="177"><span class="lineNum">     177 </span><span class="lineNoCov">              0 : }</span></a>
+<span class="lineNum">     178 </span>                : 
+<span class="lineNum">     179 </span><span class="lineNoCov">              0 : SAPI_API void sapi_handle_post(void *arg TSRMLS_DC)</span>
+<span class="lineNum">     180 </span>                : {
+<span class="lineNum">     181 </span><span class="lineNoCov">              0 :         if (SG(request_info).post_entry &amp;&amp; SG(request_info).content_type_dup) {</span>
+<span class="lineNum">     182 </span><span class="lineNoCov">              0 :                 SG(request_info).post_entry-&gt;post_handler(SG(request_info).content_type_dup, arg TSRMLS_CC);</span>
+<span class="lineNum">     183 </span><span class="lineNoCov">              0 :                 if (SG(request_info).post_data) {</span>
+<span class="lineNum">     184 </span><span class="lineNoCov">              0 :                         efree(SG(request_info).post_data);</span>
+<span class="lineNum">     185 </span><span class="lineNoCov">              0 :                         SG(request_info).post_data = NULL;</span>
+<span class="lineNum">     186 </span>                :                 }
+<span class="lineNum">     187 </span><span class="lineNoCov">              0 :                 efree(SG(request_info).content_type_dup);</span>
+<span class="lineNum">     188 </span><span class="lineNoCov">              0 :                 SG(request_info).content_type_dup = NULL;</span>
+<span class="lineNum">     189 </span>                :         }
+<a name="190"><span class="lineNum">     190 </span><span class="lineNoCov">              0 : }</span></a>
+<span class="lineNum">     191 </span>                : 
+<span class="lineNum">     192 </span><span class="lineNoCov">              0 : static void sapi_read_post_data(TSRMLS_D)</span>
+<span class="lineNum">     193 </span>                : {
+<span class="lineNum">     194 </span>                :         sapi_post_entry *post_entry;
+<span class="lineNum">     195 </span><span class="lineNoCov">              0 :         uint content_type_length = strlen(SG(request_info).content_type);</span>
+<span class="lineNum">     196 </span><span class="lineNoCov">              0 :         char *content_type = estrndup(SG(request_info).content_type, content_type_length);</span>
+<span class="lineNum">     197 </span>                :         char *p;
+<span class="lineNum">     198 </span><span class="lineNoCov">              0 :         char oldchar=0;</span>
+<span class="lineNum">     199 </span><span class="lineNoCov">              0 :         void (*post_reader_func)(TSRMLS_D) = NULL;</span>
+<span class="lineNum">     200 </span>                : 
+<span class="lineNum">     201 </span>                : 
+<span class="lineNum">     202 </span>                :         /* dedicated implementation for increased performance:
+<span class="lineNum">     203 </span>                :          * - Make the content type lowercase
+<span class="lineNum">     204 </span>                :          * - Trim descriptive data, stay with the content-type only
+<span class="lineNum">     205 </span>                :          */
+<span class="lineNum">     206 </span><span class="lineNoCov">              0 :         for (p=content_type; p&lt;content_type+content_type_length; p++) {</span>
+<span class="lineNum">     207 </span><span class="lineNoCov">              0 :                 switch (*p) {</span>
+<span class="lineNum">     208 </span>                :                         case ';':
+<span class="lineNum">     209 </span>                :                         case ',':
+<span class="lineNum">     210 </span>                :                         case ' ':
+<span class="lineNum">     211 </span><span class="lineNoCov">              0 :                                 content_type_length = p-content_type;</span>
+<span class="lineNum">     212 </span><span class="lineNoCov">              0 :                                 oldchar = *p;</span>
+<span class="lineNum">     213 </span><span class="lineNoCov">              0 :                                 *p = 0;</span>
+<span class="lineNum">     214 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     215 </span>                :                         default:
+<span class="lineNum">     216 </span><span class="lineNoCov">              0 :                                 *p = tolower(*p);</span>
+<span class="lineNum">     217 </span>                :                                 break;
+<span class="lineNum">     218 </span>                :                 }
+<span class="lineNum">     219 </span>                :         }
+<span class="lineNum">     220 </span>                : 
+<span class="lineNum">     221 </span>                :         /* now try to find an appropriate POST content handler */
+<span class="lineNum">     222 </span><span class="lineNoCov">              0 :         if (zend_hash_find(&amp;SG(known_post_content_types), content_type,</span>
+<span class="lineNum">     223 </span>                :                         content_type_length+1, (void **) &amp;post_entry) == SUCCESS) {
+<span class="lineNum">     224 </span>                :                 /* found one, register it for use */
+<span class="lineNum">     225 </span><span class="lineNoCov">              0 :                 SG(request_info).post_entry = post_entry;</span>
+<span class="lineNum">     226 </span><span class="lineNoCov">              0 :                 post_reader_func = post_entry-&gt;post_reader;</span>
+<span class="lineNum">     227 </span>                :         } else {
+<span class="lineNum">     228 </span>                :                 /* fallback */
+<span class="lineNum">     229 </span><span class="lineNoCov">              0 :                 SG(request_info).post_entry = NULL;</span>
+<span class="lineNum">     230 </span><span class="lineNoCov">              0 :                 if (!sapi_module.default_post_reader) {</span>
+<span class="lineNum">     231 </span>                :                         /* no default reader ? */
+<span class="lineNum">     232 </span><span class="lineNoCov">              0 :                         SG(request_info).content_type_dup = NULL;</span>
+<span class="lineNum">     233 </span><span class="lineNoCov">              0 :                         sapi_module.sapi_error(E_WARNING, &quot;Unsupported content type:  '%s'&quot;, content_type);</span>
+<span class="lineNum">     234 </span><span class="lineNoCov">              0 :                         return;</span>
+<span class="lineNum">     235 </span>                :                 }
+<span class="lineNum">     236 </span>                :         }
+<span class="lineNum">     237 </span><span class="lineNoCov">              0 :         if (oldchar) {</span>
+<span class="lineNum">     238 </span><span class="lineNoCov">              0 :                 *(p-1) = oldchar;</span>
+<span class="lineNum">     239 </span>                :         }
+<span class="lineNum">     240 </span>                : 
+<span class="lineNum">     241 </span><span class="lineNoCov">              0 :         SG(request_info).content_type_dup = content_type;</span>
+<span class="lineNum">     242 </span>                : 
+<span class="lineNum">     243 </span><span class="lineNoCov">              0 :         if(post_reader_func) {</span>
+<span class="lineNum">     244 </span><span class="lineNoCov">              0 :                 post_reader_func(TSRMLS_C);</span>
+<span class="lineNum">     245 </span>                :         }
+<span class="lineNum">     246 </span>                : 
+<span class="lineNum">     247 </span><span class="lineNoCov">              0 :         if(sapi_module.default_post_reader) {</span>
+<span class="lineNum">     248 </span><span class="lineNoCov">              0 :                 sapi_module.default_post_reader(TSRMLS_C);</span>
+<span class="lineNum">     249 </span>                :         }
+<span class="lineNum">     250 </span>                : }
+<a name="251"><span class="lineNum">     251 </span>                : </a>
+<span class="lineNum">     252 </span>                : 
+<span class="lineNum">     253 </span><span class="lineNoCov">              0 : SAPI_API SAPI_POST_READER_FUNC(sapi_read_standard_form_data)</span>
+<span class="lineNum">     254 </span>                : {
+<span class="lineNum">     255 </span>                :         int read_bytes;
+<span class="lineNum">     256 </span><span class="lineNoCov">              0 :         int allocated_bytes=SAPI_POST_BLOCK_SIZE+1;</span>
+<span class="lineNum">     257 </span>                : 
+<span class="lineNum">     258 </span><span class="lineNoCov">              0 :         if ((SG(post_max_size) &gt; 0) &amp;&amp; (SG(request_info).content_length &gt; SG(post_max_size))) {</span>
+<span class="lineNum">     259 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;POST Content-Length of %ld bytes exceeds the limit of %ld bytes&quot;,</span>
+<span class="lineNum">     260 </span>                :                                         SG(request_info).content_length, SG(post_max_size));
+<span class="lineNum">     261 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     262 </span>                :         }
+<span class="lineNum">     263 </span><span class="lineNoCov">              0 :         SG(request_info).post_data = emalloc(allocated_bytes);</span>
+<span class="lineNum">     264 </span>                : 
+<span class="lineNum">     265 </span>                :         for (;;) {
+<span class="lineNum">     266 </span><span class="lineNoCov">              0 :                 read_bytes = sapi_module.read_post(SG(request_info).post_data+SG(read_post_bytes), SAPI_POST_BLOCK_SIZE TSRMLS_CC);</span>
+<span class="lineNum">     267 </span><span class="lineNoCov">              0 :                 if (read_bytes&lt;=0) {</span>
+<span class="lineNum">     268 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     269 </span>                :                 }
+<span class="lineNum">     270 </span><span class="lineNoCov">              0 :                 SG(read_post_bytes) += read_bytes;</span>
+<span class="lineNum">     271 </span><span class="lineNoCov">              0 :                 if ((SG(post_max_size) &gt; 0) &amp;&amp; (SG(read_post_bytes) &gt; SG(post_max_size))) {</span>
+<span class="lineNum">     272 </span><span class="lineNoCov">              0 :                         php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Actual POST length does not match Content-Length, and exceeds %ld bytes&quot;, SG(post_max_size));</span>
+<span class="lineNum">     273 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     274 </span>                :                 }
+<span class="lineNum">     275 </span><span class="lineNoCov">              0 :                 if (read_bytes &lt; SAPI_POST_BLOCK_SIZE) {</span>
+<span class="lineNum">     276 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     277 </span>                :                 }
+<span class="lineNum">     278 </span><span class="lineNoCov">              0 :                 if (SG(read_post_bytes)+SAPI_POST_BLOCK_SIZE &gt;= allocated_bytes) {</span>
+<span class="lineNum">     279 </span><span class="lineNoCov">              0 :                         allocated_bytes = SG(read_post_bytes)+SAPI_POST_BLOCK_SIZE+1;</span>
+<span class="lineNum">     280 </span><span class="lineNoCov">              0 :                         SG(request_info).post_data = erealloc(SG(request_info).post_data, allocated_bytes);</span>
+<span class="lineNum">     281 </span>                :                 }
+<span class="lineNum">     282 </span><span class="lineNoCov">              0 :         }</span>
+<span class="lineNum">     283 </span><span class="lineNoCov">              0 :         SG(request_info).post_data[SG(read_post_bytes)] = 0;  /* terminating NULL */</span>
+<span class="lineNum">     284 </span><span class="lineNoCov">              0 :         SG(request_info).post_data_length = SG(read_post_bytes);</span>
+<span class="lineNum">     285 </span>                : }
+<a name="286"><span class="lineNum">     286 </span>                : </a>
+<span class="lineNum">     287 </span>                : 
+<span class="lineNum">     288 </span><span class="lineCov">             48 : static inline char *get_default_content_type(uint prefix_len, uint *len TSRMLS_DC)</span>
+<span class="lineNum">     289 </span>                : {
+<span class="lineNum">     290 </span>                :         char *mimetype, *charset, *content_type;
+<span class="lineNum">     291 </span>                :         uint mimetype_len, charset_len;
+<span class="lineNum">     292 </span>                : 
+<span class="lineNum">     293 </span><span class="lineCov">             48 :         if (SG(default_mimetype)) {</span>
+<span class="lineNum">     294 </span><span class="lineCov">             48 :                 mimetype = SG(default_mimetype);</span>
+<span class="lineNum">     295 </span><span class="lineCov">             48 :                 mimetype_len = strlen(SG(default_mimetype));</span>
+<span class="lineNum">     296 </span>                :         } else {
+<span class="lineNum">     297 </span><span class="lineNoCov">              0 :                 mimetype = SAPI_DEFAULT_MIMETYPE;</span>
+<span class="lineNum">     298 </span><span class="lineNoCov">              0 :                 mimetype_len = sizeof(SAPI_DEFAULT_MIMETYPE) - 1;</span>
+<span class="lineNum">     299 </span>                :         }
+<span class="lineNum">     300 </span><span class="lineCov">             48 :         if (SG(default_charset)) {</span>
+<span class="lineNum">     301 </span><span class="lineCov">             48 :                 charset = SG(default_charset);</span>
+<span class="lineNum">     302 </span><span class="lineCov">             48 :                 charset_len = strlen(SG(default_charset));</span>
+<span class="lineNum">     303 </span>                :         } else {
+<span class="lineNum">     304 </span><span class="lineNoCov">              0 :                 charset = SAPI_DEFAULT_CHARSET;</span>
+<span class="lineNum">     305 </span><span class="lineNoCov">              0 :                 charset_len = sizeof(SAPI_DEFAULT_CHARSET) - 1;</span>
+<span class="lineNum">     306 </span>                :         }
+<span class="lineNum">     307 </span>                : 
+<span class="lineNum">     308 </span><span class="lineCov">             48 :         if (*charset &amp;&amp; strncasecmp(mimetype, &quot;text/&quot;, 5) == 0) {</span>
+<span class="lineNum">     309 </span>                :                 char *p;
+<span class="lineNum">     310 </span>                : 
+<span class="lineNum">     311 </span><span class="lineNoCov">              0 :                 *len = prefix_len + mimetype_len + sizeof(&quot;; charset=&quot;) - 1 + charset_len;</span>
+<span class="lineNum">     312 </span><span class="lineNoCov">              0 :                 content_type = (char*)emalloc(*len + 1);</span>
+<span class="lineNum">     313 </span><span class="lineNoCov">              0 :                 p = content_type + prefix_len;</span>
+<span class="lineNum">     314 </span><span class="lineNoCov">              0 :                 memcpy(p, mimetype, mimetype_len);</span>
+<span class="lineNum">     315 </span><span class="lineNoCov">              0 :                 p += mimetype_len;</span>
+<span class="lineNum">     316 </span><span class="lineNoCov">              0 :                 memcpy(p, &quot;; charset=&quot;, sizeof(&quot;; charset=&quot;) - 1);</span>
+<span class="lineNum">     317 </span><span class="lineNoCov">              0 :                 p += sizeof(&quot;; charset=&quot;) - 1;</span>
+<span class="lineNum">     318 </span><span class="lineNoCov">              0 :                 memcpy(p, charset, charset_len + 1);</span>
+<span class="lineNum">     319 </span>                :         } else {
+<span class="lineNum">     320 </span><span class="lineCov">             48 :                 *len = prefix_len + mimetype_len;</span>
+<span class="lineNum">     321 </span><span class="lineCov">             48 :                 content_type = (char*)emalloc(*len + 1);</span>
+<span class="lineNum">     322 </span><span class="lineCov">             48 :                 memcpy(content_type + prefix_len, mimetype, mimetype_len + 1);</span>
+<span class="lineNum">     323 </span>                :         }
+<span class="lineNum">     324 </span><span class="lineCov">             48 :         return content_type;</span>
+<span class="lineNum">     325 </span>                : }
+<a name="326"><span class="lineNum">     326 </span>                : </a>
+<span class="lineNum">     327 </span>                : 
+<span class="lineNum">     328 </span><span class="lineNoCov">              0 : SAPI_API char *sapi_get_default_content_type(TSRMLS_D)</span>
+<span class="lineNum">     329 </span>                : {
+<span class="lineNum">     330 </span>                :         uint len;
+<span class="lineNum">     331 </span>                : 
+<span class="lineNum">     332 </span><span class="lineNoCov">              0 :         return get_default_content_type(0, &amp;len TSRMLS_CC);</span>
+<span class="lineNum">     333 </span>                : }
+<a name="334"><span class="lineNum">     334 </span>                : </a>
+<span class="lineNum">     335 </span>                : 
+<span class="lineNum">     336 </span><span class="lineNoCov">              0 : SAPI_API void sapi_get_default_content_type_header(sapi_header_struct *default_header TSRMLS_DC)</span>
+<span class="lineNum">     337 </span>                : {
+<span class="lineNum">     338 </span>                :     uint len;
+<span class="lineNum">     339 </span>                : 
+<span class="lineNum">     340 </span><span class="lineNoCov">              0 :         default_header-&gt;header = get_default_content_type(sizeof(&quot;Content-type: &quot;)-1, &amp;len TSRMLS_CC);</span>
+<span class="lineNum">     341 </span><span class="lineNoCov">              0 :         default_header-&gt;header_len = len;</span>
+<span class="lineNum">     342 </span><span class="lineNoCov">              0 :         memcpy(default_header-&gt;header, &quot;Content-type: &quot;, sizeof(&quot;Content-type: &quot;) - 1);</span>
+<span class="lineNum">     343 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     344 </span>                : 
+<span class="lineNum">     345 </span>                : /*
+<span class="lineNum">     346 </span>                :  * Add charset on content-type header if the MIME type starts with
+<span class="lineNum">     347 </span>                :  * &quot;text/&quot;, the default_charset directive is not empty and
+<span class="lineNum">     348 </span>                :  * there is not already a charset option in there.
+<span class="lineNum">     349 </span>                :  *
+<span class="lineNum">     350 </span>                :  * If &quot;mimetype&quot; is non-NULL, it should point to a pointer allocated
+<span class="lineNum">     351 </span>                :  * with emalloc().  If a charset is added, the string will be
+<span class="lineNum">     352 </span>                :  * re-allocated and the new length is returned.  If mimetype is
+<span class="lineNum">     353 </span>                :  * unchanged, 0 is returned.
+<a name="354"><span class="lineNum">     354 </span>                :  *</a>
+<span class="lineNum">     355 </span>                :  */
+<span class="lineNum">     356 </span><span class="lineNoCov">              0 : SAPI_API size_t sapi_apply_default_charset(char **mimetype, size_t len TSRMLS_DC)</span>
+<span class="lineNum">     357 </span>                : {
+<span class="lineNum">     358 </span>                :         char *charset, *newtype;
+<span class="lineNum">     359 </span>                :         size_t newlen;
+<span class="lineNum">     360 </span><span class="lineNoCov">              0 :         charset = SG(default_charset) ? SG(default_charset) : SAPI_DEFAULT_CHARSET;</span>
+<span class="lineNum">     361 </span>                : 
+<span class="lineNum">     362 </span><span class="lineNoCov">              0 :         if (*mimetype != NULL) {</span>
+<span class="lineNum">     363 </span><span class="lineNoCov">              0 :                 if (*charset &amp;&amp; strncmp(*mimetype, &quot;text/&quot;, 5) == 0 &amp;&amp; strstr(*mimetype, &quot;charset=&quot;) == NULL) {</span>
+<span class="lineNum">     364 </span><span class="lineNoCov">              0 :                         newlen = len + (sizeof(&quot;;charset=&quot;)-1) + strlen(charset);</span>
+<span class="lineNum">     365 </span><span class="lineNoCov">              0 :                         newtype = emalloc(newlen + 1);</span>
+<span class="lineNum">     366 </span><span class="lineNoCov">              0 :                         PHP_STRLCPY(newtype, *mimetype, newlen + 1, len);</span>
+<span class="lineNum">     367 </span><span class="lineNoCov">              0 :                         strlcat(newtype, &quot;;charset=&quot;, newlen + 1);</span>
+<span class="lineNum">     368 </span><span class="lineNoCov">              0 :                         strlcat(newtype, charset, newlen + 1);</span>
+<span class="lineNum">     369 </span><span class="lineNoCov">              0 :                         efree(*mimetype);</span>
+<span class="lineNum">     370 </span><span class="lineNoCov">              0 :                         *mimetype = newtype;</span>
+<span class="lineNum">     371 </span><span class="lineNoCov">              0 :                         return newlen;</span>
+<span class="lineNum">     372 </span>                :                 }
+<span class="lineNum">     373 </span>                :         }
+<span class="lineNum">     374 </span><span class="lineNoCov">              0 :         return 0;</span>
+<a name="375"><span class="lineNum">     375 </span>                : }</a>
+<span class="lineNum">     376 </span>                : 
+<span class="lineNum">     377 </span><span class="lineNoCov">              0 : SAPI_API void sapi_activate_headers_only(TSRMLS_D)</span>
+<span class="lineNum">     378 </span>                : {
+<span class="lineNum">     379 </span><span class="lineNoCov">              0 :         if (SG(request_info).headers_read == 1)</span>
+<span class="lineNum">     380 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     381 </span><span class="lineNoCov">              0 :         SG(request_info).headers_read = 1;</span>
+<span class="lineNum">     382 </span><span class="lineNoCov">              0 :         zend_llist_init(&amp;SG(sapi_headers).headers, sizeof(sapi_header_struct), </span>
+<span class="lineNum">     383 </span>                :                         (void (*)(void *)) sapi_free_header, 0);
+<span class="lineNum">     384 </span><span class="lineNoCov">              0 :         SG(sapi_headers).send_default_content_type = 1;</span>
+<span class="lineNum">     385 </span>                : 
+<span class="lineNum">     386 </span>                :         /* SG(sapi_headers).http_response_code = 200; */ 
+<span class="lineNum">     387 </span><span class="lineNoCov">              0 :         SG(sapi_headers).http_status_line = NULL;</span>
+<span class="lineNum">     388 </span><span class="lineNoCov">              0 :         SG(sapi_headers).mimetype = NULL;</span>
+<span class="lineNum">     389 </span><span class="lineNoCov">              0 :         SG(read_post_bytes) = 0;</span>
+<span class="lineNum">     390 </span><span class="lineNoCov">              0 :         SG(request_info).post_data = NULL;</span>
+<span class="lineNum">     391 </span><span class="lineNoCov">              0 :         SG(request_info).raw_post_data = NULL;</span>
+<span class="lineNum">     392 </span><span class="lineNoCov">              0 :         SG(request_info).current_user = NULL;</span>
+<span class="lineNum">     393 </span><span class="lineNoCov">              0 :         SG(request_info).current_user_length = 0;</span>
+<span class="lineNum">     394 </span><span class="lineNoCov">              0 :         SG(request_info).no_headers = 0;</span>
+<span class="lineNum">     395 </span><span class="lineNoCov">              0 :         SG(request_info).post_entry = NULL;</span>
+<span class="lineNum">     396 </span><span class="lineNoCov">              0 :         SG(global_request_time) = 0;</span>
+<span class="lineNum">     397 </span>                : 
+<span class="lineNum">     398 </span>                :         /*
+<span class="lineNum">     399 </span>                :          * It's possible to override this general case in the activate() callback, 
+<span class="lineNum">     400 </span>                :          * if necessary.
+<span class="lineNum">     401 </span>                :          */
+<span class="lineNum">     402 </span><span class="lineNoCov">              0 :         if (SG(request_info).request_method &amp;&amp; !strcmp(SG(request_info).request_method, &quot;HEAD&quot;)) {</span>
+<span class="lineNum">     403 </span><span class="lineNoCov">              0 :                 SG(request_info).headers_only = 1;</span>
+<span class="lineNum">     404 </span>                :         } else {
+<span class="lineNum">     405 </span><span class="lineNoCov">              0 :                 SG(request_info).headers_only = 0;</span>
+<span class="lineNum">     406 </span>                :         }
+<span class="lineNum">     407 </span><span class="lineNoCov">              0 :         if (SG(server_context)) {</span>
+<span class="lineNum">     408 </span><span class="lineNoCov">              0 :                 SG(request_info).cookie_data = sapi_module.read_cookies(TSRMLS_C);</span>
+<span class="lineNum">     409 </span><span class="lineNoCov">              0 :                 if (sapi_module.activate) {</span>
+<span class="lineNum">     410 </span><span class="lineNoCov">              0 :                         sapi_module.activate(TSRMLS_C);</span>
+<span class="lineNum">     411 </span>                :                 }
+<span class="lineNum">     412 </span>                :         }
+<span class="lineNum">     413 </span><span class="lineNoCov">              0 :         if (sapi_module.input_filter_init ) {</span>
+<span class="lineNum">     414 </span><span class="lineNoCov">              0 :                 sapi_module.input_filter_init(TSRMLS_C);</span>
+<span class="lineNum">     415 </span>                :         }
+<span class="lineNum">     416 </span>                : }
+<span class="lineNum">     417 </span>                : 
+<span class="lineNum">     418 </span>                : /*
+<span class="lineNum">     419 </span>                :  * Called from php_request_startup() for every request.
+<a name="420"><span class="lineNum">     420 </span>                :  */</a>
+<span class="lineNum">     421 </span>                : 
+<span class="lineNum">     422 </span><span class="lineCov">             96 : SAPI_API void sapi_activate(TSRMLS_D)</span>
+<span class="lineNum">     423 </span>                : {
+<span class="lineNum">     424 </span><span class="lineCov">             96 :         zend_llist_init(&amp;SG(sapi_headers).headers, sizeof(sapi_header_struct), (void (*)(void *)) sapi_free_header, 0);</span>
+<span class="lineNum">     425 </span><span class="lineCov">             96 :         SG(sapi_headers).send_default_content_type = 1;</span>
+<span class="lineNum">     426 </span>                : 
+<span class="lineNum">     427 </span>                :         /*
+<span class="lineNum">     428 </span>                :         SG(sapi_headers).http_response_code = 200;
+<span class="lineNum">     429 </span>                :         */
+<span class="lineNum">     430 </span><span class="lineCov">             96 :         SG(sapi_headers).http_status_line = NULL;</span>
+<span class="lineNum">     431 </span><span class="lineCov">             96 :         SG(sapi_headers).mimetype = NULL;</span>
+<span class="lineNum">     432 </span><span class="lineCov">             96 :         SG(headers_sent) = 0;</span>
+<span class="lineNum">     433 </span><span class="lineCov">             96 :         SG(callback_run) = 0;</span>
+<span class="lineNum">     434 </span><span class="lineCov">             96 :         SG(callback_func) = NULL;</span>
+<span class="lineNum">     435 </span><span class="lineCov">             96 :         SG(read_post_bytes) = 0;</span>
+<span class="lineNum">     436 </span><span class="lineCov">             96 :         SG(request_info).post_data = NULL;</span>
+<span class="lineNum">     437 </span><span class="lineCov">             96 :         SG(request_info).raw_post_data = NULL;</span>
+<span class="lineNum">     438 </span><span class="lineCov">             96 :         SG(request_info).current_user = NULL;</span>
+<span class="lineNum">     439 </span><span class="lineCov">             96 :         SG(request_info).current_user_length = 0;</span>
+<span class="lineNum">     440 </span><span class="lineCov">             96 :         SG(request_info).no_headers = 0;</span>
+<span class="lineNum">     441 </span><span class="lineCov">             96 :         SG(request_info).post_entry = NULL;</span>
+<span class="lineNum">     442 </span><span class="lineCov">             96 :         SG(request_info).proto_num = 1000; /* Default to HTTP 1.0 */</span>
+<span class="lineNum">     443 </span><span class="lineCov">             96 :         SG(global_request_time) = 0;</span>
+<span class="lineNum">     444 </span>                : 
+<span class="lineNum">     445 </span>                :         /* It's possible to override this general case in the activate() callback, if necessary. */
+<span class="lineNum">     446 </span><span class="lineCov">             96 :         if (SG(request_info).request_method &amp;&amp; !strcmp(SG(request_info).request_method, &quot;HEAD&quot;)) {</span>
+<span class="lineNum">     447 </span><span class="lineNoCov">              0 :                 SG(request_info).headers_only = 1;</span>
+<span class="lineNum">     448 </span>                :         } else {
+<span class="lineNum">     449 </span><span class="lineCov">             96 :                 SG(request_info).headers_only = 0;</span>
+<span class="lineNum">     450 </span>                :         }
+<span class="lineNum">     451 </span><span class="lineCov">             96 :         SG(rfc1867_uploaded_files) = NULL;</span>
+<span class="lineNum">     452 </span>                : 
+<span class="lineNum">     453 </span>                :         /* Handle request method */
+<span class="lineNum">     454 </span><span class="lineCov">             96 :         if (SG(server_context)) {</span>
+<span class="lineNum">     455 </span><span class="lineNoCov">              0 :                 if (PG(enable_post_data_reading) &amp;&amp; SG(request_info).request_method) {</span>
+<span class="lineNum">     456 </span><span class="lineNoCov">              0 :                         if (SG(request_info).content_type &amp;&amp; !strcmp(SG(request_info).request_method, &quot;POST&quot;)) {</span>
+<span class="lineNum">     457 </span>                :                                 /* HTTP POST may contain form data to be processed into variables
+<span class="lineNum">     458 </span>                :                                  * depending on given content type */
+<span class="lineNum">     459 </span><span class="lineNoCov">              0 :                                 sapi_read_post_data(TSRMLS_C);</span>
+<span class="lineNum">     460 </span>                :                         } else {
+<span class="lineNum">     461 </span>                :                                 /* Any other method with content payload will fill $HTTP_RAW_POST_DATA 
+<span class="lineNum">     462 </span>                :                                  * if it is enabled by always_populate_raw_post_data. 
+<span class="lineNum">     463 </span>                :                                  * It's up to the webserver to decide whether to allow a method or not. */
+<span class="lineNum">     464 </span><span class="lineNoCov">              0 :                                 SG(request_info).content_type_dup = NULL;</span>
+<span class="lineNum">     465 </span><span class="lineNoCov">              0 :                                 if (sapi_module.default_post_reader) {</span>
+<span class="lineNum">     466 </span><span class="lineNoCov">              0 :                                         sapi_module.default_post_reader(TSRMLS_C);</span>
+<span class="lineNum">     467 </span>                :                                 }
+<span class="lineNum">     468 </span>                :                         }
+<span class="lineNum">     469 </span>                :                 } else {
+<span class="lineNum">     470 </span><span class="lineNoCov">              0 :                         SG(request_info).content_type_dup = NULL;</span>
+<span class="lineNum">     471 </span>                :                 }
+<span class="lineNum">     472 </span>                : 
+<span class="lineNum">     473 </span>                :                 /* Cookies */
+<span class="lineNum">     474 </span><span class="lineNoCov">              0 :                 SG(request_info).cookie_data = sapi_module.read_cookies(TSRMLS_C);</span>
+<span class="lineNum">     475 </span>                : 
+<span class="lineNum">     476 </span><span class="lineNoCov">              0 :                 if (sapi_module.activate) {</span>
+<span class="lineNum">     477 </span><span class="lineNoCov">              0 :                         sapi_module.activate(TSRMLS_C);</span>
+<span class="lineNum">     478 </span>                :                 }
+<span class="lineNum">     479 </span>                :         }
+<span class="lineNum">     480 </span><span class="lineCov">             96 :         if (sapi_module.input_filter_init) {</span>
+<span class="lineNum">     481 </span><span class="lineNoCov">              0 :                 sapi_module.input_filter_init(TSRMLS_C);</span>
+<span class="lineNum">     482 </span>                :         }
+<span class="lineNum">     483 </span><span class="lineCov">             96 : }</span>
+<a name="484"><span class="lineNum">     484 </span>                : </a>
+<span class="lineNum">     485 </span>                : 
+<span class="lineNum">     486 </span><span class="lineCov">            144 : static void sapi_send_headers_free(TSRMLS_D)</span>
+<span class="lineNum">     487 </span>                : {
+<span class="lineNum">     488 </span><span class="lineCov">            144 :         if (SG(sapi_headers).http_status_line) {</span>
+<span class="lineNum">     489 </span><span class="lineNoCov">              0 :                 efree(SG(sapi_headers).http_status_line);</span>
+<span class="lineNum">     490 </span><span class="lineNoCov">              0 :                 SG(sapi_headers).http_status_line = NULL;</span>
+<span class="lineNum">     491 </span>                :         }
+<a name="492"><span class="lineNum">     492 </span><span class="lineCov">            144 : }</span></a>
+<span class="lineNum">     493 </span>                :         
+<span class="lineNum">     494 </span><span class="lineCov">             96 : SAPI_API void sapi_deactivate(TSRMLS_D)</span>
+<span class="lineNum">     495 </span>                : {
+<span class="lineNum">     496 </span><span class="lineCov">             96 :         zend_llist_destroy(&amp;SG(sapi_headers).headers);</span>
+<span class="lineNum">     497 </span><span class="lineCov">             96 :         if (SG(request_info).post_data) {</span>
+<span class="lineNum">     498 </span><span class="lineNoCov">              0 :                 efree(SG(request_info).post_data);</span>
+<span class="lineNum">     499 </span><span class="lineCov">             96 :         }  else         if (SG(server_context)) {</span>
+<span class="lineNum">     500 </span><span class="lineNoCov">              0 :                 if(sapi_module.read_post) { </span>
+<span class="lineNum">     501 </span>                :                         /* make sure we've consumed all request input data */
+<span class="lineNum">     502 </span>                :                         char dummy[SAPI_POST_BLOCK_SIZE];
+<span class="lineNum">     503 </span>                :                         int read_bytes;
+<span class="lineNum">     504 </span>                : 
+<span class="lineNum">     505 </span><span class="lineNoCov">              0 :                         while((read_bytes = sapi_module.read_post(dummy, sizeof(dummy)-1 TSRMLS_CC)) &gt; 0) {</span>
+<span class="lineNum">     506 </span><span class="lineNoCov">              0 :                                 SG(read_post_bytes) += read_bytes;</span>
+<span class="lineNum">     507 </span>                :                         }
+<span class="lineNum">     508 </span>                :                 }
+<span class="lineNum">     509 </span>                :         }
+<span class="lineNum">     510 </span><span class="lineCov">             96 :         if (SG(request_info).raw_post_data) {</span>
+<span class="lineNum">     511 </span><span class="lineNoCov">              0 :                 efree(SG(request_info).raw_post_data);</span>
+<span class="lineNum">     512 </span>                :         } 
+<span class="lineNum">     513 </span><span class="lineCov">             96 :         if (SG(request_info).auth_user) {</span>
+<span class="lineNum">     514 </span><span class="lineNoCov">              0 :                 efree(SG(request_info).auth_user);</span>
+<span class="lineNum">     515 </span>                :         }
+<span class="lineNum">     516 </span><span class="lineCov">             96 :         if (SG(request_info).auth_password) {</span>
+<span class="lineNum">     517 </span><span class="lineNoCov">              0 :                 efree(SG(request_info).auth_password);</span>
+<span class="lineNum">     518 </span>                :         }
+<span class="lineNum">     519 </span><span class="lineCov">             96 :         if (SG(request_info).auth_digest) {</span>
+<span class="lineNum">     520 </span><span class="lineNoCov">              0 :                 efree(SG(request_info).auth_digest);</span>
+<span class="lineNum">     521 </span>                :         }
+<span class="lineNum">     522 </span><span class="lineCov">             96 :         if (SG(request_info).content_type_dup) {</span>
+<span class="lineNum">     523 </span><span class="lineNoCov">              0 :                 efree(SG(request_info).content_type_dup);</span>
+<span class="lineNum">     524 </span>                :         }
+<span class="lineNum">     525 </span><span class="lineCov">             96 :         if (SG(request_info).current_user) {</span>
+<span class="lineNum">     526 </span><span class="lineNoCov">              0 :                 efree(SG(request_info).current_user);</span>
+<span class="lineNum">     527 </span>                :         }
+<span class="lineNum">     528 </span><span class="lineCov">             96 :         if (sapi_module.deactivate) {</span>
+<span class="lineNum">     529 </span><span class="lineCov">             96 :                 sapi_module.deactivate(TSRMLS_C);</span>
+<span class="lineNum">     530 </span>                :         }
+<span class="lineNum">     531 </span><span class="lineCov">             96 :         if (SG(rfc1867_uploaded_files)) {</span>
+<span class="lineNum">     532 </span><span class="lineNoCov">              0 :                 destroy_uploaded_files_hash(TSRMLS_C);</span>
+<span class="lineNum">     533 </span>                :         }
+<span class="lineNum">     534 </span><span class="lineCov">             96 :         if (SG(sapi_headers).mimetype) {</span>
+<span class="lineNum">     535 </span><span class="lineCov">             48 :                 efree(SG(sapi_headers).mimetype);</span>
+<span class="lineNum">     536 </span><span class="lineCov">             48 :                 SG(sapi_headers).mimetype = NULL;</span>
+<span class="lineNum">     537 </span>                :         }
+<span class="lineNum">     538 </span><span class="lineCov">             96 :         sapi_send_headers_free(TSRMLS_C);</span>
+<span class="lineNum">     539 </span><span class="lineCov">             96 :         SG(sapi_started) = 0;</span>
+<span class="lineNum">     540 </span><span class="lineCov">             96 :         SG(headers_sent) = 0;</span>
+<span class="lineNum">     541 </span><span class="lineCov">             96 :         SG(callback_run) = 0;</span>
+<span class="lineNum">     542 </span><span class="lineCov">             96 :         if (SG(callback_func)) {</span>
+<span class="lineNum">     543 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;SG(callback_func));</span>
+<span class="lineNum">     544 </span>                :         }
+<span class="lineNum">     545 </span><span class="lineCov">             96 :         SG(request_info).headers_read = 0;</span>
+<span class="lineNum">     546 </span><span class="lineCov">             96 :         SG(global_request_time) = 0;</span>
+<span class="lineNum">     547 </span><span class="lineCov">             96 : }</span>
+<a name="548"><span class="lineNum">     548 </span>                : </a>
+<span class="lineNum">     549 </span>                : 
+<span class="lineNum">     550 </span><span class="lineCov">             48 : SAPI_API void sapi_initialize_empty_request(TSRMLS_D)</span>
+<span class="lineNum">     551 </span>                : {
+<span class="lineNum">     552 </span><span class="lineCov">             48 :         SG(server_context) = NULL;</span>
+<span class="lineNum">     553 </span><span class="lineCov">             48 :         SG(request_info).request_method = NULL;</span>
+<span class="lineNum">     554 </span><span class="lineCov">             48 :         SG(request_info).auth_digest = SG(request_info).auth_user = SG(request_info).auth_password = NULL;</span>
+<span class="lineNum">     555 </span><span class="lineCov">             48 :         SG(request_info).content_type_dup = NULL;</span>
+<span class="lineNum">     556 </span><span class="lineCov">             48 : }</span>
+<a name="557"><span class="lineNum">     557 </span>                : </a>
+<span class="lineNum">     558 </span>                : 
+<span class="lineNum">     559 </span><span class="lineNoCov">              0 : static int sapi_extract_response_code(const char *header_line)</span>
+<span class="lineNum">     560 </span>                : {
+<span class="lineNum">     561 </span><span class="lineNoCov">              0 :         int code = 200;</span>
+<span class="lineNum">     562 </span>                :         const char *ptr;
+<span class="lineNum">     563 </span>                : 
+<span class="lineNum">     564 </span><span class="lineNoCov">              0 :         for (ptr = header_line; *ptr; ptr++) {</span>
+<span class="lineNum">     565 </span><span class="lineNoCov">              0 :                 if (*ptr == ' ' &amp;&amp; *(ptr + 1) != ' ') {</span>
+<span class="lineNum">     566 </span><span class="lineNoCov">              0 :                         code = atoi(ptr + 1);</span>
+<span class="lineNum">     567 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     568 </span>                :                 }
+<span class="lineNum">     569 </span>                :         }
+<span class="lineNum">     570 </span>                :         
+<span class="lineNum">     571 </span><span class="lineNoCov">              0 :         return code;</span>
+<span class="lineNum">     572 </span>                : }
+<a name="573"><span class="lineNum">     573 </span>                : </a>
+<span class="lineNum">     574 </span>                : 
+<span class="lineNum">     575 </span><span class="lineNoCov">              0 : static void sapi_update_response_code(int ncode TSRMLS_DC)</span>
+<span class="lineNum">     576 </span>                : {
+<span class="lineNum">     577 </span>                :         /* if the status code did not change, we do not want
+<span class="lineNum">     578 </span>                :            to change the status line, and no need to change the code */
+<span class="lineNum">     579 </span><span class="lineNoCov">              0 :         if (SG(sapi_headers).http_response_code == ncode) {</span>
+<span class="lineNum">     580 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     581 </span>                :         }
+<span class="lineNum">     582 </span>                : 
+<span class="lineNum">     583 </span><span class="lineNoCov">              0 :         if (SG(sapi_headers).http_status_line) {</span>
+<span class="lineNum">     584 </span><span class="lineNoCov">              0 :                 efree(SG(sapi_headers).http_status_line);</span>
+<span class="lineNum">     585 </span><span class="lineNoCov">              0 :                 SG(sapi_headers).http_status_line = NULL;</span>
+<span class="lineNum">     586 </span>                :         }
+<span class="lineNum">     587 </span><span class="lineNoCov">              0 :         SG(sapi_headers).http_response_code = ncode;</span>
+<span class="lineNum">     588 </span>                : }
+<span class="lineNum">     589 </span>                : 
+<span class="lineNum">     590 </span>                : /* 
+<span class="lineNum">     591 </span>                :  * since zend_llist_del_element only remove one matched item once,
+<a name="592"><span class="lineNum">     592 </span>                :  * we should remove them by ourself</a>
+<span class="lineNum">     593 </span>                :  */
+<span class="lineNum">     594 </span><span class="lineNoCov">              0 : static void sapi_remove_header(zend_llist *l, char *name, uint len) {</span>
+<span class="lineNum">     595 </span>                :         sapi_header_struct *header;
+<span class="lineNum">     596 </span>                :         zend_llist_element *next;
+<span class="lineNum">     597 </span><span class="lineNoCov">              0 :         zend_llist_element *current=l-&gt;head;</span>
+<span class="lineNum">     598 </span>                : 
+<span class="lineNum">     599 </span><span class="lineNoCov">              0 :         while (current) {</span>
+<span class="lineNum">     600 </span><span class="lineNoCov">              0 :                 header = (sapi_header_struct *)(current-&gt;data);</span>
+<span class="lineNum">     601 </span><span class="lineNoCov">              0 :                 next = current-&gt;next;</span>
+<span class="lineNum">     602 </span><span class="lineNoCov">              0 :                 if (header-&gt;header_len &gt; len &amp;&amp; header-&gt;header[len] == ':'</span>
+<span class="lineNum">     603 </span><span class="lineNoCov">              0 :                                 &amp;&amp; !strncasecmp(header-&gt;header, name, len)) {</span>
+<span class="lineNum">     604 </span><span class="lineNoCov">              0 :                         if (current-&gt;prev) {</span>
+<span class="lineNum">     605 </span><span class="lineNoCov">              0 :                                 current-&gt;prev-&gt;next = next;</span>
+<span class="lineNum">     606 </span>                :                         } else {
+<span class="lineNum">     607 </span><span class="lineNoCov">              0 :                                 l-&gt;head = next;</span>
+<span class="lineNum">     608 </span>                :                         }
+<span class="lineNum">     609 </span><span class="lineNoCov">              0 :                         if (next) {</span>
+<span class="lineNum">     610 </span><span class="lineNoCov">              0 :                                 next-&gt;prev = current-&gt;prev;</span>
+<span class="lineNum">     611 </span>                :                         } else {
+<span class="lineNum">     612 </span><span class="lineNoCov">              0 :                                 l-&gt;tail = current-&gt;prev;</span>
+<span class="lineNum">     613 </span>                :                         }
+<span class="lineNum">     614 </span><span class="lineNoCov">              0 :                         sapi_free_header(header);</span>
+<span class="lineNum">     615 </span><span class="lineNoCov">              0 :                         efree(current);</span>
+<span class="lineNum">     616 </span><span class="lineNoCov">              0 :                         --l-&gt;count;</span>
+<span class="lineNum">     617 </span>                :                 }
+<span class="lineNum">     618 </span><span class="lineNoCov">              0 :                 current = next;</span>
+<span class="lineNum">     619 </span>                :         }
+<a name="620"><span class="lineNum">     620 </span><span class="lineNoCov">              0 : }</span></a>
+<span class="lineNum">     621 </span>                : 
+<span class="lineNum">     622 </span><span class="lineCov">             48 : SAPI_API int sapi_add_header_ex(char *header_line, uint header_line_len, zend_bool duplicate, zend_bool replace TSRMLS_DC)</span>
+<span class="lineNum">     623 </span>                : {
+<span class="lineNum">     624 </span><span class="lineCov">             48 :         sapi_header_line ctr = {0};</span>
+<span class="lineNum">     625 </span>                :         int r;
+<span class="lineNum">     626 </span>                :         
+<span class="lineNum">     627 </span><span class="lineCov">             48 :         ctr.line = header_line;</span>
+<span class="lineNum">     628 </span><span class="lineCov">             48 :         ctr.line_len = header_line_len;</span>
+<span class="lineNum">     629 </span>                : 
+<span class="lineNum">     630 </span><span class="lineCov">             48 :         r = sapi_header_op(replace ? SAPI_HEADER_REPLACE : SAPI_HEADER_ADD,</span>
+<span class="lineNum">     631 </span>                :                         &amp;ctr TSRMLS_CC);
+<span class="lineNum">     632 </span>                : 
+<span class="lineNum">     633 </span><span class="lineCov">             48 :         if (!duplicate)</span>
+<span class="lineNum">     634 </span><span class="lineNoCov">              0 :                 efree(header_line);</span>
+<span class="lineNum">     635 </span>                : 
+<span class="lineNum">     636 </span><span class="lineCov">             48 :         return r;</span>
+<a name="637"><span class="lineNum">     637 </span>                : }</a>
+<span class="lineNum">     638 </span>                : 
+<span class="lineNum">     639 </span><span class="lineCov">             96 : static void sapi_header_add_op(sapi_header_op_enum op, sapi_header_struct *sapi_header TSRMLS_DC)</span>
+<span class="lineNum">     640 </span>                : {
+<span class="lineNum">     641 </span><span class="lineCov">            192 :         if (!sapi_module.header_handler ||</span>
+<span class="lineNum">     642 </span><span class="lineCov">             96 :                 (SAPI_HEADER_ADD &amp; sapi_module.header_handler(sapi_header, op, &amp;SG(sapi_headers) TSRMLS_CC))) {</span>
+<span class="lineNum">     643 </span><span class="lineNoCov">              0 :                 if (op == SAPI_HEADER_REPLACE) {</span>
+<span class="lineNum">     644 </span><span class="lineNoCov">              0 :                         char *colon_offset = strchr(sapi_header-&gt;header, ':');</span>
+<span class="lineNum">     645 </span>                : 
+<span class="lineNum">     646 </span><span class="lineNoCov">              0 :                         if (colon_offset) {</span>
+<span class="lineNum">     647 </span><span class="lineNoCov">              0 :                                 char sav = *colon_offset;</span>
+<span class="lineNum">     648 </span>                : 
+<span class="lineNum">     649 </span><span class="lineNoCov">              0 :                                 *colon_offset = 0;</span>
+<span class="lineNum">     650 </span><span class="lineNoCov">              0 :                         sapi_remove_header(&amp;SG(sapi_headers).headers, sapi_header-&gt;header, strlen(sapi_header-&gt;header));</span>
+<span class="lineNum">     651 </span><span class="lineNoCov">              0 :                                 *colon_offset = sav;</span>
+<span class="lineNum">     652 </span>                :                         }
+<span class="lineNum">     653 </span>                :                 }
+<span class="lineNum">     654 </span><span class="lineNoCov">              0 :                 zend_llist_add_element(&amp;SG(sapi_headers).headers, (void *) sapi_header);</span>
+<span class="lineNum">     655 </span>                :         } else {
+<span class="lineNum">     656 </span><span class="lineCov">             96 :                 sapi_free_header(sapi_header);</span>
+<span class="lineNum">     657 </span>                :         }
+<a name="658"><span class="lineNum">     658 </span><span class="lineCov">             96 : }</span></a>
+<span class="lineNum">     659 </span>                : 
+<span class="lineNum">     660 </span><span class="lineCov">             48 : SAPI_API int sapi_header_op(sapi_header_op_enum op, void *arg TSRMLS_DC)</span>
+<span class="lineNum">     661 </span>                : {
+<span class="lineNum">     662 </span>                :         sapi_header_struct sapi_header;
+<span class="lineNum">     663 </span>                :         char *colon_offset;
+<span class="lineNum">     664 </span>                :         char *header_line;
+<span class="lineNum">     665 </span>                :         uint header_line_len;
+<span class="lineNum">     666 </span>                :         int http_response_code;
+<span class="lineNum">     667 </span>                : 
+<span class="lineNum">     668 </span><span class="lineCov">             48 :         if (SG(headers_sent) &amp;&amp; !SG(request_info).no_headers) {</span>
+<span class="lineNum">     669 </span><span class="lineNoCov">              0 :                 const char *output_start_filename = php_output_get_start_filename(TSRMLS_C);</span>
+<span class="lineNum">     670 </span><span class="lineNoCov">              0 :                 int output_start_lineno = php_output_get_start_lineno(TSRMLS_C);</span>
+<span class="lineNum">     671 </span>                : 
+<span class="lineNum">     672 </span><span class="lineNoCov">              0 :                 if (output_start_filename) {</span>
+<span class="lineNum">     673 </span><span class="lineNoCov">              0 :                         sapi_module.sapi_error(E_WARNING, &quot;Cannot modify header information - headers already sent by (output started at %s:%d)&quot;,</span>
+<span class="lineNum">     674 </span>                :                                 output_start_filename, output_start_lineno);
+<span class="lineNum">     675 </span>                :                 } else {
+<span class="lineNum">     676 </span><span class="lineNoCov">              0 :                         sapi_module.sapi_error(E_WARNING, &quot;Cannot modify header information - headers already sent&quot;);</span>
+<span class="lineNum">     677 </span>                :                 }
+<span class="lineNum">     678 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">     679 </span>                :         }
+<span class="lineNum">     680 </span>                : 
+<span class="lineNum">     681 </span><span class="lineCov">             48 :         switch (op) {</span>
+<span class="lineNum">     682 </span>                :                 case SAPI_HEADER_SET_STATUS:
+<span class="lineNum">     683 </span><span class="lineNoCov">              0 :                         sapi_update_response_code((int)(zend_intptr_t) arg TSRMLS_CC);</span>
+<span class="lineNum">     684 </span><span class="lineNoCov">              0 :                         return SUCCESS;</span>
+<span class="lineNum">     685 </span>                : 
+<span class="lineNum">     686 </span>                :                 case SAPI_HEADER_ADD:
+<span class="lineNum">     687 </span>                :                 case SAPI_HEADER_REPLACE:
+<span class="lineNum">     688 </span>                :                 case SAPI_HEADER_DELETE: {
+<span class="lineNum">     689 </span><span class="lineCov">             48 :                                 sapi_header_line *p = arg;</span>
+<span class="lineNum">     690 </span>                : 
+<span class="lineNum">     691 </span><span class="lineCov">             48 :                                 if (!p-&gt;line || !p-&gt;line_len) {</span>
+<span class="lineNum">     692 </span><span class="lineNoCov">              0 :                                         return FAILURE;</span>
+<span class="lineNum">     693 </span>                :                                 }
+<span class="lineNum">     694 </span><span class="lineCov">             48 :                                 header_line = p-&gt;line;</span>
+<span class="lineNum">     695 </span><span class="lineCov">             48 :                                 header_line_len = p-&gt;line_len;</span>
+<span class="lineNum">     696 </span><span class="lineCov">             48 :                                 http_response_code = p-&gt;response_code;</span>
+<span class="lineNum">     697 </span>                :                                 break;
+<span class="lineNum">     698 </span>                :                         }
+<span class="lineNum">     699 </span>                : 
+<span class="lineNum">     700 </span>                :                 case SAPI_HEADER_DELETE_ALL:
+<span class="lineNum">     701 </span><span class="lineNoCov">              0 :                         if (sapi_module.header_handler) {</span>
+<span class="lineNum">     702 </span><span class="lineNoCov">              0 :                                 sapi_module.header_handler(&amp;sapi_header, op, &amp;SG(sapi_headers) TSRMLS_CC);</span>
+<span class="lineNum">     703 </span>                :                         }
+<span class="lineNum">     704 </span><span class="lineNoCov">              0 :                         zend_llist_clean(&amp;SG(sapi_headers).headers);</span>
+<span class="lineNum">     705 </span><span class="lineNoCov">              0 :                         return SUCCESS;</span>
+<span class="lineNum">     706 </span>                : 
+<span class="lineNum">     707 </span>                :                 default:
+<span class="lineNum">     708 </span><span class="lineNoCov">              0 :                         return FAILURE;</span>
+<span class="lineNum">     709 </span>                :         }
+<span class="lineNum">     710 </span>                : 
+<span class="lineNum">     711 </span><span class="lineCov">             48 :         header_line = estrndup(header_line, header_line_len);</span>
+<span class="lineNum">     712 </span>                : 
+<span class="lineNum">     713 </span>                :         /* cut of trailing spaces, linefeeds and carriage-returns */
+<span class="lineNum">     714 </span><span class="lineCov">             96 :         if (header_line_len &amp;&amp; isspace(header_line[header_line_len-1])) {</span>
+<span class="lineNum">     715 </span>                :                 do {
+<span class="lineNum">     716 </span><span class="lineNoCov">              0 :                         header_line_len--;</span>
+<span class="lineNum">     717 </span><span class="lineNoCov">              0 :                 } while(header_line_len &amp;&amp; isspace(header_line[header_line_len-1]));</span>
+<span class="lineNum">     718 </span><span class="lineNoCov">              0 :                 header_line[header_line_len]='\0';</span>
+<span class="lineNum">     719 </span>                :         }
+<span class="lineNum">     720 </span>                :         
+<span class="lineNum">     721 </span><span class="lineCov">             48 :         if (op == SAPI_HEADER_DELETE) {</span>
+<span class="lineNum">     722 </span><span class="lineNoCov">              0 :                 if (strchr(header_line, ':')) {</span>
+<span class="lineNum">     723 </span><span class="lineNoCov">              0 :                         efree(header_line);</span>
+<span class="lineNum">     724 </span><span class="lineNoCov">              0 :                         sapi_module.sapi_error(E_WARNING, &quot;Header to delete may not contain colon.&quot;);</span>
+<span class="lineNum">     725 </span><span class="lineNoCov">              0 :                         return FAILURE;</span>
+<span class="lineNum">     726 </span>                :                 }
+<span class="lineNum">     727 </span><span class="lineNoCov">              0 :                 if (sapi_module.header_handler) {</span>
+<span class="lineNum">     728 </span><span class="lineNoCov">              0 :                         sapi_header.header = header_line;</span>
+<span class="lineNum">     729 </span><span class="lineNoCov">              0 :                         sapi_header.header_len = header_line_len;</span>
+<span class="lineNum">     730 </span><span class="lineNoCov">              0 :                         sapi_module.header_handler(&amp;sapi_header, op, &amp;SG(sapi_headers) TSRMLS_CC);</span>
+<span class="lineNum">     731 </span>                :                 }
+<span class="lineNum">     732 </span><span class="lineNoCov">              0 :                 sapi_remove_header(&amp;SG(sapi_headers).headers, header_line, header_line_len);</span>
+<span class="lineNum">     733 </span><span class="lineNoCov">              0 :                 efree(header_line);</span>
+<span class="lineNum">     734 </span><span class="lineNoCov">              0 :                 return SUCCESS;</span>
+<span class="lineNum">     735 </span>                :         } else {
+<span class="lineNum">     736 </span>                :                 /* new line/NUL character safety check */
+<span class="lineNum">     737 </span>                :                 int i;
+<span class="lineNum">     738 </span><span class="lineCov">           1344 :                 for (i = 0; i &lt; header_line_len; i++) {</span>
+<span class="lineNum">     739 </span>                :                         /* RFC 2616 allows new lines if followed by SP or HT */
+<span class="lineNum">     740 </span>                :                         int illegal_break =
+<span class="lineNum">     741 </span><span class="lineCov">           3792 :                                         (header_line[i+1] != ' ' &amp;&amp; header_line[i+1] != '\t')</span>
+<span class="lineNum">     742 </span>                :                                         &amp;&amp; (
+<span class="lineNum">     743 </span><span class="lineCov">           1248 :                                                 header_line[i] == '\n'</span>
+<span class="lineNum">     744 </span><span class="lineCov">           2544 :                                                 || (header_line[i] == '\r' &amp;&amp; header_line[i+1] != '\n'));</span>
+<span class="lineNum">     745 </span><span class="lineCov">           1296 :                         if (illegal_break) {</span>
+<span class="lineNum">     746 </span><span class="lineNoCov">              0 :                                 efree(header_line);</span>
+<span class="lineNum">     747 </span><span class="lineNoCov">              0 :                                 sapi_module.sapi_error(E_WARNING, &quot;Header may not contain &quot;</span>
+<span class="lineNum">     748 </span>                :                                                 &quot;more than a single header, new line detected&quot;);
+<span class="lineNum">     749 </span><span class="lineNoCov">              0 :                                 return FAILURE;</span>
+<span class="lineNum">     750 </span>                :                         }
+<span class="lineNum">     751 </span><span class="lineCov">           1296 :                         if (header_line[i] == '\0') {</span>
+<span class="lineNum">     752 </span><span class="lineNoCov">              0 :                                 efree(header_line);</span>
+<span class="lineNum">     753 </span><span class="lineNoCov">              0 :                                 sapi_module.sapi_error(E_WARNING, &quot;Header may not contain NUL bytes&quot;);</span>
+<span class="lineNum">     754 </span><span class="lineNoCov">              0 :                                 return FAILURE;</span>
+<span class="lineNum">     755 </span>                :                         }
+<span class="lineNum">     756 </span>                :                 }
+<span class="lineNum">     757 </span>                :         }
+<span class="lineNum">     758 </span>                : 
+<span class="lineNum">     759 </span><span class="lineCov">             48 :         sapi_header.header = header_line;</span>
+<span class="lineNum">     760 </span><span class="lineCov">             48 :         sapi_header.header_len = header_line_len;</span>
+<span class="lineNum">     761 </span>                : 
+<span class="lineNum">     762 </span>                :         /* Check the header for a few cases that we have special support for in SAPI */
+<span class="lineNum">     763 </span><span class="lineCov">             96 :         if (header_line_len&gt;=5 </span>
+<span class="lineNum">     764 </span><span class="lineCov">             48 :                 &amp;&amp; !strncasecmp(header_line, &quot;HTTP/&quot;, 5)) {</span>
+<span class="lineNum">     765 </span>                :                 /* filter out the response code */
+<span class="lineNum">     766 </span><span class="lineNoCov">              0 :                 sapi_update_response_code(sapi_extract_response_code(header_line) TSRMLS_CC);</span>
+<span class="lineNum">     767 </span>                :                 /* sapi_update_response_code doesn't free the status line if the code didn't change */
+<span class="lineNum">     768 </span><span class="lineNoCov">              0 :                 if (SG(sapi_headers).http_status_line) {</span>
+<span class="lineNum">     769 </span><span class="lineNoCov">              0 :                         efree(SG(sapi_headers).http_status_line);</span>
+<span class="lineNum">     770 </span>                :                 }
+<span class="lineNum">     771 </span><span class="lineNoCov">              0 :                 SG(sapi_headers).http_status_line = header_line;</span>
+<span class="lineNum">     772 </span><span class="lineNoCov">              0 :                 return SUCCESS;</span>
+<span class="lineNum">     773 </span>                :         } else {
+<span class="lineNum">     774 </span><span class="lineCov">             48 :                 colon_offset = strchr(header_line, ':');</span>
+<span class="lineNum">     775 </span><span class="lineCov">             48 :                 if (colon_offset) {</span>
+<span class="lineNum">     776 </span><span class="lineCov">             48 :                         *colon_offset = 0;</span>
+<span class="lineNum">     777 </span><span class="lineCov">             48 :                         if (!STRCASECMP(header_line, &quot;Content-Type&quot;)) {</span>
+<span class="lineNum">     778 </span><span class="lineNoCov">              0 :                                 char *ptr = colon_offset+1, *mimetype = NULL, *newheader;</span>
+<span class="lineNum">     779 </span><span class="lineNoCov">              0 :                                 size_t len = header_line_len - (ptr - header_line), newlen;</span>
+<span class="lineNum">     780 </span><span class="lineNoCov">              0 :                                 while (*ptr == ' ') {</span>
+<span class="lineNum">     781 </span><span class="lineNoCov">              0 :                                         ptr++;</span>
+<span class="lineNum">     782 </span><span class="lineNoCov">              0 :                                         len--;</span>
+<span class="lineNum">     783 </span>                :                                 }
+<span class="lineNum">     784 </span>                : 
+<span class="lineNum">     785 </span>                :                                 /* Disable possible output compression for images */
+<span class="lineNum">     786 </span><span class="lineNoCov">              0 :                                 if (!strncmp(ptr, &quot;image/&quot;, sizeof(&quot;image/&quot;)-1)) {</span>
+<span class="lineNum">     787 </span><span class="lineNoCov">              0 :                                         zend_alter_ini_entry(&quot;zlib.output_compression&quot;, sizeof(&quot;zlib.output_compression&quot;), &quot;0&quot;, sizeof(&quot;0&quot;) - 1, PHP_INI_USER, PHP_INI_STAGE_RUNTIME);</span>
+<span class="lineNum">     788 </span>                :                                 }
+<span class="lineNum">     789 </span>                : 
+<span class="lineNum">     790 </span><span class="lineNoCov">              0 :                                 mimetype = estrdup(ptr);</span>
+<span class="lineNum">     791 </span><span class="lineNoCov">              0 :                                 newlen = sapi_apply_default_charset(&amp;mimetype, len TSRMLS_CC);</span>
+<span class="lineNum">     792 </span><span class="lineNoCov">              0 :                                 if (!SG(sapi_headers).mimetype){</span>
+<span class="lineNum">     793 </span><span class="lineNoCov">              0 :                                         SG(sapi_headers).mimetype = estrdup(mimetype);</span>
+<span class="lineNum">     794 </span>                :                                 }
+<span class="lineNum">     795 </span>                : 
+<span class="lineNum">     796 </span><span class="lineNoCov">              0 :                                 if (newlen != 0) {</span>
+<span class="lineNum">     797 </span><span class="lineNoCov">              0 :                                         newlen += sizeof(&quot;Content-type: &quot;);</span>
+<span class="lineNum">     798 </span><span class="lineNoCov">              0 :                                         newheader = emalloc(newlen);</span>
+<span class="lineNum">     799 </span><span class="lineNoCov">              0 :                                         PHP_STRLCPY(newheader, &quot;Content-type: &quot;, newlen, sizeof(&quot;Content-type: &quot;)-1);</span>
+<span class="lineNum">     800 </span><span class="lineNoCov">              0 :                                         strlcat(newheader, mimetype, newlen);</span>
+<span class="lineNum">     801 </span><span class="lineNoCov">              0 :                                         sapi_header.header = newheader;</span>
+<span class="lineNum">     802 </span><span class="lineNoCov">              0 :                                         sapi_header.header_len = newlen - 1;</span>
+<span class="lineNum">     803 </span><span class="lineNoCov">              0 :                                         efree(header_line);</span>
+<span class="lineNum">     804 </span>                :                                 }
+<span class="lineNum">     805 </span><span class="lineNoCov">              0 :                                 efree(mimetype);</span>
+<span class="lineNum">     806 </span><span class="lineNoCov">              0 :                                 SG(sapi_headers).send_default_content_type = 0;</span>
+<span class="lineNum">     807 </span><span class="lineCov">             48 :                         } else if (!STRCASECMP(header_line, &quot;Content-Length&quot;)) {</span>
+<span class="lineNum">     808 </span>                :                                 /* Script is setting Content-length. The script cannot reasonably
+<span class="lineNum">     809 </span>                :                                  * know the size of the message body after compression, so it's best
+<span class="lineNum">     810 </span>                :                                  * do disable compression altogether. This contributes to making scripts
+<span class="lineNum">     811 </span>                :                                  * portable between setups that have and don't have zlib compression
+<span class="lineNum">     812 </span>                :                                  * enabled globally. See req #44164 */
+<span class="lineNum">     813 </span><span class="lineNoCov">              0 :                                 zend_alter_ini_entry(&quot;zlib.output_compression&quot;, sizeof(&quot;zlib.output_compression&quot;),</span>
+<span class="lineNum">     814 </span>                :                                         &quot;0&quot;, sizeof(&quot;0&quot;) - 1, PHP_INI_USER, PHP_INI_STAGE_RUNTIME);
+<span class="lineNum">     815 </span><span class="lineCov">             48 :                         } else if (!STRCASECMP(header_line, &quot;Location&quot;)) {</span>
+<span class="lineNum">     816 </span><span class="lineNoCov">              0 :                                 if ((SG(sapi_headers).http_response_code &lt; 300 ||</span>
+<span class="lineNum">     817 </span><span class="lineNoCov">              0 :                                         SG(sapi_headers).http_response_code &gt; 307) &amp;&amp;</span>
+<span class="lineNum">     818 </span><span class="lineNoCov">              0 :                                         SG(sapi_headers).http_response_code != 201) {</span>
+<span class="lineNum">     819 </span>                :                                         /* Return a Found Redirect if one is not already specified */
+<span class="lineNum">     820 </span><span class="lineNoCov">              0 :                                         if (http_response_code) { /* user specified redirect code */</span>
+<span class="lineNum">     821 </span><span class="lineNoCov">              0 :                                                 sapi_update_response_code(http_response_code TSRMLS_CC);</span>
+<span class="lineNum">     822 </span><span class="lineNoCov">              0 :                                         } else if (SG(request_info).proto_num &gt; 1000 &amp;&amp; </span>
+<span class="lineNum">     823 </span><span class="lineNoCov">              0 :                                            SG(request_info).request_method &amp;&amp; </span>
+<span class="lineNum">     824 </span><span class="lineNoCov">              0 :                                            strcmp(SG(request_info).request_method, &quot;HEAD&quot;) &amp;&amp;</span>
+<span class="lineNum">     825 </span><span class="lineNoCov">              0 :                                            strcmp(SG(request_info).request_method, &quot;GET&quot;)) {</span>
+<span class="lineNum">     826 </span><span class="lineNoCov">              0 :                                                 sapi_update_response_code(303 TSRMLS_CC);</span>
+<span class="lineNum">     827 </span>                :                                         } else {
+<span class="lineNum">     828 </span><span class="lineNoCov">              0 :                                                 sapi_update_response_code(302 TSRMLS_CC);</span>
+<span class="lineNum">     829 </span>                :                                         }
+<span class="lineNum">     830 </span>                :                                 }
+<span class="lineNum">     831 </span><span class="lineCov">             48 :                         } else if (!STRCASECMP(header_line, &quot;WWW-Authenticate&quot;)) { /* HTTP Authentication */</span>
+<span class="lineNum">     832 </span><span class="lineNoCov">              0 :                                 sapi_update_response_code(401 TSRMLS_CC); /* authentication-required */</span>
+<span class="lineNum">     833 </span>                :                         }
+<span class="lineNum">     834 </span><span class="lineCov">             48 :                         if (sapi_header.header==header_line) {</span>
+<span class="lineNum">     835 </span><span class="lineCov">             48 :                                 *colon_offset = ':';</span>
+<span class="lineNum">     836 </span>                :                         }
+<span class="lineNum">     837 </span>                :                 }
+<span class="lineNum">     838 </span>                :         }
+<span class="lineNum">     839 </span><span class="lineCov">             48 :         if (http_response_code) {</span>
+<span class="lineNum">     840 </span><span class="lineNoCov">              0 :                 sapi_update_response_code(http_response_code TSRMLS_CC);</span>
+<span class="lineNum">     841 </span>                :         }
+<span class="lineNum">     842 </span><span class="lineCov">             48 :         sapi_header_add_op(op, &amp;sapi_header TSRMLS_CC);</span>
+<span class="lineNum">     843 </span><span class="lineCov">             48 :         return SUCCESS;</span>
+<span class="lineNum">     844 </span>                : }
+<a name="845"><span class="lineNum">     845 </span>                : </a>
+<span class="lineNum">     846 </span>                : 
+<span class="lineNum">     847 </span><span class="lineCov">             48 : SAPI_API int sapi_send_headers(TSRMLS_D)</span>
+<span class="lineNum">     848 </span>                : {
+<span class="lineNum">     849 </span>                :         int retval;
+<span class="lineNum">     850 </span><span class="lineCov">             48 :         int ret = FAILURE;</span>
+<span class="lineNum">     851 </span>                : 
+<span class="lineNum">     852 </span><span class="lineCov">             48 :         if (SG(headers_sent) || SG(request_info).no_headers || SG(callback_run)) {</span>
+<span class="lineNum">     853 </span><span class="lineNoCov">              0 :                 return SUCCESS;</span>
+<span class="lineNum">     854 </span>                :         }
+<span class="lineNum">     855 </span>                : 
+<span class="lineNum">     856 </span>                :         /* Success-oriented.  We set headers_sent to 1 here to avoid an infinite loop
+<span class="lineNum">     857 </span>                :          * in case of an error situation.
+<span class="lineNum">     858 </span>                :          */
+<span class="lineNum">     859 </span><span class="lineCov">             48 :         if (SG(sapi_headers).send_default_content_type &amp;&amp; sapi_module.send_headers) {</span>
+<span class="lineNum">     860 </span>                :                 sapi_header_struct default_header;
+<span class="lineNum">     861 </span>                :             uint len;
+<span class="lineNum">     862 </span>                : 
+<span class="lineNum">     863 </span><span class="lineCov">             48 :                 SG(sapi_headers).mimetype = get_default_content_type(0, &amp;len TSRMLS_CC);</span>
+<span class="lineNum">     864 </span><span class="lineCov">             48 :                 default_header.header_len = sizeof(&quot;Content-type: &quot;) - 1 + len;</span>
+<span class="lineNum">     865 </span><span class="lineCov">             48 :                 default_header.header = emalloc(default_header.header_len + 1);</span>
+<span class="lineNum">     866 </span><span class="lineCov">             48 :                 memcpy(default_header.header, &quot;Content-type: &quot;, sizeof(&quot;Content-type: &quot;) - 1);</span>
+<span class="lineNum">     867 </span><span class="lineCov">             48 :                 memcpy(default_header.header + sizeof(&quot;Content-type: &quot;) - 1, SG(sapi_headers).mimetype, len + 1);</span>
+<span class="lineNum">     868 </span><span class="lineCov">             48 :                 sapi_header_add_op(SAPI_HEADER_ADD, &amp;default_header TSRMLS_CC);</span>
+<span class="lineNum">     869 </span><span class="lineCov">             48 :                 SG(sapi_headers).send_default_content_type = 0;</span>
+<span class="lineNum">     870 </span>                :         }
+<span class="lineNum">     871 </span>                : 
+<span class="lineNum">     872 </span><span class="lineCov">             48 :         if (SG(callback_func) &amp;&amp; !SG(callback_run)) {</span>
+<span class="lineNum">     873 </span><span class="lineNoCov">              0 :                 SG(callback_run) = 1;</span>
+<span class="lineNum">     874 </span><span class="lineNoCov">              0 :                 sapi_run_header_callback(TSRMLS_C);</span>
+<span class="lineNum">     875 </span>                :         }
+<span class="lineNum">     876 </span>                : 
+<span class="lineNum">     877 </span><span class="lineCov">             48 :         SG(headers_sent) = 1;</span>
+<span class="lineNum">     878 </span>                : 
+<span class="lineNum">     879 </span><span class="lineCov">             48 :         if (sapi_module.send_headers) {</span>
+<span class="lineNum">     880 </span><span class="lineCov">             48 :                 retval = sapi_module.send_headers(&amp;SG(sapi_headers) TSRMLS_CC);</span>
+<span class="lineNum">     881 </span>                :         } else {
+<span class="lineNum">     882 </span><span class="lineNoCov">              0 :                 retval = SAPI_HEADER_DO_SEND;</span>
+<span class="lineNum">     883 </span>                :         }
+<span class="lineNum">     884 </span>                : 
+<span class="lineNum">     885 </span><span class="lineCov">             48 :         switch (retval) {</span>
+<span class="lineNum">     886 </span>                :                 case SAPI_HEADER_SENT_SUCCESSFULLY:
+<span class="lineNum">     887 </span><span class="lineCov">             48 :                         ret = SUCCESS;</span>
+<span class="lineNum">     888 </span><span class="lineCov">             48 :                         break;</span>
+<span class="lineNum">     889 </span>                :                 case SAPI_HEADER_DO_SEND: {
+<span class="lineNum">     890 </span>                :                                 sapi_header_struct http_status_line;
+<span class="lineNum">     891 </span>                :                                 char buf[255];
+<span class="lineNum">     892 </span>                : 
+<span class="lineNum">     893 </span><span class="lineNoCov">              0 :                                 if (SG(sapi_headers).http_status_line) {</span>
+<span class="lineNum">     894 </span><span class="lineNoCov">              0 :                                         http_status_line.header = SG(sapi_headers).http_status_line;</span>
+<span class="lineNum">     895 </span><span class="lineNoCov">              0 :                                         http_status_line.header_len = strlen(SG(sapi_headers).http_status_line);</span>
+<span class="lineNum">     896 </span>                :                                 } else {
+<span class="lineNum">     897 </span><span class="lineNoCov">              0 :                                         http_status_line.header = buf;</span>
+<span class="lineNum">     898 </span><span class="lineNoCov">              0 :                                         http_status_line.header_len = slprintf(buf, sizeof(buf), &quot;HTTP/1.0 %d X&quot;, SG(sapi_headers).http_response_code);</span>
+<span class="lineNum">     899 </span>                :                                 }
+<span class="lineNum">     900 </span><span class="lineNoCov">              0 :                                 sapi_module.send_header(&amp;http_status_line, SG(server_context) TSRMLS_CC);</span>
+<span class="lineNum">     901 </span>                :                         }
+<span class="lineNum">     902 </span><span class="lineNoCov">              0 :                         zend_llist_apply_with_argument(&amp;SG(sapi_headers).headers, (llist_apply_with_arg_func_t) sapi_module.send_header, SG(server_context) TSRMLS_CC);</span>
+<span class="lineNum">     903 </span><span class="lineNoCov">              0 :                         if(SG(sapi_headers).send_default_content_type) {</span>
+<span class="lineNum">     904 </span>                :                                 sapi_header_struct default_header;
+<span class="lineNum">     905 </span>                : 
+<span class="lineNum">     906 </span><span class="lineNoCov">              0 :                                 sapi_get_default_content_type_header(&amp;default_header TSRMLS_CC);</span>
+<span class="lineNum">     907 </span><span class="lineNoCov">              0 :                                 sapi_module.send_header(&amp;default_header, SG(server_context) TSRMLS_CC);</span>
+<span class="lineNum">     908 </span><span class="lineNoCov">              0 :                                 sapi_free_header(&amp;default_header);</span>
+<span class="lineNum">     909 </span>                :                         }
+<span class="lineNum">     910 </span><span class="lineNoCov">              0 :                         sapi_module.send_header(NULL, SG(server_context) TSRMLS_CC);</span>
+<span class="lineNum">     911 </span><span class="lineNoCov">              0 :                         ret = SUCCESS;</span>
+<span class="lineNum">     912 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     913 </span>                :                 case SAPI_HEADER_SEND_FAILED:
+<span class="lineNum">     914 </span><span class="lineNoCov">              0 :                         SG(headers_sent) = 0;</span>
+<span class="lineNum">     915 </span><span class="lineNoCov">              0 :                         ret = FAILURE;</span>
+<span class="lineNum">     916 </span>                :                         break;
+<span class="lineNum">     917 </span>                :         }
+<span class="lineNum">     918 </span>                : 
+<span class="lineNum">     919 </span><span class="lineCov">             48 :         sapi_send_headers_free(TSRMLS_C);</span>
+<span class="lineNum">     920 </span>                : 
+<span class="lineNum">     921 </span><span class="lineCov">             48 :         return ret;</span>
+<span class="lineNum">     922 </span>                : }
+<a name="923"><span class="lineNum">     923 </span>                : </a>
+<span class="lineNum">     924 </span>                : 
+<span class="lineNum">     925 </span><span class="lineCov">             48 : SAPI_API int sapi_register_post_entries(sapi_post_entry *post_entries TSRMLS_DC)</span>
+<span class="lineNum">     926 </span>                : {
+<span class="lineNum">     927 </span><span class="lineCov">             48 :         sapi_post_entry *p=post_entries;</span>
+<span class="lineNum">     928 </span>                : 
+<span class="lineNum">     929 </span><span class="lineCov">            192 :         while (p-&gt;content_type) {</span>
+<span class="lineNum">     930 </span><span class="lineCov">             96 :                 if (sapi_register_post_entry(p TSRMLS_CC) == FAILURE) {</span>
+<span class="lineNum">     931 </span><span class="lineNoCov">              0 :                         return FAILURE;</span>
+<span class="lineNum">     932 </span>                :                 }
+<span class="lineNum">     933 </span><span class="lineCov">             96 :                 p++;</span>
+<span class="lineNum">     934 </span>                :         }
+<span class="lineNum">     935 </span><span class="lineCov">             48 :         return SUCCESS;</span>
+<span class="lineNum">     936 </span>                : }
+<a name="937"><span class="lineNum">     937 </span>                : </a>
+<span class="lineNum">     938 </span>                : 
+<span class="lineNum">     939 </span><span class="lineCov">             96 : SAPI_API int sapi_register_post_entry(sapi_post_entry *post_entry TSRMLS_DC)</span>
+<span class="lineNum">     940 </span>                : {
+<span class="lineNum">     941 </span><span class="lineCov">             96 :         if (SG(sapi_started) &amp;&amp; EG(in_execution)) {</span>
+<span class="lineNum">     942 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">     943 </span>                :         }
+<span class="lineNum">     944 </span><span class="lineCov">             96 :         return zend_hash_add(&amp;SG(known_post_content_types),</span>
+<span class="lineNum">     945 </span>                :                         post_entry-&gt;content_type, post_entry-&gt;content_type_len+1,
+<span class="lineNum">     946 </span>                :                         (void *) post_entry, sizeof(sapi_post_entry), NULL);
+<a name="947"><span class="lineNum">     947 </span>                : }</a>
+<span class="lineNum">     948 </span>                : 
+<span class="lineNum">     949 </span><span class="lineNoCov">              0 : SAPI_API void sapi_unregister_post_entry(sapi_post_entry *post_entry TSRMLS_DC)</span>
+<span class="lineNum">     950 </span>                : {
+<span class="lineNum">     951 </span><span class="lineNoCov">              0 :         if (SG(sapi_started) &amp;&amp; EG(in_execution)) {</span>
+<span class="lineNum">     952 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     953 </span>                :         }
+<span class="lineNum">     954 </span><span class="lineNoCov">              0 :         zend_hash_del(&amp;SG(known_post_content_types), post_entry-&gt;content_type,</span>
+<span class="lineNum">     955 </span>                :                         post_entry-&gt;content_type_len+1);
+<span class="lineNum">     956 </span>                : }
+<a name="957"><span class="lineNum">     957 </span>                : </a>
+<span class="lineNum">     958 </span>                : 
+<span class="lineNum">     959 </span><span class="lineCov">             48 : SAPI_API int sapi_register_default_post_reader(void (*default_post_reader)(TSRMLS_D) TSRMLS_DC)</span>
+<span class="lineNum">     960 </span>                : {
+<span class="lineNum">     961 </span><span class="lineCov">             48 :         if (SG(sapi_started) &amp;&amp; EG(in_execution)) {</span>
+<span class="lineNum">     962 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">     963 </span>                :         }
+<span class="lineNum">     964 </span><span class="lineCov">             48 :         sapi_module.default_post_reader = default_post_reader;</span>
+<span class="lineNum">     965 </span><span class="lineCov">             48 :         return SUCCESS;</span>
+<span class="lineNum">     966 </span>                : }
+<a name="967"><span class="lineNum">     967 </span>                : </a>
+<span class="lineNum">     968 </span>                : 
+<span class="lineNum">     969 </span><span class="lineCov">             48 : SAPI_API int sapi_register_treat_data(void (*treat_data)(int arg, char *str, zval *destArray TSRMLS_DC) TSRMLS_DC)</span>
+<span class="lineNum">     970 </span>                : {
+<span class="lineNum">     971 </span><span class="lineCov">             48 :         if (SG(sapi_started) &amp;&amp; EG(in_execution)) {</span>
+<span class="lineNum">     972 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">     973 </span>                :         }
+<span class="lineNum">     974 </span><span class="lineCov">             48 :         sapi_module.treat_data = treat_data;</span>
+<span class="lineNum">     975 </span><span class="lineCov">             48 :         return SUCCESS;</span>
+<a name="976"><span class="lineNum">     976 </span>                : }</a>
+<span class="lineNum">     977 </span>                : 
+<span class="lineNum">     978 </span><span class="lineCov">             48 : SAPI_API int sapi_register_input_filter(unsigned int (*input_filter)(int arg, char *var, char **val, unsigned int val_len, unsigned int *new_val_len TSRMLS_DC), unsigned int (*input_filter_init)(TSRMLS_D) TSRMLS_DC)</span>
+<span class="lineNum">     979 </span>                : {
+<span class="lineNum">     980 </span><span class="lineCov">             48 :         if (SG(sapi_started) &amp;&amp; EG(in_execution)) {</span>
+<span class="lineNum">     981 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">     982 </span>                :         }
+<span class="lineNum">     983 </span><span class="lineCov">             48 :         sapi_module.input_filter = input_filter;</span>
+<span class="lineNum">     984 </span><span class="lineCov">             48 :         sapi_module.input_filter_init = input_filter_init;</span>
+<span class="lineNum">     985 </span><span class="lineCov">             48 :         return SUCCESS;</span>
+<a name="986"><span class="lineNum">     986 </span>                : }</a>
+<span class="lineNum">     987 </span>                : 
+<span class="lineNum">     988 </span><span class="lineCov">           1249 : SAPI_API int sapi_flush(TSRMLS_D)</span>
+<span class="lineNum">     989 </span>                : {
+<span class="lineNum">     990 </span><span class="lineCov">           1249 :         if (sapi_module.flush) {</span>
+<span class="lineNum">     991 </span><span class="lineCov">           1249 :                 sapi_module.flush(SG(server_context));</span>
+<span class="lineNum">     992 </span><span class="lineCov">           1249 :                 return SUCCESS;</span>
+<span class="lineNum">     993 </span>                :         } else {
+<span class="lineNum">     994 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">     995 </span>                :         }
+<a name="996"><span class="lineNum">     996 </span>                : }</a>
+<span class="lineNum">     997 </span>                : 
+<span class="lineNum">     998 </span><span class="lineNoCov">              0 : SAPI_API struct stat *sapi_get_stat(TSRMLS_D)</span>
+<span class="lineNum">     999 </span>                : {
+<span class="lineNum">    1000 </span><span class="lineNoCov">              0 :         if (sapi_module.get_stat) {</span>
+<span class="lineNum">    1001 </span><span class="lineNoCov">              0 :                 return sapi_module.get_stat(TSRMLS_C);</span>
+<span class="lineNum">    1002 </span>                :         } else {
+<span class="lineNum">    1003 </span><span class="lineNoCov">              0 :                 if (!SG(request_info).path_translated || (VCWD_STAT(SG(request_info).path_translated, &amp;SG(global_stat)) == -1)) {</span>
+<span class="lineNum">    1004 </span><span class="lineNoCov">              0 :                         return NULL;</span>
+<span class="lineNum">    1005 </span>                :                 }
+<span class="lineNum">    1006 </span><span class="lineNoCov">              0 :                 return &amp;SG(global_stat);</span>
+<span class="lineNum">    1007 </span>                :         }
+<a name="1008"><span class="lineNum">    1008 </span>                : }</a>
+<span class="lineNum">    1009 </span>                : 
+<span class="lineNum">    1010 </span><span class="lineCov">             13 : SAPI_API char *sapi_getenv(char *name, size_t name_len TSRMLS_DC)</span>
+<span class="lineNum">    1011 </span>                : {
+<span class="lineNum">    1012 </span><span class="lineCov">             13 :         if (sapi_module.getenv) { </span>
+<span class="lineNum">    1013 </span><span class="lineNoCov">              0 :                 char *value, *tmp = sapi_module.getenv(name, name_len TSRMLS_CC);</span>
+<span class="lineNum">    1014 </span><span class="lineNoCov">              0 :                 if (tmp) {</span>
+<span class="lineNum">    1015 </span><span class="lineNoCov">              0 :                         value = estrdup(tmp);</span>
+<span class="lineNum">    1016 </span>                :                 } else {
+<span class="lineNum">    1017 </span><span class="lineNoCov">              0 :                         return NULL;</span>
+<span class="lineNum">    1018 </span>                :                 }
+<span class="lineNum">    1019 </span><span class="lineNoCov">              0 :                 if (sapi_module.input_filter) {</span>
+<span class="lineNum">    1020 </span><span class="lineNoCov">              0 :                         sapi_module.input_filter(PARSE_ENV, name, &amp;value, strlen(value), NULL TSRMLS_CC);</span>
+<span class="lineNum">    1021 </span>                :                 }
+<span class="lineNum">    1022 </span><span class="lineNoCov">              0 :                 return value;</span>
+<span class="lineNum">    1023 </span>                :         }
+<span class="lineNum">    1024 </span><span class="lineCov">             13 :         return NULL;</span>
+<a name="1025"><span class="lineNum">    1025 </span>                : }</a>
+<span class="lineNum">    1026 </span>                : 
+<span class="lineNum">    1027 </span><span class="lineNoCov">              0 : SAPI_API int sapi_get_fd(int *fd TSRMLS_DC)</span>
+<span class="lineNum">    1028 </span>                : {
+<span class="lineNum">    1029 </span><span class="lineNoCov">              0 :         if (sapi_module.get_fd) {</span>
+<span class="lineNum">    1030 </span><span class="lineNoCov">              0 :                 return sapi_module.get_fd(fd TSRMLS_CC);</span>
+<span class="lineNum">    1031 </span>                :         } else {
+<span class="lineNum">    1032 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">    1033 </span>                :         }
+<a name="1034"><span class="lineNum">    1034 </span>                : }</a>
+<span class="lineNum">    1035 </span>                : 
+<span class="lineNum">    1036 </span><span class="lineNoCov">              0 : SAPI_API int sapi_force_http_10(TSRMLS_D)</span>
+<span class="lineNum">    1037 </span>                : {
+<span class="lineNum">    1038 </span><span class="lineNoCov">              0 :         if (sapi_module.force_http_10) {</span>
+<span class="lineNum">    1039 </span><span class="lineNoCov">              0 :                 return sapi_module.force_http_10(TSRMLS_C);</span>
+<span class="lineNum">    1040 </span>                :         } else {
+<span class="lineNum">    1041 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">    1042 </span>                :         }
+<span class="lineNum">    1043 </span>                : }
+<a name="1044"><span class="lineNum">    1044 </span>                : </a>
+<span class="lineNum">    1045 </span>                : 
+<span class="lineNum">    1046 </span><span class="lineNoCov">              0 : SAPI_API int sapi_get_target_uid(uid_t *obj TSRMLS_DC)</span>
+<span class="lineNum">    1047 </span>                : {
+<span class="lineNum">    1048 </span><span class="lineNoCov">              0 :         if (sapi_module.get_target_uid) {</span>
+<span class="lineNum">    1049 </span><span class="lineNoCov">              0 :                 return sapi_module.get_target_uid(obj TSRMLS_CC);</span>
+<span class="lineNum">    1050 </span>                :         } else {
+<span class="lineNum">    1051 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">    1052 </span>                :         }
+<a name="1053"><span class="lineNum">    1053 </span>                : }</a>
+<span class="lineNum">    1054 </span>                : 
+<span class="lineNum">    1055 </span><span class="lineNoCov">              0 : SAPI_API int sapi_get_target_gid(gid_t *obj TSRMLS_DC)</span>
+<span class="lineNum">    1056 </span>                : {
+<span class="lineNum">    1057 </span><span class="lineNoCov">              0 :         if (sapi_module.get_target_gid) {</span>
+<span class="lineNum">    1058 </span><span class="lineNoCov">              0 :                 return sapi_module.get_target_gid(obj TSRMLS_CC);</span>
+<span class="lineNum">    1059 </span>                :         } else {
+<span class="lineNum">    1060 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">    1061 </span>                :         }
+<a name="1062"><span class="lineNum">    1062 </span>                : }</a>
+<span class="lineNum">    1063 </span>                : 
+<span class="lineNum">    1064 </span><span class="lineCov">             48 : SAPI_API double sapi_get_request_time(TSRMLS_D)</span>
+<span class="lineNum">    1065 </span>                : {
+<span class="lineNum">    1066 </span><span class="lineCov">             48 :         if(SG(global_request_time)) return SG(global_request_time);</span>
+<span class="lineNum">    1067 </span>                : 
+<span class="lineNum">    1068 </span><span class="lineCov">             48 :         if (sapi_module.get_request_time &amp;&amp; SG(server_context)) {</span>
+<span class="lineNum">    1069 </span><span class="lineNoCov">              0 :                 SG(global_request_time) = sapi_module.get_request_time(TSRMLS_C);</span>
+<span class="lineNum">    1070 </span>                :         } else {
+<span class="lineNum">    1071 </span><span class="lineCov">             48 :                 struct timeval tp = {0};</span>
+<span class="lineNum">    1072 </span><span class="lineCov">             48 :                 if (!gettimeofday(&amp;tp, NULL)) {</span>
+<span class="lineNum">    1073 </span><span class="lineCov">             48 :                         SG(global_request_time) = (double)(tp.tv_sec + tp.tv_usec / 1000000.00);</span>
+<span class="lineNum">    1074 </span>                :                 } else {
+<span class="lineNum">    1075 </span><span class="lineNoCov">              0 :                         SG(global_request_time) = (double)time(0);</span>
+<span class="lineNum">    1076 </span>                :                 }
+<span class="lineNum">    1077 </span>                :         }
+<span class="lineNum">    1078 </span><span class="lineCov">             48 :         return SG(global_request_time);</span>
+<a name="1079"><span class="lineNum">    1079 </span>                : }</a>
+<span class="lineNum">    1080 </span>                : 
+<span class="lineNum">    1081 </span><span class="lineNoCov">              0 : SAPI_API void sapi_terminate_process(TSRMLS_D) {</span>
+<span class="lineNum">    1082 </span><span class="lineNoCov">              0 :         if (sapi_module.terminate_process) {</span>
+<span class="lineNum">    1083 </span><span class="lineNoCov">              0 :                 sapi_module.terminate_process(TSRMLS_C);</span>
+<span class="lineNum">    1084 </span>                :         }
+<span class="lineNum">    1085 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">    1086 </span>                : 
+<span class="lineNum">    1087 </span>                : /*
+<span class="lineNum">    1088 </span>                :  * Local variables:
+<span class="lineNum">    1089 </span>                :  * tab-width: 4
+<span class="lineNum">    1090 </span>                :  * c-basic-offset: 4
+<span class="lineNum">    1091 </span>                :  * End:
+<span class="lineNum">    1092 </span>                :  * vim600: sw=4 ts=4 fdm=marker
+<span class="lineNum">    1093 </span>                :  * vim&lt;600: sw=4 ts=4
+<span class="lineNum">    1094 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

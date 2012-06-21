@@ -1,0 +1,1327 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - Zend/zend_language_parser.y</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../index.html">directory</a> - <a href="index.html">Zend</a> - zend_language_parser.y (source / <a href="zend_language_parser.y.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">593</td>
+          <td class="headerCovTableEntry">282</td>
+          <td class="headerCovTableEntryMed">47.6 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">1</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : %{</a>
+<span class="lineNum">       2 </span>                : /*
+<span class="lineNum">       3 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       4 </span>                :    | Zend Engine                                                          |
+<span class="lineNum">       5 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       6 </span>                :    | Copyright (c) 1998-2012 Zend Technologies Ltd. (http://www.zend.com) |
+<span class="lineNum">       7 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       8 </span>                :    | This source file is subject to version 2.00 of the Zend license,     |
+<span class="lineNum">       9 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">      10 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      11 </span>                :    | http://www.zend.com/license/2_00.txt.                                |
+<span class="lineNum">      12 </span>                :    | If you did not receive a copy of the Zend license and are unable to  |
+<span class="lineNum">      13 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      14 </span>                :    | license@zend.com so we can mail you a copy immediately.              |
+<span class="lineNum">      15 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      16 </span>                :    | Authors: Andi Gutmans &lt;andi@zend.com&gt;                                |
+<span class="lineNum">      17 </span>                :    |          Zeev Suraski &lt;zeev@zend.com&gt;                                |
+<span class="lineNum">      18 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      19 </span>                : */
+<span class="lineNum">      20 </span>                : 
+<span class="lineNum">      21 </span>                : /* $Id$ */
+<span class="lineNum">      22 </span>                : 
+<span class="lineNum">      23 </span>                : /*
+<span class="lineNum">      24 </span>                :  * LALR shift/reduce conflicts and how they are resolved:
+<span class="lineNum">      25 </span>                :  *
+<span class="lineNum">      26 </span>                :  * - 2 shift/reduce conflicts due to the dangling elseif/else ambiguity. Solved by shift.
+<span class="lineNum">      27 </span>                :  *
+<span class="lineNum">      28 </span>                :  */
+<span class="lineNum">      29 </span>                : 
+<span class="lineNum">      30 </span>                : 
+<span class="lineNum">      31 </span>                : #include &quot;zend_compile.h&quot;
+<span class="lineNum">      32 </span>                : #include &quot;zend.h&quot;
+<span class="lineNum">      33 </span>                : #include &quot;zend_list.h&quot;
+<span class="lineNum">      34 </span>                : #include &quot;zend_globals.h&quot;
+<span class="lineNum">      35 </span>                : #include &quot;zend_API.h&quot;
+<span class="lineNum">      36 </span>                : #include &quot;zend_constants.h&quot;
+<span class="lineNum">      37 </span>                : 
+<span class="lineNum">      38 </span>                : #define YYSIZE_T size_t
+<span class="lineNum">      39 </span>                : #define yytnamerr zend_yytnamerr
+<span class="lineNum">      40 </span>                : static YYSIZE_T zend_yytnamerr(char*, const char*);
+<span class="lineNum">      41 </span>                : 
+<span class="lineNum">      42 </span>                : #define YYERROR_VERBOSE
+<span class="lineNum">      43 </span>                : #define YYSTYPE znode
+<span class="lineNum">      44 </span>                : #ifdef ZTS
+<span class="lineNum">      45 </span>                : # define YYPARSE_PARAM tsrm_ls
+<span class="lineNum">      46 </span>                : # define YYLEX_PARAM tsrm_ls
+<span class="lineNum">      47 </span>                : #endif
+<span class="lineNum">      48 </span>                : 
+<span class="lineNum">      49 </span>                : 
+<span class="lineNum">      50 </span>                : %}
+<span class="lineNum">      51 </span>                : 
+<span class="lineNum">      52 </span>                : %pure_parser
+<span class="lineNum">      53 </span>                : %expect 3
+<span class="lineNum">      54 </span>                : 
+<span class="lineNum">      55 </span>                : %token END 0 &quot;end of file&quot;
+<span class="lineNum">      56 </span>                : %left T_INCLUDE T_INCLUDE_ONCE T_EVAL T_REQUIRE T_REQUIRE_ONCE
+<span class="lineNum">      57 </span>                : %token T_INCLUDE      &quot;include (T_INCLUDE)&quot;
+<span class="lineNum">      58 </span>                : %token T_INCLUDE_ONCE &quot;include_once (T_INCLUDE_ONCE)&quot;
+<span class="lineNum">      59 </span>                : %token T_EVAL         &quot;eval (T_EVAL)&quot;
+<span class="lineNum">      60 </span>                : %token T_REQUIRE      &quot;require (T_REQUIRE)&quot;
+<span class="lineNum">      61 </span>                : %token T_REQUIRE_ONCE &quot;require_once (T_REQUIRE_ONCE)&quot;
+<span class="lineNum">      62 </span>                : %left ','
+<span class="lineNum">      63 </span>                : %left T_LOGICAL_OR
+<span class="lineNum">      64 </span>                : %token T_LOGICAL_OR   &quot;or (T_LOGICAL_OR)&quot;
+<span class="lineNum">      65 </span>                : %left T_LOGICAL_XOR
+<span class="lineNum">      66 </span>                : %token T_LOGICAL_XOR  &quot;xor (T_LOGICAL_XOR)&quot;
+<span class="lineNum">      67 </span>                : %left T_LOGICAL_AND
+<span class="lineNum">      68 </span>                : %token T_LOGICAL_AND  &quot;and (T_LOGICAL_AND)&quot;
+<span class="lineNum">      69 </span>                : %right T_PRINT
+<span class="lineNum">      70 </span>                : %token T_PRINT        &quot;print (T_PRINT)&quot;
+<span class="lineNum">      71 </span>                : %left '=' T_PLUS_EQUAL T_MINUS_EQUAL T_MUL_EQUAL T_DIV_EQUAL T_CONCAT_EQUAL T_MOD_EQUAL T_AND_EQUAL T_OR_EQUAL T_XOR_EQUAL T_SL_EQUAL T_SR_EQUAL
+<span class="lineNum">      72 </span>                : %token T_PLUS_EQUAL   &quot;+= (T_PLUS_EQUAL)&quot;
+<span class="lineNum">      73 </span>                : %token T_MINUS_EQUAL  &quot;-= (T_MINUS_EQUAL)&quot;
+<span class="lineNum">      74 </span>                : %token T_MUL_EQUAL    &quot;*= (T_MUL_EQUAL)&quot;
+<span class="lineNum">      75 </span>                : %token T_DIV_EQUAL    &quot;/= (T_DIV_EQUAL)&quot;
+<span class="lineNum">      76 </span>                : %token T_CONCAT_EQUAL &quot;.= (T_CONCAT_EQUAL)&quot;
+<span class="lineNum">      77 </span>                : %token T_MOD_EQUAL    &quot;%= (T_MOD_EQUAL)&quot;
+<span class="lineNum">      78 </span>                : %token T_AND_EQUAL    &quot;&amp;= (T_AND_EQUAL)&quot;
+<span class="lineNum">      79 </span>                : %token T_OR_EQUAL     &quot;|= (T_OR_EQUAL)&quot;
+<span class="lineNum">      80 </span>                : %token T_XOR_EQUAL    &quot;^= (T_XOR_EQUAL)&quot;
+<span class="lineNum">      81 </span>                : %token T_SL_EQUAL     &quot;&lt;&lt;= (T_SL_EQUAL)&quot;
+<span class="lineNum">      82 </span>                : %token T_SR_EQUAL     &quot;&gt;&gt;= (T_SR_EQUAL)&quot;
+<span class="lineNum">      83 </span>                : %left '?' ':'
+<span class="lineNum">      84 </span>                : %left T_BOOLEAN_OR
+<span class="lineNum">      85 </span>                : %token T_BOOLEAN_OR   &quot;|| (T_BOOLEAN_OR)&quot;
+<span class="lineNum">      86 </span>                : %left T_BOOLEAN_AND 
+<span class="lineNum">      87 </span>                : %token T_BOOLEAN_AND  &quot;&amp;&amp; (T_BOOLEAN_AND)&quot;
+<span class="lineNum">      88 </span>                : %left '|'
+<span class="lineNum">      89 </span>                : %left '^'
+<span class="lineNum">      90 </span>                : %left '&amp;'
+<span class="lineNum">      91 </span>                : %nonassoc T_IS_EQUAL T_IS_NOT_EQUAL T_IS_IDENTICAL T_IS_NOT_IDENTICAL
+<span class="lineNum">      92 </span>                : %token T_IS_EQUAL     &quot;== (T_IS_EQUAL)&quot;
+<span class="lineNum">      93 </span>                : %token T_IS_NOT_EQUAL &quot;!= (T_IS_NOT_EQUAL)&quot;
+<span class="lineNum">      94 </span>                : %token T_IS_IDENTICAL &quot;=== (T_IS_IDENTICAL)&quot;
+<span class="lineNum">      95 </span>                : %token T_IS_NOT_IDENTICAL &quot;!== (T_IS_NOT_IDENTICAL)&quot;
+<span class="lineNum">      96 </span>                : %nonassoc '&lt;' T_IS_SMALLER_OR_EQUAL '&gt;' T_IS_GREATER_OR_EQUAL
+<span class="lineNum">      97 </span>                : %token T_IS_SMALLER_OR_EQUAL &quot;&lt;= (T_IS_SMALLER_OR_EQUAL)&quot;
+<span class="lineNum">      98 </span>                : %token T_IS_GREATER_OR_EQUAL &quot;&gt;= (T_IS_GREATER_OR_EQUAL)&quot;
+<span class="lineNum">      99 </span>                : %left T_SL T_SR
+<span class="lineNum">     100 </span>                : %token T_SL &quot;&lt;&lt; (T_SL)&quot;
+<span class="lineNum">     101 </span>                : %token T_SR &quot;&gt;&gt; (T_SR)&quot;
+<span class="lineNum">     102 </span>                : %left '+' '-' '.'
+<span class="lineNum">     103 </span>                : %left '*' '/' '%'
+<span class="lineNum">     104 </span>                : %right '!'
+<span class="lineNum">     105 </span>                : %nonassoc T_INSTANCEOF
+<span class="lineNum">     106 </span>                : %token T_INSTANCEOF  &quot;instanceof (T_INSTANCEOF)&quot;
+<span class="lineNum">     107 </span>                : %right '~' T_INC T_DEC T_INT_CAST T_DOUBLE_CAST T_STRING_CAST T_ARRAY_CAST T_OBJECT_CAST T_BOOL_CAST T_UNSET_CAST '@'
+<span class="lineNum">     108 </span>                : %token T_INC &quot;++ (T_INC)&quot;
+<span class="lineNum">     109 </span>                : %token T_DEC &quot;-- (T_DEC)&quot;
+<span class="lineNum">     110 </span>                : %token T_INT_CAST    &quot;(int) (T_INT_CAST)&quot;
+<span class="lineNum">     111 </span>                : %token T_DOUBLE_CAST &quot;(double) (T_DOUBLE_CAST)&quot;
+<span class="lineNum">     112 </span>                : %token T_STRING_CAST &quot;(string) (T_STRING_CAST)&quot;
+<span class="lineNum">     113 </span>                : %token T_ARRAY_CAST  &quot;(array) (T_ARRAY_CAST)&quot;
+<span class="lineNum">     114 </span>                : %token T_OBJECT_CAST &quot;(object) (T_OBJECT_CAST)&quot;
+<span class="lineNum">     115 </span>                : %token T_BOOL_CAST   &quot;(bool) (T_BOOL_CAST)&quot;
+<span class="lineNum">     116 </span>                : %token T_UNSET_CAST  &quot;(unset) (T_UNSET_CAST)&quot;
+<span class="lineNum">     117 </span>                : %right '['
+<span class="lineNum">     118 </span>                : %nonassoc T_NEW T_CLONE
+<span class="lineNum">     119 </span>                : %token T_NEW       &quot;new (T_NEW)&quot;
+<span class="lineNum">     120 </span>                : %token T_CLONE     &quot;clone (T_CLONE)&quot;
+<span class="lineNum">     121 </span>                : %token T_EXIT      &quot;exit (T_EXIT)&quot;
+<span class="lineNum">     122 </span>                : %token T_IF        &quot;if (T_IF)&quot;
+<span class="lineNum">     123 </span>                : %left T_ELSEIF
+<span class="lineNum">     124 </span>                : %token T_ELSEIF    &quot;elseif (T_ELSEIF)&quot;
+<span class="lineNum">     125 </span>                : %left T_ELSE 
+<span class="lineNum">     126 </span>                : %token T_ELSE      &quot;else (T_ELSE)&quot;
+<span class="lineNum">     127 </span>                : %left T_ENDIF 
+<span class="lineNum">     128 </span>                : %token T_ENDIF     &quot;endif (T_ENDIF)&quot;
+<span class="lineNum">     129 </span>                : %token T_LNUMBER   &quot;integer number (T_LNUMBER)&quot;
+<span class="lineNum">     130 </span>                : %token T_DNUMBER   &quot;floating-point number (T_DNUMBER)&quot;
+<span class="lineNum">     131 </span>                : %token T_STRING    &quot;identifier (T_STRING)&quot;
+<span class="lineNum">     132 </span>                : %token T_STRING_VARNAME &quot;variable name (T_STRING_VARNAME)&quot;
+<span class="lineNum">     133 </span>                : %token T_VARIABLE  &quot;variable (T_VARIABLE)&quot;
+<span class="lineNum">     134 </span>                : %token T_NUM_STRING &quot;number (T_NUM_STRING)&quot;
+<span class="lineNum">     135 </span>                : %token T_INLINE_HTML
+<span class="lineNum">     136 </span>                : %token T_CHARACTER
+<span class="lineNum">     137 </span>                : %token T_BAD_CHARACTER
+<span class="lineNum">     138 </span>                : %token T_ENCAPSED_AND_WHITESPACE  &quot;quoted-string and whitespace (T_ENCAPSED_AND_WHITESPACE)&quot;
+<span class="lineNum">     139 </span>                : %token T_CONSTANT_ENCAPSED_STRING &quot;quoted-string (T_CONSTANT_ENCAPSED_STRING)&quot;
+<span class="lineNum">     140 </span>                : %token T_ECHO       &quot;echo (T_ECHO)&quot;
+<span class="lineNum">     141 </span>                : %token T_DO         &quot;do (T_DO)&quot;
+<span class="lineNum">     142 </span>                : %token T_WHILE      &quot;while (T_WHILE)&quot;
+<span class="lineNum">     143 </span>                : %token T_ENDWHILE   &quot;endwhile (T_ENDWHILE)&quot;
+<span class="lineNum">     144 </span>                : %token T_FOR        &quot;for (T_FOR)&quot;
+<span class="lineNum">     145 </span>                : %token T_ENDFOR     &quot;endfor (T_ENDFOR)&quot;
+<span class="lineNum">     146 </span>                : %token T_FOREACH    &quot;foreach (T_FOREACH)&quot;
+<span class="lineNum">     147 </span>                : %token T_ENDFOREACH &quot;endforeach (T_ENDFOREACH)&quot;
+<span class="lineNum">     148 </span>                : %token T_DECLARE    &quot;declare (T_DECLARE)&quot;
+<span class="lineNum">     149 </span>                : %token T_ENDDECLARE &quot;enddeclare (T_ENDDECLARE)&quot;
+<span class="lineNum">     150 </span>                : %token T_AS         &quot;as (T_AS)&quot;
+<span class="lineNum">     151 </span>                : %token T_SWITCH     &quot;switch (T_SWITCH)&quot;
+<span class="lineNum">     152 </span>                : %token T_ENDSWITCH  &quot;endswitch (T_ENDSWITCH)&quot;
+<span class="lineNum">     153 </span>                : %token T_CASE       &quot;case (T_CASE)&quot;
+<span class="lineNum">     154 </span>                : %token T_DEFAULT    &quot;default (T_DEFAULT)&quot;
+<span class="lineNum">     155 </span>                : %token T_BREAK      &quot;break (T_BREAK)&quot;
+<span class="lineNum">     156 </span>                : %token T_CONTINUE   &quot;continue (T_CONTINUE)&quot;
+<span class="lineNum">     157 </span>                : %token T_GOTO       &quot;goto (T_GOTO)&quot;
+<span class="lineNum">     158 </span>                : %token T_FUNCTION   &quot;function (T_FUNCTION)&quot;
+<span class="lineNum">     159 </span>                : %token T_CONST      &quot;const (T_CONST)&quot;
+<span class="lineNum">     160 </span>                : %token T_RETURN     &quot;return (T_RETURN)&quot;
+<span class="lineNum">     161 </span>                : %token T_TRY        &quot;try (T_TRY)&quot;
+<span class="lineNum">     162 </span>                : %token T_CATCH      &quot;catch (T_CATCH)&quot;
+<span class="lineNum">     163 </span>                : %token T_THROW      &quot;throw (T_THROW)&quot;
+<span class="lineNum">     164 </span>                : %token T_USE        &quot;use (T_USE)&quot;
+<span class="lineNum">     165 </span>                : %token T_INSTEADOF  &quot;insteadof (T_INSTEADOF)&quot;
+<span class="lineNum">     166 </span>                : %token T_GLOBAL     &quot;global (T_GLOBAL)&quot;
+<span class="lineNum">     167 </span>                : %right T_STATIC T_ABSTRACT T_FINAL T_PRIVATE T_PROTECTED T_PUBLIC
+<span class="lineNum">     168 </span>                : %token T_STATIC     &quot;static (T_STATIC)&quot;
+<span class="lineNum">     169 </span>                : %token T_ABSTRACT   &quot;abstract (T_ABSTRACT)&quot;
+<span class="lineNum">     170 </span>                : %token T_FINAL      &quot;final (T_FINAL)&quot;
+<span class="lineNum">     171 </span>                : %token T_PRIVATE    &quot;private (T_PRIVATE)&quot;
+<span class="lineNum">     172 </span>                : %token T_PROTECTED  &quot;protected (T_PROTECTED)&quot;
+<span class="lineNum">     173 </span>                : %token T_PUBLIC     &quot;public (T_PUBLIC)&quot;
+<span class="lineNum">     174 </span>                : %token T_VAR        &quot;var (T_VAR)&quot;
+<span class="lineNum">     175 </span>                : %token T_UNSET      &quot;unset (T_UNSET)&quot;
+<span class="lineNum">     176 </span>                : %token T_ISSET      &quot;isset (T_ISSET)&quot;
+<span class="lineNum">     177 </span>                : %token T_EMPTY      &quot;empty (T_EMPTY)&quot;
+<span class="lineNum">     178 </span>                : %token T_HALT_COMPILER &quot;__halt_compiler (T_HALT_COMPILER)&quot;
+<span class="lineNum">     179 </span>                : %token T_CLASS      &quot;class (T_CLASS)&quot;
+<span class="lineNum">     180 </span>                : %token T_TRAIT      &quot;trait (T_TRAIT)&quot;
+<span class="lineNum">     181 </span>                : %token T_INTERFACE  &quot;interface (T_INTERFACE)&quot;
+<span class="lineNum">     182 </span>                : %token T_EXTENDS    &quot;extends (T_EXTENDS)&quot;
+<span class="lineNum">     183 </span>                : %token T_IMPLEMENTS &quot;implements (T_IMPLEMENTS)&quot;
+<span class="lineNum">     184 </span>                : %token T_OBJECT_OPERATOR &quot;-&gt; (T_OBJECT_OPERATOR)&quot;
+<span class="lineNum">     185 </span>                : %token T_DOUBLE_ARROW    &quot;=&gt; (T_DOUBLE_ARROW)&quot;
+<span class="lineNum">     186 </span>                : %token T_LIST            &quot;list (T_LIST)&quot;
+<span class="lineNum">     187 </span>                : %token T_ARRAY           &quot;array (T_ARRAY)&quot;
+<span class="lineNum">     188 </span>                : %token T_CALLABLE        &quot;callable (T_CALLABLE)&quot;
+<span class="lineNum">     189 </span>                : %token T_CLASS_C         &quot;__CLASS__ (T_CLASS_C)&quot;
+<span class="lineNum">     190 </span>                : %token T_TRAIT_C         &quot;__TRAIT__ (T_TRAIT_C)&quot;
+<span class="lineNum">     191 </span>                : %token T_METHOD_C        &quot;__METHOD__ (T_METHOD_C)&quot;
+<span class="lineNum">     192 </span>                : %token T_FUNC_C          &quot;__FUNCTION__ (T_FUNC_C)&quot;
+<span class="lineNum">     193 </span>                : %token T_LINE            &quot;__LINE__ (T_LINE)&quot;
+<span class="lineNum">     194 </span>                : %token T_FILE            &quot;__FILE__ (T_FILE)&quot;
+<span class="lineNum">     195 </span>                : %token T_COMMENT         &quot;comment (T_COMMENT)&quot;
+<span class="lineNum">     196 </span>                : %token T_DOC_COMMENT     &quot;doc comment (T_DOC_COMMENT)&quot;
+<span class="lineNum">     197 </span>                : %token T_OPEN_TAG        &quot;open tag (T_OPEN_TAG)&quot;
+<span class="lineNum">     198 </span>                : %token T_OPEN_TAG_WITH_ECHO &quot;open tag with echo (T_OPEN_TAG_WITH_ECHO)&quot;
+<span class="lineNum">     199 </span>                : %token T_CLOSE_TAG       &quot;close tag (T_CLOSE_TAG)&quot;
+<span class="lineNum">     200 </span>                : %token T_WHITESPACE      &quot;whitespace (T_WHITESPACE)&quot;
+<span class="lineNum">     201 </span>                : %token T_START_HEREDOC   &quot;heredoc start (T_START_HEREDOC)&quot;
+<span class="lineNum">     202 </span>                : %token T_END_HEREDOC     &quot;heredoc end (T_END_HEREDOC)&quot;
+<span class="lineNum">     203 </span>                : %token T_DOLLAR_OPEN_CURLY_BRACES &quot;${ (T_DOLLAR_OPEN_CURLY_BRACES)&quot;
+<span class="lineNum">     204 </span>                : %token T_CURLY_OPEN      &quot;{$ (T_CURLY_OPEN)&quot;
+<span class="lineNum">     205 </span>                : %token T_PAAMAYIM_NEKUDOTAYIM &quot;:: (T_PAAMAYIM_NEKUDOTAYIM)&quot;
+<span class="lineNum">     206 </span>                : %token T_NAMESPACE       &quot;namespace (T_NAMESPACE)&quot;
+<span class="lineNum">     207 </span>                : %token T_NS_C            &quot;__NAMESPACE__ (T_NS_C)&quot;
+<span class="lineNum">     208 </span>                : %token T_DIR             &quot;__DIR__ (T_DIR)&quot;
+<span class="lineNum">     209 </span>                : %token T_NS_SEPARATOR    &quot;\\ (T_NS_SEPARATOR)&quot;
+<span class="lineNum">     210 </span>                : 
+<span class="lineNum">     211 </span>                : %% /* Rules */
+<span class="lineNum">     212 </span>                : 
+<span class="lineNum">     213 </span>                : start:
+<span class="lineNum">     214 </span><span class="lineCov">             48 :         top_statement_list      { zend_do_end_compilation(TSRMLS_C); }</span>
+<span class="lineNum">     215 </span><span class="lineCov">             48 : ;</span>
+<span class="lineNum">     216 </span>                : 
+<span class="lineNum">     217 </span>                : top_statement_list:
+<span class="lineNum">     218 </span><span class="lineCov">           1096 :                 top_statement_list  { zend_do_extended_info(TSRMLS_C); } top_statement { HANDLE_INTERACTIVE(); }</span>
+<span class="lineNum">     219 </span><span class="lineCov">           1096 :         |       /* empty */</span>
+<span class="lineNum">     220 </span>                : ;
+<span class="lineNum">     221 </span>                : 
+<span class="lineNum">     222 </span>                : namespace_name:
+<span class="lineNum">     223 </span><span class="lineCov">           1136 :                 T_STRING { $$ = $1; }</span>
+<span class="lineNum">     224 </span><span class="lineCov">           1136 :         |       namespace_name T_NS_SEPARATOR T_STRING { zend_do_build_namespace_name(&amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     225 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     226 </span>                : 
+<span class="lineNum">     227 </span>                : top_statement:
+<span class="lineNum">     228 </span><span class="lineCov">            501 :                 statement                                               { zend_verify_namespace(TSRMLS_C); }</span>
+<span class="lineNum">     229 </span><span class="lineCov">            501 :         |       function_declaration_statement  { zend_verify_namespace(TSRMLS_C); zend_do_early_binding(TSRMLS_C); }</span>
+<span class="lineNum">     230 </span><span class="lineCov">             45 :         |       class_declaration_statement             { zend_verify_namespace(TSRMLS_C); zend_do_early_binding(TSRMLS_C); }</span>
+<span class="lineNum">     231 </span><span class="lineCov">              2 :         |       T_HALT_COMPILER '(' ')' ';'             { zend_do_halt_compiler_register(TSRMLS_C); YYACCEPT; }</span>
+<span class="lineNum">     232 </span><span class="lineNoCov">              0 :         |       T_NAMESPACE namespace_name ';'  { zend_do_begin_namespace(&amp;$2, 0 TSRMLS_CC); }</span>
+<span class="lineNum">     233 </span><span class="lineNoCov">              0 :         |       T_NAMESPACE namespace_name '{'  { zend_do_begin_namespace(&amp;$2, 1 TSRMLS_CC); }</span>
+<span class="lineNum">     234 </span><span class="lineNoCov">              0 :                 top_statement_list '}'              { zend_do_end_namespace(TSRMLS_C); }</span>
+<span class="lineNum">     235 </span><span class="lineNoCov">              0 :         |       T_NAMESPACE '{'                                 { zend_do_begin_namespace(NULL, 1 TSRMLS_CC); }</span>
+<span class="lineNum">     236 </span><span class="lineNoCov">              0 :                 top_statement_list '}'                  { zend_do_end_namespace(TSRMLS_C); }</span>
+<span class="lineNum">     237 </span><span class="lineNoCov">              0 :         |       T_USE use_declarations ';'      { zend_verify_namespace(TSRMLS_C); }</span>
+<span class="lineNum">     238 </span><span class="lineNoCov">              0 :         |       constant_declaration ';'                { zend_verify_namespace(TSRMLS_C); }</span>
+<span class="lineNum">     239 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     240 </span>                : 
+<span class="lineNum">     241 </span>                : use_declarations:
+<span class="lineNum">     242 </span>                :                 use_declarations ',' use_declaration
+<span class="lineNum">     243 </span>                :         |       use_declaration
+<span class="lineNum">     244 </span>                : ;
+<span class="lineNum">     245 </span>                : 
+<span class="lineNum">     246 </span>                : use_declaration:
+<span class="lineNum">     247 </span><span class="lineNoCov">              0 :                 namespace_name                  { zend_do_use(&amp;$1, NULL, 0 TSRMLS_CC); }</span>
+<span class="lineNum">     248 </span><span class="lineNoCov">              0 :         |       namespace_name T_AS T_STRING    { zend_do_use(&amp;$1, &amp;$3, 0 TSRMLS_CC); }</span>
+<span class="lineNum">     249 </span><span class="lineNoCov">              0 :         |       T_NS_SEPARATOR namespace_name { zend_do_use(&amp;$2, NULL, 1 TSRMLS_CC); }</span>
+<span class="lineNum">     250 </span><span class="lineNoCov">              0 :         |       T_NS_SEPARATOR namespace_name T_AS T_STRING { zend_do_use(&amp;$2, &amp;$4, 1 TSRMLS_CC); }</span>
+<span class="lineNum">     251 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     252 </span>                : 
+<span class="lineNum">     253 </span>                : constant_declaration:
+<span class="lineNum">     254 </span><span class="lineNoCov">              0 :                 constant_declaration ',' T_STRING '=' static_scalar     { zend_do_declare_constant(&amp;$3, &amp;$5 TSRMLS_CC); }</span>
+<span class="lineNum">     255 </span><span class="lineNoCov">              0 :         |       T_CONST T_STRING '=' static_scalar { zend_do_declare_constant(&amp;$2, &amp;$4 TSRMLS_CC); }</span>
+<span class="lineNum">     256 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     257 </span>                : 
+<span class="lineNum">     258 </span>                : inner_statement_list:
+<span class="lineNum">     259 </span><span class="lineCov">           2578 :                 inner_statement_list  { zend_do_extended_info(TSRMLS_C); } inner_statement { HANDLE_INTERACTIVE(); }</span>
+<span class="lineNum">     260 </span><span class="lineCov">           2578 :         |       /* empty */</span>
+<span class="lineNum">     261 </span>                : ;
+<span class="lineNum">     262 </span>                : 
+<span class="lineNum">     263 </span>                : 
+<span class="lineNum">     264 </span>                : inner_statement:
+<span class="lineNum">     265 </span>                :                 statement
+<span class="lineNum">     266 </span>                :         |       function_declaration_statement
+<span class="lineNum">     267 </span>                :         |       class_declaration_statement
+<span class="lineNum">     268 </span><span class="lineNoCov">              0 :         |       T_HALT_COMPILER '(' ')' ';'   { zend_error(E_COMPILE_ERROR, &quot;__HALT_COMPILER() can only be used from the outermost scope&quot;); }</span>
+<span class="lineNum">     269 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     270 </span>                : 
+<span class="lineNum">     271 </span>                : 
+<span class="lineNum">     272 </span>                : statement:
+<span class="lineNum">     273 </span><span class="lineCov">           2229 :                 unticked_statement { DO_TICKS(); }</span>
+<span class="lineNum">     274 </span><span class="lineCov">           2229 :         |       T_STRING ':' { zend_do_label(&amp;$1 TSRMLS_CC); }</span>
+<span class="lineNum">     275 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     276 </span>                : 
+<span class="lineNum">     277 </span>                : unticked_statement:
+<span class="lineNum">     278 </span>                :                 '{' inner_statement_list '}'
+<span class="lineNum">     279 </span><span class="lineCov">            846 :         |       T_IF '(' expr ')' { zend_do_if_cond(&amp;$3, &amp;$4 TSRMLS_CC); } statement { zend_do_if_after_statement(&amp;$4, 1 TSRMLS_CC); } elseif_list else_single { zend_do_if_end(TSRMLS_C); }</span>
+<span class="lineNum">     280 </span><span class="lineCov">            846 :         |       T_IF '(' expr ')' ':' { zend_do_if_cond(&amp;$3, &amp;$4 TSRMLS_CC); } inner_statement_list { zend_do_if_after_statement(&amp;$4, 1 TSRMLS_CC); } new_elseif_list new_else_single T_ENDIF ';' { zend_do_if_end(TSRMLS_C); }</span>
+<span class="lineNum">     281 </span><span class="lineCov">             24 :         |       T_WHILE '(' { $1.u.op.opline_num = get_next_op_number(CG(active_op_array));  } expr  ')' { zend_do_while_cond(&amp;$4, &amp;$5 TSRMLS_CC); } while_statement { zend_do_while_end(&amp;$1, &amp;$5 TSRMLS_CC); }</span>
+<span class="lineNum">     282 </span><span class="lineCov">             36 :         |       T_DO { $1.u.op.opline_num = get_next_op_number(CG(active_op_array));  zend_do_do_while_begin(TSRMLS_C); } statement T_WHILE '(' { $5.u.op.opline_num = get_next_op_number(CG(active_op_array)); } expr ')' ';' { zend_do_do_while_end(&amp;$1, &amp;$5, &amp;$7 TSRMLS_CC); }</span>
+<span class="lineNum">     283 </span><span class="lineNoCov">              0 :         |       T_FOR</span>
+<span class="lineNum">     284 </span>                :                         '('
+<span class="lineNum">     285 </span>                :                                 for_expr
+<span class="lineNum">     286 </span><span class="lineCov">             11 :                         ';' { zend_do_free(&amp;$3 TSRMLS_CC); $4.u.op.opline_num = get_next_op_number(CG(active_op_array)); }</span>
+<span class="lineNum">     287 </span><span class="lineCov">             11 :                                 for_expr</span>
+<span class="lineNum">     288 </span><span class="lineCov">             11 :                         ';' { zend_do_extended_info(TSRMLS_C); zend_do_for_cond(&amp;$6, &amp;$7 TSRMLS_CC); }</span>
+<span class="lineNum">     289 </span><span class="lineCov">             11 :                                 for_expr</span>
+<span class="lineNum">     290 </span><span class="lineCov">             11 :                         ')' { zend_do_free(&amp;$9 TSRMLS_CC); zend_do_for_before_statement(&amp;$4, &amp;$7 TSRMLS_CC); }</span>
+<span class="lineNum">     291 </span><span class="lineCov">             11 :                         for_statement { zend_do_for_end(&amp;$7 TSRMLS_CC); }</span>
+<span class="lineNum">     292 </span><span class="lineCov">             13 :         |       T_SWITCH '(' expr ')'   { zend_do_switch_cond(&amp;$3 TSRMLS_CC); } switch_case_list { zend_do_switch_end(&amp;$6 TSRMLS_CC); }</span>
+<span class="lineNum">     293 </span><span class="lineCov">              4 :         |       T_BREAK ';'                             { zend_do_brk_cont(ZEND_BRK, NULL TSRMLS_CC); }</span>
+<span class="lineNum">     294 </span><span class="lineCov">             30 :         |       T_BREAK expr ';'                { zend_do_brk_cont(ZEND_BRK, &amp;$2 TSRMLS_CC); }</span>
+<span class="lineNum">     295 </span><span class="lineNoCov">              0 :         |       T_CONTINUE ';'                  { zend_do_brk_cont(ZEND_CONT, NULL TSRMLS_CC); }</span>
+<span class="lineNum">     296 </span><span class="lineCov">              5 :         |       T_CONTINUE expr ';'             { zend_do_brk_cont(ZEND_CONT, &amp;$2 TSRMLS_CC); }</span>
+<span class="lineNum">     297 </span><span class="lineNoCov">              0 :         |       T_RETURN ';'                                            { zend_do_return(NULL, 0 TSRMLS_CC); }</span>
+<span class="lineNum">     298 </span><span class="lineCov">              7 :         |       T_RETURN expr_without_variable ';'      { zend_do_return(&amp;$2, 0 TSRMLS_CC); }</span>
+<span class="lineNum">     299 </span><span class="lineCov">             20 :         |       T_RETURN variable ';'                           { zend_do_return(&amp;$2, 1 TSRMLS_CC); }</span>
+<span class="lineNum">     300 </span><span class="lineCov">             18 :         |       T_GLOBAL global_var_list ';'</span>
+<span class="lineNum">     301 </span>                :         |       T_STATIC static_var_list ';'
+<span class="lineNum">     302 </span>                :         |       T_ECHO echo_expr_list ';'
+<span class="lineNum">     303 </span><span class="lineCov">              1 :         |       T_INLINE_HTML                   { zend_do_echo(&amp;$1 TSRMLS_CC); }</span>
+<span class="lineNum">     304 </span><span class="lineCov">              1 :         |       expr ';'                                { zend_do_free(&amp;$1 TSRMLS_CC); }</span>
+<span class="lineNum">     305 </span><span class="lineCov">           1167 :         |       T_UNSET '(' unset_variables ')' ';'</span>
+<span class="lineNum">     306 </span>                :         |       T_FOREACH '(' variable T_AS
+<span class="lineNum">     307 </span><span class="lineCov">             53 :                 { zend_do_foreach_begin(&amp;$1, &amp;$2, &amp;$3, &amp;$4, 1 TSRMLS_CC); }</span>
+<span class="lineNum">     308 </span><span class="lineCov">             53 :                 foreach_variable foreach_optional_arg ')' { zend_do_foreach_cont(&amp;$1, &amp;$2, &amp;$4, &amp;$6, &amp;$7 TSRMLS_CC); }</span>
+<span class="lineNum">     309 </span><span class="lineCov">             53 :                 foreach_statement { zend_do_foreach_end(&amp;$1, &amp;$4 TSRMLS_CC); }</span>
+<span class="lineNum">     310 </span><span class="lineCov">             53 :         |       T_FOREACH '(' expr_without_variable T_AS</span>
+<span class="lineNum">     311 </span><span class="lineCov">              1 :                 { zend_do_foreach_begin(&amp;$1, &amp;$2, &amp;$3, &amp;$4, 0 TSRMLS_CC); }</span>
+<span class="lineNum">     312 </span><span class="lineCov">              1 :                 variable foreach_optional_arg ')' { zend_check_writable_variable(&amp;$6); zend_do_foreach_cont(&amp;$1, &amp;$2, &amp;$4, &amp;$6, &amp;$7 TSRMLS_CC); }</span>
+<span class="lineNum">     313 </span><span class="lineCov">              1 :                 foreach_statement { zend_do_foreach_end(&amp;$1, &amp;$4 TSRMLS_CC); }</span>
+<span class="lineNum">     314 </span><span class="lineCov">              1 :         |       T_DECLARE { $1.u.op.opline_num = get_next_op_number(CG(active_op_array)); zend_do_declare_begin(TSRMLS_C); } '(' declare_list ')' declare_statement { zend_do_declare_end(&amp;$1 TSRMLS_CC); }</span>
+<span class="lineNum">     315 </span><span class="lineNoCov">              0 :         |       ';'             /* empty statement */</span>
+<span class="lineNum">     316 </span><span class="lineCov">              9 :         |       T_TRY { zend_do_try(&amp;$1 TSRMLS_CC); } '{' inner_statement_list '}'</span>
+<span class="lineNum">     317 </span><span class="lineCov">              9 :                 T_CATCH '(' { zend_initialize_try_catch_element(&amp;$1 TSRMLS_CC); }</span>
+<span class="lineNum">     318 </span><span class="lineCov">              9 :                 fully_qualified_class_name { zend_do_first_catch(&amp;$7 TSRMLS_CC); }</span>
+<span class="lineNum">     319 </span><span class="lineCov">              9 :                 T_VARIABLE ')' { zend_do_begin_catch(&amp;$1, &amp;$9, &amp;$11, &amp;$7 TSRMLS_CC); }</span>
+<span class="lineNum">     320 </span><span class="lineCov">              9 :                 '{' inner_statement_list '}' { zend_do_end_catch(&amp;$1 TSRMLS_CC); }</span>
+<span class="lineNum">     321 </span><span class="lineCov">              9 :                 additional_catches { zend_do_mark_last_catch(&amp;$7, &amp;$18 TSRMLS_CC); }</span>
+<span class="lineNum">     322 </span><span class="lineCov">              9 :         |       T_THROW expr ';' { zend_do_throw(&amp;$2 TSRMLS_CC); }</span>
+<span class="lineNum">     323 </span><span class="lineNoCov">              0 :         |       T_GOTO T_STRING ';' { zend_do_goto(&amp;$2 TSRMLS_CC); }</span>
+<span class="lineNum">     324 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     325 </span>                : 
+<span class="lineNum">     326 </span>                : 
+<span class="lineNum">     327 </span>                : additional_catches:
+<span class="lineNum">     328 </span><span class="lineNoCov">              0 :                 non_empty_additional_catches { $$ = $1; }</span>
+<span class="lineNum">     329 </span><span class="lineNoCov">              0 :         |       /* empty */ { $$.u.op.opline_num = -1; }</span>
+<span class="lineNum">     330 </span><span class="lineCov">              9 : ;</span>
+<span class="lineNum">     331 </span>                : 
+<span class="lineNum">     332 </span>                : non_empty_additional_catches:
+<span class="lineNum">     333 </span><span class="lineNoCov">              0 :                 additional_catch { $$ = $1; }</span>
+<span class="lineNum">     334 </span><span class="lineNoCov">              0 :         |       non_empty_additional_catches additional_catch { $$ = $2; }</span>
+<span class="lineNum">     335 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     336 </span>                : 
+<span class="lineNum">     337 </span>                : 
+<span class="lineNum">     338 </span>                : additional_catch:
+<span class="lineNum">     339 </span><span class="lineNoCov">              0 :         T_CATCH '(' fully_qualified_class_name { $$.u.op.opline_num = get_next_op_number(CG(active_op_array)); } T_VARIABLE ')' { zend_do_begin_catch(&amp;$1, &amp;$3, &amp;$5, NULL TSRMLS_CC); } '{' inner_statement_list '}' { zend_do_end_catch(&amp;$1 TSRMLS_CC); }</span>
+<span class="lineNum">     340 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     341 </span>                : 
+<span class="lineNum">     342 </span>                : 
+<span class="lineNum">     343 </span>                : unset_variables:
+<span class="lineNum">     344 </span>                :                 unset_variable
+<span class="lineNum">     345 </span>                :         |       unset_variables ',' unset_variable
+<span class="lineNum">     346 </span>                : ;
+<span class="lineNum">     347 </span>                : 
+<span class="lineNum">     348 </span>                : unset_variable:
+<span class="lineNum">     349 </span><span class="lineCov">              3 :                 variable        { zend_do_end_variable_parse(&amp;$1, BP_VAR_UNSET, 0 TSRMLS_CC); zend_do_unset(&amp;$1 TSRMLS_CC); }</span>
+<span class="lineNum">     350 </span><span class="lineCov">              3 : ;</span>
+<span class="lineNum">     351 </span>                : 
+<span class="lineNum">     352 </span>                : function_declaration_statement:
+<span class="lineNum">     353 </span><span class="lineCov">             45 :                 unticked_function_declaration_statement { DO_TICKS(); }</span>
+<span class="lineNum">     354 </span><span class="lineCov">             45 : ;</span>
+<span class="lineNum">     355 </span>                : 
+<span class="lineNum">     356 </span>                : class_declaration_statement:
+<span class="lineNum">     357 </span><span class="lineCov">              2 :                 unticked_class_declaration_statement    { DO_TICKS(); }</span>
+<span class="lineNum">     358 </span><span class="lineCov">              2 : ;</span>
+<span class="lineNum">     359 </span>                : 
+<span class="lineNum">     360 </span>                : 
+<span class="lineNum">     361 </span>                : is_reference:
+<span class="lineNum">     362 </span><span class="lineCov">             52 :                 /* empty */     { $$.op_type = ZEND_RETURN_VAL; }</span>
+<span class="lineNum">     363 </span><span class="lineCov">             52 :         |       '&amp;'                 { $$.op_type = ZEND_RETURN_REF; }</span>
+<span class="lineNum">     364 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     365 </span>                : 
+<span class="lineNum">     366 </span>                : 
+<span class="lineNum">     367 </span>                : unticked_function_declaration_statement:
+<span class="lineNum">     368 </span><span class="lineCov">             45 :                 function is_reference T_STRING { zend_do_begin_function_declaration(&amp;$1, &amp;$3, 0, $2.op_type, NULL TSRMLS_CC); }</span>
+<span class="lineNum">     369 </span><span class="lineCov">             45 :                         '(' parameter_list ')' '{' inner_statement_list '}' { zend_do_end_function_declaration(&amp;$1 TSRMLS_CC); }</span>
+<span class="lineNum">     370 </span><span class="lineCov">             45 : ;</span>
+<span class="lineNum">     371 </span>                : 
+<span class="lineNum">     372 </span>                : unticked_class_declaration_statement:
+<span class="lineNum">     373 </span>                :                 class_entry_type T_STRING extends_from
+<span class="lineNum">     374 </span><span class="lineCov">              2 :                         { zend_do_begin_class_declaration(&amp;$1, &amp;$2, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     375 </span><span class="lineCov">              2 :                         implements_list</span>
+<span class="lineNum">     376 </span>                :                         '{'
+<span class="lineNum">     377 </span>                :                                 class_statement_list
+<span class="lineNum">     378 </span><span class="lineCov">              2 :                         '}' { zend_do_end_class_declaration(&amp;$1, &amp;$2 TSRMLS_CC); }</span>
+<span class="lineNum">     379 </span><span class="lineCov">              2 :         |       interface_entry T_STRING</span>
+<span class="lineNum">     380 </span><span class="lineNoCov">              0 :                         { zend_do_begin_class_declaration(&amp;$1, &amp;$2, NULL TSRMLS_CC); }</span>
+<span class="lineNum">     381 </span><span class="lineNoCov">              0 :                         interface_extends_list</span>
+<span class="lineNum">     382 </span>                :                         '{'
+<span class="lineNum">     383 </span>                :                                 class_statement_list
+<span class="lineNum">     384 </span><span class="lineNoCov">              0 :                         '}' { zend_do_end_class_declaration(&amp;$1, &amp;$2 TSRMLS_CC); }</span>
+<span class="lineNum">     385 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     386 </span>                : 
+<span class="lineNum">     387 </span>                : 
+<span class="lineNum">     388 </span>                : class_entry_type:
+<span class="lineNum">     389 </span><span class="lineCov">              2 :                 T_CLASS                 { $$.u.op.opline_num = CG(zend_lineno); $$.EA = 0; }</span>
+<span class="lineNum">     390 </span><span class="lineCov">              2 :         |       T_ABSTRACT T_CLASS { $$.u.op.opline_num = CG(zend_lineno); $$.EA = ZEND_ACC_EXPLICIT_ABSTRACT_CLASS; }</span>
+<span class="lineNum">     391 </span><span class="lineNoCov">              0 :         |       T_TRAIT { $$.u.op.opline_num = CG(zend_lineno); $$.EA = ZEND_ACC_TRAIT; }</span>
+<span class="lineNum">     392 </span><span class="lineNoCov">              0 :         |       T_FINAL T_CLASS { $$.u.op.opline_num = CG(zend_lineno); $$.EA = ZEND_ACC_FINAL_CLASS; }</span>
+<span class="lineNum">     393 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     394 </span>                : 
+<span class="lineNum">     395 </span>                : extends_from:
+<span class="lineNum">     396 </span><span class="lineCov">              1 :                 /* empty */                                     { $$.op_type = IS_UNUSED; }</span>
+<span class="lineNum">     397 </span><span class="lineCov">              1 :         |       T_EXTENDS fully_qualified_class_name    { zend_do_fetch_class(&amp;$$, &amp;$2 TSRMLS_CC); }</span>
+<span class="lineNum">     398 </span><span class="lineCov">              1 : ;</span>
+<span class="lineNum">     399 </span>                : 
+<span class="lineNum">     400 </span>                : interface_entry:
+<span class="lineNum">     401 </span><span class="lineNoCov">              0 :         T_INTERFACE             { $$.u.op.opline_num = CG(zend_lineno); $$.EA = ZEND_ACC_INTERFACE; }</span>
+<span class="lineNum">     402 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     403 </span>                : 
+<span class="lineNum">     404 </span>                : interface_extends_list:
+<span class="lineNum">     405 </span>                :                 /* empty */
+<span class="lineNum">     406 </span>                :         |       T_EXTENDS interface_list
+<span class="lineNum">     407 </span>                : ;
+<span class="lineNum">     408 </span>                : 
+<span class="lineNum">     409 </span>                : implements_list:
+<span class="lineNum">     410 </span>                :                 /* empty */
+<span class="lineNum">     411 </span>                :         |       T_IMPLEMENTS interface_list
+<span class="lineNum">     412 </span>                : ;
+<span class="lineNum">     413 </span>                : 
+<span class="lineNum">     414 </span>                : interface_list:
+<span class="lineNum">     415 </span><span class="lineCov">              1 :                 fully_qualified_class_name                      { zend_do_implements_interface(&amp;$1 TSRMLS_CC); }</span>
+<span class="lineNum">     416 </span><span class="lineCov">              1 :         |       interface_list ',' fully_qualified_class_name { zend_do_implements_interface(&amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     417 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     418 </span>                : 
+<span class="lineNum">     419 </span>                : foreach_optional_arg:
+<span class="lineNum">     420 </span><span class="lineCov">             46 :                 /* empty */                                             { $$.op_type = IS_UNUSED; }</span>
+<span class="lineNum">     421 </span><span class="lineCov">             46 :         |       T_DOUBLE_ARROW foreach_variable { $$ = $2; }</span>
+<span class="lineNum">     422 </span><span class="lineCov">              8 : ;</span>
+<span class="lineNum">     423 </span>                : 
+<span class="lineNum">     424 </span>                : 
+<span class="lineNum">     425 </span>                : foreach_variable:
+<span class="lineNum">     426 </span><span class="lineCov">             61 :                 variable                        { zend_check_writable_variable(&amp;$1); $$ = $1; }</span>
+<span class="lineNum">     427 </span><span class="lineCov">             61 :         |       '&amp;' variable                { zend_check_writable_variable(&amp;$2); $$ = $2;  $$.EA |= ZEND_PARSED_REFERENCE_VARIABLE; }</span>
+<span class="lineNum">     428 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     429 </span>                : 
+<span class="lineNum">     430 </span>                : for_statement:
+<span class="lineNum">     431 </span>                :                 statement
+<span class="lineNum">     432 </span>                :         |       ':' inner_statement_list T_ENDFOR ';'
+<span class="lineNum">     433 </span>                : ;
+<span class="lineNum">     434 </span>                : 
+<span class="lineNum">     435 </span>                : 
+<span class="lineNum">     436 </span>                : foreach_statement:
+<span class="lineNum">     437 </span>                :                 statement
+<span class="lineNum">     438 </span>                :         |       ':' inner_statement_list T_ENDFOREACH ';'
+<span class="lineNum">     439 </span>                : ;
+<span class="lineNum">     440 </span>                : 
+<span class="lineNum">     441 </span>                : 
+<span class="lineNum">     442 </span>                : declare_statement:
+<span class="lineNum">     443 </span>                :                 statement
+<span class="lineNum">     444 </span>                :         |       ':' inner_statement_list T_ENDDECLARE ';'
+<span class="lineNum">     445 </span>                : ;
+<span class="lineNum">     446 </span>                : 
+<span class="lineNum">     447 </span>                : 
+<span class="lineNum">     448 </span>                : declare_list:
+<span class="lineNum">     449 </span><span class="lineNoCov">              0 :                 T_STRING '=' static_scalar                                      { zend_do_declare_stmt(&amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     450 </span><span class="lineNoCov">              0 :         |       declare_list ',' T_STRING '=' static_scalar     { zend_do_declare_stmt(&amp;$3, &amp;$5 TSRMLS_CC); }</span>
+<span class="lineNum">     451 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     452 </span>                : 
+<span class="lineNum">     453 </span>                : 
+<span class="lineNum">     454 </span>                : switch_case_list:
+<span class="lineNum">     455 </span><span class="lineCov">              2 :                 '{' case_list '}'                                       { $$ = $2; }</span>
+<span class="lineNum">     456 </span><span class="lineCov">              2 :         |       '{' ';' case_list '}'                           { $$ = $3; }</span>
+<span class="lineNum">     457 </span><span class="lineNoCov">              0 :         |       ':' case_list T_ENDSWITCH ';'           { $$ = $2; }</span>
+<span class="lineNum">     458 </span><span class="lineNoCov">              0 :         |       ':' ';' case_list T_ENDSWITCH ';'       { $$ = $3; }</span>
+<span class="lineNum">     459 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     460 </span>                : 
+<span class="lineNum">     461 </span>                : 
+<span class="lineNum">     462 </span>                : case_list:
+<span class="lineNum">     463 </span><span class="lineCov">              2 :                 /* empty */     { $$.op_type = IS_UNUSED; }</span>
+<span class="lineNum">     464 </span><span class="lineCov">             32 :         |       case_list T_CASE expr case_separator { zend_do_extended_info(TSRMLS_C);  zend_do_case_before_statement(&amp;$1, &amp;$2, &amp;$3 TSRMLS_CC); } inner_statement_list { zend_do_case_after_statement(&amp;$$, &amp;$2 TSRMLS_CC); $$.op_type = IS_CONST; }</span>
+<span class="lineNum">     465 </span><span class="lineCov">             61 :         |       case_list T_DEFAULT case_separator { zend_do_extended_info(TSRMLS_C);  zend_do_default_before_statement(&amp;$1, &amp;$2 TSRMLS_CC); } inner_statement_list { zend_do_case_after_statement(&amp;$$, &amp;$2 TSRMLS_CC); $$.op_type = IS_CONST; }</span>
+<span class="lineNum">     466 </span><span class="lineCov">              2 : ;</span>
+<span class="lineNum">     467 </span>                : 
+<span class="lineNum">     468 </span>                : 
+<span class="lineNum">     469 </span>                : case_separator:
+<span class="lineNum">     470 </span>                :                 ':'
+<span class="lineNum">     471 </span>                :         |       ';'
+<span class="lineNum">     472 </span>                : ;
+<span class="lineNum">     473 </span>                : 
+<span class="lineNum">     474 </span>                : 
+<span class="lineNum">     475 </span>                : while_statement:
+<span class="lineNum">     476 </span>                :                 statement
+<span class="lineNum">     477 </span>                :         |       ':' inner_statement_list T_ENDWHILE ';'
+<span class="lineNum">     478 </span>                : ;
+<span class="lineNum">     479 </span>                : 
+<span class="lineNum">     480 </span>                : 
+<span class="lineNum">     481 </span>                : 
+<span class="lineNum">     482 </span>                : elseif_list:
+<span class="lineNum">     483 </span>                :                 /* empty */
+<span class="lineNum">     484 </span><span class="lineCov">             10 :         |       elseif_list T_ELSEIF '(' expr ')' { zend_do_if_cond(&amp;$4, &amp;$5 TSRMLS_CC); } statement { zend_do_if_after_statement(&amp;$5, 0 TSRMLS_CC); }</span>
+<span class="lineNum">     485 </span><span class="lineCov">             10 : ;</span>
+<span class="lineNum">     486 </span>                : 
+<span class="lineNum">     487 </span>                : 
+<span class="lineNum">     488 </span>                : new_elseif_list:
+<span class="lineNum">     489 </span>                :                 /* empty */
+<span class="lineNum">     490 </span><span class="lineNoCov">              0 :         |       new_elseif_list T_ELSEIF '(' expr ')' ':' { zend_do_if_cond(&amp;$4, &amp;$5 TSRMLS_CC); } inner_statement_list { zend_do_if_after_statement(&amp;$5, 0 TSRMLS_CC); }</span>
+<span class="lineNum">     491 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     492 </span>                : 
+<span class="lineNum">     493 </span>                : 
+<span class="lineNum">     494 </span>                : else_single:
+<span class="lineNum">     495 </span>                :                 /* empty */
+<span class="lineNum">     496 </span>                :         |       T_ELSE statement
+<span class="lineNum">     497 </span>                : ;
+<span class="lineNum">     498 </span>                : 
+<span class="lineNum">     499 </span>                : 
+<span class="lineNum">     500 </span>                : new_else_single:
+<span class="lineNum">     501 </span>                :                 /* empty */
+<span class="lineNum">     502 </span>                :         |       T_ELSE ':' inner_statement_list
+<span class="lineNum">     503 </span>                : ;
+<span class="lineNum">     504 </span>                : 
+<span class="lineNum">     505 </span>                : 
+<span class="lineNum">     506 </span>                : parameter_list:
+<span class="lineNum">     507 </span>                :                 non_empty_parameter_list
+<span class="lineNum">     508 </span>                :         |       /* empty */
+<span class="lineNum">     509 </span>                : ;
+<span class="lineNum">     510 </span>                : 
+<span class="lineNum">     511 </span>                : 
+<span class="lineNum">     512 </span>                : non_empty_parameter_list:
+<span class="lineNum">     513 </span><span class="lineCov">             38 :                 optional_class_type T_VARIABLE                          { $$.op_type = IS_UNUSED; $$.u.op.num=1; zend_do_receive_arg(ZEND_RECV, &amp;$2, &amp;$$, NULL, &amp;$1, 0 TSRMLS_CC); }</span>
+<span class="lineNum">     514 </span><span class="lineCov">             38 :         |       optional_class_type '&amp;' T_VARIABLE                  { $$.op_type = IS_UNUSED; $$.u.op.num=1; zend_do_receive_arg(ZEND_RECV, &amp;$3, &amp;$$, NULL, &amp;$1, 1 TSRMLS_CC); }</span>
+<span class="lineNum">     515 </span><span class="lineCov">              1 :         |       optional_class_type '&amp;' T_VARIABLE '=' static_scalar                        { $$.op_type = IS_UNUSED; $$.u.op.num=1; zend_do_receive_arg(ZEND_RECV_INIT, &amp;$3, &amp;$$, &amp;$5, &amp;$1, 1 TSRMLS_CC); }</span>
+<span class="lineNum">     516 </span><span class="lineNoCov">              0 :         |       optional_class_type T_VARIABLE '=' static_scalar                                { $$.op_type = IS_UNUSED; $$.u.op.num=1; zend_do_receive_arg(ZEND_RECV_INIT, &amp;$2, &amp;$$, &amp;$4, &amp;$1, 0 TSRMLS_CC); }</span>
+<span class="lineNum">     517 </span><span class="lineCov">              1 :         |       non_empty_parameter_list ',' optional_class_type T_VARIABLE     { $$=$1; $$.u.op.num++; zend_do_receive_arg(ZEND_RECV, &amp;$4, &amp;$$, NULL, &amp;$3, 0 TSRMLS_CC); }</span>
+<span class="lineNum">     518 </span><span class="lineCov">             39 :         |       non_empty_parameter_list ',' optional_class_type '&amp;' T_VARIABLE     { $$=$1; $$.u.op.num++; zend_do_receive_arg(ZEND_RECV, &amp;$5, &amp;$$, NULL, &amp;$3, 1 TSRMLS_CC); }</span>
+<span class="lineNum">     519 </span><span class="lineCov">              1 :         |       non_empty_parameter_list ',' optional_class_type '&amp;' T_VARIABLE      '=' static_scalar { $$=$1; $$.u.op.num++; zend_do_receive_arg(ZEND_RECV_INIT, &amp;$5, &amp;$$, &amp;$7, &amp;$3, 1 TSRMLS_CC); }</span>
+<span class="lineNum">     520 </span><span class="lineNoCov">              0 :         |       non_empty_parameter_list ',' optional_class_type T_VARIABLE '=' static_scalar   { $$=$1; $$.u.op.num++; zend_do_receive_arg(ZEND_RECV_INIT, &amp;$4, &amp;$$, &amp;$6, &amp;$3, 0 TSRMLS_CC); }</span>
+<span class="lineNum">     521 </span><span class="lineCov">             14 : ;</span>
+<span class="lineNum">     522 </span>                : 
+<span class="lineNum">     523 </span>                : 
+<span class="lineNum">     524 </span>                : optional_class_type:
+<span class="lineNum">     525 </span><span class="lineCov">             93 :                 /* empty */                                     { $$.op_type = IS_UNUSED; }</span>
+<span class="lineNum">     526 </span><span class="lineCov">             93 :         |       T_ARRAY                                         { $$.op_type = IS_CONST; Z_TYPE($$.u.constant)=IS_ARRAY; }</span>
+<span class="lineNum">     527 </span><span class="lineNoCov">              0 :         |       T_CALLABLE                                      { $$.op_type = IS_CONST; Z_TYPE($$.u.constant)=IS_CALLABLE; }</span>
+<span class="lineNum">     528 </span><span class="lineNoCov">              0 :         |       fully_qualified_class_name                      { $$ = $1; }</span>
+<span class="lineNum">     529 </span><span class="lineCov">              1 : ;</span>
+<span class="lineNum">     530 </span>                : 
+<span class="lineNum">     531 </span>                : 
+<span class="lineNum">     532 </span>                : function_call_parameter_list:
+<span class="lineNum">     533 </span><span class="lineCov">            952 :                 non_empty_function_call_parameter_list  { $$ = $1; }</span>
+<span class="lineNum">     534 </span><span class="lineCov">            952 :         |       /* empty */                             { Z_LVAL($$.u.constant) = 0; }</span>
+<span class="lineNum">     535 </span><span class="lineCov">            116 : ;</span>
+<span class="lineNum">     536 </span>                : 
+<span class="lineNum">     537 </span>                : 
+<span class="lineNum">     538 </span>                : non_empty_function_call_parameter_list:
+<span class="lineNum">     539 </span><span class="lineCov">            469 :                 expr_without_variable   { Z_LVAL($$.u.constant) = 1;  zend_do_pass_param(&amp;$1, ZEND_SEND_VAL, Z_LVAL($$.u.constant) TSRMLS_CC); }</span>
+<span class="lineNum">     540 </span><span class="lineCov">            469 :         |       variable                                { Z_LVAL($$.u.constant) = 1;  zend_do_pass_param(&amp;$1, ZEND_SEND_VAR, Z_LVAL($$.u.constant) TSRMLS_CC); }</span>
+<span class="lineNum">     541 </span><span class="lineCov">            483 :         |       '&amp;' w_variable                              { Z_LVAL($$.u.constant) = 1;  zend_do_pass_param(&amp;$2, ZEND_SEND_REF, Z_LVAL($$.u.constant) TSRMLS_CC); }</span>
+<span class="lineNum">     542 </span><span class="lineNoCov">              0 :         |       non_empty_function_call_parameter_list ',' expr_without_variable        { Z_LVAL($$.u.constant)=Z_LVAL($1.u.constant)+1;  zend_do_pass_param(&amp;$3, ZEND_SEND_VAL, Z_LVAL($$.u.constant) TSRMLS_CC); }</span>
+<span class="lineNum">     543 </span><span class="lineCov">            245 :         |       non_empty_function_call_parameter_list ',' variable                                     { Z_LVAL($$.u.constant)=Z_LVAL($1.u.constant)+1;  zend_do_pass_param(&amp;$3, ZEND_SEND_VAR, Z_LVAL($$.u.constant) TSRMLS_CC); }</span>
+<span class="lineNum">     544 </span><span class="lineCov">            322 :         |       non_empty_function_call_parameter_list ',' '&amp;' w_variable                   { Z_LVAL($$.u.constant)=Z_LVAL($1.u.constant)+1;  zend_do_pass_param(&amp;$4, ZEND_SEND_REF, Z_LVAL($$.u.constant) TSRMLS_CC); }</span>
+<span class="lineNum">     545 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     546 </span>                : 
+<span class="lineNum">     547 </span>                : global_var_list:
+<span class="lineNum">     548 </span><span class="lineCov">             64 :                 global_var_list ',' global_var  { zend_do_fetch_global_variable(&amp;$3, NULL, ZEND_FETCH_GLOBAL_LOCK TSRMLS_CC); }</span>
+<span class="lineNum">     549 </span><span class="lineCov">             64 :         |       global_var                                              { zend_do_fetch_global_variable(&amp;$1, NULL, ZEND_FETCH_GLOBAL_LOCK TSRMLS_CC); }</span>
+<span class="lineNum">     550 </span><span class="lineCov">             35 : ;</span>
+<span class="lineNum">     551 </span>                : 
+<span class="lineNum">     552 </span>                : 
+<span class="lineNum">     553 </span>                : global_var:
+<span class="lineNum">     554 </span><span class="lineCov">             99 :                 T_VARIABLE                      { $$ = $1; }</span>
+<span class="lineNum">     555 </span><span class="lineCov">             99 :         |       '$' r_variable          { $$ = $2; }</span>
+<span class="lineNum">     556 </span><span class="lineNoCov">              0 :         |       '$' '{' expr '}'        { $$ = $3; }</span>
+<span class="lineNum">     557 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     558 </span>                : 
+<span class="lineNum">     559 </span>                : 
+<span class="lineNum">     560 </span>                : static_var_list:
+<span class="lineNum">     561 </span><span class="lineNoCov">              0 :                 static_var_list ',' T_VARIABLE { zend_do_fetch_static_variable(&amp;$3, NULL, ZEND_FETCH_STATIC TSRMLS_CC); }</span>
+<span class="lineNum">     562 </span><span class="lineNoCov">              0 :         |       static_var_list ',' T_VARIABLE '=' static_scalar { zend_do_fetch_static_variable(&amp;$3, &amp;$5, ZEND_FETCH_STATIC TSRMLS_CC); }</span>
+<span class="lineNum">     563 </span><span class="lineNoCov">              0 :         |       T_VARIABLE  { zend_do_fetch_static_variable(&amp;$1, NULL, ZEND_FETCH_STATIC TSRMLS_CC); }</span>
+<span class="lineNum">     564 </span><span class="lineNoCov">              0 :         |       T_VARIABLE '=' static_scalar { zend_do_fetch_static_variable(&amp;$1, &amp;$3, ZEND_FETCH_STATIC TSRMLS_CC); }</span>
+<span class="lineNum">     565 </span><span class="lineNoCov">              0 : </span>
+<span class="lineNum">     566 </span>                : ;
+<span class="lineNum">     567 </span>                : 
+<span class="lineNum">     568 </span>                : 
+<span class="lineNum">     569 </span>                : class_statement_list:
+<span class="lineNum">     570 </span>                :                 class_statement_list class_statement
+<span class="lineNum">     571 </span>                :         |       /* empty */
+<span class="lineNum">     572 </span>                : ;
+<span class="lineNum">     573 </span>                : 
+<span class="lineNum">     574 </span>                : 
+<span class="lineNum">     575 </span>                : class_statement:
+<span class="lineNum">     576 </span><span class="lineCov">              1 :                 variable_modifiers { CG(access_type) = Z_LVAL($1.u.constant); } class_variable_declaration ';'</span>
+<span class="lineNum">     577 </span><span class="lineCov">              1 :         |       class_constant_declaration ';'</span>
+<span class="lineNum">     578 </span>                :         |       trait_use_statement
+<span class="lineNum">     579 </span><span class="lineCov">              7 :         |       method_modifiers function is_reference T_STRING { zend_do_begin_function_declaration(&amp;$2, &amp;$4, 1, $3.op_type, &amp;$1 TSRMLS_CC); } '('</span>
+<span class="lineNum">     580 </span><span class="lineCov">              7 :                         parameter_list ')' method_body { zend_do_abstract_method(&amp;$4, &amp;$1, &amp;$9 TSRMLS_CC); zend_do_end_function_declaration(&amp;$2 TSRMLS_CC); }</span>
+<span class="lineNum">     581 </span><span class="lineCov">              7 : ;</span>
+<span class="lineNum">     582 </span>                : 
+<span class="lineNum">     583 </span>                : trait_use_statement:
+<span class="lineNum">     584 </span>                :                 T_USE trait_list trait_adaptations
+<span class="lineNum">     585 </span>                : ;
+<span class="lineNum">     586 </span>                : 
+<span class="lineNum">     587 </span>                : trait_list:
+<span class="lineNum">     588 </span><span class="lineNoCov">              0 :                 fully_qualified_class_name                                              { zend_do_implements_trait(&amp;$1 TSRMLS_CC); }</span>
+<span class="lineNum">     589 </span><span class="lineNoCov">              0 :         |       trait_list ',' fully_qualified_class_name               { zend_do_implements_trait(&amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     590 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     591 </span>                : 
+<span class="lineNum">     592 </span>                : trait_adaptations:
+<span class="lineNum">     593 </span>                :                 ';'
+<span class="lineNum">     594 </span>                :         |       '{' trait_adaptation_list '}'
+<span class="lineNum">     595 </span>                : ;
+<span class="lineNum">     596 </span>                : 
+<span class="lineNum">     597 </span>                : trait_adaptation_list:
+<span class="lineNum">     598 </span>                :                 /* empty */
+<span class="lineNum">     599 </span>                :         |       non_empty_trait_adaptation_list
+<span class="lineNum">     600 </span>                : ;
+<span class="lineNum">     601 </span>                : 
+<span class="lineNum">     602 </span>                : non_empty_trait_adaptation_list:
+<span class="lineNum">     603 </span>                :                 trait_adaptation_statement
+<span class="lineNum">     604 </span>                :         |       non_empty_trait_adaptation_list trait_adaptation_statement
+<span class="lineNum">     605 </span>                : ;
+<span class="lineNum">     606 </span>                : 
+<span class="lineNum">     607 </span>                : trait_adaptation_statement:
+<span class="lineNum">     608 </span><span class="lineNoCov">              0 :                 trait_precedence ';'                                                            { zend_add_trait_precedence(&amp;$1 TSRMLS_CC); }</span>
+<span class="lineNum">     609 </span><span class="lineNoCov">              0 :         |       trait_alias ';'                                                                         { zend_add_trait_alias(&amp;$1 TSRMLS_CC); }</span>
+<span class="lineNum">     610 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     611 </span>                : 
+<span class="lineNum">     612 </span>                : trait_precedence:
+<span class="lineNum">     613 </span><span class="lineNoCov">              0 :         trait_method_reference_fully_qualified T_INSTEADOF trait_reference_list { zend_prepare_trait_precedence(&amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     614 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     615 </span>                : 
+<span class="lineNum">     616 </span>                : trait_reference_list:
+<span class="lineNum">     617 </span><span class="lineNoCov">              0 :                 fully_qualified_class_name                                                                      { zend_resolve_class_name(&amp;$1, ZEND_FETCH_CLASS_GLOBAL, 1 TSRMLS_CC); zend_init_list(&amp;$$.u.op.ptr, Z_STRVAL($1.u.constant) TSRMLS_CC); }</span>
+<span class="lineNum">     618 </span><span class="lineNoCov">              0 :         |       trait_reference_list ',' fully_qualified_class_name                     { zend_resolve_class_name(&amp;$3, ZEND_FETCH_CLASS_GLOBAL, 1 TSRMLS_CC); zend_add_to_list(&amp;$1.u.op.ptr, Z_STRVAL($3.u.constant) TSRMLS_CC); $$ = $1; }</span>
+<span class="lineNum">     619 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     620 </span>                : 
+<span class="lineNum">     621 </span>                : trait_method_reference:
+<span class="lineNum">     622 </span><span class="lineNoCov">              0 :                 T_STRING                                                                                                        { zend_prepare_reference(&amp;$$, NULL, &amp;$1 TSRMLS_CC); }</span>
+<span class="lineNum">     623 </span><span class="lineNoCov">              0 :         |       trait_method_reference_fully_qualified                                          { $$ = $1; }</span>
+<span class="lineNum">     624 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     625 </span>                : 
+<span class="lineNum">     626 </span>                : trait_method_reference_fully_qualified:
+<span class="lineNum">     627 </span><span class="lineNoCov">              0 :         fully_qualified_class_name T_PAAMAYIM_NEKUDOTAYIM T_STRING              { zend_prepare_reference(&amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     628 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     629 </span>                : 
+<span class="lineNum">     630 </span>                : trait_alias:
+<span class="lineNum">     631 </span><span class="lineNoCov">              0 :                 trait_method_reference T_AS trait_modifiers T_STRING            { zend_prepare_trait_alias(&amp;$$, &amp;$1, &amp;$3, &amp;$4 TSRMLS_CC); }</span>
+<span class="lineNum">     632 </span><span class="lineNoCov">              0 :         |       trait_method_reference T_AS member_modifier                                     { zend_prepare_trait_alias(&amp;$$, &amp;$1, &amp;$3, NULL TSRMLS_CC); }</span>
+<span class="lineNum">     633 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     634 </span>                : 
+<span class="lineNum">     635 </span>                : trait_modifiers:
+<span class="lineNum">     636 </span><span class="lineNoCov">              0 :                 /* empty */                                     { Z_LVAL($$.u.constant) = 0x0; } /* No change of methods visibility */</span>
+<span class="lineNum">     637 </span><span class="lineNoCov">              0 :         |       member_modifier { $$ = $1; } /* REM: Keep in mind, there are not only visibility modifiers */</span>
+<span class="lineNum">     638 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     639 </span>                : 
+<span class="lineNum">     640 </span>                : method_body:
+<span class="lineNum">     641 </span><span class="lineNoCov">              0 :                 ';' /* abstract method */               { Z_LVAL($$.u.constant) = ZEND_ACC_ABSTRACT; }</span>
+<span class="lineNum">     642 </span><span class="lineNoCov">              0 :         |       '{' inner_statement_list '}'    { Z_LVAL($$.u.constant) = 0;    }</span>
+<span class="lineNum">     643 </span><span class="lineCov">              7 : ;</span>
+<span class="lineNum">     644 </span>                : 
+<span class="lineNum">     645 </span>                : variable_modifiers:
+<span class="lineNum">     646 </span><span class="lineCov">              1 :                 non_empty_member_modifiers              { $$ = $1; }</span>
+<span class="lineNum">     647 </span><span class="lineCov">              1 :         |       T_VAR                                                   { Z_LVAL($$.u.constant) = ZEND_ACC_PUBLIC; }</span>
+<span class="lineNum">     648 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     649 </span>                : 
+<span class="lineNum">     650 </span>                : method_modifiers:
+<span class="lineNum">     651 </span><span class="lineNoCov">              0 :                 /* empty */                                                     { Z_LVAL($$.u.constant) = ZEND_ACC_PUBLIC; }</span>
+<span class="lineNum">     652 </span><span class="lineNoCov">              0 :         |       non_empty_member_modifiers                      { $$ = $1;  if (!(Z_LVAL($$.u.constant) &amp; ZEND_ACC_PPP_MASK)) { Z_LVAL($$.u.constant) |= ZEND_ACC_PUBLIC; } }</span>
+<span class="lineNum">     653 </span><span class="lineCov">              7 : ;</span>
+<span class="lineNum">     654 </span>                : 
+<span class="lineNum">     655 </span>                : non_empty_member_modifiers:
+<span class="lineNum">     656 </span><span class="lineCov">              8 :                 member_modifier                                         { $$ = $1; }</span>
+<span class="lineNum">     657 </span><span class="lineCov">              8 :         |       non_empty_member_modifiers member_modifier      { Z_LVAL($$.u.constant) = zend_do_verify_access_types(&amp;$1, &amp;$2); }</span>
+<span class="lineNum">     658 </span><span class="lineCov">              1 : ;</span>
+<span class="lineNum">     659 </span>                : 
+<span class="lineNum">     660 </span>                : member_modifier:
+<span class="lineNum">     661 </span><span class="lineCov">              7 :                 T_PUBLIC                                { Z_LVAL($$.u.constant) = ZEND_ACC_PUBLIC; }</span>
+<span class="lineNum">     662 </span><span class="lineCov">              7 :         |       T_PROTECTED                             { Z_LVAL($$.u.constant) = ZEND_ACC_PROTECTED; }</span>
+<span class="lineNum">     663 </span><span class="lineCov">              1 :         |       T_PRIVATE                               { Z_LVAL($$.u.constant) = ZEND_ACC_PRIVATE; }</span>
+<span class="lineNum">     664 </span><span class="lineNoCov">              0 :         |       T_STATIC                                { Z_LVAL($$.u.constant) = ZEND_ACC_STATIC; }</span>
+<span class="lineNum">     665 </span><span class="lineCov">              1 :         |       T_ABSTRACT                              { Z_LVAL($$.u.constant) = ZEND_ACC_ABSTRACT; }</span>
+<span class="lineNum">     666 </span><span class="lineNoCov">              0 :         |       T_FINAL                                 { Z_LVAL($$.u.constant) = ZEND_ACC_FINAL; }</span>
+<span class="lineNum">     667 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     668 </span>                : 
+<span class="lineNum">     669 </span>                : class_variable_declaration:
+<span class="lineNum">     670 </span><span class="lineNoCov">              0 :                 class_variable_declaration ',' T_VARIABLE                                       { zend_do_declare_property(&amp;$3, NULL, CG(access_type) TSRMLS_CC); }</span>
+<span class="lineNum">     671 </span><span class="lineNoCov">              0 :         |       class_variable_declaration ',' T_VARIABLE '=' static_scalar     { zend_do_declare_property(&amp;$3, &amp;$5, CG(access_type) TSRMLS_CC); }</span>
+<span class="lineNum">     672 </span><span class="lineNoCov">              0 :         |       T_VARIABLE                                              { zend_do_declare_property(&amp;$1, NULL, CG(access_type) TSRMLS_CC); }</span>
+<span class="lineNum">     673 </span><span class="lineCov">              1 :         |       T_VARIABLE '=' static_scalar    { zend_do_declare_property(&amp;$1, &amp;$3, CG(access_type) TSRMLS_CC); }</span>
+<span class="lineNum">     674 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     675 </span>                : 
+<span class="lineNum">     676 </span>                : class_constant_declaration:
+<span class="lineNum">     677 </span><span class="lineNoCov">              0 :                 class_constant_declaration ',' T_STRING '=' static_scalar       { zend_do_declare_class_constant(&amp;$3, &amp;$5 TSRMLS_CC); }</span>
+<span class="lineNum">     678 </span><span class="lineNoCov">              0 :         |       T_CONST T_STRING '=' static_scalar      { zend_do_declare_class_constant(&amp;$2, &amp;$4 TSRMLS_CC); }</span>
+<span class="lineNum">     679 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     680 </span>                : 
+<span class="lineNum">     681 </span>                : echo_expr_list:
+<span class="lineNum">     682 </span><span class="lineCov">             47 :                 echo_expr_list ',' expr { zend_do_echo(&amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     683 </span><span class="lineCov">             47 :         |       expr                                    { zend_do_echo(&amp;$1 TSRMLS_CC); }</span>
+<span class="lineNum">     684 </span><span class="lineCov">            120 : ;</span>
+<span class="lineNum">     685 </span>                : 
+<span class="lineNum">     686 </span>                : 
+<span class="lineNum">     687 </span>                : for_expr:
+<span class="lineNum">     688 </span><span class="lineNoCov">              0 :                 /* empty */                     { $$.op_type = IS_CONST;  Z_TYPE($$.u.constant) = IS_BOOL;  Z_LVAL($$.u.constant) = 1; }</span>
+<span class="lineNum">     689 </span><span class="lineNoCov">              0 :         |       non_empty_for_expr      { $$ = $1; }</span>
+<span class="lineNum">     690 </span><span class="lineCov">             33 : ;</span>
+<span class="lineNum">     691 </span>                : 
+<span class="lineNum">     692 </span>                : non_empty_for_expr:
+<span class="lineNum">     693 </span><span class="lineNoCov">              0 :                 non_empty_for_expr ','  { zend_do_free(&amp;$1 TSRMLS_CC); } expr { $$ = $4; }</span>
+<span class="lineNum">     694 </span><span class="lineNoCov">              0 :         |       expr                                    { $$ = $1; }</span>
+<span class="lineNum">     695 </span><span class="lineCov">             33 : ;</span>
+<span class="lineNum">     696 </span>                : 
+<span class="lineNum">     697 </span>                : chaining_method_or_property:
+<span class="lineNum">     698 </span><span class="lineNoCov">              0 :                 chaining_method_or_property variable_property   { $$.EA = $2.EA; }</span>
+<span class="lineNum">     699 </span><span class="lineNoCov">              0 :         |       variable_property                                                               { $$.EA = $1.EA; }</span>
+<span class="lineNum">     700 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     701 </span>                : 
+<span class="lineNum">     702 </span>                : chaining_dereference:
+<span class="lineNum">     703 </span><span class="lineNoCov">              0 :                 chaining_dereference '[' dim_offset ']' { fetch_array_dim(&amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     704 </span><span class="lineNoCov">              0 :         |       '[' dim_offset ']'              { zend_do_pop_object(&amp;$1 TSRMLS_CC); fetch_array_dim(&amp;$$, &amp;$1, &amp;$2 TSRMLS_CC); }</span>
+<span class="lineNum">     705 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     706 </span>                : 
+<span class="lineNum">     707 </span>                : chaining_instance_call:
+<span class="lineNum">     708 </span><span class="lineNoCov">              0 :                 chaining_dereference            { zend_do_push_object(&amp;$1 TSRMLS_CC); } chaining_method_or_property { $$ = $3; }</span>
+<span class="lineNum">     709 </span><span class="lineNoCov">              0 :         |       chaining_dereference            { zend_do_push_object(&amp;$1 TSRMLS_CC); $$ = $1; }</span>
+<span class="lineNum">     710 </span><span class="lineNoCov">              0 :         |       chaining_method_or_property { $$ = $1; }</span>
+<span class="lineNum">     711 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     712 </span>                : 
+<span class="lineNum">     713 </span>                : instance_call:
+<span class="lineNum">     714 </span><span class="lineNoCov">              0 :                 /* empty */             { $$ = $0; }</span>
+<span class="lineNum">     715 </span><span class="lineNoCov">              0 :         |       { zend_do_push_object(&amp;$0 TSRMLS_CC); zend_do_begin_variable_parse(TSRMLS_C); }</span>
+<span class="lineNum">     716 </span><span class="lineNoCov">              0 :                 chaining_instance_call  { zend_do_pop_object(&amp;$$ TSRMLS_CC); zend_do_end_variable_parse(&amp;$2, BP_VAR_R, 0 TSRMLS_CC); }</span>
+<span class="lineNum">     717 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     718 </span>                : 
+<span class="lineNum">     719 </span>                : new_expr:
+<span class="lineNum">     720 </span><span class="lineCov">            144 :                 T_NEW class_name_reference { zend_do_extended_fcall_begin(TSRMLS_C); zend_do_begin_new_object(&amp;$1, &amp;$2 TSRMLS_CC); } ctor_arguments { zend_do_end_new_object(&amp;$$, &amp;$1, &amp;$4 TSRMLS_CC); zend_do_extended_fcall_end(TSRMLS_C);}</span>
+<span class="lineNum">     721 </span><span class="lineCov">            144 : ;</span>
+<span class="lineNum">     722 </span>                : 
+<span class="lineNum">     723 </span>                : expr_without_variable:
+<span class="lineNum">     724 </span><span class="lineCov">              4 :                 T_LIST '(' { zend_do_list_init(TSRMLS_C); } assignment_list ')' '=' expr { zend_do_list_end(&amp;$$, &amp;$7 TSRMLS_CC); }</span>
+<span class="lineNum">     725 </span><span class="lineCov">              4 :         |       variable '=' expr               { zend_check_writable_variable(&amp;$1); zend_do_assign(&amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     726 </span><span class="lineCov">            756 :         |       variable '=' '&amp;' variable { zend_check_writable_variable(&amp;$1); zend_do_end_variable_parse(&amp;$4, BP_VAR_W, 1 TSRMLS_CC); zend_do_end_variable_parse(&amp;$1, BP_VAR_W, 0 TSRMLS_CC); zend_do_assign_ref(&amp;$$, &amp;$1, &amp;$4 TSRMLS_CC); }</span>
+<span class="lineNum">     727 </span><span class="lineNoCov">              0 :         |       variable '=' '&amp;' T_NEW class_name_reference { zend_error(E_DEPRECATED, &quot;Assigning the return value of new by reference is deprecated&quot;);  zend_check_writable_variable(&amp;$1); zend_do_extended_fcall_begin(TSRMLS_C); zend_do_begin_new_object(&amp;$4, &amp;$5 TSRMLS_CC); } ctor_arguments { zend_do_end_new_object(&amp;$3, &amp;$4, &amp;$7 TSRMLS_CC); zend_do_extended_fcall_end(TSRMLS_C); zend_do_end_variable_parse(&amp;$1, BP_VAR_W, 0 TSRMLS_CC); $3.EA = ZEND_PARSED_NEW; zend_do_assign_ref(&amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     728 </span><span class="lineNoCov">              0 :         |       T_CLONE expr { zend_do_clone(&amp;$$, &amp;$2 TSRMLS_CC); }</span>
+<span class="lineNum">     729 </span><span class="lineNoCov">              0 :         |       variable T_PLUS_EQUAL expr      { zend_check_writable_variable(&amp;$1); zend_do_end_variable_parse(&amp;$1, BP_VAR_RW, 0 TSRMLS_CC); zend_do_binary_assign_op(ZEND_ASSIGN_ADD, &amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     730 </span><span class="lineCov">              8 :         |       variable T_MINUS_EQUAL expr     { zend_check_writable_variable(&amp;$1); zend_do_end_variable_parse(&amp;$1, BP_VAR_RW, 0 TSRMLS_CC); zend_do_binary_assign_op(ZEND_ASSIGN_SUB, &amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     731 </span><span class="lineNoCov">              0 :         |       variable T_MUL_EQUAL expr               { zend_check_writable_variable(&amp;$1); zend_do_end_variable_parse(&amp;$1, BP_VAR_RW, 0 TSRMLS_CC); zend_do_binary_assign_op(ZEND_ASSIGN_MUL, &amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     732 </span><span class="lineNoCov">              0 :         |       variable T_DIV_EQUAL expr               { zend_check_writable_variable(&amp;$1); zend_do_end_variable_parse(&amp;$1, BP_VAR_RW, 0 TSRMLS_CC); zend_do_binary_assign_op(ZEND_ASSIGN_DIV, &amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     733 </span><span class="lineNoCov">              0 :         |       variable T_CONCAT_EQUAL expr    { zend_check_writable_variable(&amp;$1); zend_do_end_variable_parse(&amp;$1, BP_VAR_RW, 0 TSRMLS_CC); zend_do_binary_assign_op(ZEND_ASSIGN_CONCAT, &amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     734 </span><span class="lineCov">             68 :         |       variable T_MOD_EQUAL expr               { zend_check_writable_variable(&amp;$1); zend_do_end_variable_parse(&amp;$1, BP_VAR_RW, 0 TSRMLS_CC); zend_do_binary_assign_op(ZEND_ASSIGN_MOD, &amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     735 </span><span class="lineNoCov">              0 :         |       variable T_AND_EQUAL expr               { zend_check_writable_variable(&amp;$1); zend_do_end_variable_parse(&amp;$1, BP_VAR_RW, 0 TSRMLS_CC); zend_do_binary_assign_op(ZEND_ASSIGN_BW_AND, &amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     736 </span><span class="lineNoCov">              0 :         |       variable T_OR_EQUAL expr                { zend_check_writable_variable(&amp;$1); zend_do_end_variable_parse(&amp;$1, BP_VAR_RW, 0 TSRMLS_CC); zend_do_binary_assign_op(ZEND_ASSIGN_BW_OR, &amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     737 </span><span class="lineNoCov">              0 :         |       variable T_XOR_EQUAL expr               { zend_check_writable_variable(&amp;$1); zend_do_end_variable_parse(&amp;$1, BP_VAR_RW, 0 TSRMLS_CC); zend_do_binary_assign_op(ZEND_ASSIGN_BW_XOR, &amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     738 </span><span class="lineNoCov">              0 :         |       variable T_SL_EQUAL expr        { zend_check_writable_variable(&amp;$1); zend_do_end_variable_parse(&amp;$1, BP_VAR_RW, 0 TSRMLS_CC); zend_do_binary_assign_op(ZEND_ASSIGN_SL, &amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     739 </span><span class="lineNoCov">              0 :         |       variable T_SR_EQUAL expr        { zend_check_writable_variable(&amp;$1); zend_do_end_variable_parse(&amp;$1, BP_VAR_RW, 0 TSRMLS_CC); zend_do_binary_assign_op(ZEND_ASSIGN_SR, &amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     740 </span><span class="lineNoCov">              0 :         |       rw_variable T_INC { zend_do_post_incdec(&amp;$$, &amp;$1, ZEND_POST_INC TSRMLS_CC); }</span>
+<span class="lineNum">     741 </span><span class="lineCov">             26 :         |       T_INC rw_variable { zend_do_pre_incdec(&amp;$$, &amp;$2, ZEND_PRE_INC TSRMLS_CC); }</span>
+<span class="lineNum">     742 </span><span class="lineCov">             13 :         |       rw_variable T_DEC { zend_do_post_incdec(&amp;$$, &amp;$1, ZEND_POST_DEC TSRMLS_CC); }</span>
+<span class="lineNum">     743 </span><span class="lineCov">              5 :         |       T_DEC rw_variable { zend_do_pre_incdec(&amp;$$, &amp;$2, ZEND_PRE_DEC TSRMLS_CC); }</span>
+<span class="lineNum">     744 </span><span class="lineCov">             39 :         |       expr T_BOOLEAN_OR { zend_do_boolean_or_begin(&amp;$1, &amp;$2 TSRMLS_CC); } expr { zend_do_boolean_or_end(&amp;$$, &amp;$1, &amp;$4, &amp;$2 TSRMLS_CC); }</span>
+<span class="lineNum">     745 </span><span class="lineCov">            122 :         |       expr T_BOOLEAN_AND { zend_do_boolean_and_begin(&amp;$1, &amp;$2 TSRMLS_CC); } expr { zend_do_boolean_and_end(&amp;$$, &amp;$1, &amp;$4, &amp;$2 TSRMLS_CC); }</span>
+<span class="lineNum">     746 </span><span class="lineCov">             95 :         |       expr T_LOGICAL_OR { zend_do_boolean_or_begin(&amp;$1, &amp;$2 TSRMLS_CC); } expr { zend_do_boolean_or_end(&amp;$$, &amp;$1, &amp;$4, &amp;$2 TSRMLS_CC); }</span>
+<span class="lineNum">     747 </span><span class="lineCov">              8 :         |       expr T_LOGICAL_AND { zend_do_boolean_and_begin(&amp;$1, &amp;$2 TSRMLS_CC); } expr { zend_do_boolean_and_end(&amp;$$, &amp;$1, &amp;$4, &amp;$2 TSRMLS_CC); }</span>
+<span class="lineNum">     748 </span><span class="lineCov">              4 :         |       expr T_LOGICAL_XOR expr { zend_do_binary_op(ZEND_BOOL_XOR, &amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     749 </span><span class="lineNoCov">              0 :         |       expr '|' expr   { zend_do_binary_op(ZEND_BW_OR, &amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     750 </span><span class="lineCov">              1 :         |       expr '&amp;' expr       { zend_do_binary_op(ZEND_BW_AND, &amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     751 </span><span class="lineNoCov">              0 :         |       expr '^' expr   { zend_do_binary_op(ZEND_BW_XOR, &amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     752 </span><span class="lineNoCov">              0 :         |       expr '.' expr   { zend_do_binary_op(ZEND_CONCAT, &amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     753 </span><span class="lineCov">            335 :         |       expr '+' expr   { zend_do_binary_op(ZEND_ADD, &amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     754 </span><span class="lineCov">             21 :         |       expr '-' expr   { zend_do_binary_op(ZEND_SUB, &amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     755 </span><span class="lineCov">             13 :         |       expr '*' expr   { zend_do_binary_op(ZEND_MUL, &amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     756 </span><span class="lineCov">              6 :         |       expr '/' expr   { zend_do_binary_op(ZEND_DIV, &amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     757 </span><span class="lineCov">              7 :         |       expr '%' expr   { zend_do_binary_op(ZEND_MOD, &amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     758 </span><span class="lineNoCov">              0 :         |       expr T_SL expr  { zend_do_binary_op(ZEND_SL, &amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     759 </span><span class="lineNoCov">              0 :         |       expr T_SR expr  { zend_do_binary_op(ZEND_SR, &amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     760 </span><span class="lineNoCov">              0 :         |       '+' expr %prec T_INC { ZVAL_LONG(&amp;$1.u.constant, 0); if ($2.op_type == IS_CONST) { add_function(&amp;$2.u.constant, &amp;$1.u.constant, &amp;$2.u.constant TSRMLS_CC); $$ = $2; } else { $1.op_type = IS_CONST; INIT_PZVAL(&amp;$1.u.constant); zend_do_binary_op(ZEND_ADD, &amp;$$, &amp;$1, &amp;$2 TSRMLS_CC); } }</span>
+<span class="lineNum">     761 </span><span class="lineNoCov">              0 :         |       '-' expr %prec T_INC { ZVAL_LONG(&amp;$1.u.constant, 0); if ($2.op_type == IS_CONST) { sub_function(&amp;$2.u.constant, &amp;$1.u.constant, &amp;$2.u.constant TSRMLS_CC); $$ = $2; } else { $1.op_type = IS_CONST; INIT_PZVAL(&amp;$1.u.constant); zend_do_binary_op(ZEND_SUB, &amp;$$, &amp;$1, &amp;$2 TSRMLS_CC); } }</span>
+<span class="lineNum">     762 </span><span class="lineCov">              6 :         |       '!' expr { zend_do_unary_op(ZEND_BOOL_NOT, &amp;$$, &amp;$2 TSRMLS_CC); }</span>
+<span class="lineNum">     763 </span><span class="lineCov">             92 :         |       '~' expr { zend_do_unary_op(ZEND_BW_NOT, &amp;$$, &amp;$2 TSRMLS_CC); }</span>
+<span class="lineNum">     764 </span><span class="lineNoCov">              0 :         |       expr T_IS_IDENTICAL expr                { zend_do_binary_op(ZEND_IS_IDENTICAL, &amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     765 </span><span class="lineCov">             19 :         |       expr T_IS_NOT_IDENTICAL expr    { zend_do_binary_op(ZEND_IS_NOT_IDENTICAL, &amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     766 </span><span class="lineCov">             17 :         |       expr T_IS_EQUAL expr                    { zend_do_binary_op(ZEND_IS_EQUAL, &amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     767 </span><span class="lineCov">             46 :         |       expr T_IS_NOT_EQUAL expr                { zend_do_binary_op(ZEND_IS_NOT_EQUAL, &amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     768 </span><span class="lineCov">             11 :         |       expr '&lt;' expr                                        { zend_do_binary_op(ZEND_IS_SMALLER, &amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     769 </span><span class="lineCov">             25 :         |       expr T_IS_SMALLER_OR_EQUAL expr { zend_do_binary_op(ZEND_IS_SMALLER_OR_EQUAL, &amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     770 </span><span class="lineNoCov">              0 :         |       expr '&gt;' expr                                        { zend_do_binary_op(ZEND_IS_SMALLER, &amp;$$, &amp;$3, &amp;$1 TSRMLS_CC); }</span>
+<span class="lineNum">     771 </span><span class="lineCov">             13 :         |       expr T_IS_GREATER_OR_EQUAL expr { zend_do_binary_op(ZEND_IS_SMALLER_OR_EQUAL, &amp;$$, &amp;$3, &amp;$1 TSRMLS_CC); }</span>
+<span class="lineNum">     772 </span><span class="lineCov">              1 :         |       expr T_INSTANCEOF class_name_reference { zend_do_instanceof(&amp;$$, &amp;$1, &amp;$3, 0 TSRMLS_CC); }</span>
+<span class="lineNum">     773 </span><span class="lineNoCov">              0 :         |       '(' expr ')'    { $$ = $2; }</span>
+<span class="lineNum">     774 </span><span class="lineCov">             25 :         |       new_expr                { $$ = $1; }</span>
+<span class="lineNum">     775 </span><span class="lineCov">             72 :         |       '(' new_expr ')' { $$ = $2; } instance_call { $$ = $5; }</span>
+<span class="lineNum">     776 </span><span class="lineNoCov">              0 :         |       expr '?' { zend_do_begin_qm_op(&amp;$1, &amp;$2 TSRMLS_CC); }</span>
+<span class="lineNum">     777 </span><span class="lineCov">             24 :                 expr ':' { zend_do_qm_true(&amp;$4, &amp;$2, &amp;$5 TSRMLS_CC); }</span>
+<span class="lineNum">     778 </span><span class="lineCov">             24 :                 expr     { zend_do_qm_false(&amp;$$, &amp;$7, &amp;$2, &amp;$5 TSRMLS_CC); }</span>
+<span class="lineNum">     779 </span><span class="lineCov">             24 :         |       expr '?' ':' { zend_do_jmp_set(&amp;$1, &amp;$2, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     780 </span><span class="lineNoCov">              0 :                 expr     { zend_do_jmp_set_else(&amp;$$, &amp;$5, &amp;$2, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     781 </span><span class="lineNoCov">              0 :         |       internal_functions_in_yacc { $$ = $1; }</span>
+<span class="lineNum">     782 </span><span class="lineCov">             70 :         |       T_INT_CAST expr         { zend_do_cast(&amp;$$, &amp;$2, IS_LONG TSRMLS_CC); }</span>
+<span class="lineNum">     783 </span><span class="lineCov">              1 :         |       T_DOUBLE_CAST expr      { zend_do_cast(&amp;$$, &amp;$2, IS_DOUBLE TSRMLS_CC); }</span>
+<span class="lineNum">     784 </span><span class="lineNoCov">              0 :         |       T_STRING_CAST expr      { zend_do_cast(&amp;$$, &amp;$2, IS_STRING TSRMLS_CC); }</span>
+<span class="lineNum">     785 </span><span class="lineNoCov">              0 :         |       T_ARRAY_CAST expr       { zend_do_cast(&amp;$$, &amp;$2, IS_ARRAY TSRMLS_CC); }</span>
+<span class="lineNum">     786 </span><span class="lineCov">              1 :         |       T_OBJECT_CAST expr      { zend_do_cast(&amp;$$, &amp;$2, IS_OBJECT TSRMLS_CC); }</span>
+<span class="lineNum">     787 </span><span class="lineNoCov">              0 :         |       T_BOOL_CAST expr        { zend_do_cast(&amp;$$, &amp;$2, IS_BOOL TSRMLS_CC); }</span>
+<span class="lineNum">     788 </span><span class="lineNoCov">              0 :         |       T_UNSET_CAST expr       { zend_do_cast(&amp;$$, &amp;$2, IS_NULL TSRMLS_CC); }</span>
+<span class="lineNum">     789 </span><span class="lineNoCov">              0 :         |       T_EXIT exit_expr        { zend_do_exit(&amp;$$, &amp;$2 TSRMLS_CC); }</span>
+<span class="lineNum">     790 </span><span class="lineCov">             57 :         |       '@' { zend_do_begin_silence(&amp;$1 TSRMLS_CC); } expr { zend_do_end_silence(&amp;$1 TSRMLS_CC); $$ = $3; }</span>
+<span class="lineNum">     791 </span><span class="lineCov">             92 :         |       scalar                          { $$ = $1; }</span>
+<span class="lineNum">     792 </span><span class="lineCov">           2096 :         |       T_ARRAY '(' array_pair_list ')' { $$ = $3; }</span>
+<span class="lineNum">     793 </span><span class="lineCov">            137 :         |       '[' array_pair_list ']' { $$ = $2; }</span>
+<span class="lineNum">     794 </span><span class="lineNoCov">              0 :         |       '`' backticks_expr '`' { zend_do_shell_exec(&amp;$$, &amp;$2 TSRMLS_CC); }</span>
+<span class="lineNum">     795 </span><span class="lineCov">              6 :         |       T_PRINT expr  { zend_do_print(&amp;$$, &amp;$2 TSRMLS_CC); }</span>
+<span class="lineNum">     796 </span><span class="lineNoCov">              0 :         |       function is_reference '(' { zend_do_begin_lambda_function_declaration(&amp;$$, &amp;$1, $2.op_type, 0 TSRMLS_CC); }</span>
+<span class="lineNum">     797 </span><span class="lineNoCov">              0 :                         parameter_list ')' lexical_vars '{' inner_statement_list '}' {  zend_do_end_function_declaration(&amp;$1 TSRMLS_CC); $$ = $4; }</span>
+<span class="lineNum">     798 </span><span class="lineNoCov">              0 :         |       T_STATIC function is_reference '(' { zend_do_begin_lambda_function_declaration(&amp;$$, &amp;$2, $3.op_type, 1 TSRMLS_CC); }</span>
+<span class="lineNum">     799 </span><span class="lineNoCov">              0 :                         parameter_list ')' lexical_vars '{' inner_statement_list '}' {  zend_do_end_function_declaration(&amp;$2 TSRMLS_CC); $$ = $5; }</span>
+<span class="lineNum">     800 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     801 </span>                : 
+<span class="lineNum">     802 </span>                : function:
+<span class="lineNum">     803 </span><span class="lineCov">             52 :         T_FUNCTION { $$.u.op.opline_num = CG(zend_lineno); }</span>
+<span class="lineNum">     804 </span><span class="lineCov">             52 : ;</span>
+<span class="lineNum">     805 </span>                : 
+<span class="lineNum">     806 </span>                : lexical_vars:
+<span class="lineNum">     807 </span>                :                 /* empty */
+<span class="lineNum">     808 </span>                :         |       T_USE '(' lexical_var_list ')'
+<span class="lineNum">     809 </span>                : ;
+<span class="lineNum">     810 </span>                : 
+<span class="lineNum">     811 </span>                : lexical_var_list:
+<span class="lineNum">     812 </span><span class="lineNoCov">              0 :                 lexical_var_list ',' T_VARIABLE                 { zend_do_fetch_lexical_variable(&amp;$3, 0 TSRMLS_CC); }</span>
+<span class="lineNum">     813 </span><span class="lineNoCov">              0 :         |       lexical_var_list ',' '&amp;' T_VARIABLE         { zend_do_fetch_lexical_variable(&amp;$4, 1 TSRMLS_CC); }</span>
+<span class="lineNum">     814 </span><span class="lineNoCov">              0 :         |       T_VARIABLE                                                              { zend_do_fetch_lexical_variable(&amp;$1, 0 TSRMLS_CC); }</span>
+<span class="lineNum">     815 </span><span class="lineNoCov">              0 :         |       '&amp;' T_VARIABLE                                                      { zend_do_fetch_lexical_variable(&amp;$2, 1 TSRMLS_CC); }</span>
+<span class="lineNum">     816 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     817 </span>                : 
+<span class="lineNum">     818 </span>                : function_call:
+<span class="lineNum">     819 </span><span class="lineCov">            795 :                 namespace_name '(' { $2.u.op.opline_num = zend_do_begin_function_call(&amp;$1, 1 TSRMLS_CC); }</span>
+<span class="lineNum">     820 </span><span class="lineCov">            795 :                                 function_call_parameter_list</span>
+<span class="lineNum">     821 </span><span class="lineCov">            795 :                                 ')' { zend_do_end_function_call(&amp;$1, &amp;$$, &amp;$4, 0, $2.u.op.opline_num TSRMLS_CC); zend_do_extended_fcall_end(TSRMLS_C); }</span>
+<span class="lineNum">     822 </span><span class="lineCov">            795 :         |       T_NAMESPACE T_NS_SEPARATOR namespace_name '(' { $1.op_type = IS_CONST; ZVAL_EMPTY_STRING(&amp;$1.u.constant);  zend_do_build_namespace_name(&amp;$1, &amp;$1, &amp;$3 TSRMLS_CC); $4.u.op.opline_num = zend_do_begin_function_call(&amp;$1, 0 TSRMLS_CC); }</span>
+<span class="lineNum">     823 </span><span class="lineNoCov">              0 :                                 function_call_parameter_list</span>
+<span class="lineNum">     824 </span><span class="lineNoCov">              0 :                                 ')' { zend_do_end_function_call(&amp;$1, &amp;$$, &amp;$6, 0, $4.u.op.opline_num TSRMLS_CC); zend_do_extended_fcall_end(TSRMLS_C); }</span>
+<span class="lineNum">     825 </span><span class="lineNoCov">              0 :         |       T_NS_SEPARATOR namespace_name '(' { $3.u.op.opline_num = zend_do_begin_function_call(&amp;$2, 0 TSRMLS_CC); }</span>
+<span class="lineNum">     826 </span><span class="lineNoCov">              0 :                                 function_call_parameter_list</span>
+<span class="lineNum">     827 </span><span class="lineNoCov">              0 :                                 ')' { zend_do_end_function_call(&amp;$2, &amp;$$, &amp;$5, 0, $3.u.op.opline_num TSRMLS_CC); zend_do_extended_fcall_end(TSRMLS_C); }</span>
+<span class="lineNum">     828 </span><span class="lineNoCov">              0 :         |       class_name T_PAAMAYIM_NEKUDOTAYIM variable_name '(' { $4.u.op.opline_num = zend_do_begin_class_member_function_call(&amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     829 </span><span class="lineCov">             22 :                         function_call_parameter_list</span>
+<span class="lineNum">     830 </span><span class="lineCov">             22 :                         ')' { zend_do_end_function_call($4.u.op.opline_num?NULL:&amp;$3, &amp;$$, &amp;$6, $4.u.op.opline_num, $4.u.op.opline_num TSRMLS_CC); zend_do_extended_fcall_end(TSRMLS_C);}</span>
+<span class="lineNum">     831 </span><span class="lineCov">             22 :         |       class_name T_PAAMAYIM_NEKUDOTAYIM variable_without_objects '(' { zend_do_end_variable_parse(&amp;$3, BP_VAR_R, 0 TSRMLS_CC); zend_do_begin_class_member_function_call(&amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     832 </span><span class="lineNoCov">              0 :                         function_call_parameter_list</span>
+<span class="lineNum">     833 </span><span class="lineNoCov">              0 :                         ')' { zend_do_end_function_call(NULL, &amp;$$, &amp;$6, 1, 1 TSRMLS_CC); zend_do_extended_fcall_end(TSRMLS_C);}</span>
+<span class="lineNum">     834 </span><span class="lineNoCov">              0 :         |       variable_class_name T_PAAMAYIM_NEKUDOTAYIM variable_name '(' { zend_do_begin_class_member_function_call(&amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     835 </span><span class="lineNoCov">              0 :                         function_call_parameter_list</span>
+<span class="lineNum">     836 </span><span class="lineNoCov">              0 :                         ')' { zend_do_end_function_call(NULL, &amp;$$, &amp;$6, 1, 1 TSRMLS_CC); zend_do_extended_fcall_end(TSRMLS_C);}</span>
+<span class="lineNum">     837 </span><span class="lineNoCov">              0 :         |       variable_class_name T_PAAMAYIM_NEKUDOTAYIM variable_without_objects '(' { zend_do_end_variable_parse(&amp;$3, BP_VAR_R, 0 TSRMLS_CC); zend_do_begin_class_member_function_call(&amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     838 </span><span class="lineNoCov">              0 :                         function_call_parameter_list</span>
+<span class="lineNum">     839 </span><span class="lineNoCov">              0 :                         ')' { zend_do_end_function_call(NULL, &amp;$$, &amp;$6, 1, 1 TSRMLS_CC); zend_do_extended_fcall_end(TSRMLS_C);}</span>
+<span class="lineNum">     840 </span><span class="lineNoCov">              0 :         |       variable_without_objects  '(' { zend_do_end_variable_parse(&amp;$1, BP_VAR_R, 0 TSRMLS_CC); zend_do_begin_dynamic_function_call(&amp;$1, 0 TSRMLS_CC); }</span>
+<span class="lineNum">     841 </span><span class="lineNoCov">              0 :                         function_call_parameter_list ')'</span>
+<span class="lineNum">     842 </span><span class="lineNoCov">              0 :                         { zend_do_end_function_call(&amp;$1, &amp;$$, &amp;$4, 0, 1 TSRMLS_CC); zend_do_extended_fcall_end(TSRMLS_C);}</span>
+<span class="lineNum">     843 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     844 </span>                : 
+<span class="lineNum">     845 </span>                : class_name:
+<span class="lineNum">     846 </span><span class="lineNoCov">              0 :                 T_STATIC { $$.op_type = IS_CONST; ZVAL_STRINGL(&amp;$$.u.constant, &quot;static&quot;, sizeof(&quot;static&quot;)-1, 1);}</span>
+<span class="lineNum">     847 </span><span class="lineNoCov">              0 :         |       namespace_name { $$ = $1; }</span>
+<span class="lineNum">     848 </span><span class="lineCov">            112 :         |       T_NAMESPACE T_NS_SEPARATOR namespace_name { $$.op_type = IS_CONST; ZVAL_EMPTY_STRING(&amp;$$.u.constant);  zend_do_build_namespace_name(&amp;$$, &amp;$$, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     849 </span><span class="lineNoCov">              0 :         |       T_NS_SEPARATOR namespace_name { char *tmp = estrndup(Z_STRVAL($2.u.constant), Z_STRLEN($2.u.constant)+1); memcpy(&amp;(tmp[1]), Z_STRVAL($2.u.constant), Z_STRLEN($2.u.constant)+1); tmp[0] = '\\'; efree(Z_STRVAL($2.u.constant)); Z_STRVAL($2.u.constant) = tmp; ++Z_STRLEN($2.u.constant); $$ = $2; }</span>
+<span class="lineNum">     850 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     851 </span>                : 
+<span class="lineNum">     852 </span>                : fully_qualified_class_name:
+<span class="lineNum">     853 </span><span class="lineCov">             12 :                 namespace_name { $$ = $1; }</span>
+<span class="lineNum">     854 </span><span class="lineCov">             12 :         |       T_NAMESPACE T_NS_SEPARATOR namespace_name { $$.op_type = IS_CONST; ZVAL_EMPTY_STRING(&amp;$$.u.constant);  zend_do_build_namespace_name(&amp;$$, &amp;$$, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">     855 </span><span class="lineNoCov">              0 :         |       T_NS_SEPARATOR namespace_name { char *tmp = estrndup(Z_STRVAL($2.u.constant), Z_STRLEN($2.u.constant)+1); memcpy(&amp;(tmp[1]), Z_STRVAL($2.u.constant), Z_STRLEN($2.u.constant)+1); tmp[0] = '\\'; efree(Z_STRVAL($2.u.constant)); Z_STRVAL($2.u.constant) = tmp; ++Z_STRLEN($2.u.constant); $$ = $2; }</span>
+<span class="lineNum">     856 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     857 </span>                : 
+<span class="lineNum">     858 </span>                : 
+<span class="lineNum">     859 </span>                : 
+<span class="lineNum">     860 </span>                : class_name_reference:
+<span class="lineNum">     861 </span><span class="lineCov">             72 :                 class_name                                              { zend_do_fetch_class(&amp;$$, &amp;$1 TSRMLS_CC); }</span>
+<span class="lineNum">     862 </span><span class="lineCov">             72 :         |       dynamic_class_name_reference    { zend_do_end_variable_parse(&amp;$1, BP_VAR_R, 0 TSRMLS_CC); zend_do_fetch_class(&amp;$$, &amp;$1 TSRMLS_CC); }</span>
+<span class="lineNum">     863 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     864 </span>                : 
+<span class="lineNum">     865 </span>                : 
+<span class="lineNum">     866 </span>                : dynamic_class_name_reference:
+<span class="lineNum">     867 </span><span class="lineNoCov">              0 :                 base_variable T_OBJECT_OPERATOR { zend_do_push_object(&amp;$1 TSRMLS_CC); }</span>
+<span class="lineNum">     868 </span><span class="lineNoCov">              0 :                         object_property { zend_do_push_object(&amp;$4 TSRMLS_CC); } dynamic_class_name_variable_properties</span>
+<span class="lineNum">     869 </span><span class="lineNoCov">              0 :                         { zend_do_pop_object(&amp;$$ TSRMLS_CC); $$.EA = ZEND_PARSED_MEMBER; }</span>
+<span class="lineNum">     870 </span><span class="lineNoCov">              0 :         |       base_variable { $$ = $1; }</span>
+<span class="lineNum">     871 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     872 </span>                : 
+<span class="lineNum">     873 </span>                : 
+<span class="lineNum">     874 </span>                : dynamic_class_name_variable_properties:
+<span class="lineNum">     875 </span>                :                 dynamic_class_name_variable_properties dynamic_class_name_variable_property
+<span class="lineNum">     876 </span>                :         |       /* empty */
+<span class="lineNum">     877 </span>                : ;
+<span class="lineNum">     878 </span>                : 
+<span class="lineNum">     879 </span>                : 
+<span class="lineNum">     880 </span>                : dynamic_class_name_variable_property:
+<span class="lineNum">     881 </span><span class="lineNoCov">              0 :                 T_OBJECT_OPERATOR object_property { zend_do_push_object(&amp;$2 TSRMLS_CC); }</span>
+<span class="lineNum">     882 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     883 </span>                : 
+<span class="lineNum">     884 </span>                : exit_expr:
+<span class="lineNum">     885 </span><span class="lineCov">              2 :                 /* empty */     { memset(&amp;$$, 0, sizeof(znode)); $$.op_type = IS_UNUSED; }</span>
+<span class="lineNum">     886 </span><span class="lineCov">              2 :         |       '(' ')'         { memset(&amp;$$, 0, sizeof(znode)); $$.op_type = IS_UNUSED; }</span>
+<span class="lineNum">     887 </span><span class="lineNoCov">              0 :         |       '(' expr ')'    { $$ = $2; }</span>
+<span class="lineNum">     888 </span><span class="lineCov">              9 : ;</span>
+<span class="lineNum">     889 </span>                : 
+<span class="lineNum">     890 </span>                : backticks_expr:
+<span class="lineNum">     891 </span><span class="lineNoCov">              0 :                 /* empty */     { ZVAL_EMPTY_STRING(&amp;$$.u.constant); INIT_PZVAL(&amp;$$.u.constant); $$.op_type = IS_CONST; }</span>
+<span class="lineNum">     892 </span><span class="lineNoCov">              0 :         |       T_ENCAPSED_AND_WHITESPACE       { $$ = $1; }</span>
+<span class="lineNum">     893 </span><span class="lineNoCov">              0 :         |       encaps_list     { $$ = $1; }</span>
+<span class="lineNum">     894 </span><span class="lineCov">              6 : ;</span>
+<span class="lineNum">     895 </span>                : 
+<span class="lineNum">     896 </span>                : 
+<span class="lineNum">     897 </span>                : ctor_arguments:
+<span class="lineNum">     898 </span><span class="lineCov">              1 :                 /* empty */     { Z_LVAL($$.u.constant)=0; }</span>
+<span class="lineNum">     899 </span><span class="lineCov">              1 :         |       '(' function_call_parameter_list ')'    { $$ = $2; }</span>
+<span class="lineNum">     900 </span><span class="lineCov">             71 : ;</span>
+<span class="lineNum">     901 </span>                : 
+<span class="lineNum">     902 </span>                : 
+<span class="lineNum">     903 </span>                : common_scalar:
+<span class="lineNum">     904 </span><span class="lineCov">            267 :                 T_LNUMBER                                       { $$ = $1; }</span>
+<span class="lineNum">     905 </span><span class="lineCov">            267 :         |       T_DNUMBER                                       { $$ = $1; }</span>
+<span class="lineNum">     906 </span><span class="lineCov">              6 :         |       T_CONSTANT_ENCAPSED_STRING      { $$ = $1; }</span>
+<span class="lineNum">     907 </span><span class="lineCov">           1492 :         |       T_LINE                                          { $$ = $1; }</span>
+<span class="lineNum">     908 </span><span class="lineNoCov">              0 :         |       T_FILE                                          { $$ = $1; }</span>
+<span class="lineNum">     909 </span><span class="lineCov">              2 :         |       T_DIR                                           { $$ = $1; }</span>
+<span class="lineNum">     910 </span><span class="lineCov">              3 :         |       T_TRAIT_C                                       { $$ = $1; }</span>
+<span class="lineNum">     911 </span><span class="lineNoCov">              0 :         |       T_METHOD_C                                      { $$ = $1; }</span>
+<span class="lineNum">     912 </span><span class="lineNoCov">              0 :         |       T_FUNC_C                                        { $$ = $1; }</span>
+<span class="lineNum">     913 </span><span class="lineNoCov">              0 :         |       T_NS_C                                          { $$ = $1; }</span>
+<span class="lineNum">     914 </span><span class="lineNoCov">              0 :         |       T_START_HEREDOC T_ENCAPSED_AND_WHITESPACE T_END_HEREDOC { $$ = $2; CG(heredoc) = Z_STRVAL($1.u.constant); CG(heredoc_len) = Z_STRLEN($1.u.constant); }</span>
+<span class="lineNum">     915 </span><span class="lineCov">              4 :         |       T_START_HEREDOC T_END_HEREDOC { ZVAL_EMPTY_STRING(&amp;$$.u.constant); INIT_PZVAL(&amp;$$.u.constant); $$.op_type = IS_CONST; CG(heredoc) = Z_STRVAL($1.u.constant); CG(heredoc_len) = Z_STRLEN($1.u.constant); }</span>
+<span class="lineNum">     916 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     917 </span>                : 
+<span class="lineNum">     918 </span>                : 
+<span class="lineNum">     919 </span>                : static_scalar: /* compile-time evaluated scalars */
+<span class="lineNum">     920 </span><span class="lineCov">              5 :                 common_scalar           { $$ = $1; }</span>
+<span class="lineNum">     921 </span><span class="lineCov">              5 :         |       namespace_name          { zend_do_fetch_constant(&amp;$$, NULL, &amp;$1, ZEND_CT, 1 TSRMLS_CC); }</span>
+<span class="lineNum">     922 </span><span class="lineCov">             10 :         |       T_NAMESPACE T_NS_SEPARATOR namespace_name { $$.op_type = IS_CONST; ZVAL_EMPTY_STRING(&amp;$$.u.constant);  zend_do_build_namespace_name(&amp;$$, &amp;$$, &amp;$3 TSRMLS_CC); $3 = $$; zend_do_fetch_constant(&amp;$$, NULL, &amp;$3, ZEND_CT, 0 TSRMLS_CC); }</span>
+<span class="lineNum">     923 </span><span class="lineNoCov">              0 :         |       T_NS_SEPARATOR namespace_name { char *tmp = estrndup(Z_STRVAL($2.u.constant), Z_STRLEN($2.u.constant)+1); memcpy(&amp;(tmp[1]), Z_STRVAL($2.u.constant), Z_STRLEN($2.u.constant)+1); tmp[0] = '\\'; efree(Z_STRVAL($2.u.constant)); Z_STRVAL($2.u.constant) = tmp; ++Z_STRLEN($2.u.constant); zend_do_fetch_constant(&amp;$$, NULL, &amp;$2, ZEND_CT, 0 TSRMLS_CC); }</span>
+<span class="lineNum">     924 </span><span class="lineNoCov">              0 :         |       '+' static_scalar { ZVAL_LONG(&amp;$1.u.constant, 0); add_function(&amp;$2.u.constant, &amp;$1.u.constant, &amp;$2.u.constant TSRMLS_CC); $$ = $2; }</span>
+<span class="lineNum">     925 </span><span class="lineNoCov">              0 :         |       '-' static_scalar { ZVAL_LONG(&amp;$1.u.constant, 0); sub_function(&amp;$2.u.constant, &amp;$1.u.constant, &amp;$2.u.constant TSRMLS_CC); $$ = $2; }</span>
+<span class="lineNum">     926 </span><span class="lineNoCov">              0 :         |       T_ARRAY '(' static_array_pair_list ')' { $$ = $3; Z_TYPE($$.u.constant) = IS_CONSTANT_ARRAY; }</span>
+<span class="lineNum">     927 </span><span class="lineNoCov">              0 :         |       '[' static_array_pair_list ']' { $$ = $2; Z_TYPE($$.u.constant) = IS_CONSTANT_ARRAY; }</span>
+<span class="lineNum">     928 </span><span class="lineNoCov">              0 :         |       static_class_constant { $$ = $1; }</span>
+<span class="lineNum">     929 </span><span class="lineNoCov">              0 :         |       T_CLASS_C                       { $$ = $1; }</span>
+<span class="lineNum">     930 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     931 </span>                : 
+<span class="lineNum">     932 </span>                : static_class_constant:
+<span class="lineNum">     933 </span><span class="lineNoCov">              0 :                 class_name T_PAAMAYIM_NEKUDOTAYIM T_STRING { zend_do_fetch_constant(&amp;$$, &amp;$1, &amp;$3, ZEND_CT, 0 TSRMLS_CC); }</span>
+<span class="lineNum">     934 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     935 </span>                : 
+<span class="lineNum">     936 </span>                : scalar:
+<span class="lineNum">     937 </span><span class="lineNoCov">              0 :                 T_STRING_VARNAME                { $$ = $1; }</span>
+<span class="lineNum">     938 </span><span class="lineNoCov">              0 :         |       class_constant          { $$ = $1; }</span>
+<span class="lineNum">     939 </span><span class="lineCov">             18 :         |       namespace_name  { zend_do_fetch_constant(&amp;$$, NULL, &amp;$1, ZEND_RT, 1 TSRMLS_CC); }</span>
+<span class="lineNum">     940 </span><span class="lineCov">            207 :         |       T_NAMESPACE T_NS_SEPARATOR namespace_name { $$.op_type = IS_CONST; ZVAL_EMPTY_STRING(&amp;$$.u.constant);  zend_do_build_namespace_name(&amp;$$, &amp;$$, &amp;$3 TSRMLS_CC); $3 = $$; zend_do_fetch_constant(&amp;$$, NULL, &amp;$3, ZEND_RT, 0 TSRMLS_CC); }</span>
+<span class="lineNum">     941 </span><span class="lineNoCov">              0 :         |       T_NS_SEPARATOR namespace_name { char *tmp = estrndup(Z_STRVAL($2.u.constant), Z_STRLEN($2.u.constant)+1); memcpy(&amp;(tmp[1]), Z_STRVAL($2.u.constant), Z_STRLEN($2.u.constant)+1); tmp[0] = '\\'; efree(Z_STRVAL($2.u.constant)); Z_STRVAL($2.u.constant) = tmp; ++Z_STRLEN($2.u.constant); zend_do_fetch_constant(&amp;$$, NULL, &amp;$2, ZEND_RT, 0 TSRMLS_CC); }</span>
+<span class="lineNum">     942 </span><span class="lineNoCov">              0 :         |       common_scalar                   { $$ = $1; }</span>
+<span class="lineNum">     943 </span><span class="lineCov">           1769 :         |       '&quot;' encaps_list '&quot;'   { $$ = $2; }</span>
+<span class="lineNum">     944 </span><span class="lineCov">            102 :         |       T_START_HEREDOC encaps_list T_END_HEREDOC { $$ = $2; CG(heredoc) = Z_STRVAL($1.u.constant); CG(heredoc_len) = Z_STRLEN($1.u.constant); }</span>
+<span class="lineNum">     945 </span><span class="lineNoCov">              0 :         |       T_CLASS_C                               { if (Z_TYPE($1.u.constant) == IS_CONSTANT) {zend_do_fetch_constant(&amp;$$, NULL, &amp;$1, ZEND_RT, 1 TSRMLS_CC);} else {$$ = $1;} }</span>
+<span class="lineNum">     946 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     947 </span>                : 
+<span class="lineNum">     948 </span>                : 
+<span class="lineNum">     949 </span>                : static_array_pair_list:
+<span class="lineNum">     950 </span><span class="lineNoCov">              0 :                 /* empty */ { $$.op_type = IS_CONST; INIT_PZVAL(&amp;$$.u.constant); array_init(&amp;$$.u.constant); }</span>
+<span class="lineNum">     951 </span><span class="lineNoCov">              0 :         |       non_empty_static_array_pair_list possible_comma { $$ = $1; }</span>
+<span class="lineNum">     952 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     953 </span>                : 
+<span class="lineNum">     954 </span>                : possible_comma:
+<span class="lineNum">     955 </span>                :                 /* empty */
+<span class="lineNum">     956 </span>                :         |       ','
+<span class="lineNum">     957 </span>                : ;
+<span class="lineNum">     958 </span>                : 
+<span class="lineNum">     959 </span>                : non_empty_static_array_pair_list:
+<span class="lineNum">     960 </span><span class="lineNoCov">              0 :                 non_empty_static_array_pair_list ',' static_scalar T_DOUBLE_ARROW static_scalar { zend_do_add_static_array_element(&amp;$$, &amp;$3, &amp;$5); }</span>
+<span class="lineNum">     961 </span><span class="lineNoCov">              0 :         |       non_empty_static_array_pair_list ',' static_scalar { zend_do_add_static_array_element(&amp;$$, NULL, &amp;$3); }</span>
+<span class="lineNum">     962 </span><span class="lineNoCov">              0 :         |       static_scalar T_DOUBLE_ARROW static_scalar { $$.op_type = IS_CONST; INIT_PZVAL(&amp;$$.u.constant); array_init(&amp;$$.u.constant); zend_do_add_static_array_element(&amp;$$, &amp;$1, &amp;$3); }</span>
+<span class="lineNum">     963 </span><span class="lineNoCov">              0 :         |       static_scalar { $$.op_type = IS_CONST; INIT_PZVAL(&amp;$$.u.constant); array_init(&amp;$$.u.constant); zend_do_add_static_array_element(&amp;$$, NULL, &amp;$1); }</span>
+<span class="lineNum">     964 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     965 </span>                : 
+<span class="lineNum">     966 </span>                : expr:
+<span class="lineNum">     967 </span><span class="lineCov">           1495 :                 r_variable                                      { $$ = $1; }</span>
+<span class="lineNum">     968 </span><span class="lineCov">           1495 :         |       expr_without_variable           { $$ = $1; }</span>
+<span class="lineNum">     969 </span><span class="lineCov">           3335 : ;</span>
+<span class="lineNum">     970 </span>                : 
+<span class="lineNum">     971 </span>                : 
+<span class="lineNum">     972 </span>                : r_variable:
+<span class="lineNum">     973 </span><span class="lineCov">           1495 :         variable { zend_do_end_variable_parse(&amp;$1, BP_VAR_R, 0 TSRMLS_CC); $$ = $1; }</span>
+<span class="lineNum">     974 </span><span class="lineCov">           1495 : ;</span>
+<span class="lineNum">     975 </span>                : 
+<span class="lineNum">     976 </span>                : 
+<span class="lineNum">     977 </span>                : w_variable:
+<span class="lineNum">     978 </span><span class="lineNoCov">              0 :         variable        { zend_do_end_variable_parse(&amp;$1, BP_VAR_W, 0 TSRMLS_CC); $$ = $1;</span>
+<span class="lineNum">     979 </span><span class="lineNoCov">              0 :                                   zend_check_writable_variable(&amp;$1); }</span>
+<span class="lineNum">     980 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">     981 </span>                : 
+<span class="lineNum">     982 </span>                : rw_variable:
+<span class="lineNum">     983 </span><span class="lineCov">             45 :         variable        { zend_do_end_variable_parse(&amp;$1, BP_VAR_RW, 0 TSRMLS_CC); $$ = $1;</span>
+<span class="lineNum">     984 </span><span class="lineCov">             45 :                                   zend_check_writable_variable(&amp;$1); }</span>
+<span class="lineNum">     985 </span><span class="lineCov">             45 : ;</span>
+<span class="lineNum">     986 </span>                : 
+<span class="lineNum">     987 </span>                : variable:
+<span class="lineNum">     988 </span><span class="lineCov">            191 :                 base_variable_with_function_calls T_OBJECT_OPERATOR { zend_do_push_object(&amp;$1 TSRMLS_CC); }</span>
+<span class="lineNum">     989 </span><span class="lineCov">            191 :                         object_property { zend_do_push_object(&amp;$4 TSRMLS_CC); } method_or_not variable_properties</span>
+<span class="lineNum">     990 </span><span class="lineCov">            191 :                         { zend_do_pop_object(&amp;$$ TSRMLS_CC); $$.EA = $1.EA | ($7.EA ? $7.EA : $6.EA); }</span>
+<span class="lineNum">     991 </span><span class="lineCov">            191 :         |       base_variable_with_function_calls { $$ = $1; }</span>
+<span class="lineNum">     992 </span><span class="lineCov">           3216 : ;</span>
+<span class="lineNum">     993 </span>                : 
+<span class="lineNum">     994 </span>                : variable_properties:
+<span class="lineNum">     995 </span><span class="lineCov">             23 :                 variable_properties variable_property { $$.EA = $2.EA; }</span>
+<span class="lineNum">     996 </span><span class="lineCov">             23 :         |       /* empty */ { $$.EA = 0; }</span>
+<span class="lineNum">     997 </span><span class="lineCov">            191 : ;</span>
+<span class="lineNum">     998 </span>                : 
+<span class="lineNum">     999 </span>                : 
+<span class="lineNum">    1000 </span>                : variable_property:
+<span class="lineNum">    1001 </span><span class="lineCov">             46 :                 T_OBJECT_OPERATOR object_property { zend_do_push_object(&amp;$2 TSRMLS_CC); } method_or_not { $$.EA = $4.EA; }</span>
+<span class="lineNum">    1002 </span><span class="lineCov">             46 : ;</span>
+<span class="lineNum">    1003 </span>                : 
+<span class="lineNum">    1004 </span>                : array_method_dereference:
+<span class="lineNum">    1005 </span><span class="lineNoCov">              0 :                 array_method_dereference '[' dim_offset ']' { fetch_array_dim(&amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">    1006 </span><span class="lineNoCov">              0 :         |       method '[' dim_offset ']' { $1.EA = ZEND_PARSED_METHOD_CALL; fetch_array_dim(&amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">    1007 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">    1008 </span>                : 
+<span class="lineNum">    1009 </span>                : method:
+<span class="lineNum">    1010 </span><span class="lineCov">            180 :                 '(' { zend_do_pop_object(&amp;$1 TSRMLS_CC); zend_do_begin_method_call(&amp;$1 TSRMLS_CC); }</span>
+<span class="lineNum">    1011 </span><span class="lineCov">            180 :                                 function_call_parameter_list ')'</span>
+<span class="lineNum">    1012 </span><span class="lineCov">            180 :                         { zend_do_end_function_call(&amp;$1, &amp;$$, &amp;$3, 1, 1 TSRMLS_CC); zend_do_extended_fcall_end(TSRMLS_C); }</span>
+<span class="lineNum">    1013 </span><span class="lineCov">            180 : ;</span>
+<span class="lineNum">    1014 </span>                : 
+<span class="lineNum">    1015 </span>                : method_or_not:
+<span class="lineNum">    1016 </span><span class="lineCov">            180 :                 method                                          { $$ = $1; $$.EA = ZEND_PARSED_METHOD_CALL; zend_do_push_object(&amp;$$ TSRMLS_CC); }</span>
+<span class="lineNum">    1017 </span><span class="lineCov">            180 :         |       array_method_dereference        { $$ = $1; zend_do_push_object(&amp;$$ TSRMLS_CC); }</span>
+<span class="lineNum">    1018 </span><span class="lineNoCov">              0 :         |       /* empty */ { $$.EA = ZEND_PARSED_MEMBER; }</span>
+<span class="lineNum">    1019 </span><span class="lineCov">             34 : ;</span>
+<span class="lineNum">    1020 </span>                : 
+<span class="lineNum">    1021 </span>                : variable_without_objects:
+<span class="lineNum">    1022 </span><span class="lineNoCov">              0 :                 reference_variable { $$ = $1; }</span>
+<span class="lineNum">    1023 </span><span class="lineNoCov">              0 :         |       simple_indirect_reference reference_variable { zend_do_indirect_references(&amp;$$, &amp;$1, &amp;$2 TSRMLS_CC); }</span>
+<span class="lineNum">    1024 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">    1025 </span>                : 
+<span class="lineNum">    1026 </span>                : static_member:
+<span class="lineNum">    1027 </span><span class="lineNoCov">              0 :                 class_name T_PAAMAYIM_NEKUDOTAYIM variable_without_objects { $$ = $3; zend_do_fetch_static_member(&amp;$$, &amp;$1 TSRMLS_CC); }</span>
+<span class="lineNum">    1028 </span><span class="lineNoCov">              0 :         |       variable_class_name T_PAAMAYIM_NEKUDOTAYIM variable_without_objects { $$ = $3; zend_do_fetch_static_member(&amp;$$, &amp;$1 TSRMLS_CC); }</span>
+<span class="lineNum">    1029 </span><span class="lineNoCov">              0 : </span>
+<span class="lineNum">    1030 </span>                : ;
+<span class="lineNum">    1031 </span>                : 
+<span class="lineNum">    1032 </span>                : variable_class_name:
+<span class="lineNum">    1033 </span><span class="lineNoCov">              0 :                 reference_variable { zend_do_end_variable_parse(&amp;$1, BP_VAR_R, 0 TSRMLS_CC); $$=$1;; }</span>
+<span class="lineNum">    1034 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">    1035 </span>                : 
+<span class="lineNum">    1036 </span>                : array_function_dereference:
+<span class="lineNum">    1037 </span><span class="lineNoCov">              0 :                 array_function_dereference '[' dim_offset ']' { fetch_array_dim(&amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">    1038 </span><span class="lineNoCov">              0 :         |       function_call { zend_do_begin_variable_parse(TSRMLS_C); $1.EA = ZEND_PARSED_FUNCTION_CALL; }</span>
+<span class="lineNum">    1039 </span><span class="lineNoCov">              0 :                 '[' dim_offset ']' { fetch_array_dim(&amp;$$, &amp;$1, &amp;$4 TSRMLS_CC); }</span>
+<span class="lineNum">    1040 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">    1041 </span>                : 
+<span class="lineNum">    1042 </span>                : base_variable_with_function_calls:
+<span class="lineNum">    1043 </span><span class="lineCov">           2590 :                 base_variable                           { $$ = $1; }</span>
+<span class="lineNum">    1044 </span><span class="lineCov">           2590 :         |       array_function_dereference      { $$ = $1; }</span>
+<span class="lineNum">    1045 </span><span class="lineNoCov">              0 :         |       function_call { zend_do_begin_variable_parse(TSRMLS_C); $$ = $1; $$.EA = ZEND_PARSED_FUNCTION_CALL; }</span>
+<span class="lineNum">    1046 </span><span class="lineCov">            817 : ;</span>
+<span class="lineNum">    1047 </span>                : 
+<span class="lineNum">    1048 </span>                : 
+<span class="lineNum">    1049 </span>                : base_variable:
+<span class="lineNum">    1050 </span><span class="lineCov">           2590 :                 reference_variable { $$ = $1; $$.EA = ZEND_PARSED_VARIABLE; }</span>
+<span class="lineNum">    1051 </span><span class="lineCov">           2590 :         |       simple_indirect_reference reference_variable { zend_do_indirect_references(&amp;$$, &amp;$1, &amp;$2 TSRMLS_CC); $$.EA = ZEND_PARSED_VARIABLE; }</span>
+<span class="lineNum">    1052 </span><span class="lineNoCov">              0 :         |       static_member { $$ = $1; $$.EA = ZEND_PARSED_STATIC_MEMBER; }</span>
+<span class="lineNum">    1053 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">    1054 </span>                : 
+<span class="lineNum">    1055 </span>                : reference_variable:
+<span class="lineNum">    1056 </span><span class="lineCov">            475 :                 reference_variable '[' dim_offset ']'   { fetch_array_dim(&amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">    1057 </span><span class="lineCov">            475 :         |       reference_variable '{' expr '}'         { fetch_string_offset(&amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">    1058 </span><span class="lineCov">              4 :         |       compound_variable                       { zend_do_begin_variable_parse(TSRMLS_C); fetch_simple_variable(&amp;$$, &amp;$1, 1 TSRMLS_CC); }</span>
+<span class="lineNum">    1059 </span><span class="lineCov">           2590 : ;</span>
+<span class="lineNum">    1060 </span>                : 
+<span class="lineNum">    1061 </span>                : 
+<span class="lineNum">    1062 </span>                : compound_variable:
+<span class="lineNum">    1063 </span><span class="lineCov">           2590 :                 T_VARIABLE                      { $$ = $1; }</span>
+<span class="lineNum">    1064 </span><span class="lineCov">           2590 :         |       '$' '{' expr '}'        { $$ = $3; }</span>
+<span class="lineNum">    1065 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">    1066 </span>                : 
+<span class="lineNum">    1067 </span>                : dim_offset:
+<span class="lineNum">    1068 </span><span class="lineCov">             26 :                 /* empty */             { $$.op_type = IS_UNUSED; }</span>
+<span class="lineNum">    1069 </span><span class="lineCov">             26 :         |       expr                    { $$ = $1; }</span>
+<span class="lineNum">    1070 </span><span class="lineCov">            451 : ;</span>
+<span class="lineNum">    1071 </span>                : 
+<span class="lineNum">    1072 </span>                : 
+<span class="lineNum">    1073 </span>                : object_property:
+<span class="lineNum">    1074 </span><span class="lineCov">            214 :                 object_dim_list { $$ = $1; }</span>
+<span class="lineNum">    1075 </span><span class="lineCov">            214 :         |       variable_without_objects { zend_do_end_variable_parse(&amp;$1, BP_VAR_R, 0 TSRMLS_CC); } { znode tmp_znode;  zend_do_pop_object(&amp;tmp_znode TSRMLS_CC);  zend_do_fetch_property(&amp;$$, &amp;tmp_znode, &amp;$1 TSRMLS_CC);}</span>
+<span class="lineNum">    1076 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">    1077 </span>                : 
+<span class="lineNum">    1078 </span>                : object_dim_list:
+<span class="lineNum">    1079 </span><span class="lineCov">              2 :                 object_dim_list '[' dim_offset ']'      { fetch_array_dim(&amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">    1080 </span><span class="lineCov">              2 :         |       object_dim_list '{' expr '}'            { fetch_string_offset(&amp;$$, &amp;$1, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">    1081 </span><span class="lineNoCov">              0 :         |       variable_name { znode tmp_znode;  zend_do_pop_object(&amp;tmp_znode TSRMLS_CC);  zend_do_fetch_property(&amp;$$, &amp;tmp_znode, &amp;$1 TSRMLS_CC);}</span>
+<span class="lineNum">    1082 </span><span class="lineCov">            214 : ;</span>
+<span class="lineNum">    1083 </span>                : 
+<span class="lineNum">    1084 </span>                : variable_name:
+<span class="lineNum">    1085 </span><span class="lineCov">            236 :                 T_STRING                { $$ = $1; }</span>
+<span class="lineNum">    1086 </span><span class="lineCov">            236 :         |       '{' expr '}'    { $$ = $2; }</span>
+<span class="lineNum">    1087 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">    1088 </span>                : 
+<span class="lineNum">    1089 </span>                : simple_indirect_reference:
+<span class="lineNum">    1090 </span><span class="lineNoCov">              0 :                 '$' { Z_LVAL($$.u.constant) = 1; }</span>
+<span class="lineNum">    1091 </span><span class="lineNoCov">              0 :         |       simple_indirect_reference '$' { Z_LVAL($$.u.constant)++; }</span>
+<span class="lineNum">    1092 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">    1093 </span>                : 
+<span class="lineNum">    1094 </span>                : assignment_list:
+<span class="lineNum">    1095 </span>                :                 assignment_list ',' assignment_list_element
+<span class="lineNum">    1096 </span>                :         |       assignment_list_element
+<span class="lineNum">    1097 </span>                : ;
+<span class="lineNum">    1098 </span>                : 
+<span class="lineNum">    1099 </span>                : 
+<span class="lineNum">    1100 </span>                : assignment_list_element:
+<span class="lineNum">    1101 </span><span class="lineCov">              5 :                 variable                                                                { zend_do_add_list_element(&amp;$1 TSRMLS_CC); }</span>
+<span class="lineNum">    1102 </span><span class="lineCov">              5 :         |       T_LIST '(' { zend_do_new_list_begin(TSRMLS_C); } assignment_list ')'    { zend_do_new_list_end(TSRMLS_C); }</span>
+<span class="lineNum">    1103 </span><span class="lineNoCov">              0 :         |       /* empty */                                                     { zend_do_add_list_element(NULL TSRMLS_CC); }</span>
+<span class="lineNum">    1104 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">    1105 </span>                : 
+<span class="lineNum">    1106 </span>                : 
+<span class="lineNum">    1107 </span>                : array_pair_list:
+<span class="lineNum">    1108 </span><span class="lineCov">             41 :                 /* empty */ { zend_do_init_array(&amp;$$, NULL, NULL, 0 TSRMLS_CC); }</span>
+<span class="lineNum">    1109 </span><span class="lineCov">             41 :         |       non_empty_array_pair_list possible_comma        { $$ = $1; }</span>
+<span class="lineNum">    1110 </span><span class="lineCov">             96 : ;</span>
+<span class="lineNum">    1111 </span>                : 
+<span class="lineNum">    1112 </span>                : non_empty_array_pair_list:
+<span class="lineNum">    1113 </span><span class="lineCov">             81 :                 non_empty_array_pair_list ',' expr T_DOUBLE_ARROW expr  { zend_do_add_array_element(&amp;$$, &amp;$5, &amp;$3, 0 TSRMLS_CC); }</span>
+<span class="lineNum">    1114 </span><span class="lineCov">             81 :         |       non_empty_array_pair_list ',' expr                      { zend_do_add_array_element(&amp;$$, &amp;$3, NULL, 0 TSRMLS_CC); }</span>
+<span class="lineNum">    1115 </span><span class="lineCov">             56 :         |       expr T_DOUBLE_ARROW expr        { zend_do_init_array(&amp;$$, &amp;$3, &amp;$1, 0 TSRMLS_CC); }</span>
+<span class="lineNum">    1116 </span><span class="lineCov">             68 :         |       expr                            { zend_do_init_array(&amp;$$, &amp;$1, NULL, 0 TSRMLS_CC); }</span>
+<span class="lineNum">    1117 </span><span class="lineCov">             28 :         |       non_empty_array_pair_list ',' expr T_DOUBLE_ARROW '&amp;' w_variable { zend_do_add_array_element(&amp;$$, &amp;$6, &amp;$3, 1 TSRMLS_CC); }</span>
+<span class="lineNum">    1118 </span><span class="lineNoCov">              0 :         |       non_empty_array_pair_list ',' '&amp;' w_variable { zend_do_add_array_element(&amp;$$, &amp;$4, NULL, 1 TSRMLS_CC); }</span>
+<span class="lineNum">    1119 </span><span class="lineNoCov">              0 :         |       expr T_DOUBLE_ARROW '&amp;' w_variable  { zend_do_init_array(&amp;$$, &amp;$4, &amp;$1, 1 TSRMLS_CC); }</span>
+<span class="lineNum">    1120 </span><span class="lineNoCov">              0 :         |       '&amp;' w_variable                      { zend_do_init_array(&amp;$$, &amp;$2, NULL, 1 TSRMLS_CC); }</span>
+<span class="lineNum">    1121 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">    1122 </span>                : 
+<span class="lineNum">    1123 </span>                : encaps_list:
+<span class="lineNum">    1124 </span><span class="lineCov">             88 :                 encaps_list encaps_var { zend_do_end_variable_parse(&amp;$2, BP_VAR_R, 0 TSRMLS_CC);  zend_do_add_variable(&amp;$$, &amp;$1, &amp;$2 TSRMLS_CC); }</span>
+<span class="lineNum">    1125 </span><span class="lineCov">             88 :         |       encaps_list T_ENCAPSED_AND_WHITESPACE   { zend_do_add_string(&amp;$$, &amp;$1, &amp;$2 TSRMLS_CC); }</span>
+<span class="lineNum">    1126 </span><span class="lineCov">            166 :         |       encaps_var { zend_do_end_variable_parse(&amp;$1, BP_VAR_R, 0 TSRMLS_CC); zend_do_add_variable(&amp;$$, NULL, &amp;$1 TSRMLS_CC); }</span>
+<span class="lineNum">    1127 </span><span class="lineCov">             31 :         |       T_ENCAPSED_AND_WHITESPACE encaps_var    { zend_do_add_string(&amp;$$, NULL, &amp;$1 TSRMLS_CC); zend_do_end_variable_parse(&amp;$2, BP_VAR_R, 0 TSRMLS_CC); zend_do_add_variable(&amp;$$, &amp;$$, &amp;$2 TSRMLS_CC); }</span>
+<span class="lineNum">    1128 </span><span class="lineCov">             77 : ;</span>
+<span class="lineNum">    1129 </span>                : 
+<span class="lineNum">    1130 </span>                : 
+<span class="lineNum">    1131 </span>                : 
+<span class="lineNum">    1132 </span>                : encaps_var:
+<span class="lineNum">    1133 </span><span class="lineCov">            171 :                 T_VARIABLE { zend_do_begin_variable_parse(TSRMLS_C); fetch_simple_variable(&amp;$$, &amp;$1, 1 TSRMLS_CC); }</span>
+<span class="lineNum">    1134 </span><span class="lineCov">            176 :         |       T_VARIABLE '[' { zend_do_begin_variable_parse(TSRMLS_C); } encaps_var_offset ']'        { fetch_array_begin(&amp;$$, &amp;$1, &amp;$4 TSRMLS_CC); }</span>
+<span class="lineNum">    1135 </span><span class="lineCov">             10 :         |       T_VARIABLE T_OBJECT_OPERATOR T_STRING { zend_do_begin_variable_parse(TSRMLS_C); fetch_simple_variable(&amp;$2, &amp;$1, 1 TSRMLS_CC); zend_do_fetch_property(&amp;$$, &amp;$2, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">    1136 </span><span class="lineNoCov">              0 :         |       T_DOLLAR_OPEN_CURLY_BRACES expr '}' { zend_do_begin_variable_parse(TSRMLS_C);  fetch_simple_variable(&amp;$$, &amp;$2, 1 TSRMLS_CC); }</span>
+<span class="lineNum">    1137 </span><span class="lineNoCov">              0 :         |       T_DOLLAR_OPEN_CURLY_BRACES T_STRING_VARNAME '[' expr ']' '}' { zend_do_begin_variable_parse(TSRMLS_C);  fetch_array_begin(&amp;$$, &amp;$2, &amp;$4 TSRMLS_CC); }</span>
+<span class="lineNum">    1138 </span><span class="lineNoCov">              0 :         |       T_CURLY_OPEN variable '}' { $$ = $2; }</span>
+<span class="lineNum">    1139 </span><span class="lineCov">             20 : ;</span>
+<span class="lineNum">    1140 </span>                : 
+<span class="lineNum">    1141 </span>                : 
+<span class="lineNum">    1142 </span>                : encaps_var_offset:
+<span class="lineNum">    1143 </span><span class="lineNoCov">              0 :                 T_STRING                { $$ = $1; }</span>
+<span class="lineNum">    1144 </span><span class="lineNoCov">              0 :         |       T_NUM_STRING    { $$ = $1; }</span>
+<span class="lineNum">    1145 </span><span class="lineCov">              5 :         |       T_VARIABLE              { fetch_simple_variable(&amp;$$, &amp;$1, 1 TSRMLS_CC); }</span>
+<span class="lineNum">    1146 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">    1147 </span>                : 
+<span class="lineNum">    1148 </span>                : 
+<span class="lineNum">    1149 </span>                : internal_functions_in_yacc:
+<span class="lineNum">    1150 </span><span class="lineCov">             38 :                 T_ISSET '(' isset_variables ')' { $$ = $3; }</span>
+<span class="lineNum">    1151 </span><span class="lineCov">             38 :         |       T_EMPTY '(' variable ')'        { zend_do_isset_or_isempty(ZEND_ISEMPTY, &amp;$$, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">    1152 </span><span class="lineCov">             31 :         |       T_INCLUDE expr                  { zend_do_include_or_eval(ZEND_INCLUDE, &amp;$$, &amp;$2 TSRMLS_CC); }</span>
+<span class="lineNum">    1153 </span><span class="lineNoCov">              0 :         |       T_INCLUDE_ONCE expr     { zend_do_include_or_eval(ZEND_INCLUDE_ONCE, &amp;$$, &amp;$2 TSRMLS_CC); }</span>
+<span class="lineNum">    1154 </span><span class="lineNoCov">              0 :         |       T_EVAL '(' expr ')'     { zend_do_include_or_eval(ZEND_EVAL, &amp;$$, &amp;$3 TSRMLS_CC); }</span>
+<span class="lineNum">    1155 </span><span class="lineCov">              1 :         |       T_REQUIRE expr                  { zend_do_include_or_eval(ZEND_REQUIRE, &amp;$$, &amp;$2 TSRMLS_CC); }</span>
+<span class="lineNum">    1156 </span><span class="lineNoCov">              0 :         |       T_REQUIRE_ONCE expr             { zend_do_include_or_eval(ZEND_REQUIRE_ONCE, &amp;$$, &amp;$2 TSRMLS_CC); }</span>
+<span class="lineNum">    1157 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">    1158 </span>                : 
+<span class="lineNum">    1159 </span>                : isset_variables:
+<span class="lineNum">    1160 </span><span class="lineCov">             38 :                 variable                                { zend_do_isset_or_isempty(ZEND_ISSET, &amp;$$, &amp;$1 TSRMLS_CC); }</span>
+<span class="lineNum">    1161 </span><span class="lineCov">             38 :         |       isset_variables ',' { zend_do_boolean_and_begin(&amp;$1, &amp;$2 TSRMLS_CC); } variable { znode tmp; zend_do_isset_or_isempty(ZEND_ISSET, &amp;tmp, &amp;$4 TSRMLS_CC); zend_do_boolean_and_end(&amp;$$, &amp;$1, &amp;tmp, &amp;$2 TSRMLS_CC); }</span>
+<span class="lineNum">    1162 </span><span class="lineNoCov">              0 : ;</span>
+<span class="lineNum">    1163 </span>                : 
+<span class="lineNum">    1164 </span>                : class_constant:
+<span class="lineNum">    1165 </span><span class="lineCov">             18 :                 class_name T_PAAMAYIM_NEKUDOTAYIM T_STRING { zend_do_fetch_constant(&amp;$$, &amp;$1, &amp;$3, ZEND_RT, 0 TSRMLS_CC); }</span>
+<span class="lineNum">    1166 </span><span class="lineCov">             18 :         |       variable_class_name T_PAAMAYIM_NEKUDOTAYIM T_STRING { zend_do_fetch_constant(&amp;$$, &amp;$1, &amp;$3, ZEND_RT, 0 TSRMLS_CC); }</span>
+<span class="lineNum">    1167 </span>                : ;
+<span class="lineNum">    1168 </span>                : 
+<span class="lineNum">    1169 </span>                : %%
+<span class="lineNum">    1170 </span>                : 
+<span class="lineNum">    1171 </span>                : /* Copy to YYRES the contents of YYSTR after stripping away unnecessary
+<span class="lineNum">    1172 </span>                :    quotes and backslashes, so that it's suitable for yyerror.  The
+<span class="lineNum">    1173 </span>                :    heuristic is that double-quoting is unnecessary unless the string
+<span class="lineNum">    1174 </span>                :    contains an apostrophe, a comma, or backslash (other than
+<span class="lineNum">    1175 </span>                :    backslash-backslash).  YYSTR is taken from yytname.  If YYRES is
+<a name="1176"><span class="lineNum">    1176 </span>                :    null, do not copy; instead, return the length of what the result</a>
+<span class="lineNum">    1177 </span>                :    would have been.  */
+<span class="lineNum">    1178 </span><span class="lineNoCov">              0 : static YYSIZE_T zend_yytnamerr(char *yyres, const char *yystr)</span>
+<span class="lineNum">    1179 </span>                : {
+<span class="lineNum">    1180 </span><span class="lineNoCov">              0 :         if (!yyres) {</span>
+<span class="lineNum">    1181 </span><span class="lineNoCov">              0 :                 return yystrlen(yystr);</span>
+<span class="lineNum">    1182 </span>                :         }
+<span class="lineNum">    1183 </span>                :         {
+<span class="lineNum">    1184 </span>                :                 TSRMLS_FETCH();
+<span class="lineNum">    1185 </span><span class="lineNoCov">              0 :                 if (CG(parse_error) == 0) {</span>
+<span class="lineNum">    1186 </span>                :                         char buffer[120];
+<span class="lineNum">    1187 </span><span class="lineNoCov">              0 :                         const unsigned char *end, *str, *tok1 = NULL, *tok2 = NULL;</span>
+<span class="lineNum">    1188 </span><span class="lineNoCov">              0 :                         unsigned int len = 0, toklen = 0, yystr_len;</span>
+<span class="lineNum">    1189 </span>                :                         
+<span class="lineNum">    1190 </span><span class="lineNoCov">              0 :                         CG(parse_error) = 1;</span>
+<span class="lineNum">    1191 </span>                : 
+<span class="lineNum">    1192 </span><span class="lineNoCov">              0 :                         if (LANG_SCNG(yy_text)[0] == 0 &amp;&amp;</span>
+<span class="lineNum">    1193 </span><span class="lineNoCov">              0 :                                 LANG_SCNG(yy_leng) == 1 &amp;&amp;</span>
+<span class="lineNum">    1194 </span><span class="lineNoCov">              0 :                                 memcmp(yystr, ZEND_STRL(&quot;\&quot;end of file\&quot;&quot;)) == 0) {</span>
+<span class="lineNum">    1195 </span><span class="lineNoCov">              0 :                                 yystpcpy(yyres, &quot;end of file&quot;);</span>
+<span class="lineNum">    1196 </span><span class="lineNoCov">              0 :                                 return sizeof(&quot;end of file&quot;)-1;</span>
+<span class="lineNum">    1197 </span>                :                         }
+<span class="lineNum">    1198 </span>                :                         
+<span class="lineNum">    1199 </span><span class="lineNoCov">              0 :                         str = LANG_SCNG(yy_text);</span>
+<span class="lineNum">    1200 </span><span class="lineNoCov">              0 :                         end = memchr(str, '\n', LANG_SCNG(yy_leng));</span>
+<span class="lineNum">    1201 </span><span class="lineNoCov">              0 :                         yystr_len = yystrlen(yystr);</span>
+<span class="lineNum">    1202 </span>                :                         
+<span class="lineNum">    1203 </span><span class="lineNoCov">              0 :                         if ((tok1 = memchr(yystr, '(', yystr_len)) != NULL</span>
+<span class="lineNum">    1204 </span><span class="lineNoCov">              0 :                                 &amp;&amp; (tok2 = zend_memrchr(yystr, ')', yystr_len)) != NULL) {</span>
+<span class="lineNum">    1205 </span><span class="lineNoCov">              0 :                                 toklen = (tok2 - tok1) + 1;</span>
+<span class="lineNum">    1206 </span>                :                         } else {
+<span class="lineNum">    1207 </span><span class="lineNoCov">              0 :                                 tok1 = tok2 = NULL;</span>
+<span class="lineNum">    1208 </span><span class="lineNoCov">              0 :                                 toklen = 0;</span>
+<span class="lineNum">    1209 </span>                :                         }
+<span class="lineNum">    1210 </span>                :                         
+<span class="lineNum">    1211 </span><span class="lineNoCov">              0 :                         if (end == NULL) {</span>
+<span class="lineNum">    1212 </span><span class="lineNoCov">              0 :                                 len = LANG_SCNG(yy_leng) &gt; 30 ? 30 : LANG_SCNG(yy_leng);</span>
+<span class="lineNum">    1213 </span>                :                         } else {
+<span class="lineNum">    1214 </span><span class="lineNoCov">              0 :                                 len = (end - str) &gt; 30 ? 30 : (end - str);</span>
+<span class="lineNum">    1215 </span>                :                         }
+<span class="lineNum">    1216 </span><span class="lineNoCov">              0 :                         if (toklen) {</span>
+<span class="lineNum">    1217 </span><span class="lineNoCov">              0 :                                 snprintf(buffer, sizeof(buffer), &quot;'%.*s' %.*s&quot;, len, str, toklen, tok1);</span>
+<span class="lineNum">    1218 </span>                :                         } else {
+<span class="lineNum">    1219 </span><span class="lineNoCov">              0 :                                 snprintf(buffer, sizeof(buffer), &quot;'%.*s'&quot;, len, str);</span>
+<span class="lineNum">    1220 </span>                :                         }
+<span class="lineNum">    1221 </span><span class="lineNoCov">              0 :                         yystpcpy(yyres, buffer);</span>
+<span class="lineNum">    1222 </span><span class="lineNoCov">              0 :                         return len + (toklen ? toklen + 1 : 0) + 2;</span>
+<span class="lineNum">    1223 </span>                :                 }               
+<span class="lineNum">    1224 </span>                :         }       
+<span class="lineNum">    1225 </span><span class="lineNoCov">              0 :         if (*yystr == '&quot;') {</span>
+<span class="lineNum">    1226 </span><span class="lineNoCov">              0 :                 YYSIZE_T yyn = 0;</span>
+<span class="lineNum">    1227 </span><span class="lineNoCov">              0 :                 const char *yyp = yystr;</span>
+<span class="lineNum">    1228 </span>                : 
+<span class="lineNum">    1229 </span><span class="lineNoCov">              0 :                 for (; *++yyp != '&quot;'; ++yyn) {</span>
+<span class="lineNum">    1230 </span><span class="lineNoCov">              0 :                         yyres[yyn] = *yyp;</span>
+<span class="lineNum">    1231 </span>                :                 }
+<span class="lineNum">    1232 </span><span class="lineNoCov">              0 :                 yyres[yyn] = '\0';</span>
+<span class="lineNum">    1233 </span><span class="lineNoCov">              0 :                 return yyn;</span>
+<span class="lineNum">    1234 </span>                :         }
+<span class="lineNum">    1235 </span><span class="lineNoCov">              0 :         yystpcpy(yyres, yystr);</span>
+<span class="lineNum">    1236 </span><span class="lineNoCov">              0 :         return strlen(yystr);</span>
+<span class="lineNum">    1237 </span>                : }
+<span class="lineNum">    1238 </span>                : 
+<span class="lineNum">    1239 </span>                : /*
+<span class="lineNum">    1240 </span>                :  * Local variables:
+<span class="lineNum">    1241 </span>                :  * tab-width: 4
+<span class="lineNum">    1242 </span>                :  * c-basic-offset: 4
+<span class="lineNum">    1243 </span>                :  * indent-tabs-mode: t
+<span class="lineNum">    1244 </span>                :  * End:
+<span class="lineNum">    1245 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

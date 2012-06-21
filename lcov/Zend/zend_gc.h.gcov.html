@@ -1,0 +1,327 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - Zend/zend_gc.h</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../index.html">directory</a> - <a href="index.html">Zend</a> - zend_gc.h (source / <a href="zend_gc.h.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">6</td>
+          <td class="headerCovTableEntry">6</td>
+          <td class="headerCovTableEntryHi">100.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryHi">-</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | Zend Engine                                                          |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1998-2012 Zend Technologies Ltd. (http://www.zend.com) |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 2.00 of the Zend license,     |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.zend.com/license/2_00.txt.                                |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the Zend license and are unable to  |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@zend.com so we can mail you a copy immediately.              |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Authors: David Wang &lt;planetbeing@gmail.com&gt;                          |
+<span class="lineNum">      16 </span>                :    |          Dmitry Stogov &lt;dmitry@zend.com&gt;                             |
+<span class="lineNum">      17 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      18 </span>                : */
+<span class="lineNum">      19 </span>                : 
+<span class="lineNum">      20 </span>                : /* $Id$ */
+<span class="lineNum">      21 </span>                : 
+<span class="lineNum">      22 </span>                : #ifndef ZEND_GC_H
+<span class="lineNum">      23 </span>                : #define ZEND_GC_H
+<span class="lineNum">      24 </span>                : 
+<span class="lineNum">      25 </span>                : #ifndef GC_BENCH
+<span class="lineNum">      26 </span>                : # define GC_BENCH 0
+<span class="lineNum">      27 </span>                : #endif
+<span class="lineNum">      28 </span>                : 
+<span class="lineNum">      29 </span>                : #if GC_BENCH
+<span class="lineNum">      30 </span>                : # define GC_BENCH_INC(counter) GC_G(counter)++
+<span class="lineNum">      31 </span>                : # define GC_BENCH_DEC(counter) GC_G(counter)--
+<span class="lineNum">      32 </span>                : # define GC_BENCH_PEAK(peak, counter) do {              \
+<span class="lineNum">      33 </span>                :                 if (GC_G(counter) &gt; GC_G(peak)) {            \
+<span class="lineNum">      34 </span>                :                         GC_G(peak) = GC_G(counter);                     \
+<span class="lineNum">      35 </span>                :                 }                                                                               \
+<span class="lineNum">      36 </span>                :         } while (0)
+<span class="lineNum">      37 </span>                : #else
+<span class="lineNum">      38 </span>                : # define GC_BENCH_INC(counter)
+<span class="lineNum">      39 </span>                : # define GC_BENCH_DEC(counter)
+<span class="lineNum">      40 </span>                : # define GC_BENCH_PEAK(peak, counter)
+<span class="lineNum">      41 </span>                : #endif
+<span class="lineNum">      42 </span>                : 
+<span class="lineNum">      43 </span>                : #define GC_COLOR  0x03
+<span class="lineNum">      44 </span>                : 
+<span class="lineNum">      45 </span>                : #define GC_BLACK  0x00
+<span class="lineNum">      46 </span>                : #define GC_WHITE  0x01
+<span class="lineNum">      47 </span>                : #define GC_GREY   0x02
+<span class="lineNum">      48 </span>                : #define GC_PURPLE 0x03
+<span class="lineNum">      49 </span>                : 
+<span class="lineNum">      50 </span>                : #define GC_ADDRESS(v) \
+<span class="lineNum">      51 </span>                :         ((gc_root_buffer*)(((zend_uintptr_t)(v)) &amp; ~GC_COLOR))
+<span class="lineNum">      52 </span>                : #define GC_SET_ADDRESS(v, a) \
+<span class="lineNum">      53 </span>                :         (v) = ((gc_root_buffer*)((((zend_uintptr_t)(v)) &amp; GC_COLOR) | ((zend_uintptr_t)(a))))
+<span class="lineNum">      54 </span>                : #define GC_GET_COLOR(v) \
+<span class="lineNum">      55 </span>                :         (((zend_uintptr_t)(v)) &amp; GC_COLOR)
+<span class="lineNum">      56 </span>                : #define GC_SET_COLOR(v, c) \
+<span class="lineNum">      57 </span>                :         (v) = ((gc_root_buffer*)((((zend_uintptr_t)(v)) &amp; ~GC_COLOR) | (c)))
+<span class="lineNum">      58 </span>                : #define GC_SET_BLACK(v) \
+<span class="lineNum">      59 </span>                :         (v) = ((gc_root_buffer*)(((zend_uintptr_t)(v)) &amp; ~GC_COLOR))
+<span class="lineNum">      60 </span>                : #define GC_SET_PURPLE(v) \
+<span class="lineNum">      61 </span>                :         (v) = ((gc_root_buffer*)(((zend_uintptr_t)(v)) | GC_PURPLE))
+<span class="lineNum">      62 </span>                : 
+<span class="lineNum">      63 </span>                : #define GC_ZVAL_INIT(z) \
+<span class="lineNum">      64 </span>                :         ((zval_gc_info*)(z))-&gt;u.buffered = NULL
+<span class="lineNum">      65 </span>                : #define GC_ZVAL_ADDRESS(v) \
+<span class="lineNum">      66 </span>                :         GC_ADDRESS(((zval_gc_info*)(v))-&gt;u.buffered)
+<span class="lineNum">      67 </span>                : #define GC_ZVAL_SET_ADDRESS(v, a) \
+<span class="lineNum">      68 </span>                :         GC_SET_ADDRESS(((zval_gc_info*)(v))-&gt;u.buffered, (a))
+<span class="lineNum">      69 </span>                : #define GC_ZVAL_GET_COLOR(v) \
+<span class="lineNum">      70 </span>                :         GC_GET_COLOR(((zval_gc_info*)(v))-&gt;u.buffered)
+<span class="lineNum">      71 </span>                : #define GC_ZVAL_SET_COLOR(v, c) \
+<span class="lineNum">      72 </span>                :         GC_SET_COLOR(((zval_gc_info*)(v))-&gt;u.buffered, (c))
+<span class="lineNum">      73 </span>                : #define GC_ZVAL_SET_BLACK(v) \
+<span class="lineNum">      74 </span>                :         GC_SET_BLACK(((zval_gc_info*)(v))-&gt;u.buffered)
+<span class="lineNum">      75 </span>                : #define GC_ZVAL_SET_PURPLE(v) \
+<span class="lineNum">      76 </span>                :         GC_SET_PURPLE(((zval_gc_info*)(v))-&gt;u.buffered)
+<span class="lineNum">      77 </span>                : 
+<span class="lineNum">      78 </span>                : #define GC_OBJ_INIT(z) \
+<span class="lineNum">      79 </span>                :         (z)-&gt;buffered = NULL
+<span class="lineNum">      80 </span>                : 
+<span class="lineNum">      81 </span>                : typedef struct _gc_root_buffer {
+<span class="lineNum">      82 </span>                :         struct _gc_root_buffer   *prev;         /* double-linked list               */
+<span class="lineNum">      83 </span>                :         struct _gc_root_buffer   *next;
+<span class="lineNum">      84 </span>                :         zend_object_handle        handle;       /* must be 0 for zval               */
+<span class="lineNum">      85 </span>                :         union {
+<span class="lineNum">      86 </span>                :                 zval                 *pz;
+<span class="lineNum">      87 </span>                :                 const zend_object_handlers *handlers;
+<span class="lineNum">      88 </span>                :         } u;
+<span class="lineNum">      89 </span>                : } gc_root_buffer;
+<span class="lineNum">      90 </span>                : 
+<span class="lineNum">      91 </span>                : typedef struct _zval_gc_info {
+<span class="lineNum">      92 </span>                :         zval z;
+<span class="lineNum">      93 </span>                :         union {
+<span class="lineNum">      94 </span>                :                 gc_root_buffer       *buffered;
+<span class="lineNum">      95 </span>                :                 struct _zval_gc_info *next;
+<span class="lineNum">      96 </span>                :         } u;
+<span class="lineNum">      97 </span>                : } zval_gc_info;
+<span class="lineNum">      98 </span>                : 
+<span class="lineNum">      99 </span>                : typedef struct _zend_gc_globals {
+<span class="lineNum">     100 </span>                :         zend_bool         gc_enabled;
+<span class="lineNum">     101 </span>                :         zend_bool         gc_active;
+<span class="lineNum">     102 </span>                : 
+<span class="lineNum">     103 </span>                :         gc_root_buffer   *buf;                          /* preallocated arrays of buffers   */
+<span class="lineNum">     104 </span>                :         gc_root_buffer    roots;                        /* list of possible roots of cycles */
+<span class="lineNum">     105 </span>                :         gc_root_buffer   *unused;                       /* list of unused buffers           */
+<span class="lineNum">     106 </span>                :         gc_root_buffer   *first_unused;         /* pointer to first unused buffer   */
+<span class="lineNum">     107 </span>                :         gc_root_buffer   *last_unused;          /* pointer to last unused buffer    */
+<span class="lineNum">     108 </span>                : 
+<span class="lineNum">     109 </span>                :         zval_gc_info     *zval_to_free;         /* temporaryt list of zvals to free */
+<span class="lineNum">     110 </span>                :         zval_gc_info     *free_list;
+<span class="lineNum">     111 </span>                :         zval_gc_info     *next_to_free;
+<span class="lineNum">     112 </span>                : 
+<span class="lineNum">     113 </span>                :         zend_uint gc_runs;
+<span class="lineNum">     114 </span>                :         zend_uint collected;
+<span class="lineNum">     115 </span>                : 
+<span class="lineNum">     116 </span>                : #if GC_BENCH
+<span class="lineNum">     117 </span>                :         zend_uint root_buf_length;
+<span class="lineNum">     118 </span>                :         zend_uint root_buf_peak;
+<span class="lineNum">     119 </span>                :         zend_uint zval_possible_root;
+<span class="lineNum">     120 </span>                :         zend_uint zobj_possible_root;
+<span class="lineNum">     121 </span>                :         zend_uint zval_buffered;
+<span class="lineNum">     122 </span>                :         zend_uint zobj_buffered;
+<span class="lineNum">     123 </span>                :         zend_uint zval_remove_from_buffer;
+<span class="lineNum">     124 </span>                :         zend_uint zobj_remove_from_buffer;
+<span class="lineNum">     125 </span>                :         zend_uint zval_marked_grey;
+<span class="lineNum">     126 </span>                :         zend_uint zobj_marked_grey;
+<span class="lineNum">     127 </span>                : #endif
+<span class="lineNum">     128 </span>                : 
+<span class="lineNum">     129 </span>                : } zend_gc_globals;
+<span class="lineNum">     130 </span>                : 
+<span class="lineNum">     131 </span>                : #ifdef ZTS
+<span class="lineNum">     132 </span>                : BEGIN_EXTERN_C()
+<span class="lineNum">     133 </span>                : ZEND_API extern int gc_globals_id;
+<span class="lineNum">     134 </span>                : END_EXTERN_C()
+<span class="lineNum">     135 </span>                : #define GC_G(v) TSRMG(gc_globals_id, zend_gc_globals *, v)
+<span class="lineNum">     136 </span>                : #else
+<span class="lineNum">     137 </span>                : #define GC_G(v) (gc_globals.v)
+<span class="lineNum">     138 </span>                : extern ZEND_API zend_gc_globals gc_globals;
+<span class="lineNum">     139 </span>                : #endif
+<span class="lineNum">     140 </span>                : 
+<span class="lineNum">     141 </span>                : BEGIN_EXTERN_C()
+<span class="lineNum">     142 </span>                : ZEND_API int  gc_collect_cycles(TSRMLS_D);
+<span class="lineNum">     143 </span>                : ZEND_API void gc_zval_possible_root(zval *zv TSRMLS_DC);
+<span class="lineNum">     144 </span>                : ZEND_API void gc_zobj_possible_root(zval *zv TSRMLS_DC);
+<span class="lineNum">     145 </span>                : ZEND_API void gc_remove_zval_from_buffer(zval *zv TSRMLS_DC);
+<span class="lineNum">     146 </span>                : ZEND_API void gc_globals_ctor(TSRMLS_D);
+<span class="lineNum">     147 </span>                : ZEND_API void gc_globals_dtor(TSRMLS_D);
+<span class="lineNum">     148 </span>                : ZEND_API void gc_init(TSRMLS_D);
+<span class="lineNum">     149 </span>                : ZEND_API void gc_reset(TSRMLS_D);
+<span class="lineNum">     150 </span>                : END_EXTERN_C()
+<span class="lineNum">     151 </span>                : 
+<span class="lineNum">     152 </span>                : #define GC_ZVAL_CHECK_POSSIBLE_ROOT(z) \
+<span class="lineNum">     153 </span>                :         gc_zval_check_possible_root((z) TSRMLS_CC)
+<span class="lineNum">     154 </span>                : 
+<span class="lineNum">     155 </span>                : #define GC_REMOVE_FROM_BUFFER(current) \
+<span class="lineNum">     156 </span>                :         gc_remove_from_buffer((current) TSRMLS_CC)
+<span class="lineNum">     157 </span>                : 
+<span class="lineNum">     158 </span>                : #define GC_REMOVE_ZVAL_FROM_BUFFER(z)                                   \
+<span class="lineNum">     159 </span>                :         if (GC_ADDRESS(((zval_gc_info*)z)-&gt;u.buffered)) {    \
+<span class="lineNum">     160 </span>                :                 gc_remove_zval_from_buffer(z TSRMLS_CC);                \
+<span class="lineNum">     161 </span>                :         }
+<span class="lineNum">     162 </span>                : 
+<span class="lineNum">     163 </span>                : #define GC_ZOBJ_CHECK_POSSIBLE_ROOT(zobject)                                                                    \
+<span class="lineNum">     164 </span>                :         do {                                                                                                                                            \
+<span class="lineNum">     165 </span>                :                 if (EXPECTED(EG(objects_store).object_buckets != NULL) &amp;&amp;                               \
+<span class="lineNum">     166 </span>                :                     EG(objects_store).object_buckets[Z_OBJ_HANDLE_P(zobject)].valid) {  \
+<span class="lineNum">     167 </span>                :                         gc_zobj_possible_root(zobject TSRMLS_CC);                                                       \
+<span class="lineNum">     168 </span>                :                 }                                                                                                                                               \
+<span class="lineNum">     169 </span>                :         } while (0)
+<span class="lineNum">     170 </span>                : 
+<span class="lineNum">     171 </span>                : #define GC_REMOVE_ZOBJ_FROM_BUFFER(obj)                                                                 \
+<span class="lineNum">     172 </span>                :         do {                                                                                                                            \
+<span class="lineNum">     173 </span>                :                 if (GC_ADDRESS((obj)-&gt;buffered) &amp;&amp; !GC_G(gc_active)) {                       \
+<span class="lineNum">     174 </span>                :                         GC_BENCH_INC(zobj_remove_from_buffer);                                          \
+<span class="lineNum">     175 </span>                :                         GC_REMOVE_FROM_BUFFER(GC_ADDRESS((obj)-&gt;buffered));                  \
+<span class="lineNum">     176 </span>                :                         (obj)-&gt;buffered = NULL;                                                                              \
+<span class="lineNum">     177 </span>                :                 }                                                                                                                               \
+<span class="lineNum">     178 </span>                :         } while (0)
+<span class="lineNum">     179 </span>                : 
+<span class="lineNum">     180 </span>                : static zend_always_inline void gc_zval_check_possible_root(zval *z TSRMLS_DC)
+<span class="lineNum">     181 </span>                : {
+<span class="lineNum">     182 </span><span class="lineCov">         290271 :         if (z-&gt;type == IS_ARRAY || z-&gt;type == IS_OBJECT) {</span>
+<span class="lineNum">     183 </span><span class="lineCov">          53380 :                 gc_zval_possible_root(z TSRMLS_CC);</span>
+<span class="lineNum">     184 </span>                :         }
+<span class="lineNum">     185 </span>                : }
+<span class="lineNum">     186 </span>                : 
+<span class="lineNum">     187 </span>                : static zend_always_inline void gc_remove_from_buffer(gc_root_buffer *root TSRMLS_DC)
+<span class="lineNum">     188 </span>                : {
+<span class="lineNum">     189 </span><span class="lineCov">           9763 :         root-&gt;next-&gt;prev = root-&gt;prev;</span>
+<span class="lineNum">     190 </span><span class="lineCov">           9763 :         root-&gt;prev-&gt;next = root-&gt;next;</span>
+<span class="lineNum">     191 </span><span class="lineCov">           9763 :         root-&gt;prev = GC_G(unused);</span>
+<span class="lineNum">     192 </span><span class="lineCov">           9763 :         GC_G(unused) = root;</span>
+<span class="lineNum">     193 </span>                :         GC_BENCH_DEC(root_buf_length);
+<span class="lineNum">     194 </span>                : }
+<span class="lineNum">     195 </span>                : 
+<span class="lineNum">     196 </span>                : #define ALLOC_PERMANENT_ZVAL(z)                                                 \
+<span class="lineNum">     197 </span>                :         do {                                                                                            \
+<span class="lineNum">     198 </span>                :                 (z) = (zval*)malloc(sizeof(zval_gc_info));              \
+<span class="lineNum">     199 </span>                :                 GC_ZVAL_INIT(z);                                                                \
+<span class="lineNum">     200 </span>                :         } while (0)
+<span class="lineNum">     201 </span>                : 
+<span class="lineNum">     202 </span>                : /* The following macroses override macroses from zend_alloc.h */
+<span class="lineNum">     203 </span>                : #undef  ALLOC_ZVAL
+<span class="lineNum">     204 </span>                : #define ALLOC_ZVAL(z)                                                                   \
+<span class="lineNum">     205 </span>                :         do {                                                                                            \
+<span class="lineNum">     206 </span>                :                 (z) = (zval*)emalloc(sizeof(zval_gc_info));             \
+<span class="lineNum">     207 </span>                :                 GC_ZVAL_INIT(z);                                                                \
+<span class="lineNum">     208 </span>                :         } while (0)
+<span class="lineNum">     209 </span>                : 
+<span class="lineNum">     210 </span>                : #undef  FREE_ZVAL
+<span class="lineNum">     211 </span>                : #define FREE_ZVAL(z)                                                                    \
+<span class="lineNum">     212 </span>                :         do {                                                                                            \
+<span class="lineNum">     213 </span>                :             GC_REMOVE_ZVAL_FROM_BUFFER(z);                                      \
+<span class="lineNum">     214 </span>                :                 efree(z);                                                                               \
+<span class="lineNum">     215 </span>                :         } while (0)
+<span class="lineNum">     216 </span>                : 
+<span class="lineNum">     217 </span>                : #undef  ALLOC_ZVAL_REL
+<span class="lineNum">     218 </span>                : #define ALLOC_ZVAL_REL(z)                                                               \
+<span class="lineNum">     219 </span>                :         do {                                                                                            \
+<span class="lineNum">     220 </span>                :                 (z) = (zval*)emalloc_rel(sizeof(zval_gc_info)); \
+<span class="lineNum">     221 </span>                :                 GC_ZVAL_INIT(z);                                                                \
+<span class="lineNum">     222 </span>                :         } while (0)
+<span class="lineNum">     223 </span>                : 
+<span class="lineNum">     224 </span>                : #undef  FREE_ZVAL_REL
+<span class="lineNum">     225 </span>                : #define FREE_ZVAL_REL(z)                                                                \
+<span class="lineNum">     226 </span>                :         do {                                                                                            \
+<span class="lineNum">     227 </span>                :             GC_REMOVE_ZVAL_FROM_BUFFER(z);                                      \
+<span class="lineNum">     228 </span>                :                 efree_rel(z);                                                                   \
+<span class="lineNum">     229 </span>                :         } while (0)
+<span class="lineNum">     230 </span>                : 
+<span class="lineNum">     231 </span>                : #define FREE_ZVAL_EX(z)                                                                 \
+<span class="lineNum">     232 </span>                :         efree(z)
+<span class="lineNum">     233 </span>                : 
+<span class="lineNum">     234 </span>                : #define FREE_ZVAL_REL_EX(z)                                                             \
+<span class="lineNum">     235 </span>                :         efree_rel(z)
+<span class="lineNum">     236 </span>                : 
+<span class="lineNum">     237 </span>                : #endif /* ZEND_GC_H */
+<span class="lineNum">     238 </span>                : 
+<span class="lineNum">     239 </span>                : /*
+<span class="lineNum">     240 </span>                :  * Local variables:
+<span class="lineNum">     241 </span>                :  * tab-width: 4
+<span class="lineNum">     242 </span>                :  * c-basic-offset: 4
+<span class="lineNum">     243 </span>                :  * indent-tabs-mode: t
+<span class="lineNum">     244 </span>                :  * End:
+<span class="lineNum">     245 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

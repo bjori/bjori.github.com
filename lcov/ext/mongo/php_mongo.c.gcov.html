@@ -1,0 +1,428 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - ext/mongo/php_mongo.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../index.html">directory</a> - <a href="index.html">ext/mongo</a> - php_mongo.c (source / <a href="php_mongo.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">96</td>
+          <td class="headerCovTableEntry">81</td>
+          <td class="headerCovTableEntryHi">84.4 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">6</td>
+          <td class="headerCovTableEntry">5</td>
+          <td class="headerCovTableEntryMed">83.3 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : // php_mongo.c</a>
+<span class="lineNum">       2 </span>                : /**
+<span class="lineNum">       3 </span>                :  *  Copyright 2009-2011 10gen, Inc.
+<span class="lineNum">       4 </span>                :  *
+<span class="lineNum">       5 </span>                :  *  Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+<span class="lineNum">       6 </span>                :  *  you may not use this file except in compliance with the License.
+<span class="lineNum">       7 </span>                :  *  You may obtain a copy of the License at
+<span class="lineNum">       8 </span>                :  *
+<span class="lineNum">       9 </span>                :  *  http://www.apache.org/licenses/LICENSE-2.0
+<span class="lineNum">      10 </span>                :  *
+<span class="lineNum">      11 </span>                :  *  Unless required by applicable law or agreed to in writing, software
+<span class="lineNum">      12 </span>                :  *  distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+<span class="lineNum">      13 </span>                :  *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+<span class="lineNum">      14 </span>                :  *  See the License for the specific language governing permissions and
+<span class="lineNum">      15 </span>                :  *  limitations under the License.
+<span class="lineNum">      16 </span>                :  */
+<span class="lineNum">      17 </span>                : 
+<span class="lineNum">      18 </span>                : #ifdef HAVE_CONFIG_H
+<span class="lineNum">      19 </span>                : #include &quot;config.h&quot;
+<span class="lineNum">      20 </span>                : #endif
+<span class="lineNum">      21 </span>                : 
+<span class="lineNum">      22 </span>                : #include &lt;php.h&gt;
+<span class="lineNum">      23 </span>                : 
+<span class="lineNum">      24 </span>                : #include &lt;zend_exceptions.h&gt;
+<span class="lineNum">      25 </span>                : #include &lt;php_ini.h&gt;
+<span class="lineNum">      26 </span>                : #include &lt;ext/standard/info.h&gt;
+<span class="lineNum">      27 </span>                : 
+<span class="lineNum">      28 </span>                : #include &quot;php_mongo.h&quot;
+<span class="lineNum">      29 </span>                : 
+<span class="lineNum">      30 </span>                : #include &quot;mongo.h&quot;
+<span class="lineNum">      31 </span>                : #include &quot;cursor.h&quot;
+<span class="lineNum">      32 </span>                : #include &quot;mongo_types.h&quot;
+<span class="lineNum">      33 </span>                : 
+<span class="lineNum">      34 </span>                : #include &quot;util/pool.h&quot;
+<span class="lineNum">      35 </span>                : #include &quot;util/server.h&quot;
+<span class="lineNum">      36 </span>                : #include &quot;util/rs.h&quot;
+<span class="lineNum">      37 </span>                : #include &quot;util/log.h&quot;
+<span class="lineNum">      38 </span>                : 
+<span class="lineNum">      39 </span>                : extern zend_object_handlers mongo_default_handlers,
+<span class="lineNum">      40 </span>                :   mongo_id_handlers;
+<span class="lineNum">      41 </span>                : 
+<span class="lineNum">      42 </span>                : /** Classes */
+<span class="lineNum">      43 </span>                : extern zend_class_entry *mongo_ce_CursorException;
+<span class="lineNum">      44 </span>                : 
+<span class="lineNum">      45 </span>                : zend_class_entry *mongo_ce_ConnectionException,
+<span class="lineNum">      46 </span>                :   *mongo_ce_CursorTOException,
+<span class="lineNum">      47 </span>                :   *mongo_ce_GridFSException,
+<span class="lineNum">      48 </span>                :   *mongo_ce_Exception,
+<span class="lineNum">      49 </span>                :   *mongo_ce_MaxKey,
+<span class="lineNum">      50 </span>                :   *mongo_ce_MinKey;
+<span class="lineNum">      51 </span>                : 
+<span class="lineNum">      52 </span>                : /** Resources */
+<span class="lineNum">      53 </span>                : int le_pconnection,
+<span class="lineNum">      54 </span>                :   le_pserver,
+<span class="lineNum">      55 </span>                :   le_prs,
+<span class="lineNum">      56 </span>                :   le_cursor_list;
+<span class="lineNum">      57 </span>                : 
+<span class="lineNum">      58 </span>                : static void mongo_init_MongoExceptions(TSRMLS_D);
+<span class="lineNum">      59 </span>                : 
+<span class="lineNum">      60 </span>                : ZEND_DECLARE_MODULE_GLOBALS(mongo)
+<span class="lineNum">      61 </span>                : 
+<span class="lineNum">      62 </span>                : #if ZEND_MODULE_API_NO &gt;= 20060613
+<span class="lineNum">      63 </span>                : // 5.2+ globals
+<span class="lineNum">      64 </span>                : static PHP_GINIT_FUNCTION(mongo);
+<span class="lineNum">      65 </span>                : #else
+<span class="lineNum">      66 </span>                : // 5.1- globals
+<span class="lineNum">      67 </span>                : static void mongo_init_globals(zend_mongo_globals* g TSRMLS_DC);
+<span class="lineNum">      68 </span>                : #endif /* ZEND_MODULE_API_NO &gt;= 20060613 */
+<span class="lineNum">      69 </span>                : 
+<span class="lineNum">      70 </span>                : #if WIN32
+<span class="lineNum">      71 </span>                : extern HANDLE cursor_mutex;
+<span class="lineNum">      72 </span>                : extern HANDLE io_mutex;
+<span class="lineNum">      73 </span>                : extern HANDLE pool_mutex;
+<span class="lineNum">      74 </span>                : #endif
+<span class="lineNum">      75 </span>                : 
+<span class="lineNum">      76 </span>                : zend_function_entry mongo_functions[] = {
+<span class="lineNum">      77 </span>                :   PHP_FE(bson_encode, NULL)
+<span class="lineNum">      78 </span>                :   PHP_FE(bson_decode, NULL)
+<span class="lineNum">      79 </span>                :   { NULL, NULL, NULL }
+<span class="lineNum">      80 </span>                : };
+<span class="lineNum">      81 </span>                : 
+<span class="lineNum">      82 </span>                : /* {{{ mongo_module_entry
+<span class="lineNum">      83 </span>                :  */
+<span class="lineNum">      84 </span>                : zend_module_entry mongo_module_entry = {
+<span class="lineNum">      85 </span>                : #if ZEND_MODULE_API_NO &gt;= 20010901
+<span class="lineNum">      86 </span>                :   STANDARD_MODULE_HEADER,
+<span class="lineNum">      87 </span>                : #endif
+<span class="lineNum">      88 </span>                :   PHP_MONGO_EXTNAME,
+<span class="lineNum">      89 </span>                :   mongo_functions,
+<span class="lineNum">      90 </span>                :   PHP_MINIT(mongo),
+<span class="lineNum">      91 </span>                :   PHP_MSHUTDOWN(mongo),
+<span class="lineNum">      92 </span>                :   PHP_RINIT(mongo),
+<span class="lineNum">      93 </span>                :   NULL,
+<span class="lineNum">      94 </span>                :   PHP_MINFO(mongo),
+<span class="lineNum">      95 </span>                :   PHP_MONGO_VERSION,
+<span class="lineNum">      96 </span>                : #if ZEND_MODULE_API_NO &gt;= 20060613
+<span class="lineNum">      97 </span>                :   PHP_MODULE_GLOBALS(mongo),
+<span class="lineNum">      98 </span>                :   PHP_GINIT(mongo),
+<span class="lineNum">      99 </span>                :   NULL,
+<span class="lineNum">     100 </span>                :   NULL,
+<span class="lineNum">     101 </span>                :   STANDARD_MODULE_PROPERTIES_EX
+<span class="lineNum">     102 </span>                : #else
+<span class="lineNum">     103 </span>                :   STANDARD_MODULE_PROPERTIES
+<span class="lineNum">     104 </span>                : #endif
+<span class="lineNum">     105 </span>                : };
+<span class="lineNum">     106 </span>                : /* }}} */
+<span class="lineNum">     107 </span>                : 
+<span class="lineNum">     108 </span>                : #ifdef COMPILE_DL_MONGO
+<span class="lineNum">     109 </span>                : ZEND_GET_MODULE(mongo)
+<span class="lineNum">     110 </span>                : #endif
+<span class="lineNum">     111 </span>                : 
+<span class="lineNum">     112 </span>                : 
+<span class="lineNum">     113 </span>                : /* {{{ PHP_INI */
+<span class="lineNum">     114 </span>                : // these must be in the same order as mongo_globals are declared or it will segfault on 64-bit machines!
+<span class="lineNum">     115 </span>                : PHP_INI_BEGIN()
+<span class="lineNum">     116 </span>                : STD_PHP_INI_ENTRY(&quot;mongo.auto_reconnect&quot;, &quot;1&quot;, PHP_INI_ALL, OnUpdateLong, auto_reconnect, zend_mongo_globals, mongo_globals)
+<span class="lineNum">     117 </span>                : STD_PHP_INI_ENTRY(&quot;mongo.allow_persistent&quot;, &quot;1&quot;, PHP_INI_ALL, OnUpdateLong, allow_persistent, zend_mongo_globals, mongo_globals)
+<span class="lineNum">     118 </span>                : STD_PHP_INI_ENTRY(&quot;mongo.default_host&quot;, &quot;localhost&quot;, PHP_INI_ALL, OnUpdateString, default_host, zend_mongo_globals, mongo_globals)
+<span class="lineNum">     119 </span>                : STD_PHP_INI_ENTRY(&quot;mongo.default_port&quot;, &quot;27017&quot;, PHP_INI_ALL, OnUpdateLong, default_port, zend_mongo_globals, mongo_globals)
+<span class="lineNum">     120 </span>                : STD_PHP_INI_ENTRY(&quot;mongo.chunk_size&quot;, &quot;262144&quot;, PHP_INI_ALL, OnUpdateLong, chunk_size, zend_mongo_globals, mongo_globals)
+<span class="lineNum">     121 </span>                : STD_PHP_INI_ENTRY(&quot;mongo.cmd&quot;, &quot;$&quot;, PHP_INI_ALL, OnUpdateStringUnempty, cmd_char, zend_mongo_globals, mongo_globals)
+<span class="lineNum">     122 </span>                : STD_PHP_INI_ENTRY(&quot;mongo.utf8&quot;, &quot;1&quot;, PHP_INI_ALL, OnUpdateLong, utf8, zend_mongo_globals, mongo_globals)
+<span class="lineNum">     123 </span>                : STD_PHP_INI_ENTRY(&quot;mongo.native_long&quot;, &quot;0&quot;, PHP_INI_ALL, OnUpdateLong, native_long, zend_mongo_globals, mongo_globals)
+<span class="lineNum">     124 </span>                : STD_PHP_INI_ENTRY(&quot;mongo.long_as_object&quot;, &quot;0&quot;, PHP_INI_ALL, OnUpdateLong, long_as_object, zend_mongo_globals, mongo_globals)
+<span class="lineNum">     125 </span>                : STD_PHP_INI_ENTRY(&quot;mongo.allow_empty_keys&quot;, &quot;0&quot;, PHP_INI_ALL, OnUpdateLong, allow_empty_keys, zend_mongo_globals, mongo_globals)
+<span class="lineNum">     126 </span>                : STD_PHP_INI_ENTRY(&quot;mongo.no_id&quot;, &quot;0&quot;, PHP_INI_SYSTEM, OnUpdateLong, no_id, zend_mongo_globals, mongo_globals)
+<span class="lineNum">     127 </span>                : STD_PHP_INI_ENTRY(&quot;mongo.ping_interval&quot;, &quot;5&quot;, PHP_INI_ALL, OnUpdateLong, ping_interval, zend_mongo_globals, mongo_globals)
+<span class="lineNum">     128 </span>                : STD_PHP_INI_ENTRY(&quot;mongo.is_master_interval&quot;, &quot;60&quot;, PHP_INI_ALL, OnUpdateLong, is_master_interval, zend_mongo_globals, mongo_globals)
+<span class="lineNum">     129 </span>                : PHP_INI_END()
+<span class="lineNum">     130 </span>                : /* }}} */
+<span class="lineNum">     131 </span>                : 
+<span class="lineNum">     132 </span>                : 
+<a name="133"><span class="lineNum">     133 </span>                : /* {{{ PHP_MINIT_FUNCTION</a>
+<span class="lineNum">     134 </span>                :  */
+<span class="lineNum">     135 </span><span class="lineCov">             48 : PHP_MINIT_FUNCTION(mongo) {</span>
+<span class="lineNum">     136 </span>                :   zend_class_entry max_key, min_key;
+<span class="lineNum">     137 </span>                : 
+<span class="lineNum">     138 </span>                : #if ZEND_MODULE_API_NO &lt; 20060613
+<span class="lineNum">     139 </span>                :   ZEND_INIT_MODULE_GLOBALS(mongo, mongo_init_globals, NULL);
+<span class="lineNum">     140 </span>                : #endif /* ZEND_MODULE_API_NO &lt; 20060613 */
+<span class="lineNum">     141 </span>                : 
+<span class="lineNum">     142 </span><span class="lineCov">             48 :   REGISTER_INI_ENTRIES();</span>
+<span class="lineNum">     143 </span>                : 
+<span class="lineNum">     144 </span><span class="lineCov">             48 :   le_pconnection = zend_register_list_destructors_ex(NULL, mongo_util_pool_shutdown, PHP_CONNECTION_RES_NAME, module_number);</span>
+<span class="lineNum">     145 </span><span class="lineCov">             48 :   le_pserver = zend_register_list_destructors_ex(NULL, mongo_util_server_shutdown, PHP_SERVER_RES_NAME, module_number);</span>
+<span class="lineNum">     146 </span><span class="lineCov">             48 :   le_prs = zend_register_list_destructors_ex(NULL, mongo_util_rs_shutdown, PHP_RS_RES_NAME, module_number);</span>
+<span class="lineNum">     147 </span><span class="lineCov">             48 :   le_cursor_list = zend_register_list_destructors_ex(NULL, php_mongo_cursor_list_pfree, PHP_CURSOR_LIST_RES_NAME, module_number);</span>
+<span class="lineNum">     148 </span>                : 
+<span class="lineNum">     149 </span><span class="lineCov">             48 :   mongo_init_Mongo(TSRMLS_C);</span>
+<span class="lineNum">     150 </span><span class="lineCov">             48 :   mongo_init_MongoDB(TSRMLS_C);</span>
+<span class="lineNum">     151 </span><span class="lineCov">             48 :   mongo_init_MongoCollection(TSRMLS_C);</span>
+<span class="lineNum">     152 </span><span class="lineCov">             48 :   mongo_init_MongoCursor(TSRMLS_C);</span>
+<span class="lineNum">     153 </span>                : 
+<span class="lineNum">     154 </span><span class="lineCov">             48 :   mongo_init_MongoGridFS(TSRMLS_C);</span>
+<span class="lineNum">     155 </span><span class="lineCov">             48 :   mongo_init_MongoGridFSFile(TSRMLS_C);</span>
+<span class="lineNum">     156 </span><span class="lineCov">             48 :   mongo_init_MongoGridFSCursor(TSRMLS_C);</span>
+<span class="lineNum">     157 </span>                : 
+<span class="lineNum">     158 </span><span class="lineCov">             48 :   mongo_init_MongoId(TSRMLS_C);</span>
+<span class="lineNum">     159 </span><span class="lineCov">             48 :   mongo_init_MongoCode(TSRMLS_C);</span>
+<span class="lineNum">     160 </span><span class="lineCov">             48 :   mongo_init_MongoRegex(TSRMLS_C);</span>
+<span class="lineNum">     161 </span><span class="lineCov">             48 :   mongo_init_MongoDate(TSRMLS_C);</span>
+<span class="lineNum">     162 </span><span class="lineCov">             48 :   mongo_init_MongoBinData(TSRMLS_C);</span>
+<span class="lineNum">     163 </span><span class="lineCov">             48 :   mongo_init_MongoDBRef(TSRMLS_C);</span>
+<span class="lineNum">     164 </span>                : 
+<span class="lineNum">     165 </span><span class="lineCov">             48 :   mongo_init_MongoExceptions(TSRMLS_C);</span>
+<span class="lineNum">     166 </span>                : 
+<span class="lineNum">     167 </span><span class="lineCov">             48 :   mongo_init_MongoTimestamp(TSRMLS_C);</span>
+<span class="lineNum">     168 </span><span class="lineCov">             48 :   mongo_init_MongoInt32(TSRMLS_C);</span>
+<span class="lineNum">     169 </span><span class="lineCov">             48 :   mongo_init_MongoInt64(TSRMLS_C);</span>
+<span class="lineNum">     170 </span>                : 
+<span class="lineNum">     171 </span><span class="lineCov">             48 :   mongo_init_MongoLog(TSRMLS_C);</span>
+<span class="lineNum">     172 </span><span class="lineCov">             48 :   mongo_init_MongoPool(TSRMLS_C);</span>
+<span class="lineNum">     173 </span>                : 
+<span class="lineNum">     174 </span>                :   /*
+<span class="lineNum">     175 </span>                :    * MongoMaxKey and MongoMinKey are completely non-interactive: they have no
+<span class="lineNum">     176 </span>                :    * method, fields, or constants.
+<span class="lineNum">     177 </span>                :    */
+<span class="lineNum">     178 </span><span class="lineCov">             48 :   INIT_CLASS_ENTRY(max_key, &quot;MongoMaxKey&quot;, NULL);</span>
+<span class="lineNum">     179 </span><span class="lineCov">             48 :   mongo_ce_MaxKey = zend_register_internal_class(&amp;max_key TSRMLS_CC);</span>
+<span class="lineNum">     180 </span><span class="lineCov">             48 :   INIT_CLASS_ENTRY(min_key, &quot;MongoMinKey&quot;, NULL);</span>
+<span class="lineNum">     181 </span><span class="lineCov">             48 :   mongo_ce_MinKey = zend_register_internal_class(&amp;min_key TSRMLS_CC);</span>
+<span class="lineNum">     182 </span>                : 
+<span class="lineNum">     183 </span>                : 
+<span class="lineNum">     184 </span>                :   // make mongo objects uncloneable
+<span class="lineNum">     185 </span><span class="lineCov">             48 :   memcpy(&amp;mongo_default_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));</span>
+<span class="lineNum">     186 </span><span class="lineCov">             48 :   mongo_default_handlers.clone_obj = NULL;</span>
+<span class="lineNum">     187 </span>                : 
+<span class="lineNum">     188 </span>                :   // add compare_objects for MongoId
+<span class="lineNum">     189 </span><span class="lineCov">             48 :   memcpy(&amp;mongo_id_handlers, &amp;mongo_default_handlers, sizeof(zend_object_handlers));</span>
+<span class="lineNum">     190 </span><span class="lineCov">             48 :   mongo_id_handlers.compare_objects = php_mongo_compare_ids;</span>
+<span class="lineNum">     191 </span>                : 
+<span class="lineNum">     192 </span>                :   // start random number generator
+<span class="lineNum">     193 </span><span class="lineCov">             48 :   srand(time(0));</span>
+<span class="lineNum">     194 </span>                : 
+<span class="lineNum">     195 </span>                : #ifdef WIN32
+<span class="lineNum">     196 </span>                :   cursor_mutex = CreateMutex(NULL, FALSE, NULL);
+<span class="lineNum">     197 </span>                :   pool_mutex = CreateMutex(NULL, FALSE, NULL);
+<span class="lineNum">     198 </span>                :   io_mutex = CreateMutex(NULL, FALSE, NULL);
+<span class="lineNum">     199 </span>                :   if (cursor_mutex == NULL || pool_mutex == NULL || io_mutex == NULL) {
+<span class="lineNum">     200 </span>                :     php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Windows couldn't create a mutex: %s&quot;, GetLastError());
+<span class="lineNum">     201 </span>                :     return FAILURE;
+<span class="lineNum">     202 </span>                :   }
+<span class="lineNum">     203 </span>                : #endif
+<span class="lineNum">     204 </span>                : 
+<span class="lineNum">     205 </span><span class="lineCov">             48 :   return SUCCESS;</span>
+<span class="lineNum">     206 </span>                : }
+<span class="lineNum">     207 </span>                : 
+<span class="lineNum">     208 </span>                : 
+<span class="lineNum">     209 </span>                : #if ZEND_MODULE_API_NO &gt;= 20060613
+<a name="210"><span class="lineNum">     210 </span>                : /* {{{ PHP_GINIT_FUNCTION</a>
+<span class="lineNum">     211 </span>                :  */
+<span class="lineNum">     212 </span><span class="lineCov">             48 : static PHP_GINIT_FUNCTION(mongo)</span>
+<span class="lineNum">     213 </span>                : #else
+<span class="lineNum">     214 </span>                : /* {{{ mongo_init_globals
+<span class="lineNum">     215 </span>                :  */
+<span class="lineNum">     216 </span>                : static void mongo_init_globals(zend_mongo_globals *mongo_globals TSRMLS_DC)
+<span class="lineNum">     217 </span>                : #endif /* ZEND_MODULE_API_NO &gt;= 20060613 */
+<span class="lineNum">     218 </span>                : {
+<span class="lineNum">     219 </span>                :   // on windows, the max length is 256.  linux doesn't have a limit, but it will
+<span class="lineNum">     220 </span>                :   // fill in the first 256 chars of hostname even if the actual hostname is
+<span class="lineNum">     221 </span>                :   // longer.  if you can't get a unique character in the first 256 chars of your
+<span class="lineNum">     222 </span>                :   // hostname, you're doing it wrong.
+<span class="lineNum">     223 </span><span class="lineCov">             48 :   int len, win_max = 256;</span>
+<span class="lineNum">     224 </span>                :   char *hostname, host_start[256];
+<span class="lineNum">     225 </span>                :   register ulong hash;
+<span class="lineNum">     226 </span>                : 
+<span class="lineNum">     227 </span><span class="lineCov">             48 :   mongo_globals-&gt;auto_reconnect = 1;</span>
+<span class="lineNum">     228 </span><span class="lineCov">             48 :   mongo_globals-&gt;default_host = &quot;localhost&quot;;</span>
+<span class="lineNum">     229 </span><span class="lineCov">             48 :   mongo_globals-&gt;default_port = 27017;</span>
+<span class="lineNum">     230 </span><span class="lineCov">             48 :   mongo_globals-&gt;request_id = 3;</span>
+<span class="lineNum">     231 </span><span class="lineCov">             48 :   mongo_globals-&gt;chunk_size = DEFAULT_CHUNK_SIZE;</span>
+<span class="lineNum">     232 </span><span class="lineCov">             48 :   mongo_globals-&gt;cmd_char = &quot;$&quot;;</span>
+<span class="lineNum">     233 </span><span class="lineCov">             48 :   mongo_globals-&gt;utf8 = 1;</span>
+<span class="lineNum">     234 </span>                : 
+<span class="lineNum">     235 </span><span class="lineCov">             48 :   mongo_globals-&gt;inc = 0;</span>
+<span class="lineNum">     236 </span><span class="lineCov">             48 :   mongo_globals-&gt;response_num = 0;</span>
+<span class="lineNum">     237 </span><span class="lineCov">             48 :   mongo_globals-&gt;errmsg = 0;</span>
+<span class="lineNum">     238 </span>                : 
+<span class="lineNum">     239 </span><span class="lineCov">             48 :   mongo_globals-&gt;max_send_size = 64 * 1024 * 1024;</span>
+<span class="lineNum">     240 </span><span class="lineCov">             48 :   mongo_globals-&gt;pool_size = -1;</span>
+<span class="lineNum">     241 </span>                : 
+<span class="lineNum">     242 </span><span class="lineCov">             48 :   hostname = host_start;</span>
+<span class="lineNum">     243 </span>                :   // from the gnu manual:
+<span class="lineNum">     244 </span>                :   //     gethostname stores the beginning of the host name in name even if the
+<span class="lineNum">     245 </span>                :   //     host name won't entirely fit. For some purposes, a truncated host name
+<span class="lineNum">     246 </span>                :   //     is good enough. If it is, you can ignore the error code.
+<span class="lineNum">     247 </span>                :   // so we'll ignore the error code.
+<span class="lineNum">     248 </span>                :   // returns 0-terminated hostname.
+<span class="lineNum">     249 </span><span class="lineCov">             48 :   gethostname(hostname, win_max);</span>
+<span class="lineNum">     250 </span><span class="lineCov">             48 :   len = strlen(hostname);</span>
+<span class="lineNum">     251 </span>                : 
+<span class="lineNum">     252 </span><span class="lineCov">             48 :   hash = 5381;</span>
+<span class="lineNum">     253 </span>                : 
+<span class="lineNum">     254 </span>                :   /* from zend_hash.h */
+<span class="lineNum">     255 </span>                :   /* variant with the hash unrolled eight times */
+<span class="lineNum">     256 </span><span class="lineCov">             48 :   for (; len &gt;= 8; len -= 8) {</span>
+<span class="lineNum">     257 </span><span class="lineNoCov">              0 :     hash = ((hash &lt;&lt; 5) + hash) + *hostname++;</span>
+<span class="lineNum">     258 </span><span class="lineNoCov">              0 :     hash = ((hash &lt;&lt; 5) + hash) + *hostname++;</span>
+<span class="lineNum">     259 </span><span class="lineNoCov">              0 :     hash = ((hash &lt;&lt; 5) + hash) + *hostname++;</span>
+<span class="lineNum">     260 </span><span class="lineNoCov">              0 :     hash = ((hash &lt;&lt; 5) + hash) + *hostname++;</span>
+<span class="lineNum">     261 </span><span class="lineNoCov">              0 :     hash = ((hash &lt;&lt; 5) + hash) + *hostname++;</span>
+<span class="lineNum">     262 </span><span class="lineNoCov">              0 :     hash = ((hash &lt;&lt; 5) + hash) + *hostname++;</span>
+<span class="lineNum">     263 </span><span class="lineNoCov">              0 :     hash = ((hash &lt;&lt; 5) + hash) + *hostname++;</span>
+<span class="lineNum">     264 </span><span class="lineNoCov">              0 :     hash = ((hash &lt;&lt; 5) + hash) + *hostname++;</span>
+<span class="lineNum">     265 </span>                :   }
+<span class="lineNum">     266 </span>                : 
+<span class="lineNum">     267 </span><span class="lineCov">             48 :   switch (len) {</span>
+<span class="lineNum">     268 </span><span class="lineCov">             48 :   case 7: hash = ((hash &lt;&lt; 5) + hash) + *hostname++; /* fallthrough... */</span>
+<span class="lineNum">     269 </span><span class="lineCov">             48 :   case 6: hash = ((hash &lt;&lt; 5) + hash) + *hostname++; /* fallthrough... */</span>
+<span class="lineNum">     270 </span><span class="lineCov">             48 :   case 5: hash = ((hash &lt;&lt; 5) + hash) + *hostname++; /* fallthrough... */</span>
+<span class="lineNum">     271 </span><span class="lineCov">             48 :   case 4: hash = ((hash &lt;&lt; 5) + hash) + *hostname++; /* fallthrough... */</span>
+<span class="lineNum">     272 </span><span class="lineCov">             48 :   case 3: hash = ((hash &lt;&lt; 5) + hash) + *hostname++; /* fallthrough... */</span>
+<span class="lineNum">     273 </span><span class="lineCov">             48 :   case 2: hash = ((hash &lt;&lt; 5) + hash) + *hostname++; /* fallthrough... */</span>
+<span class="lineNum">     274 </span><span class="lineCov">             48 :   case 1: hash = ((hash &lt;&lt; 5) + hash) + *hostname++; break;</span>
+<span class="lineNum">     275 </span>                :   case 0: break;
+<span class="lineNum">     276 </span>                :   }
+<span class="lineNum">     277 </span>                : 
+<span class="lineNum">     278 </span><span class="lineCov">             48 :   mongo_globals-&gt;machine = hash;</span>
+<span class="lineNum">     279 </span>                : 
+<span class="lineNum">     280 </span><span class="lineCov">             48 :   mongo_globals-&gt;ts_inc = 0;</span>
+<span class="lineNum">     281 </span><span class="lineCov">             48 : }</span>
+<span class="lineNum">     282 </span>                : /* }}} */
+<span class="lineNum">     283 </span>                : 
+<span class="lineNum">     284 </span>                : 
+<a name="285"><span class="lineNum">     285 </span>                : /* {{{ PHP_MSHUTDOWN_FUNCTION</a>
+<span class="lineNum">     286 </span>                :  */
+<span class="lineNum">     287 </span><span class="lineCov">             48 : PHP_MSHUTDOWN_FUNCTION(mongo) {</span>
+<span class="lineNum">     288 </span><span class="lineCov">             48 :   UNREGISTER_INI_ENTRIES();</span>
+<span class="lineNum">     289 </span>                : 
+<span class="lineNum">     290 </span>                : #if WIN32
+<span class="lineNum">     291 </span>                :   // 0 is failure
+<span class="lineNum">     292 </span>                :   if (CloseHandle(cursor_mutex) == 0 || CloseHandle(pool_mutex) == 0 || CloseHandle(io_mutex) == 0) {
+<span class="lineNum">     293 </span>                :     php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Windows couldn't destroy a mutex: %s&quot;, GetLastError());
+<span class="lineNum">     294 </span>                :     return FAILURE;
+<span class="lineNum">     295 </span>                :   }
+<span class="lineNum">     296 </span>                : #endif
+<span class="lineNum">     297 </span>                : 
+<span class="lineNum">     298 </span><span class="lineCov">             48 :   return SUCCESS;</span>
+<span class="lineNum">     299 </span>                : }
+<span class="lineNum">     300 </span>                : /* }}} */
+<span class="lineNum">     301 </span>                : 
+<span class="lineNum">     302 </span>                : 
+<a name="303"><span class="lineNum">     303 </span>                : /* {{{ PHP_RINIT_FUNCTION</a>
+<span class="lineNum">     304 </span>                :  */
+<span class="lineNum">     305 </span><span class="lineCov">             48 : PHP_RINIT_FUNCTION(mongo) {</span>
+<span class="lineNum">     306 </span><span class="lineCov">             48 :   return SUCCESS;</span>
+<span class="lineNum">     307 </span>                : }
+<span class="lineNum">     308 </span>                : /* }}} */
+<span class="lineNum">     309 </span>                : 
+<span class="lineNum">     310 </span>                : 
+<a name="311"><span class="lineNum">     311 </span>                : /* {{{ PHP_MINFO_FUNCTION</a>
+<span class="lineNum">     312 </span>                :  */
+<span class="lineNum">     313 </span><span class="lineNoCov">              0 : PHP_MINFO_FUNCTION(mongo) {</span>
+<span class="lineNum">     314 </span><span class="lineNoCov">              0 :   php_info_print_table_start();</span>
+<span class="lineNum">     315 </span>                : 
+<span class="lineNum">     316 </span><span class="lineNoCov">              0 :   php_info_print_table_header(2, &quot;MongoDB Support&quot;, &quot;enabled&quot;);</span>
+<span class="lineNum">     317 </span><span class="lineNoCov">              0 :   php_info_print_table_row(2, &quot;Version&quot;, PHP_MONGO_VERSION);</span>
+<span class="lineNum">     318 </span>                : 
+<span class="lineNum">     319 </span><span class="lineNoCov">              0 :   php_info_print_table_end();</span>
+<span class="lineNum">     320 </span>                : 
+<span class="lineNum">     321 </span><span class="lineNoCov">              0 :   DISPLAY_INI_ENTRIES();</span>
+<span class="lineNum">     322 </span><span class="lineNoCov">              0 : }</span>
+<a name="323"><span class="lineNum">     323 </span>                : /* }}} */</a>
+<span class="lineNum">     324 </span>                : 
+<span class="lineNum">     325 </span><span class="lineCov">             48 : static void mongo_init_MongoExceptions(TSRMLS_D) {</span>
+<span class="lineNum">     326 </span>                :   zend_class_entry e, conn, e2, ctoe;
+<span class="lineNum">     327 </span>                : 
+<span class="lineNum">     328 </span><span class="lineCov">             48 :   INIT_CLASS_ENTRY(e, &quot;MongoException&quot;, NULL);</span>
+<span class="lineNum">     329 </span>                : 
+<span class="lineNum">     330 </span>                : #if ZEND_MODULE_API_NO &gt;= 20060613
+<span class="lineNum">     331 </span><span class="lineCov">             48 :   mongo_ce_Exception = zend_register_internal_class_ex(&amp;e, (zend_class_entry*)zend_exception_get_default(TSRMLS_C), NULL TSRMLS_CC);</span>
+<span class="lineNum">     332 </span>                : #else
+<span class="lineNum">     333 </span>                :   mongo_ce_Exception = zend_register_internal_class_ex(&amp;e, (zend_class_entry*)zend_exception_get_default(), NULL TSRMLS_CC);
+<span class="lineNum">     334 </span>                : #endif /* ZEND_MODULE_API_NO &gt;= 20060613 */
+<span class="lineNum">     335 </span>                : 
+<span class="lineNum">     336 </span><span class="lineCov">             48 :   mongo_init_CursorExceptions(TSRMLS_C);</span>
+<span class="lineNum">     337 </span>                : 
+<span class="lineNum">     338 </span><span class="lineCov">             48 :   INIT_CLASS_ENTRY(ctoe, &quot;MongoCursorTimeoutException&quot;, NULL);</span>
+<span class="lineNum">     339 </span><span class="lineCov">             48 :   mongo_ce_CursorTOException = zend_register_internal_class_ex(&amp;ctoe, mongo_ce_CursorException, NULL TSRMLS_CC);</span>
+<span class="lineNum">     340 </span>                : 
+<span class="lineNum">     341 </span><span class="lineCov">             48 :   INIT_CLASS_ENTRY(conn, &quot;MongoConnectionException&quot;, NULL);</span>
+<span class="lineNum">     342 </span><span class="lineCov">             48 :   mongo_ce_ConnectionException = zend_register_internal_class_ex(&amp;conn, mongo_ce_Exception, NULL TSRMLS_CC);</span>
+<span class="lineNum">     343 </span>                : 
+<span class="lineNum">     344 </span><span class="lineCov">             48 :   INIT_CLASS_ENTRY(e2, &quot;MongoGridFSException&quot;, NULL);</span>
+<span class="lineNum">     345 </span><span class="lineCov">             48 :   mongo_ce_GridFSException = zend_register_internal_class_ex(&amp;e2, mongo_ce_Exception, NULL TSRMLS_CC);</span>
+<span class="lineNum">     346 </span><span class="lineCov">             48 : }</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

@@ -1,0 +1,735 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - Zend/zend_opcode.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../index.html">directory</a> - <a href="index.html">Zend</a> - zend_opcode.c (source / <a href="zend_opcode.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">316</td>
+          <td class="headerCovTableEntry">199</td>
+          <td class="headerCovTableEntryHi">63.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">28</td>
+          <td class="headerCovTableEntry">18</td>
+          <td class="headerCovTableEntryLo">64.3 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | Zend Engine                                                          |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1998-2012 Zend Technologies Ltd. (http://www.zend.com) |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 2.00 of the Zend license,     |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        | 
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.zend.com/license/2_00.txt.                                |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the Zend license and are unable to  |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@zend.com so we can mail you a copy immediately.              |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Authors: Andi Gutmans &lt;andi@zend.com&gt;                                |
+<span class="lineNum">      16 </span>                :    |          Zeev Suraski &lt;zeev@zend.com&gt;                                |
+<span class="lineNum">      17 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      18 </span>                : */
+<span class="lineNum">      19 </span>                : 
+<span class="lineNum">      20 </span>                : /* $Id$ */
+<span class="lineNum">      21 </span>                : 
+<span class="lineNum">      22 </span>                : #include &lt;stdio.h&gt;
+<span class="lineNum">      23 </span>                : 
+<span class="lineNum">      24 </span>                : #include &quot;zend.h&quot;
+<span class="lineNum">      25 </span>                : #include &quot;zend_alloc.h&quot;
+<span class="lineNum">      26 </span>                : #include &quot;zend_compile.h&quot;
+<span class="lineNum">      27 </span>                : #include &quot;zend_extensions.h&quot;
+<span class="lineNum">      28 </span>                : #include &quot;zend_API.h&quot;
+<span class="lineNum">      29 </span>                : 
+<a name="30"><span class="lineNum">      30 </span>                : #include &quot;zend_vm.h&quot;</a>
+<span class="lineNum">      31 </span>                : 
+<span class="lineNum">      32 </span><span class="lineNoCov">              0 : static void zend_extension_op_array_ctor_handler(zend_extension *extension, zend_op_array *op_array TSRMLS_DC)</span>
+<span class="lineNum">      33 </span>                : {
+<span class="lineNum">      34 </span><span class="lineNoCov">              0 :         if (extension-&gt;op_array_ctor) {</span>
+<span class="lineNum">      35 </span><span class="lineNoCov">              0 :                 extension-&gt;op_array_ctor(op_array);</span>
+<span class="lineNum">      36 </span>                :         }
+<a name="37"><span class="lineNum">      37 </span><span class="lineNoCov">              0 : }</span></a>
+<span class="lineNum">      38 </span>                : 
+<span class="lineNum">      39 </span><span class="lineNoCov">              0 : static void zend_extension_op_array_dtor_handler(zend_extension *extension, zend_op_array *op_array TSRMLS_DC)</span>
+<span class="lineNum">      40 </span>                : {
+<span class="lineNum">      41 </span><span class="lineNoCov">              0 :         if (extension-&gt;op_array_dtor) {</span>
+<span class="lineNum">      42 </span><span class="lineNoCov">              0 :                 extension-&gt;op_array_dtor(op_array);</span>
+<span class="lineNum">      43 </span>                :         }
+<a name="44"><span class="lineNum">      44 </span><span class="lineNoCov">              0 : }</span></a>
+<span class="lineNum">      45 </span>                : 
+<span class="lineNum">      46 </span><span class="lineCov">            127 : static void op_array_alloc_ops(zend_op_array *op_array, zend_uint size)</span>
+<span class="lineNum">      47 </span>                : {
+<span class="lineNum">      48 </span><span class="lineCov">            127 :         op_array-&gt;opcodes = erealloc(op_array-&gt;opcodes, size * sizeof(zend_op));</span>
+<a name="49"><span class="lineNum">      49 </span><span class="lineCov">            127 : }</span></a>
+<span class="lineNum">      50 </span>                : 
+<span class="lineNum">      51 </span><span class="lineCov">            100 : void init_op_array(zend_op_array *op_array, zend_uchar type, int initial_ops_size TSRMLS_DC)</span>
+<span class="lineNum">      52 </span>                : {
+<span class="lineNum">      53 </span><span class="lineCov">            100 :         op_array-&gt;type = type;</span>
+<span class="lineNum">      54 </span>                : 
+<span class="lineNum">      55 </span><span class="lineCov">            100 :         if (CG(interactive)) {</span>
+<span class="lineNum">      56 </span>                :                 /* We must avoid a realloc() on the op_array in interactive mode, since pointers to constants
+<span class="lineNum">      57 </span>                :                  * will become invalid
+<span class="lineNum">      58 </span>                :                  */
+<span class="lineNum">      59 </span><span class="lineNoCov">              0 :                 initial_ops_size = INITIAL_INTERACTIVE_OP_ARRAY_SIZE;</span>
+<span class="lineNum">      60 </span>                :         }
+<span class="lineNum">      61 </span>                : 
+<span class="lineNum">      62 </span><span class="lineCov">            100 :         op_array-&gt;refcount = (zend_uint *) emalloc(sizeof(zend_uint));</span>
+<span class="lineNum">      63 </span><span class="lineCov">            100 :         *op_array-&gt;refcount = 1;</span>
+<span class="lineNum">      64 </span><span class="lineCov">            100 :         op_array-&gt;last = 0;</span>
+<span class="lineNum">      65 </span><span class="lineCov">            100 :         op_array-&gt;opcodes = NULL;</span>
+<span class="lineNum">      66 </span><span class="lineCov">            100 :         op_array_alloc_ops(op_array, initial_ops_size);</span>
+<span class="lineNum">      67 </span>                : 
+<span class="lineNum">      68 </span><span class="lineCov">            100 :         op_array-&gt;last_var = 0;</span>
+<span class="lineNum">      69 </span><span class="lineCov">            100 :         op_array-&gt;vars = NULL;</span>
+<span class="lineNum">      70 </span>                : 
+<span class="lineNum">      71 </span><span class="lineCov">            100 :         op_array-&gt;T = 0;</span>
+<span class="lineNum">      72 </span>                : 
+<span class="lineNum">      73 </span><span class="lineCov">            100 :         op_array-&gt;function_name = NULL;</span>
+<span class="lineNum">      74 </span><span class="lineCov">            100 :         op_array-&gt;filename = zend_get_compiled_filename(TSRMLS_C);</span>
+<span class="lineNum">      75 </span><span class="lineCov">            100 :         op_array-&gt;doc_comment = NULL;</span>
+<span class="lineNum">      76 </span><span class="lineCov">            100 :         op_array-&gt;doc_comment_len = 0;</span>
+<span class="lineNum">      77 </span>                : 
+<span class="lineNum">      78 </span><span class="lineCov">            100 :         op_array-&gt;arg_info = NULL;</span>
+<span class="lineNum">      79 </span><span class="lineCov">            100 :         op_array-&gt;num_args = 0;</span>
+<span class="lineNum">      80 </span><span class="lineCov">            100 :         op_array-&gt;required_num_args = 0;</span>
+<span class="lineNum">      81 </span>                : 
+<span class="lineNum">      82 </span><span class="lineCov">            100 :         op_array-&gt;scope = NULL;</span>
+<span class="lineNum">      83 </span>                : 
+<span class="lineNum">      84 </span><span class="lineCov">            100 :         op_array-&gt;brk_cont_array = NULL;</span>
+<span class="lineNum">      85 </span><span class="lineCov">            100 :         op_array-&gt;try_catch_array = NULL;</span>
+<span class="lineNum">      86 </span><span class="lineCov">            100 :         op_array-&gt;last_brk_cont = 0;</span>
+<span class="lineNum">      87 </span>                : 
+<span class="lineNum">      88 </span><span class="lineCov">            100 :         op_array-&gt;static_variables = NULL;</span>
+<span class="lineNum">      89 </span><span class="lineCov">            100 :         op_array-&gt;last_try_catch = 0;</span>
+<span class="lineNum">      90 </span>                : 
+<span class="lineNum">      91 </span><span class="lineCov">            100 :         op_array-&gt;this_var = -1;</span>
+<span class="lineNum">      92 </span>                : 
+<span class="lineNum">      93 </span><span class="lineCov">            100 :         op_array-&gt;fn_flags = CG(interactive)?ZEND_ACC_INTERACTIVE:0;</span>
+<span class="lineNum">      94 </span>                : 
+<span class="lineNum">      95 </span><span class="lineCov">            100 :         op_array-&gt;early_binding = -1;</span>
+<span class="lineNum">      96 </span>                : 
+<span class="lineNum">      97 </span><span class="lineCov">            100 :         op_array-&gt;last_literal = 0;</span>
+<span class="lineNum">      98 </span><span class="lineCov">            100 :         op_array-&gt;literals = NULL;</span>
+<span class="lineNum">      99 </span>                : 
+<span class="lineNum">     100 </span><span class="lineCov">            100 :         op_array-&gt;run_time_cache = NULL;</span>
+<span class="lineNum">     101 </span><span class="lineCov">            100 :         op_array-&gt;last_cache_slot = 0;</span>
+<span class="lineNum">     102 </span>                : 
+<span class="lineNum">     103 </span><span class="lineCov">            100 :         memset(op_array-&gt;reserved, 0, ZEND_MAX_RESERVED_RESOURCES * sizeof(void*));</span>
+<span class="lineNum">     104 </span>                : 
+<span class="lineNum">     105 </span><span class="lineCov">            100 :         zend_llist_apply_with_argument(&amp;zend_extensions, (llist_apply_with_arg_func_t) zend_extension_op_array_ctor_handler, op_array TSRMLS_CC);</span>
+<a name="106"><span class="lineNum">     106 </span><span class="lineCov">            100 : }</span></a>
+<span class="lineNum">     107 </span>                : 
+<span class="lineNum">     108 </span><span class="lineCov">         103849 : ZEND_API void destroy_zend_function(zend_function *function TSRMLS_DC)</span>
+<span class="lineNum">     109 </span>                : {
+<span class="lineNum">     110 </span><span class="lineCov">         103849 :         switch (function-&gt;type) {</span>
+<span class="lineNum">     111 </span>                :                 case ZEND_USER_FUNCTION:
+<span class="lineNum">     112 </span><span class="lineCov">             97 :                         destroy_op_array((zend_op_array *) function TSRMLS_CC);</span>
+<span class="lineNum">     113 </span>                :                         break;
+<span class="lineNum">     114 </span>                :                 case ZEND_INTERNAL_FUNCTION:
+<span class="lineNum">     115 </span>                :                         /* do nothing */
+<span class="lineNum">     116 </span>                :                         break;
+<span class="lineNum">     117 </span>                :         }
+<a name="118"><span class="lineNum">     118 </span><span class="lineCov">         103849 : }</span></a>
+<span class="lineNum">     119 </span>                : 
+<span class="lineNum">     120 </span><span class="lineCov">         103849 : ZEND_API void zend_function_dtor(zend_function *function)</span>
+<span class="lineNum">     121 </span>                : {
+<span class="lineNum">     122 </span>                :         TSRMLS_FETCH();
+<span class="lineNum">     123 </span>                : 
+<span class="lineNum">     124 </span><span class="lineCov">         103849 :         destroy_zend_function(function TSRMLS_CC);</span>
+<a name="125"><span class="lineNum">     125 </span><span class="lineCov">         103849 : }</span></a>
+<span class="lineNum">     126 </span>                : 
+<span class="lineNum">     127 </span><span class="lineCov">             45 : static void zend_cleanup_op_array_data(zend_op_array *op_array)</span>
+<span class="lineNum">     128 </span>                : {
+<span class="lineNum">     129 </span><span class="lineCov">             45 :         if (op_array-&gt;static_variables) {</span>
+<span class="lineNum">     130 </span><span class="lineNoCov">              0 :                 zend_hash_clean(op_array-&gt;static_variables);</span>
+<span class="lineNum">     131 </span>                :         }
+<a name="132"><span class="lineNum">     132 </span><span class="lineCov">             45 : }</span></a>
+<span class="lineNum">     133 </span>                : 
+<span class="lineNum">     134 </span><span class="lineCov">             93 : ZEND_API int zend_cleanup_function_data(zend_function *function TSRMLS_DC)</span>
+<span class="lineNum">     135 </span>                : {
+<span class="lineNum">     136 </span><span class="lineCov">             93 :         if (function-&gt;type == ZEND_USER_FUNCTION) {</span>
+<span class="lineNum">     137 </span><span class="lineCov">             45 :                 zend_cleanup_op_array_data((zend_op_array *) function);</span>
+<span class="lineNum">     138 </span><span class="lineCov">             45 :                 return ZEND_HASH_APPLY_KEEP;</span>
+<span class="lineNum">     139 </span>                :         } else {
+<span class="lineNum">     140 </span><span class="lineCov">             48 :                 return ZEND_HASH_APPLY_STOP;</span>
+<span class="lineNum">     141 </span>                :         }
+<a name="142"><span class="lineNum">     142 </span>                : }</a>
+<span class="lineNum">     143 </span>                : 
+<span class="lineNum">     144 </span><span class="lineNoCov">              0 : ZEND_API int zend_cleanup_function_data_full(zend_function *function TSRMLS_DC)</span>
+<span class="lineNum">     145 </span>                : {
+<span class="lineNum">     146 </span><span class="lineNoCov">              0 :         if (function-&gt;type == ZEND_USER_FUNCTION) {</span>
+<span class="lineNum">     147 </span><span class="lineNoCov">              0 :                 zend_cleanup_op_array_data((zend_op_array *) function);</span>
+<span class="lineNum">     148 </span>                :         }
+<span class="lineNum">     149 </span><span class="lineNoCov">              0 :         return 0;</span>
+<a name="150"><span class="lineNum">     150 </span>                : }</a>
+<span class="lineNum">     151 </span>                : 
+<span class="lineNum">     152 </span><span class="lineCov">              3 : static inline void cleanup_user_class_data(zend_class_entry *ce TSRMLS_DC)</span>
+<span class="lineNum">     153 </span>                : {
+<span class="lineNum">     154 </span>                :         /* Clean all parts that can contain run-time data */
+<span class="lineNum">     155 </span>                :         /* Note that only run-time accessed data need to be cleaned up, pre-defined data can
+<span class="lineNum">     156 </span>                :            not contain objects and thus are not probelmatic */
+<span class="lineNum">     157 </span><span class="lineCov">              3 :         if (ce-&gt;ce_flags &amp; ZEND_HAS_STATIC_IN_METHODS) {</span>
+<span class="lineNum">     158 </span><span class="lineNoCov">              0 :                 zend_hash_apply(&amp;ce-&gt;function_table, (apply_func_t) zend_cleanup_function_data_full TSRMLS_CC);</span>
+<span class="lineNum">     159 </span>                :         }
+<span class="lineNum">     160 </span><span class="lineCov">              3 :         if (ce-&gt;static_members_table) {</span>
+<span class="lineNum">     161 </span>                :                 int i;
+<span class="lineNum">     162 </span>                : 
+<span class="lineNum">     163 </span><span class="lineNoCov">              0 :                 for (i = 0; i &lt; ce-&gt;default_static_members_count; i++) {</span>
+<span class="lineNum">     164 </span><span class="lineNoCov">              0 :                         if (ce-&gt;static_members_table[i]) {</span>
+<span class="lineNum">     165 </span><span class="lineNoCov">              0 :                                 zval_ptr_dtor(&amp;ce-&gt;static_members_table[i]);</span>
+<span class="lineNum">     166 </span><span class="lineNoCov">              0 :                                 ce-&gt;static_members_table[i] = NULL;</span>
+<span class="lineNum">     167 </span>                :                         }
+<span class="lineNum">     168 </span>                :                 }
+<span class="lineNum">     169 </span><span class="lineNoCov">              0 :                 ce-&gt;static_members_table = NULL;</span>
+<span class="lineNum">     170 </span>                :         }
+<a name="171"><span class="lineNum">     171 </span><span class="lineCov">              3 : }</span></a>
+<span class="lineNum">     172 </span>                : 
+<span class="lineNum">     173 </span><span class="lineCov">            192 : static inline void cleanup_internal_class_data(zend_class_entry *ce TSRMLS_DC)</span>
+<span class="lineNum">     174 </span>                : {
+<span class="lineNum">     175 </span><span class="lineCov">            192 :         if (CE_STATIC_MEMBERS(ce)) {</span>
+<span class="lineNum">     176 </span>                :                 int i;
+<span class="lineNum">     177 </span>                :                 
+<span class="lineNum">     178 </span><span class="lineCov">            141 :                 for (i = 0; i &lt; ce-&gt;default_static_members_count; i++) {</span>
+<span class="lineNum">     179 </span><span class="lineCov">             94 :                         zval_ptr_dtor(&amp;CE_STATIC_MEMBERS(ce)[i]);</span>
+<span class="lineNum">     180 </span>                :                 }
+<span class="lineNum">     181 </span><span class="lineCov">             47 :                 efree(CE_STATIC_MEMBERS(ce));</span>
+<span class="lineNum">     182 </span>                : #ifdef ZTS
+<span class="lineNum">     183 </span>                :                 CG(static_members_table)[(zend_intptr_t)(ce-&gt;static_members_table)] = NULL;
+<span class="lineNum">     184 </span>                : #else
+<span class="lineNum">     185 </span><span class="lineCov">             47 :                 ce-&gt;static_members_table = NULL;</span>
+<span class="lineNum">     186 </span>                : #endif
+<span class="lineNum">     187 </span>                :         }
+<a name="188"><span class="lineNum">     188 </span><span class="lineCov">            192 : }</span></a>
+<span class="lineNum">     189 </span>                : 
+<span class="lineNum">     190 </span><span class="lineCov">            192 : ZEND_API void zend_cleanup_internal_class_data(zend_class_entry *ce TSRMLS_DC)</span>
+<span class="lineNum">     191 </span>                : {
+<span class="lineNum">     192 </span><span class="lineCov">            192 :         cleanup_internal_class_data(ce TSRMLS_CC);</span>
+<a name="193"><span class="lineNum">     193 </span><span class="lineCov">            192 : }</span></a>
+<span class="lineNum">     194 </span>                : 
+<span class="lineNum">     195 </span><span class="lineCov">             51 : ZEND_API int zend_cleanup_user_class_data(zend_class_entry **pce TSRMLS_DC)</span>
+<span class="lineNum">     196 </span>                : {
+<span class="lineNum">     197 </span><span class="lineCov">             51 :         if ((*pce)-&gt;type == ZEND_USER_CLASS) {</span>
+<span class="lineNum">     198 </span><span class="lineCov">              3 :                 cleanup_user_class_data(*pce TSRMLS_CC);</span>
+<span class="lineNum">     199 </span><span class="lineCov">              3 :                 return ZEND_HASH_APPLY_KEEP;</span>
+<span class="lineNum">     200 </span>                :         } else {
+<span class="lineNum">     201 </span><span class="lineCov">             48 :                 return ZEND_HASH_APPLY_STOP;</span>
+<span class="lineNum">     202 </span>                :         }
+<a name="203"><span class="lineNum">     203 </span>                : }</a>
+<span class="lineNum">     204 </span>                : 
+<span class="lineNum">     205 </span><span class="lineNoCov">              0 : ZEND_API int zend_cleanup_class_data(zend_class_entry **pce TSRMLS_DC)</span>
+<span class="lineNum">     206 </span>                : {
+<span class="lineNum">     207 </span><span class="lineNoCov">              0 :         if ((*pce)-&gt;type == ZEND_USER_CLASS) {</span>
+<span class="lineNum">     208 </span><span class="lineNoCov">              0 :                 cleanup_user_class_data(*pce TSRMLS_CC);</span>
+<span class="lineNum">     209 </span>                :         } else {
+<span class="lineNum">     210 </span><span class="lineNoCov">              0 :                 cleanup_internal_class_data(*pce TSRMLS_CC);</span>
+<span class="lineNum">     211 </span>                :         }
+<span class="lineNum">     212 </span><span class="lineNoCov">              0 :         return 0;</span>
+<a name="213"><span class="lineNum">     213 </span>                : }</a>
+<span class="lineNum">     214 </span>                : 
+<span class="lineNum">     215 </span><span class="lineCov">              2 : void _destroy_zend_class_traits_info(zend_class_entry *ce)</span>
+<span class="lineNum">     216 </span>                : {
+<span class="lineNum">     217 </span><span class="lineCov">              2 :         if (ce-&gt;num_traits &gt; 0 &amp;&amp; ce-&gt;traits) {</span>
+<span class="lineNum">     218 </span>                :                 size_t i;
+<span class="lineNum">     219 </span><span class="lineNoCov">              0 :                 for (i = 0; i &lt; ce-&gt;num_traits; i++) {</span>
+<span class="lineNum">     220 </span><span class="lineNoCov">              0 :                         if (ce-&gt;traits[i]) {</span>
+<span class="lineNum">     221 </span><span class="lineNoCov">              0 :                                 destroy_zend_class(&amp;ce-&gt;traits[i]);</span>
+<span class="lineNum">     222 </span>                :                         }
+<span class="lineNum">     223 </span>                :                 }
+<span class="lineNum">     224 </span><span class="lineNoCov">              0 :                 efree(ce-&gt;traits);</span>
+<span class="lineNum">     225 </span>                :         }
+<span class="lineNum">     226 </span>                :         
+<span class="lineNum">     227 </span><span class="lineCov">              2 :         if (ce-&gt;trait_aliases) {</span>
+<span class="lineNum">     228 </span><span class="lineNoCov">              0 :                 size_t i = 0;</span>
+<span class="lineNum">     229 </span><span class="lineNoCov">              0 :                 while (ce-&gt;trait_aliases[i]) {</span>
+<span class="lineNum">     230 </span><span class="lineNoCov">              0 :                         if (ce-&gt;trait_aliases[i]-&gt;trait_method) {</span>
+<span class="lineNum">     231 </span><span class="lineNoCov">              0 :                                 if (ce-&gt;trait_aliases[i]-&gt;trait_method-&gt;method_name) {</span>
+<span class="lineNum">     232 </span><span class="lineNoCov">              0 :                                         efree((char*)ce-&gt;trait_aliases[i]-&gt;trait_method-&gt;method_name);</span>
+<span class="lineNum">     233 </span>                :                                 }
+<span class="lineNum">     234 </span><span class="lineNoCov">              0 :                                 if (ce-&gt;trait_aliases[i]-&gt;trait_method-&gt;class_name) {</span>
+<span class="lineNum">     235 </span><span class="lineNoCov">              0 :                                         efree((char*)ce-&gt;trait_aliases[i]-&gt;trait_method-&gt;class_name);</span>
+<span class="lineNum">     236 </span>                :                                 }
+<span class="lineNum">     237 </span><span class="lineNoCov">              0 :                                 efree(ce-&gt;trait_aliases[i]-&gt;trait_method);</span>
+<span class="lineNum">     238 </span>                :                         }
+<span class="lineNum">     239 </span>                :                         
+<span class="lineNum">     240 </span><span class="lineNoCov">              0 :                         if (ce-&gt;trait_aliases[i]-&gt;alias) {</span>
+<span class="lineNum">     241 </span><span class="lineNoCov">              0 :                                 efree((char*)ce-&gt;trait_aliases[i]-&gt;alias);</span>
+<span class="lineNum">     242 </span>                :                         }
+<span class="lineNum">     243 </span>                :                         
+<span class="lineNum">     244 </span><span class="lineNoCov">              0 :                         efree(ce-&gt;trait_aliases[i]);</span>
+<span class="lineNum">     245 </span><span class="lineNoCov">              0 :                         i++;</span>
+<span class="lineNum">     246 </span>                :                 }
+<span class="lineNum">     247 </span>                :                 
+<span class="lineNum">     248 </span><span class="lineNoCov">              0 :                 efree(ce-&gt;trait_aliases);</span>
+<span class="lineNum">     249 </span>                :         }
+<span class="lineNum">     250 </span>                : 
+<span class="lineNum">     251 </span><span class="lineCov">              2 :         if (ce-&gt;trait_precedences) {</span>
+<span class="lineNum">     252 </span><span class="lineNoCov">              0 :                 size_t i = 0;</span>
+<span class="lineNum">     253 </span>                :                 
+<span class="lineNum">     254 </span><span class="lineNoCov">              0 :                 while (ce-&gt;trait_precedences[i]) {</span>
+<span class="lineNum">     255 </span><span class="lineNoCov">              0 :                         efree((char*)ce-&gt;trait_precedences[i]-&gt;trait_method-&gt;method_name);</span>
+<span class="lineNum">     256 </span><span class="lineNoCov">              0 :                         efree((char*)ce-&gt;trait_precedences[i]-&gt;trait_method-&gt;class_name);</span>
+<span class="lineNum">     257 </span><span class="lineNoCov">              0 :                         efree(ce-&gt;trait_precedences[i]-&gt;trait_method);</span>
+<span class="lineNum">     258 </span>                : 
+<span class="lineNum">     259 </span><span class="lineNoCov">              0 :                         if (ce-&gt;trait_precedences[i]-&gt;exclude_from_classes) {</span>
+<span class="lineNum">     260 </span><span class="lineNoCov">              0 :                                 efree(ce-&gt;trait_precedences[i]-&gt;exclude_from_classes);</span>
+<span class="lineNum">     261 </span>                :                         }
+<span class="lineNum">     262 </span>                : 
+<span class="lineNum">     263 </span><span class="lineNoCov">              0 :                         efree(ce-&gt;trait_precedences[i]);</span>
+<span class="lineNum">     264 </span><span class="lineNoCov">              0 :                         i++;</span>
+<span class="lineNum">     265 </span>                :                 }
+<span class="lineNum">     266 </span><span class="lineNoCov">              0 :                 efree(ce-&gt;trait_precedences);</span>
+<span class="lineNum">     267 </span>                :         }
+<a name="268"><span class="lineNum">     268 </span><span class="lineCov">              2 : }</span></a>
+<span class="lineNum">     269 </span>                : 
+<span class="lineNum">     270 </span><span class="lineCov">           5236 : ZEND_API void destroy_zend_class(zend_class_entry **pce)</span>
+<span class="lineNum">     271 </span>                : {
+<span class="lineNum">     272 </span><span class="lineCov">           5236 :         zend_class_entry *ce = *pce;</span>
+<span class="lineNum">     273 </span>                :         
+<span class="lineNum">     274 </span><span class="lineCov">           5236 :         if (--ce-&gt;refcount &gt; 0) {</span>
+<span class="lineNum">     275 </span><span class="lineCov">              2 :                 return;</span>
+<span class="lineNum">     276 </span>                :         }
+<span class="lineNum">     277 </span><span class="lineCov">           5234 :         switch (ce-&gt;type) {</span>
+<span class="lineNum">     278 </span>                :                 case ZEND_USER_CLASS:
+<span class="lineNum">     279 </span><span class="lineCov">              2 :                         if (ce-&gt;default_properties_table) {</span>
+<span class="lineNum">     280 </span>                :                                 int i;
+<span class="lineNum">     281 </span>                : 
+<span class="lineNum">     282 </span><span class="lineCov">              5 :                                 for (i = 0; i &lt; ce-&gt;default_properties_count; i++) {</span>
+<span class="lineNum">     283 </span><span class="lineCov">              3 :                                         if (ce-&gt;default_properties_table[i]) {</span>
+<span class="lineNum">     284 </span><span class="lineCov">              3 :                                                 zval_ptr_dtor(&amp;ce-&gt;default_properties_table[i]);</span>
+<span class="lineNum">     285 </span>                :                                     }
+<span class="lineNum">     286 </span>                :                                 }
+<span class="lineNum">     287 </span><span class="lineCov">              2 :                                 efree(ce-&gt;default_properties_table);</span>
+<span class="lineNum">     288 </span>                :                         }
+<span class="lineNum">     289 </span><span class="lineCov">              2 :                         if (ce-&gt;default_static_members_table) {</span>
+<span class="lineNum">     290 </span>                :                                 int i;
+<span class="lineNum">     291 </span>                : 
+<span class="lineNum">     292 </span><span class="lineNoCov">              0 :                                 for (i = 0; i &lt; ce-&gt;default_static_members_count; i++) {</span>
+<span class="lineNum">     293 </span><span class="lineNoCov">              0 :                                         if (ce-&gt;default_static_members_table[i]) {</span>
+<span class="lineNum">     294 </span><span class="lineNoCov">              0 :                                                 zval_ptr_dtor(&amp;ce-&gt;default_static_members_table[i]);</span>
+<span class="lineNum">     295 </span>                :                                         }
+<span class="lineNum">     296 </span>                :                                 }
+<span class="lineNum">     297 </span><span class="lineNoCov">              0 :                                 efree(ce-&gt;default_static_members_table);</span>
+<span class="lineNum">     298 </span>                :                         }
+<span class="lineNum">     299 </span><span class="lineCov">              2 :                         zend_hash_destroy(&amp;ce-&gt;properties_info);</span>
+<span class="lineNum">     300 </span><span class="lineCov">              2 :                         str_efree(ce-&gt;name);</span>
+<span class="lineNum">     301 </span><span class="lineCov">              2 :                         zend_hash_destroy(&amp;ce-&gt;function_table);</span>
+<span class="lineNum">     302 </span><span class="lineCov">              2 :                         zend_hash_destroy(&amp;ce-&gt;constants_table);</span>
+<span class="lineNum">     303 </span><span class="lineCov">              2 :                         if (ce-&gt;num_interfaces &gt; 0 &amp;&amp; ce-&gt;interfaces) {</span>
+<span class="lineNum">     304 </span><span class="lineCov">              1 :                                 efree(ce-&gt;interfaces);</span>
+<span class="lineNum">     305 </span>                :                         }
+<span class="lineNum">     306 </span><span class="lineCov">              2 :                         if (ce-&gt;info.user.doc_comment) {</span>
+<span class="lineNum">     307 </span><span class="lineNoCov">              0 :                                 efree((char*)ce-&gt;info.user.doc_comment);</span>
+<span class="lineNum">     308 </span>                :                         }
+<span class="lineNum">     309 </span>                :                         
+<span class="lineNum">     310 </span><span class="lineCov">              2 :                         _destroy_zend_class_traits_info(ce);</span>
+<span class="lineNum">     311 </span>                :                         
+<span class="lineNum">     312 </span><span class="lineCov">              2 :                         efree(ce);</span>
+<span class="lineNum">     313 </span><span class="lineCov">              2 :                         break;</span>
+<span class="lineNum">     314 </span>                :                 case ZEND_INTERNAL_CLASS:
+<span class="lineNum">     315 </span><span class="lineCov">           5232 :                         if (ce-&gt;default_properties_table) {</span>
+<span class="lineNum">     316 </span>                :                                 int i;
+<span class="lineNum">     317 </span>                : 
+<span class="lineNum">     318 </span><span class="lineCov">          11664 :                                 for (i = 0; i &lt; ce-&gt;default_properties_count; i++) {</span>
+<span class="lineNum">     319 </span><span class="lineCov">           9408 :                                         if (ce-&gt;default_properties_table[i]) {</span>
+<span class="lineNum">     320 </span><span class="lineCov">           9408 :                                                 zval_internal_ptr_dtor(&amp;ce-&gt;default_properties_table[i]);</span>
+<span class="lineNum">     321 </span>                :                                         }
+<span class="lineNum">     322 </span>                :                                 }
+<span class="lineNum">     323 </span><span class="lineCov">           2256 :                                 free(ce-&gt;default_properties_table);</span>
+<span class="lineNum">     324 </span>                :                         }
+<span class="lineNum">     325 </span><span class="lineCov">           5232 :                         if (ce-&gt;default_static_members_table) {</span>
+<span class="lineNum">     326 </span>                :                                 int i;
+<span class="lineNum">     327 </span>                : 
+<span class="lineNum">     328 </span><span class="lineCov">            576 :                                 for (i = 0; i &lt; ce-&gt;default_static_members_count; i++) {</span>
+<span class="lineNum">     329 </span><span class="lineCov">            384 :                                         zval_internal_ptr_dtor(&amp;ce-&gt;default_static_members_table[i]);</span>
+<span class="lineNum">     330 </span>                :                                 }
+<span class="lineNum">     331 </span><span class="lineCov">            192 :                                 free(ce-&gt;default_static_members_table);</span>
+<span class="lineNum">     332 </span>                :                         }
+<span class="lineNum">     333 </span><span class="lineCov">           5232 :                         zend_hash_destroy(&amp;ce-&gt;properties_info);</span>
+<span class="lineNum">     334 </span><span class="lineCov">           5232 :                         str_free(ce-&gt;name);</span>
+<span class="lineNum">     335 </span><span class="lineCov">           5232 :                         zend_hash_destroy(&amp;ce-&gt;function_table);</span>
+<span class="lineNum">     336 </span><span class="lineCov">           5232 :                         zend_hash_destroy(&amp;ce-&gt;constants_table);</span>
+<span class="lineNum">     337 </span><span class="lineCov">           5232 :                         if (ce-&gt;num_interfaces &gt; 0) {</span>
+<span class="lineNum">     338 </span><span class="lineCov">           2544 :                                 free(ce-&gt;interfaces);</span>
+<span class="lineNum">     339 </span>                :                         }
+<span class="lineNum">     340 </span><span class="lineCov">           5232 :                         free(ce);</span>
+<span class="lineNum">     341 </span>                :                         break;
+<span class="lineNum">     342 </span>                :         }
+<a name="343"><span class="lineNum">     343 </span>                : }</a>
+<span class="lineNum">     344 </span>                : 
+<span class="lineNum">     345 </span><span class="lineNoCov">              0 : void zend_class_add_ref(zend_class_entry **ce)</span>
+<span class="lineNum">     346 </span>                : {
+<span class="lineNum">     347 </span><span class="lineNoCov">              0 :         (*ce)-&gt;refcount++;</span>
+<a name="348"><span class="lineNum">     348 </span><span class="lineNoCov">              0 : }</span></a>
+<span class="lineNum">     349 </span>                : 
+<span class="lineNum">     350 </span><span class="lineCov">            140 : ZEND_API void destroy_op_array(zend_op_array *op_array TSRMLS_DC)</span>
+<span class="lineNum">     351 </span>                : {
+<span class="lineNum">     352 </span><span class="lineCov">            140 :         zend_literal *literal = op_array-&gt;literals;</span>
+<span class="lineNum">     353 </span>                :         zend_literal *end;
+<span class="lineNum">     354 </span>                :         zend_uint i;
+<span class="lineNum">     355 </span>                : 
+<span class="lineNum">     356 </span><span class="lineCov">            140 :         if (op_array-&gt;static_variables) {</span>
+<span class="lineNum">     357 </span><span class="lineNoCov">              0 :                 zend_hash_destroy(op_array-&gt;static_variables);</span>
+<span class="lineNum">     358 </span><span class="lineNoCov">              0 :                 FREE_HASHTABLE(op_array-&gt;static_variables);</span>
+<span class="lineNum">     359 </span>                :         }
+<span class="lineNum">     360 </span>                : 
+<span class="lineNum">     361 </span><span class="lineCov">            140 :         if (op_array-&gt;run_time_cache) {</span>
+<span class="lineNum">     362 </span><span class="lineCov">             71 :                 efree(op_array-&gt;run_time_cache);</span>
+<span class="lineNum">     363 </span>                :         }
+<span class="lineNum">     364 </span>                : 
+<span class="lineNum">     365 </span><span class="lineCov">            140 :         if (--(*op_array-&gt;refcount)&gt;0) {</span>
+<span class="lineNum">     366 </span><span class="lineCov">             45 :                 return;</span>
+<span class="lineNum">     367 </span>                :         }
+<span class="lineNum">     368 </span>                : 
+<span class="lineNum">     369 </span><span class="lineCov">             95 :         efree(op_array-&gt;refcount);</span>
+<span class="lineNum">     370 </span>                : 
+<span class="lineNum">     371 </span><span class="lineCov">             95 :         if (op_array-&gt;vars) {</span>
+<span class="lineNum">     372 </span><span class="lineCov">             83 :                 i = op_array-&gt;last_var;</span>
+<span class="lineNum">     373 </span><span class="lineCov">            720 :                 while (i &gt; 0) {</span>
+<span class="lineNum">     374 </span><span class="lineCov">            554 :                         i--;</span>
+<span class="lineNum">     375 </span><span class="lineCov">            554 :                         str_efree(op_array-&gt;vars[i].name);</span>
+<span class="lineNum">     376 </span>                :                 }
+<span class="lineNum">     377 </span><span class="lineCov">             83 :                 efree(op_array-&gt;vars);</span>
+<span class="lineNum">     378 </span>                :         }
+<span class="lineNum">     379 </span>                : 
+<span class="lineNum">     380 </span><span class="lineCov">             95 :         if (literal) {</span>
+<span class="lineNum">     381 </span><span class="lineCov">             95 :                 end = literal + op_array-&gt;last_literal;</span>
+<span class="lineNum">     382 </span><span class="lineCov">           3962 :                 while (literal &lt; end) {</span>
+<span class="lineNum">     383 </span><span class="lineCov">           3772 :                         zval_dtor(&amp;literal-&gt;constant);</span>
+<span class="lineNum">     384 </span><span class="lineCov">           3772 :                         literal++;</span>
+<span class="lineNum">     385 </span>                :                 }
+<span class="lineNum">     386 </span><span class="lineCov">             95 :                 efree(op_array-&gt;literals);</span>
+<span class="lineNum">     387 </span>                :         }
+<span class="lineNum">     388 </span><span class="lineCov">             95 :         efree(op_array-&gt;opcodes);</span>
+<span class="lineNum">     389 </span>                : 
+<span class="lineNum">     390 </span><span class="lineCov">             95 :         if (op_array-&gt;function_name) {</span>
+<span class="lineNum">     391 </span><span class="lineCov">             52 :                 efree((char*)op_array-&gt;function_name);</span>
+<span class="lineNum">     392 </span>                :         }
+<span class="lineNum">     393 </span><span class="lineCov">             95 :         if (op_array-&gt;doc_comment) {</span>
+<span class="lineNum">     394 </span><span class="lineCov">              1 :                 efree((char*)op_array-&gt;doc_comment);</span>
+<span class="lineNum">     395 </span>                :         }
+<span class="lineNum">     396 </span><span class="lineCov">             95 :         if (op_array-&gt;brk_cont_array) {</span>
+<span class="lineNum">     397 </span><span class="lineCov">             26 :                 efree(op_array-&gt;brk_cont_array);</span>
+<span class="lineNum">     398 </span>                :         }
+<span class="lineNum">     399 </span><span class="lineCov">             95 :         if (op_array-&gt;try_catch_array) {</span>
+<span class="lineNum">     400 </span><span class="lineCov">              8 :                 efree(op_array-&gt;try_catch_array);</span>
+<span class="lineNum">     401 </span>                :         }
+<span class="lineNum">     402 </span><span class="lineCov">             95 :         if (op_array-&gt;fn_flags &amp; ZEND_ACC_DONE_PASS_TWO) {</span>
+<span class="lineNum">     403 </span><span class="lineCov">             95 :                 zend_llist_apply_with_argument(&amp;zend_extensions, (llist_apply_with_arg_func_t) zend_extension_op_array_dtor_handler, op_array TSRMLS_CC);</span>
+<span class="lineNum">     404 </span>                :         }
+<span class="lineNum">     405 </span><span class="lineCov">             95 :         if (op_array-&gt;arg_info) {</span>
+<span class="lineNum">     406 </span><span class="lineCov">            134 :                 for (i=0; i&lt;op_array-&gt;num_args; i++) {</span>
+<span class="lineNum">     407 </span><span class="lineCov">             94 :                         str_efree(op_array-&gt;arg_info[i].name);</span>
+<span class="lineNum">     408 </span><span class="lineCov">             94 :                         if (op_array-&gt;arg_info[i].class_name) {</span>
+<span class="lineNum">     409 </span><span class="lineCov">              1 :                                 str_efree(op_array-&gt;arg_info[i].class_name);</span>
+<span class="lineNum">     410 </span>                :                         }
+<span class="lineNum">     411 </span>                :                 }
+<span class="lineNum">     412 </span><span class="lineCov">             40 :                 efree(op_array-&gt;arg_info);</span>
+<span class="lineNum">     413 </span>                :         }
+<a name="414"><span class="lineNum">     414 </span>                : }</a>
+<span class="lineNum">     415 </span>                : 
+<span class="lineNum">     416 </span><span class="lineCov">           8794 : void init_op(zend_op *op TSRMLS_DC)</span>
+<span class="lineNum">     417 </span>                : {
+<span class="lineNum">     418 </span><span class="lineCov">           8794 :         memset(op, 0, sizeof(zend_op));</span>
+<span class="lineNum">     419 </span><span class="lineCov">           8794 :         op-&gt;lineno = CG(zend_lineno);</span>
+<span class="lineNum">     420 </span><span class="lineCov">           8794 :         SET_UNUSED(op-&gt;result);</span>
+<a name="421"><span class="lineNum">     421 </span><span class="lineCov">           8794 : }</span></a>
+<span class="lineNum">     422 </span>                : 
+<span class="lineNum">     423 </span><span class="lineCov">           8037 : zend_op *get_next_op(zend_op_array *op_array TSRMLS_DC)</span>
+<span class="lineNum">     424 </span>                : {
+<span class="lineNum">     425 </span><span class="lineCov">           8037 :         zend_uint next_op_num = op_array-&gt;last++;</span>
+<span class="lineNum">     426 </span>                :         zend_op *next_op;
+<span class="lineNum">     427 </span>                : 
+<span class="lineNum">     428 </span><span class="lineCov">           8037 :         if (next_op_num &gt;= CG(context).opcodes_size) {</span>
+<span class="lineNum">     429 </span><span class="lineCov">             27 :                 if (op_array-&gt;fn_flags &amp; ZEND_ACC_INTERACTIVE) {</span>
+<span class="lineNum">     430 </span>                :                         /* we messed up */
+<span class="lineNum">     431 </span><span class="lineNoCov">              0 :                         zend_printf(&quot;Ran out of opcode space!\n&quot;</span>
+<span class="lineNum">     432 </span>                :                                                 &quot;You should probably consider writing this huge script into a file!\n&quot;);
+<span class="lineNum">     433 </span><span class="lineNoCov">              0 :                         zend_bailout();</span>
+<span class="lineNum">     434 </span>                :                 }
+<span class="lineNum">     435 </span><span class="lineCov">             27 :                 CG(context).opcodes_size *= 4;</span>
+<span class="lineNum">     436 </span><span class="lineCov">             27 :                 op_array_alloc_ops(op_array, CG(context).opcodes_size);</span>
+<span class="lineNum">     437 </span>                :         }
+<span class="lineNum">     438 </span>                :         
+<span class="lineNum">     439 </span><span class="lineCov">           8037 :         next_op = &amp;(op_array-&gt;opcodes[next_op_num]);</span>
+<span class="lineNum">     440 </span>                :         
+<span class="lineNum">     441 </span><span class="lineCov">           8037 :         init_op(next_op TSRMLS_CC);</span>
+<span class="lineNum">     442 </span>                : 
+<span class="lineNum">     443 </span><span class="lineCov">           8037 :         return next_op;</span>
+<a name="444"><span class="lineNum">     444 </span>                : }</a>
+<span class="lineNum">     445 </span>                : 
+<span class="lineNum">     446 </span><span class="lineCov">           3527 : int get_next_op_number(zend_op_array *op_array)</span>
+<span class="lineNum">     447 </span>                : {
+<span class="lineNum">     448 </span><span class="lineCov">           3527 :         return op_array-&gt;last;</span>
+<a name="449"><span class="lineNum">     449 </span>                : }</a>
+<span class="lineNum">     450 </span>                : 
+<span class="lineNum">     451 </span><span class="lineCov">             79 : zend_brk_cont_element *get_next_brk_cont_element(zend_op_array *op_array)</span>
+<span class="lineNum">     452 </span>                : {
+<span class="lineNum">     453 </span><span class="lineCov">             79 :         op_array-&gt;last_brk_cont++;</span>
+<span class="lineNum">     454 </span><span class="lineCov">             79 :         op_array-&gt;brk_cont_array = erealloc(op_array-&gt;brk_cont_array, sizeof(zend_brk_cont_element)*op_array-&gt;last_brk_cont);</span>
+<span class="lineNum">     455 </span><span class="lineCov">             79 :         return &amp;op_array-&gt;brk_cont_array[op_array-&gt;last_brk_cont-1];</span>
+<a name="456"><span class="lineNum">     456 </span>                : }</a>
+<span class="lineNum">     457 </span>                : 
+<span class="lineNum">     458 </span><span class="lineNoCov">              0 : static void zend_update_extended_info(zend_op_array *op_array TSRMLS_DC)</span>
+<span class="lineNum">     459 </span>                : {
+<span class="lineNum">     460 </span><span class="lineNoCov">              0 :         zend_op *opline = op_array-&gt;opcodes, *end=opline+op_array-&gt;last;</span>
+<span class="lineNum">     461 </span>                : 
+<span class="lineNum">     462 </span><span class="lineNoCov">              0 :         while (opline&lt;end) {</span>
+<span class="lineNum">     463 </span><span class="lineNoCov">              0 :                 if (opline-&gt;opcode == ZEND_EXT_STMT) {</span>
+<span class="lineNum">     464 </span><span class="lineNoCov">              0 :                         if (opline+1&lt;end) {</span>
+<span class="lineNum">     465 </span><span class="lineNoCov">              0 :                                 if ((opline+1)-&gt;opcode == ZEND_EXT_STMT) {</span>
+<span class="lineNum">     466 </span><span class="lineNoCov">              0 :                                         opline-&gt;opcode = ZEND_NOP;</span>
+<span class="lineNum">     467 </span><span class="lineNoCov">              0 :                                         opline++;</span>
+<span class="lineNum">     468 </span><span class="lineNoCov">              0 :                                         continue;</span>
+<span class="lineNum">     469 </span>                :                                 }
+<span class="lineNum">     470 </span><span class="lineNoCov">              0 :                                 if (opline+1&lt;end) {</span>
+<span class="lineNum">     471 </span><span class="lineNoCov">              0 :                                         opline-&gt;lineno = (opline+1)-&gt;lineno;</span>
+<span class="lineNum">     472 </span>                :                                 }
+<span class="lineNum">     473 </span>                :                         } else {
+<span class="lineNum">     474 </span><span class="lineNoCov">              0 :                                 opline-&gt;opcode = ZEND_NOP;</span>
+<span class="lineNum">     475 </span>                :                         }
+<span class="lineNum">     476 </span>                :                 }
+<span class="lineNum">     477 </span><span class="lineNoCov">              0 :                 opline++;</span>
+<span class="lineNum">     478 </span>                :         }
+<a name="479"><span class="lineNum">     479 </span><span class="lineNoCov">              0 : }</span></a>
+<span class="lineNum">     480 </span>                : 
+<span class="lineNum">     481 </span><span class="lineNoCov">              0 : static void zend_extension_op_array_handler(zend_extension *extension, zend_op_array *op_array TSRMLS_DC)</span>
+<span class="lineNum">     482 </span>                : {
+<span class="lineNum">     483 </span><span class="lineNoCov">              0 :         if (extension-&gt;op_array_handler) {</span>
+<span class="lineNum">     484 </span><span class="lineNoCov">              0 :                 extension-&gt;op_array_handler(op_array);</span>
+<span class="lineNum">     485 </span>                :         }
+<a name="486"><span class="lineNum">     486 </span><span class="lineNoCov">              0 : }</span></a>
+<span class="lineNum">     487 </span>                : 
+<span class="lineNum">     488 </span><span class="lineCov">            100 : ZEND_API int pass_two(zend_op_array *op_array TSRMLS_DC)</span>
+<span class="lineNum">     489 </span>                : {
+<span class="lineNum">     490 </span>                :         zend_op *opline, *end;
+<span class="lineNum">     491 </span>                : 
+<span class="lineNum">     492 </span><span class="lineCov">            100 :         if (op_array-&gt;type!=ZEND_USER_FUNCTION &amp;&amp; op_array-&gt;type!=ZEND_EVAL_CODE) {</span>
+<span class="lineNum">     493 </span><span class="lineNoCov">              0 :                 return 0;</span>
+<span class="lineNum">     494 </span>                :         }
+<span class="lineNum">     495 </span><span class="lineCov">            100 :         if (CG(compiler_options) &amp; ZEND_COMPILE_EXTENDED_INFO) {</span>
+<span class="lineNum">     496 </span><span class="lineNoCov">              0 :                 zend_update_extended_info(op_array TSRMLS_CC);</span>
+<span class="lineNum">     497 </span>                :         }
+<span class="lineNum">     498 </span><span class="lineCov">            100 :         if (CG(compiler_options) &amp; ZEND_COMPILE_HANDLE_OP_ARRAY) {</span>
+<span class="lineNum">     499 </span><span class="lineCov">             97 :                 zend_llist_apply_with_argument(&amp;zend_extensions, (llist_apply_with_arg_func_t) zend_extension_op_array_handler, op_array TSRMLS_CC);</span>
+<span class="lineNum">     500 </span>                :         }
+<span class="lineNum">     501 </span>                : 
+<span class="lineNum">     502 </span><span class="lineCov">            100 :         if (!(op_array-&gt;fn_flags &amp; ZEND_ACC_INTERACTIVE) &amp;&amp; CG(context).vars_size != op_array-&gt;last_var) {</span>
+<span class="lineNum">     503 </span><span class="lineCov">             87 :                 op_array-&gt;vars = (zend_compiled_variable *) erealloc(op_array-&gt;vars, sizeof(zend_compiled_variable)*op_array-&gt;last_var);</span>
+<span class="lineNum">     504 </span><span class="lineCov">             87 :                 CG(context).vars_size = op_array-&gt;last_var;</span>
+<span class="lineNum">     505 </span>                :         }
+<span class="lineNum">     506 </span><span class="lineCov">            100 :         if (!(op_array-&gt;fn_flags &amp; ZEND_ACC_INTERACTIVE) &amp;&amp; CG(context).opcodes_size != op_array-&gt;last) {</span>
+<span class="lineNum">     507 </span><span class="lineCov">             99 :                 op_array-&gt;opcodes = (zend_op *) erealloc(op_array-&gt;opcodes, sizeof(zend_op)*op_array-&gt;last);</span>
+<span class="lineNum">     508 </span><span class="lineCov">             99 :                 CG(context).opcodes_size = op_array-&gt;last;</span>
+<span class="lineNum">     509 </span>                :         }
+<span class="lineNum">     510 </span><span class="lineCov">            100 :         if (!(op_array-&gt;fn_flags &amp; ZEND_ACC_INTERACTIVE) &amp;&amp; CG(context).literals_size != op_array-&gt;last_literal) {</span>
+<span class="lineNum">     511 </span><span class="lineCov">             94 :                 op_array-&gt;literals = (zend_literal*)erealloc(op_array-&gt;literals, sizeof(zend_literal) * op_array-&gt;last_literal);</span>
+<span class="lineNum">     512 </span><span class="lineCov">             94 :                 CG(context).literals_size = op_array-&gt;last_literal;</span>
+<span class="lineNum">     513 </span>                :         }
+<span class="lineNum">     514 </span>                : 
+<span class="lineNum">     515 </span><span class="lineCov">            100 :         opline = op_array-&gt;opcodes;</span>
+<span class="lineNum">     516 </span><span class="lineCov">            100 :         end = opline + op_array-&gt;last;</span>
+<span class="lineNum">     517 </span><span class="lineCov">           8228 :         while (opline &lt; end) {</span>
+<span class="lineNum">     518 </span><span class="lineCov">           8028 :                 if (opline-&gt;op1_type == IS_CONST) {</span>
+<span class="lineNum">     519 </span><span class="lineCov">           1989 :                         opline-&gt;op1.zv = &amp;op_array-&gt;literals[opline-&gt;op1.constant].constant;</span>
+<span class="lineNum">     520 </span>                :                 }
+<span class="lineNum">     521 </span><span class="lineCov">           8028 :                 if (opline-&gt;op2_type == IS_CONST) {</span>
+<span class="lineNum">     522 </span><span class="lineCov">           1722 :                         opline-&gt;op2.zv = &amp;op_array-&gt;literals[opline-&gt;op2.constant].constant;</span>
+<span class="lineNum">     523 </span>                :                 }
+<span class="lineNum">     524 </span><span class="lineCov">           8028 :                 switch (opline-&gt;opcode) {</span>
+<span class="lineNum">     525 </span>                :                         case ZEND_GOTO:
+<span class="lineNum">     526 </span><span class="lineNoCov">              0 :                                 if (Z_TYPE_P(opline-&gt;op2.zv) != IS_LONG) {</span>
+<span class="lineNum">     527 </span><span class="lineNoCov">              0 :                                         zend_resolve_goto_label(op_array, opline, 1 TSRMLS_CC);</span>
+<span class="lineNum">     528 </span>                :                                 }
+<span class="lineNum">     529 </span>                :                                 /* break omitted intentionally */
+<span class="lineNum">     530 </span>                :                         case ZEND_JMP:
+<span class="lineNum">     531 </span><span class="lineCov">            441 :                                 opline-&gt;op1.jmp_addr = &amp;op_array-&gt;opcodes[opline-&gt;op1.opline_num];</span>
+<span class="lineNum">     532 </span><span class="lineCov">            441 :                                 break;</span>
+<span class="lineNum">     533 </span>                :                         case ZEND_JMPZ:
+<span class="lineNum">     534 </span>                :                         case ZEND_JMPNZ:
+<span class="lineNum">     535 </span>                :                         case ZEND_JMPZ_EX:
+<span class="lineNum">     536 </span>                :                         case ZEND_JMPNZ_EX:
+<span class="lineNum">     537 </span>                :                         case ZEND_JMP_SET:
+<span class="lineNum">     538 </span>                :                         case ZEND_JMP_SET_VAR:
+<span class="lineNum">     539 </span><span class="lineCov">            442 :                                 opline-&gt;op2.jmp_addr = &amp;op_array-&gt;opcodes[opline-&gt;op2.opline_num];</span>
+<span class="lineNum">     540 </span>                :                                 break;
+<span class="lineNum">     541 </span>                :                 }
+<span class="lineNum">     542 </span><span class="lineCov">           8028 :                 ZEND_VM_SET_OPCODE_HANDLER(opline);</span>
+<span class="lineNum">     543 </span><span class="lineCov">           8028 :                 opline++;</span>
+<span class="lineNum">     544 </span>                :         }
+<span class="lineNum">     545 </span>                : 
+<span class="lineNum">     546 </span><span class="lineCov">            100 :         op_array-&gt;fn_flags |= ZEND_ACC_DONE_PASS_TWO;</span>
+<span class="lineNum">     547 </span><span class="lineCov">            100 :         return 0;</span>
+<a name="548"><span class="lineNum">     548 </span>                : }</a>
+<span class="lineNum">     549 </span>                : 
+<span class="lineNum">     550 </span><span class="lineNoCov">              0 : int print_class(zend_class_entry *class_entry TSRMLS_DC)</span>
+<span class="lineNum">     551 </span>                : {
+<span class="lineNum">     552 </span><span class="lineNoCov">              0 :         printf(&quot;Class %s:\n&quot;, class_entry-&gt;name);</span>
+<span class="lineNum">     553 </span><span class="lineNoCov">              0 :         zend_hash_apply(&amp;class_entry-&gt;function_table, (apply_func_t) pass_two TSRMLS_CC);</span>
+<span class="lineNum">     554 </span><span class="lineNoCov">              0 :         printf(&quot;End of class %s.\n\n&quot;, class_entry-&gt;name);</span>
+<span class="lineNum">     555 </span><span class="lineNoCov">              0 :         return 0;</span>
+<a name="556"><span class="lineNum">     556 </span>                : }</a>
+<span class="lineNum">     557 </span>                : 
+<span class="lineNum">     558 </span><span class="lineNoCov">              0 : ZEND_API unary_op_type get_unary_op(int opcode)</span>
+<span class="lineNum">     559 </span>                : {
+<span class="lineNum">     560 </span><span class="lineNoCov">              0 :         switch (opcode) {</span>
+<span class="lineNum">     561 </span>                :                 case ZEND_BW_NOT:
+<span class="lineNum">     562 </span><span class="lineNoCov">              0 :                         return (unary_op_type) bitwise_not_function;</span>
+<span class="lineNum">     563 </span>                :                         break;
+<span class="lineNum">     564 </span>                :                 case ZEND_BOOL_NOT:
+<span class="lineNum">     565 </span><span class="lineNoCov">              0 :                         return (unary_op_type) boolean_not_function;</span>
+<span class="lineNum">     566 </span>                :                         break;
+<span class="lineNum">     567 </span>                :                 default:
+<span class="lineNum">     568 </span><span class="lineNoCov">              0 :                         return (unary_op_type) NULL;</span>
+<span class="lineNum">     569 </span>                :                         break;
+<span class="lineNum">     570 </span>                :         }
+<a name="571"><span class="lineNum">     571 </span>                : }</a>
+<span class="lineNum">     572 </span>                : 
+<span class="lineNum">     573 </span><span class="lineNoCov">              0 : ZEND_API binary_op_type get_binary_op(int opcode)</span>
+<span class="lineNum">     574 </span>                : {
+<span class="lineNum">     575 </span><span class="lineNoCov">              0 :         switch (opcode) {</span>
+<span class="lineNum">     576 </span>                :                 case ZEND_ADD:
+<span class="lineNum">     577 </span>                :                 case ZEND_ASSIGN_ADD:
+<span class="lineNum">     578 </span><span class="lineNoCov">              0 :                         return (binary_op_type) add_function;</span>
+<span class="lineNum">     579 </span>                :                         break;
+<span class="lineNum">     580 </span>                :                 case ZEND_SUB:
+<span class="lineNum">     581 </span>                :                 case ZEND_ASSIGN_SUB:
+<span class="lineNum">     582 </span><span class="lineNoCov">              0 :                         return (binary_op_type) sub_function;</span>
+<span class="lineNum">     583 </span>                :                         break;
+<span class="lineNum">     584 </span>                :                 case ZEND_MUL:
+<span class="lineNum">     585 </span>                :                 case ZEND_ASSIGN_MUL:
+<span class="lineNum">     586 </span><span class="lineNoCov">              0 :                         return (binary_op_type) mul_function;</span>
+<span class="lineNum">     587 </span>                :                         break;
+<span class="lineNum">     588 </span>                :                 case ZEND_DIV:
+<span class="lineNum">     589 </span>                :                 case ZEND_ASSIGN_DIV:
+<span class="lineNum">     590 </span><span class="lineNoCov">              0 :                         return (binary_op_type) div_function;</span>
+<span class="lineNum">     591 </span>                :                         break;
+<span class="lineNum">     592 </span>                :                 case ZEND_MOD:
+<span class="lineNum">     593 </span>                :                 case ZEND_ASSIGN_MOD:
+<span class="lineNum">     594 </span><span class="lineNoCov">              0 :                         return (binary_op_type) mod_function;</span>
+<span class="lineNum">     595 </span>                :                         break;
+<span class="lineNum">     596 </span>                :                 case ZEND_SL:
+<span class="lineNum">     597 </span>                :                 case ZEND_ASSIGN_SL:
+<span class="lineNum">     598 </span><span class="lineNoCov">              0 :                         return (binary_op_type) shift_left_function;</span>
+<span class="lineNum">     599 </span>                :                         break;
+<span class="lineNum">     600 </span>                :                 case ZEND_SR:
+<span class="lineNum">     601 </span>                :                 case ZEND_ASSIGN_SR:
+<span class="lineNum">     602 </span><span class="lineNoCov">              0 :                         return (binary_op_type) shift_right_function;</span>
+<span class="lineNum">     603 </span>                :                         break;
+<span class="lineNum">     604 </span>                :                 case ZEND_CONCAT:
+<span class="lineNum">     605 </span>                :                 case ZEND_ASSIGN_CONCAT:
+<span class="lineNum">     606 </span><span class="lineNoCov">              0 :                         return (binary_op_type) concat_function;</span>
+<span class="lineNum">     607 </span>                :                         break;
+<span class="lineNum">     608 </span>                :                 case ZEND_IS_IDENTICAL:
+<span class="lineNum">     609 </span><span class="lineNoCov">              0 :                         return (binary_op_type) is_identical_function;</span>
+<span class="lineNum">     610 </span>                :                         break;
+<span class="lineNum">     611 </span>                :                 case ZEND_IS_NOT_IDENTICAL:
+<span class="lineNum">     612 </span><span class="lineNoCov">              0 :                         return (binary_op_type) is_not_identical_function;</span>
+<span class="lineNum">     613 </span>                :                         break;
+<span class="lineNum">     614 </span>                :                 case ZEND_IS_EQUAL:
+<span class="lineNum">     615 </span><span class="lineNoCov">              0 :                         return (binary_op_type) is_equal_function;</span>
+<span class="lineNum">     616 </span>                :                         break;
+<span class="lineNum">     617 </span>                :                 case ZEND_IS_NOT_EQUAL:
+<span class="lineNum">     618 </span><span class="lineNoCov">              0 :                         return (binary_op_type) is_not_equal_function;</span>
+<span class="lineNum">     619 </span>                :                         break;
+<span class="lineNum">     620 </span>                :                 case ZEND_IS_SMALLER:
+<span class="lineNum">     621 </span><span class="lineNoCov">              0 :                         return (binary_op_type) is_smaller_function;</span>
+<span class="lineNum">     622 </span>                :                         break;
+<span class="lineNum">     623 </span>                :                 case ZEND_IS_SMALLER_OR_EQUAL:
+<span class="lineNum">     624 </span><span class="lineNoCov">              0 :                         return (binary_op_type) is_smaller_or_equal_function;</span>
+<span class="lineNum">     625 </span>                :                         break;
+<span class="lineNum">     626 </span>                :                 case ZEND_BW_OR:
+<span class="lineNum">     627 </span>                :                 case ZEND_ASSIGN_BW_OR:
+<span class="lineNum">     628 </span><span class="lineNoCov">              0 :                         return (binary_op_type) bitwise_or_function;</span>
+<span class="lineNum">     629 </span>                :                         break;
+<span class="lineNum">     630 </span>                :                 case ZEND_BW_AND:
+<span class="lineNum">     631 </span>                :                 case ZEND_ASSIGN_BW_AND:
+<span class="lineNum">     632 </span><span class="lineNoCov">              0 :                         return (binary_op_type) bitwise_and_function;</span>
+<span class="lineNum">     633 </span>                :                         break;
+<span class="lineNum">     634 </span>                :                 case ZEND_BW_XOR:
+<span class="lineNum">     635 </span>                :                 case ZEND_ASSIGN_BW_XOR:
+<span class="lineNum">     636 </span><span class="lineNoCov">              0 :                         return (binary_op_type) bitwise_xor_function;</span>
+<span class="lineNum">     637 </span>                :                         break;
+<span class="lineNum">     638 </span>                :                 case ZEND_BOOL_XOR:
+<span class="lineNum">     639 </span><span class="lineNoCov">              0 :                         return (binary_op_type) boolean_xor_function;</span>
+<span class="lineNum">     640 </span>                :                         break;
+<span class="lineNum">     641 </span>                :                 default:
+<span class="lineNum">     642 </span><span class="lineNoCov">              0 :                         return (binary_op_type) NULL;</span>
+<span class="lineNum">     643 </span>                :                         break;
+<span class="lineNum">     644 </span>                :         }
+<span class="lineNum">     645 </span>                : }
+<span class="lineNum">     646 </span>                : 
+<span class="lineNum">     647 </span>                : /*
+<span class="lineNum">     648 </span>                :  * Local variables:
+<span class="lineNum">     649 </span>                :  * tab-width: 4
+<span class="lineNum">     650 </span>                :  * c-basic-offset: 4
+<span class="lineNum">     651 </span>                :  * indent-tabs-mode: t
+<span class="lineNum">     652 </span>                :  * End:
+<span class="lineNum">     653 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

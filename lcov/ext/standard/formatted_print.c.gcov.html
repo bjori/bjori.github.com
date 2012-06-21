@@ -1,0 +1,875 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - ext/standard/formatted_print.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../index.html">directory</a> - <a href="index.html">ext/standard</a> - formatted_print.c (source / <a href="formatted_print.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">318</td>
+          <td class="headerCovTableEntry">127</td>
+          <td class="headerCovTableEntryMed">39.9 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">14</td>
+          <td class="headerCovTableEntry">7</td>
+          <td class="headerCovTableEntryLo">50.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Author: Stig Sæther Bakken &lt;ssb@php.net&gt;                             |
+<span class="lineNum">      16 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      17 </span>                :  */
+<span class="lineNum">      18 </span>                : 
+<span class="lineNum">      19 </span>                : /* $Id$ */
+<span class="lineNum">      20 </span>                : 
+<span class="lineNum">      21 </span>                : #include &lt;math.h&gt;                         /* modf() */
+<span class="lineNum">      22 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">      23 </span>                : #include &quot;ext/standard/head.h&quot;
+<span class="lineNum">      24 </span>                : #include &quot;php_string.h&quot;
+<span class="lineNum">      25 </span>                : #include &quot;zend_execute.h&quot;
+<span class="lineNum">      26 </span>                : #include &lt;stdio.h&gt;
+<span class="lineNum">      27 </span>                : 
+<span class="lineNum">      28 </span>                : #ifdef HAVE_LOCALE_H
+<span class="lineNum">      29 </span>                : #include &lt;locale.h&gt;
+<span class="lineNum">      30 </span>                : #define LCONV_DECIMAL_POINT (*lconv-&gt;decimal_point)
+<span class="lineNum">      31 </span>                : #else
+<span class="lineNum">      32 </span>                : #define LCONV_DECIMAL_POINT '.'
+<span class="lineNum">      33 </span>                : #endif
+<span class="lineNum">      34 </span>                : 
+<span class="lineNum">      35 </span>                : #define ALIGN_LEFT 0
+<span class="lineNum">      36 </span>                : #define ALIGN_RIGHT 1
+<span class="lineNum">      37 </span>                : #define ADJ_WIDTH 1
+<span class="lineNum">      38 </span>                : #define ADJ_PRECISION 2
+<span class="lineNum">      39 </span>                : #define NUM_BUF_SIZE 500
+<span class="lineNum">      40 </span>                : #define FLOAT_PRECISION 6
+<span class="lineNum">      41 </span>                : #define MAX_FLOAT_PRECISION 53
+<span class="lineNum">      42 </span>                : 
+<span class="lineNum">      43 </span>                : #if 0
+<span class="lineNum">      44 </span>                : /* trick to control varargs functions through cpp */
+<span class="lineNum">      45 </span>                : # define PRINTF_DEBUG(arg) php_printf arg
+<span class="lineNum">      46 </span>                : #else
+<span class="lineNum">      47 </span>                : # define PRINTF_DEBUG(arg)
+<span class="lineNum">      48 </span>                : #endif
+<span class="lineNum">      49 </span>                : 
+<span class="lineNum">      50 </span>                : static char hexchars[] = &quot;0123456789abcdef&quot;;
+<span class="lineNum">      51 </span>                : static char HEXCHARS[] = &quot;0123456789ABCDEF&quot;;
+<span class="lineNum">      52 </span>                : 
+<a name="53"><span class="lineNum">      53 </span>                : /* php_spintf_appendchar() {{{ */</a>
+<span class="lineNum">      54 </span>                : inline static void
+<span class="lineNum">      55 </span><span class="lineCov">            288 : php_sprintf_appendchar(char **buffer, int *pos, int *size, char add TSRMLS_DC)</span>
+<span class="lineNum">      56 </span>                : {
+<span class="lineNum">      57 </span><span class="lineCov">            288 :         if ((*pos + 1) &gt;= *size) {</span>
+<span class="lineNum">      58 </span><span class="lineNoCov">              0 :                 *size &lt;&lt;= 1;</span>
+<span class="lineNum">      59 </span>                :                 PRINTF_DEBUG((&quot;%s(): ereallocing buffer to %d bytes\n&quot;, get_active_function_name(TSRMLS_C), *size));
+<span class="lineNum">      60 </span><span class="lineNoCov">              0 :                 *buffer = erealloc(*buffer, *size);</span>
+<span class="lineNum">      61 </span>                :         }
+<span class="lineNum">      62 </span>                :         PRINTF_DEBUG((&quot;sprintf: appending '%c', pos=\n&quot;, add, *pos));
+<span class="lineNum">      63 </span><span class="lineCov">            288 :         (*buffer)[(*pos)++] = add;</span>
+<span class="lineNum">      64 </span><span class="lineCov">            288 : }</span>
+<span class="lineNum">      65 </span>                : /* }}} */
+<span class="lineNum">      66 </span>                : 
+<a name="67"><span class="lineNum">      67 </span>                : /* php_spintf_appendstring() {{{ */</a>
+<span class="lineNum">      68 </span>                : inline static void
+<span class="lineNum">      69 </span><span class="lineCov">            141 : php_sprintf_appendstring(char **buffer, int *pos, int *size, char *add,</span>
+<span class="lineNum">      70 </span>                :                                                    int min_width, int max_width, char padding,
+<span class="lineNum">      71 </span>                :                                                    int alignment, int len, int neg, int expprec, int always_sign)
+<span class="lineNum">      72 </span>                : {
+<span class="lineNum">      73 </span>                :         register int npad;
+<span class="lineNum">      74 </span>                :         int req_size;
+<span class="lineNum">      75 </span>                :         int copy_len;
+<span class="lineNum">      76 </span>                :         int m_width;
+<span class="lineNum">      77 </span>                : 
+<span class="lineNum">      78 </span><span class="lineCov">            141 :         copy_len = (expprec ? MIN(max_width, len) : len);</span>
+<span class="lineNum">      79 </span><span class="lineCov">            141 :         npad = min_width - copy_len;</span>
+<span class="lineNum">      80 </span>                : 
+<span class="lineNum">      81 </span><span class="lineCov">            141 :         if (npad &lt; 0) {</span>
+<span class="lineNum">      82 </span><span class="lineNoCov">              0 :                 npad = 0;</span>
+<span class="lineNum">      83 </span>                :         }
+<span class="lineNum">      84 </span>                :         
+<span class="lineNum">      85 </span>                :         PRINTF_DEBUG((&quot;sprintf: appendstring(%x, %d, %d, \&quot;%s\&quot;, %d, '%c', %d)\n&quot;,
+<span class="lineNum">      86 </span>                :                                   *buffer, *pos, *size, add, min_width, padding, alignment));
+<span class="lineNum">      87 </span><span class="lineCov">            141 :         m_width = MAX(min_width, copy_len);</span>
+<span class="lineNum">      88 </span>                : 
+<span class="lineNum">      89 </span><span class="lineCov">            141 :         if(m_width &gt; INT_MAX - *pos - 1) {</span>
+<span class="lineNum">      90 </span><span class="lineNoCov">              0 :                 zend_error_noreturn(E_ERROR, &quot;Field width %d is too long&quot;, m_width);</span>
+<span class="lineNum">      91 </span>                :         }
+<span class="lineNum">      92 </span>                : 
+<span class="lineNum">      93 </span><span class="lineCov">            141 :         req_size = *pos + m_width + 1;</span>
+<span class="lineNum">      94 </span>                : 
+<span class="lineNum">      95 </span><span class="lineCov">            141 :         if (req_size &gt; *size) {</span>
+<span class="lineNum">      96 </span><span class="lineNoCov">              0 :                 while (req_size &gt; *size) {</span>
+<span class="lineNum">      97 </span><span class="lineNoCov">              0 :                         if(*size &gt; INT_MAX/2) {</span>
+<span class="lineNum">      98 </span><span class="lineNoCov">              0 :                                 zend_error_noreturn(E_ERROR, &quot;Field width %d is too long&quot;, req_size); </span>
+<span class="lineNum">      99 </span>                :                         }
+<span class="lineNum">     100 </span><span class="lineNoCov">              0 :                         *size &lt;&lt;= 1;</span>
+<span class="lineNum">     101 </span>                :                 }
+<span class="lineNum">     102 </span>                :                 PRINTF_DEBUG((&quot;sprintf ereallocing buffer to %d bytes\n&quot;, *size));
+<span class="lineNum">     103 </span><span class="lineNoCov">              0 :                 *buffer = erealloc(*buffer, *size);</span>
+<span class="lineNum">     104 </span>                :         }
+<span class="lineNum">     105 </span><span class="lineCov">            141 :         if (alignment == ALIGN_RIGHT) {</span>
+<span class="lineNum">     106 </span><span class="lineCov">            141 :                 if ((neg || always_sign) &amp;&amp; padding=='0') {</span>
+<span class="lineNum">     107 </span><span class="lineNoCov">              0 :                         (*buffer)[(*pos)++] = (neg) ? '-' : '+';</span>
+<span class="lineNum">     108 </span><span class="lineNoCov">              0 :                         add++;</span>
+<span class="lineNum">     109 </span><span class="lineNoCov">              0 :                         len--;</span>
+<span class="lineNum">     110 </span><span class="lineNoCov">              0 :                         copy_len--;</span>
+<span class="lineNum">     111 </span>                :                 }
+<span class="lineNum">     112 </span><span class="lineCov">            506 :                 while (npad-- &gt; 0) {</span>
+<span class="lineNum">     113 </span><span class="lineCov">            224 :                         (*buffer)[(*pos)++] = padding;</span>
+<span class="lineNum">     114 </span>                :                 }
+<span class="lineNum">     115 </span>                :         }
+<span class="lineNum">     116 </span>                :         PRINTF_DEBUG((&quot;sprintf: appending \&quot;%s\&quot;\n&quot;, add));
+<span class="lineNum">     117 </span><span class="lineCov">            141 :         memcpy(&amp;(*buffer)[*pos], add, copy_len + 1);</span>
+<span class="lineNum">     118 </span><span class="lineCov">            141 :         *pos += copy_len;</span>
+<span class="lineNum">     119 </span><span class="lineCov">            141 :         if (alignment == ALIGN_LEFT) {</span>
+<span class="lineNum">     120 </span><span class="lineNoCov">              0 :                 while (npad--) {</span>
+<span class="lineNum">     121 </span><span class="lineNoCov">              0 :                         (*buffer)[(*pos)++] = padding;</span>
+<span class="lineNum">     122 </span>                :                 }
+<span class="lineNum">     123 </span>                :         }
+<span class="lineNum">     124 </span><span class="lineCov">            141 : }</span>
+<span class="lineNum">     125 </span>                : /* }}} */
+<span class="lineNum">     126 </span>                : 
+<a name="127"><span class="lineNum">     127 </span>                : /* php_spintf_appendint() {{{ */</a>
+<span class="lineNum">     128 </span>                : inline static void
+<span class="lineNum">     129 </span><span class="lineCov">            132 : php_sprintf_appendint(char **buffer, int *pos, int *size, long number,</span>
+<span class="lineNum">     130 </span>                :                                                 int width, char padding, int alignment, 
+<span class="lineNum">     131 </span>                :                                                 int always_sign)
+<span class="lineNum">     132 </span>                : {
+<span class="lineNum">     133 </span>                :         char numbuf[NUM_BUF_SIZE];
+<span class="lineNum">     134 </span>                :         register unsigned long magn, nmagn;
+<span class="lineNum">     135 </span><span class="lineCov">            132 :         register unsigned int i = NUM_BUF_SIZE - 1, neg = 0;</span>
+<span class="lineNum">     136 </span>                : 
+<span class="lineNum">     137 </span>                :         PRINTF_DEBUG((&quot;sprintf: appendint(%x, %x, %x, %d, %d, '%c', %d)\n&quot;,
+<span class="lineNum">     138 </span>                :                                   *buffer, pos, size, number, width, padding, alignment));
+<span class="lineNum">     139 </span><span class="lineCov">            132 :         if (number &lt; 0) {</span>
+<span class="lineNum">     140 </span><span class="lineNoCov">              0 :                 neg = 1;</span>
+<span class="lineNum">     141 </span><span class="lineNoCov">              0 :                 magn = ((unsigned long) -(number + 1)) + 1;</span>
+<span class="lineNum">     142 </span>                :         } else {
+<span class="lineNum">     143 </span><span class="lineCov">            132 :                 magn = (unsigned long) number;</span>
+<span class="lineNum">     144 </span>                :         }
+<span class="lineNum">     145 </span>                : 
+<span class="lineNum">     146 </span>                :         /* Can't right-pad 0's on integers */
+<span class="lineNum">     147 </span><span class="lineCov">            132 :         if(alignment==0 &amp;&amp; padding=='0') padding=' ';</span>
+<span class="lineNum">     148 </span>                : 
+<span class="lineNum">     149 </span><span class="lineCov">            132 :         numbuf[i] = '\0';</span>
+<span class="lineNum">     150 </span>                : 
+<span class="lineNum">     151 </span>                :         do {
+<span class="lineNum">     152 </span><span class="lineCov">            198 :                 nmagn = magn / 10;</span>
+<span class="lineNum">     153 </span>                : 
+<span class="lineNum">     154 </span><span class="lineCov">            198 :                 numbuf[--i] = (unsigned char)(magn - (nmagn * 10)) + '0';</span>
+<span class="lineNum">     155 </span><span class="lineCov">            198 :                 magn = nmagn;</span>
+<span class="lineNum">     156 </span>                :         }
+<span class="lineNum">     157 </span><span class="lineCov">            198 :         while (magn &gt; 0 &amp;&amp; i &gt; 0);</span>
+<span class="lineNum">     158 </span><span class="lineCov">            132 :         if (neg) {</span>
+<span class="lineNum">     159 </span><span class="lineNoCov">              0 :                 numbuf[--i] = '-';</span>
+<span class="lineNum">     160 </span><span class="lineCov">            132 :         } else if (always_sign) {</span>
+<span class="lineNum">     161 </span><span class="lineNoCov">              0 :                 numbuf[--i] = '+';</span>
+<span class="lineNum">     162 </span>                :         }
+<span class="lineNum">     163 </span>                :         PRINTF_DEBUG((&quot;sprintf: appending %d as \&quot;%s\&quot;, i=%d\n&quot;,
+<span class="lineNum">     164 </span>                :                                   number, &amp;numbuf[i], i));
+<span class="lineNum">     165 </span><span class="lineCov">            264 :         php_sprintf_appendstring(buffer, pos, size, &amp;numbuf[i], width, 0,</span>
+<span class="lineNum">     166 </span><span class="lineCov">            132 :                                                          padding, alignment, (NUM_BUF_SIZE - 1) - i,</span>
+<span class="lineNum">     167 </span>                :                                                          neg, 0, always_sign);
+<span class="lineNum">     168 </span><span class="lineCov">            132 : }</span>
+<span class="lineNum">     169 </span>                : /* }}} */
+<span class="lineNum">     170 </span>                : 
+<a name="171"><span class="lineNum">     171 </span>                : /* php_spintf_appenduint() {{{ */</a>
+<span class="lineNum">     172 </span>                : inline static void
+<span class="lineNum">     173 </span><span class="lineNoCov">              0 : php_sprintf_appenduint(char **buffer, int *pos, int *size,</span>
+<span class="lineNum">     174 </span>                :                                            unsigned long number,
+<span class="lineNum">     175 </span>                :                                            int width, char padding, int alignment)
+<span class="lineNum">     176 </span>                : {
+<span class="lineNum">     177 </span>                :         char numbuf[NUM_BUF_SIZE];
+<span class="lineNum">     178 </span>                :         register unsigned long magn, nmagn;
+<span class="lineNum">     179 </span><span class="lineNoCov">              0 :         register unsigned int i = NUM_BUF_SIZE - 1;</span>
+<span class="lineNum">     180 </span>                : 
+<span class="lineNum">     181 </span>                :         PRINTF_DEBUG((&quot;sprintf: appenduint(%x, %x, %x, %d, %d, '%c', %d)\n&quot;,
+<span class="lineNum">     182 </span>                :                                   *buffer, pos, size, number, width, padding, alignment));
+<span class="lineNum">     183 </span><span class="lineNoCov">              0 :         magn = (unsigned long) number;</span>
+<span class="lineNum">     184 </span>                : 
+<span class="lineNum">     185 </span>                :         /* Can't right-pad 0's on integers */
+<span class="lineNum">     186 </span><span class="lineNoCov">              0 :         if (alignment == 0 &amp;&amp; padding == '0') padding = ' ';</span>
+<span class="lineNum">     187 </span>                : 
+<span class="lineNum">     188 </span><span class="lineNoCov">              0 :         numbuf[i] = '\0';</span>
+<span class="lineNum">     189 </span>                : 
+<span class="lineNum">     190 </span>                :         do {
+<span class="lineNum">     191 </span><span class="lineNoCov">              0 :                 nmagn = magn / 10;</span>
+<span class="lineNum">     192 </span>                : 
+<span class="lineNum">     193 </span><span class="lineNoCov">              0 :                 numbuf[--i] = (unsigned char)(magn - (nmagn * 10)) + '0';</span>
+<span class="lineNum">     194 </span><span class="lineNoCov">              0 :                 magn = nmagn;</span>
+<span class="lineNum">     195 </span><span class="lineNoCov">              0 :         } while (magn &gt; 0 &amp;&amp; i &gt; 0);</span>
+<span class="lineNum">     196 </span>                : 
+<span class="lineNum">     197 </span>                :         PRINTF_DEBUG((&quot;sprintf: appending %d as \&quot;%s\&quot;, i=%d\n&quot;, number, &amp;numbuf[i], i));
+<span class="lineNum">     198 </span><span class="lineNoCov">              0 :         php_sprintf_appendstring(buffer, pos, size, &amp;numbuf[i], width, 0,</span>
+<span class="lineNum">     199 </span><span class="lineNoCov">              0 :                                                          padding, alignment, (NUM_BUF_SIZE - 1) - i, 0, 0, 0);</span>
+<span class="lineNum">     200 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     201 </span>                : /* }}} */
+<span class="lineNum">     202 </span>                : 
+<a name="203"><span class="lineNum">     203 </span>                : /* php_spintf_appenddouble() {{{ */</a>
+<span class="lineNum">     204 </span>                : inline static void
+<span class="lineNum">     205 </span><span class="lineCov">              9 : php_sprintf_appenddouble(char **buffer, int *pos,</span>
+<span class="lineNum">     206 </span>                :                                                  int *size, double number,
+<span class="lineNum">     207 </span>                :                                                  int width, char padding,
+<span class="lineNum">     208 </span>                :                                                  int alignment, int precision,
+<span class="lineNum">     209 </span>                :                                                  int adjust, char fmt,
+<span class="lineNum">     210 </span>                :                                                  int always_sign
+<span class="lineNum">     211 </span>                :                                                  TSRMLS_DC)
+<span class="lineNum">     212 </span>                : {
+<span class="lineNum">     213 </span>                :         char num_buf[NUM_BUF_SIZE];
+<span class="lineNum">     214 </span><span class="lineCov">              9 :         char *s = NULL;</span>
+<span class="lineNum">     215 </span><span class="lineCov">              9 :         int s_len = 0, is_negative = 0;</span>
+<span class="lineNum">     216 </span>                : #ifdef HAVE_LOCALE_H
+<span class="lineNum">     217 </span>                :         struct lconv *lconv;
+<span class="lineNum">     218 </span>                : #endif
+<span class="lineNum">     219 </span>                : 
+<span class="lineNum">     220 </span>                :         PRINTF_DEBUG((&quot;sprintf: appenddouble(%x, %x, %x, %f, %d, '%c', %d, %c)\n&quot;,
+<span class="lineNum">     221 </span>                :                                   *buffer, pos, size, number, width, padding, alignment, fmt));
+<span class="lineNum">     222 </span><span class="lineCov">              9 :         if ((adjust &amp; ADJ_PRECISION) == 0) {</span>
+<span class="lineNum">     223 </span><span class="lineNoCov">              0 :                 precision = FLOAT_PRECISION;</span>
+<span class="lineNum">     224 </span><span class="lineCov">              9 :         } else if (precision &gt; MAX_FLOAT_PRECISION) {</span>
+<span class="lineNum">     225 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_NOTICE, &quot;Requested precision of %d digits was truncated to PHP maximum of %d digits&quot;, precision, MAX_FLOAT_PRECISION);</span>
+<span class="lineNum">     226 </span><span class="lineNoCov">              0 :                 precision = MAX_FLOAT_PRECISION;</span>
+<span class="lineNum">     227 </span>                :         }
+<span class="lineNum">     228 </span>                :         
+<span class="lineNum">     229 </span><span class="lineCov">              9 :         if (zend_isnan(number)) {</span>
+<span class="lineNum">     230 </span><span class="lineNoCov">              0 :                 is_negative = (number&lt;0);</span>
+<span class="lineNum">     231 </span><span class="lineNoCov">              0 :                 php_sprintf_appendstring(buffer, pos, size, &quot;NaN&quot;, 3, 0, padding,</span>
+<span class="lineNum">     232 </span>                :                                                                  alignment, 3, is_negative, 0, always_sign);
+<span class="lineNum">     233 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     234 </span>                :         }
+<span class="lineNum">     235 </span>                : 
+<span class="lineNum">     236 </span><span class="lineCov">              9 :         if (zend_isinf(number)) {</span>
+<span class="lineNum">     237 </span><span class="lineNoCov">              0 :                 is_negative = (number&lt;0);</span>
+<span class="lineNum">     238 </span><span class="lineNoCov">              0 :                 php_sprintf_appendstring(buffer, pos, size, &quot;INF&quot;, 3, 0, padding,</span>
+<span class="lineNum">     239 </span>                :                                                                  alignment, 3, is_negative, 0, always_sign);
+<span class="lineNum">     240 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     241 </span>                :         }
+<span class="lineNum">     242 </span>                : 
+<span class="lineNum">     243 </span><span class="lineCov">              9 :         switch (fmt) {                  </span>
+<span class="lineNum">     244 </span>                :                 case 'e':
+<span class="lineNum">     245 </span>                :                 case 'E':
+<span class="lineNum">     246 </span>                :                 case 'f':
+<span class="lineNum">     247 </span>                :                 case 'F':
+<span class="lineNum">     248 </span>                : #ifdef HAVE_LOCALE_H
+<span class="lineNum">     249 </span><span class="lineCov">              9 :                         lconv = localeconv();</span>
+<span class="lineNum">     250 </span>                : #endif
+<span class="lineNum">     251 </span><span class="lineCov">             18 :                         s = php_conv_fp((fmt == 'f')?'F':fmt, number, 0, precision,</span>
+<span class="lineNum">     252 </span><span class="lineCov">              9 :                                                 (fmt == 'f')?LCONV_DECIMAL_POINT:'.',</span>
+<span class="lineNum">     253 </span>                :                                                 &amp;is_negative, &amp;num_buf[1], &amp;s_len);
+<span class="lineNum">     254 </span><span class="lineCov">              9 :                         if (is_negative) {</span>
+<span class="lineNum">     255 </span><span class="lineNoCov">              0 :                                 num_buf[0] = '-';</span>
+<span class="lineNum">     256 </span><span class="lineNoCov">              0 :                                 s = num_buf;</span>
+<span class="lineNum">     257 </span><span class="lineNoCov">              0 :                                 s_len++;</span>
+<span class="lineNum">     258 </span><span class="lineCov">              9 :                         } else if (always_sign) {</span>
+<span class="lineNum">     259 </span><span class="lineNoCov">              0 :                                 num_buf[0] = '+';</span>
+<span class="lineNum">     260 </span><span class="lineNoCov">              0 :                                 s = num_buf;</span>
+<span class="lineNum">     261 </span><span class="lineNoCov">              0 :                                 s_len++;</span>
+<span class="lineNum">     262 </span>                :                         }
+<span class="lineNum">     263 </span><span class="lineCov">              9 :                         break;</span>
+<span class="lineNum">     264 </span>                : 
+<span class="lineNum">     265 </span>                :                 case 'g':
+<span class="lineNum">     266 </span>                :                 case 'G':
+<span class="lineNum">     267 </span><span class="lineNoCov">              0 :                         if (precision == 0)</span>
+<span class="lineNum">     268 </span><span class="lineNoCov">              0 :                                 precision = 1;</span>
+<span class="lineNum">     269 </span>                :                         /*
+<span class="lineNum">     270 </span>                :                          * * We use &amp;num_buf[ 1 ], so that we have room for the sign
+<span class="lineNum">     271 </span>                :                          */
+<span class="lineNum">     272 </span>                : #ifdef HAVE_LOCALE_H
+<span class="lineNum">     273 </span><span class="lineNoCov">              0 :                         lconv = localeconv();</span>
+<span class="lineNum">     274 </span>                : #endif
+<span class="lineNum">     275 </span><span class="lineNoCov">              0 :                         s = php_gcvt(number, precision, LCONV_DECIMAL_POINT, (fmt == 'G')?'E':'e', &amp;num_buf[1]);</span>
+<span class="lineNum">     276 </span><span class="lineNoCov">              0 :                         is_negative = 0;</span>
+<span class="lineNum">     277 </span><span class="lineNoCov">              0 :                         if (*s == '-') {</span>
+<span class="lineNum">     278 </span><span class="lineNoCov">              0 :                                 is_negative = 1;</span>
+<span class="lineNum">     279 </span><span class="lineNoCov">              0 :                                 s = &amp;num_buf[1];</span>
+<span class="lineNum">     280 </span><span class="lineNoCov">              0 :                         } else if (always_sign) {</span>
+<span class="lineNum">     281 </span><span class="lineNoCov">              0 :                                 num_buf[0] = '+';</span>
+<span class="lineNum">     282 </span><span class="lineNoCov">              0 :                                 s = num_buf;</span>
+<span class="lineNum">     283 </span>                :                         }
+<span class="lineNum">     284 </span>                : 
+<span class="lineNum">     285 </span><span class="lineNoCov">              0 :                         s_len = strlen(s);</span>
+<span class="lineNum">     286 </span>                :                         break;
+<span class="lineNum">     287 </span>                :         }
+<span class="lineNum">     288 </span>                : 
+<span class="lineNum">     289 </span><span class="lineCov">              9 :         php_sprintf_appendstring(buffer, pos, size, s, width, 0, padding,</span>
+<span class="lineNum">     290 </span>                :                                                          alignment, s_len, is_negative, 0, always_sign);
+<span class="lineNum">     291 </span>                : }
+<span class="lineNum">     292 </span>                : /* }}} */
+<span class="lineNum">     293 </span>                : 
+<a name="294"><span class="lineNum">     294 </span>                : /* php_spintf_appendd2n() {{{ */</a>
+<span class="lineNum">     295 </span>                : inline static void
+<span class="lineNum">     296 </span><span class="lineNoCov">              0 : php_sprintf_append2n(char **buffer, int *pos, int *size, long number,</span>
+<span class="lineNum">     297 </span>                :                                          int width, char padding, int alignment, int n,
+<span class="lineNum">     298 </span>                :                                          char *chartable, int expprec)
+<span class="lineNum">     299 </span>                : {
+<span class="lineNum">     300 </span>                :         char numbuf[NUM_BUF_SIZE];
+<span class="lineNum">     301 </span>                :         register unsigned long num;
+<span class="lineNum">     302 </span><span class="lineNoCov">              0 :         register unsigned int  i = NUM_BUF_SIZE - 1;</span>
+<span class="lineNum">     303 </span><span class="lineNoCov">              0 :         register int andbits = (1 &lt;&lt; n) - 1;</span>
+<span class="lineNum">     304 </span>                : 
+<span class="lineNum">     305 </span>                :         PRINTF_DEBUG((&quot;sprintf: append2n(%x, %x, %x, %d, %d, '%c', %d, %d, %x)\n&quot;,
+<span class="lineNum">     306 </span>                :                                   *buffer, pos, size, number, width, padding, alignment, n,
+<span class="lineNum">     307 </span>                :                                   chartable));
+<span class="lineNum">     308 </span>                :         PRINTF_DEBUG((&quot;sprintf: append2n 2^%d andbits=%x\n&quot;, n, andbits));
+<span class="lineNum">     309 </span>                : 
+<span class="lineNum">     310 </span><span class="lineNoCov">              0 :         num = (unsigned long) number;</span>
+<span class="lineNum">     311 </span><span class="lineNoCov">              0 :         numbuf[i] = '\0';</span>
+<span class="lineNum">     312 </span>                : 
+<span class="lineNum">     313 </span>                :         do {
+<span class="lineNum">     314 </span><span class="lineNoCov">              0 :                 numbuf[--i] = chartable[(num &amp; andbits)];</span>
+<span class="lineNum">     315 </span><span class="lineNoCov">              0 :                 num &gt;&gt;= n;</span>
+<span class="lineNum">     316 </span>                :         }
+<span class="lineNum">     317 </span><span class="lineNoCov">              0 :         while (num &gt; 0);</span>
+<span class="lineNum">     318 </span>                : 
+<span class="lineNum">     319 </span><span class="lineNoCov">              0 :         php_sprintf_appendstring(buffer, pos, size, &amp;numbuf[i], width, 0,</span>
+<span class="lineNum">     320 </span><span class="lineNoCov">              0 :                                                          padding, alignment, (NUM_BUF_SIZE - 1) - i,</span>
+<span class="lineNum">     321 </span>                :                                                          0, expprec, 0);
+<span class="lineNum">     322 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     323 </span>                : /* }}} */
+<span class="lineNum">     324 </span>                : 
+<a name="325"><span class="lineNum">     325 </span>                : /* php_spintf_getnumber() {{{ */</a>
+<span class="lineNum">     326 </span>                : inline static int
+<span class="lineNum">     327 </span><span class="lineCov">            150 : php_sprintf_getnumber(char *buffer, int *pos)</span>
+<span class="lineNum">     328 </span>                : {
+<span class="lineNum">     329 </span>                :         char *endptr;
+<span class="lineNum">     330 </span><span class="lineCov">            150 :         register long num = strtol(&amp;buffer[*pos], &amp;endptr, 10);</span>
+<span class="lineNum">     331 </span><span class="lineCov">            150 :         register int i = 0;</span>
+<span class="lineNum">     332 </span>                : 
+<span class="lineNum">     333 </span><span class="lineCov">            150 :         if (endptr != NULL) {</span>
+<span class="lineNum">     334 </span><span class="lineCov">            150 :                 i = (endptr - &amp;buffer[*pos]);</span>
+<span class="lineNum">     335 </span>                :         }
+<span class="lineNum">     336 </span>                :         PRINTF_DEBUG((&quot;sprintf_getnumber: number was %d bytes long\n&quot;, i));
+<span class="lineNum">     337 </span><span class="lineCov">            150 :         *pos += i;</span>
+<span class="lineNum">     338 </span>                : 
+<span class="lineNum">     339 </span><span class="lineCov">            150 :         if (num &gt;= INT_MAX || num &lt; 0) {</span>
+<span class="lineNum">     340 </span><span class="lineNoCov">              0 :                 return -1;</span>
+<span class="lineNum">     341 </span>                :         } else {
+<span class="lineNum">     342 </span><span class="lineCov">            150 :                 return (int) num;</span>
+<span class="lineNum">     343 </span>                :         }
+<span class="lineNum">     344 </span>                : }
+<span class="lineNum">     345 </span>                : /* }}} */
+<span class="lineNum">     346 </span>                : 
+<span class="lineNum">     347 </span>                : /* php_formatted_print() {{{
+<span class="lineNum">     348 </span>                :  * New sprintf implementation for PHP.
+<span class="lineNum">     349 </span>                :  *
+<span class="lineNum">     350 </span>                :  * Modifiers:
+<span class="lineNum">     351 </span>                :  *
+<span class="lineNum">     352 </span>                :  *  &quot; &quot;   pad integers with spaces
+<span class="lineNum">     353 </span>                :  *  &quot;-&quot;   left adjusted field
+<span class="lineNum">     354 </span>                :  *   n    field size
+<span class="lineNum">     355 </span>                :  *  &quot;.&quot;n  precision (floats only)
+<span class="lineNum">     356 </span>                :  *  &quot;+&quot;   Always place a sign (+ or -) in front of a number
+<span class="lineNum">     357 </span>                :  *
+<span class="lineNum">     358 </span>                :  * Type specifiers:
+<span class="lineNum">     359 </span>                :  *
+<span class="lineNum">     360 </span>                :  *  &quot;%&quot;   literal &quot;%&quot;, modifiers are ignored.
+<span class="lineNum">     361 </span>                :  *  &quot;b&quot;   integer argument is printed as binary
+<span class="lineNum">     362 </span>                :  *  &quot;c&quot;   integer argument is printed as a single character
+<span class="lineNum">     363 </span>                :  *  &quot;d&quot;   argument is an integer
+<span class="lineNum">     364 </span>                :  *  &quot;f&quot;   the argument is a float
+<span class="lineNum">     365 </span>                :  *  &quot;o&quot;   integer argument is printed as octal
+<span class="lineNum">     366 </span>                :  *  &quot;s&quot;   argument is a string
+<span class="lineNum">     367 </span>                :  *  &quot;x&quot;   integer argument is printed as lowercase hexadecimal
+<span class="lineNum">     368 </span>                :  *  &quot;X&quot;   integer argument is printed as uppercase hexadecimal
+<span class="lineNum">     369 </span>                :  *
+<a name="370"><span class="lineNum">     370 </span>                :  */</a>
+<span class="lineNum">     371 </span>                : static char *
+<span class="lineNum">     372 </span><span class="lineCov">            136 : php_formatted_print(int ht, int *len, int use_array, int format_offset TSRMLS_DC)</span>
+<span class="lineNum">     373 </span>                : {
+<span class="lineNum">     374 </span>                :         zval ***args, **z_format;
+<span class="lineNum">     375 </span><span class="lineCov">            136 :         int argc, size = 240, inpos = 0, outpos = 0, temppos;</span>
+<span class="lineNum">     376 </span>                :         int alignment, currarg, adjusting, argnum, width, precision;
+<span class="lineNum">     377 </span>                :         char *format, *result, padding;
+<span class="lineNum">     378 </span>                :         int always_sign;
+<span class="lineNum">     379 </span>                : 
+<span class="lineNum">     380 </span><span class="lineCov">            136 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;+&quot;, &amp;args, &amp;argc) == FAILURE) {</span>
+<span class="lineNum">     381 </span><span class="lineNoCov">              0 :                 return NULL;</span>
+<span class="lineNum">     382 </span>                :         }
+<span class="lineNum">     383 </span>                : 
+<span class="lineNum">     384 </span>                :         /* verify the number of args */
+<span class="lineNum">     385 </span><span class="lineCov">            272 :         if ((use_array &amp;&amp; argc != (2 + format_offset)) </span>
+<span class="lineNum">     386 </span><span class="lineCov">            136 :                         || (!use_array &amp;&amp; argc &lt; (1 + format_offset))) {</span>
+<span class="lineNum">     387 </span><span class="lineNoCov">              0 :                 efree(args);</span>
+<span class="lineNum">     388 </span><span class="lineNoCov">              0 :                 WRONG_PARAM_COUNT_WITH_RETVAL(NULL);</span>
+<span class="lineNum">     389 </span>                :         }
+<span class="lineNum">     390 </span>                :         
+<span class="lineNum">     391 </span><span class="lineCov">            136 :         if (use_array) {</span>
+<span class="lineNum">     392 </span><span class="lineNoCov">              0 :                 int i = 1;</span>
+<span class="lineNum">     393 </span>                :                 zval ***newargs;
+<span class="lineNum">     394 </span>                :                 zval **array;
+<span class="lineNum">     395 </span>                : 
+<span class="lineNum">     396 </span><span class="lineNoCov">              0 :                 z_format = args[format_offset];</span>
+<span class="lineNum">     397 </span><span class="lineNoCov">              0 :                 array = args[1 + format_offset];</span>
+<span class="lineNum">     398 </span>                :                 
+<span class="lineNum">     399 </span><span class="lineNoCov">              0 :                 SEPARATE_ZVAL(array);</span>
+<span class="lineNum">     400 </span><span class="lineNoCov">              0 :                 convert_to_array_ex(array);</span>
+<span class="lineNum">     401 </span>                :                 
+<span class="lineNum">     402 </span><span class="lineNoCov">              0 :                 argc = 1 + zend_hash_num_elements(Z_ARRVAL_PP(array));</span>
+<span class="lineNum">     403 </span><span class="lineNoCov">              0 :                 newargs = (zval ***)safe_emalloc(argc, sizeof(zval *), 0);</span>
+<span class="lineNum">     404 </span><span class="lineNoCov">              0 :                 newargs[0] = z_format;</span>
+<span class="lineNum">     405 </span>                :                 
+<span class="lineNum">     406 </span><span class="lineNoCov">              0 :                 for (zend_hash_internal_pointer_reset(Z_ARRVAL_PP(array));</span>
+<span class="lineNum">     407 </span><span class="lineNoCov">              0 :                          zend_hash_get_current_data(Z_ARRVAL_PP(array), (void **)&amp;newargs[i++]) == SUCCESS;</span>
+<span class="lineNum">     408 </span><span class="lineNoCov">              0 :                          zend_hash_move_forward(Z_ARRVAL_PP(array)));</span>
+<span class="lineNum">     409 </span>                : 
+<span class="lineNum">     410 </span><span class="lineNoCov">              0 :                 efree(args);</span>
+<span class="lineNum">     411 </span><span class="lineNoCov">              0 :                 args = newargs;</span>
+<span class="lineNum">     412 </span><span class="lineNoCov">              0 :                 format_offset = 0;</span>
+<span class="lineNum">     413 </span>                :         }
+<span class="lineNum">     414 </span>                :         
+<span class="lineNum">     415 </span><span class="lineCov">            136 :         convert_to_string_ex(args[format_offset]);</span>
+<span class="lineNum">     416 </span><span class="lineCov">            136 :         format = Z_STRVAL_PP(args[format_offset]);</span>
+<span class="lineNum">     417 </span><span class="lineCov">            136 :         result = emalloc(size);</span>
+<span class="lineNum">     418 </span>                : 
+<span class="lineNum">     419 </span><span class="lineCov">            136 :         currarg = 1;</span>
+<span class="lineNum">     420 </span>                : 
+<span class="lineNum">     421 </span><span class="lineCov">            701 :         while (inpos&lt;Z_STRLEN_PP(args[format_offset])) {</span>
+<span class="lineNum">     422 </span><span class="lineCov">            429 :                 int expprec = 0, multiuse = 0;</span>
+<span class="lineNum">     423 </span>                :                 zval *tmp;
+<span class="lineNum">     424 </span>                : 
+<span class="lineNum">     425 </span>                :                 PRINTF_DEBUG((&quot;sprintf: format[%d]='%c'\n&quot;, inpos, format[inpos]));
+<span class="lineNum">     426 </span>                :                 PRINTF_DEBUG((&quot;sprintf: outpos=%d\n&quot;, outpos));
+<span class="lineNum">     427 </span><span class="lineCov">            429 :                 if (format[inpos] != '%') {</span>
+<span class="lineNum">     428 </span><span class="lineCov">            279 :                         php_sprintf_appendchar(&amp;result, &amp;outpos, &amp;size, format[inpos++] TSRMLS_CC);</span>
+<span class="lineNum">     429 </span><span class="lineCov">            150 :                 } else if (format[inpos + 1] == '%') {</span>
+<span class="lineNum">     430 </span><span class="lineCov">              9 :                         php_sprintf_appendchar(&amp;result, &amp;outpos, &amp;size, '%' TSRMLS_CC);</span>
+<span class="lineNum">     431 </span><span class="lineCov">              9 :                         inpos += 2;</span>
+<span class="lineNum">     432 </span>                :                 } else {
+<span class="lineNum">     433 </span>                :                         /* starting a new format specifier, reset variables */
+<span class="lineNum">     434 </span><span class="lineCov">            141 :                         alignment = ALIGN_RIGHT;</span>
+<span class="lineNum">     435 </span><span class="lineCov">            141 :                         adjusting = 0;</span>
+<span class="lineNum">     436 </span><span class="lineCov">            141 :                         padding = ' ';</span>
+<span class="lineNum">     437 </span><span class="lineCov">            141 :                         always_sign = 0;</span>
+<span class="lineNum">     438 </span><span class="lineCov">            141 :                         inpos++;                        /* skip the '%' */</span>
+<span class="lineNum">     439 </span>                : 
+<span class="lineNum">     440 </span>                :                         PRINTF_DEBUG((&quot;sprintf: first looking at '%c', inpos=%d\n&quot;,
+<span class="lineNum">     441 </span>                :                                                   format[inpos], inpos));
+<span class="lineNum">     442 </span><span class="lineCov">            282 :                         if (isascii((int)format[inpos]) &amp;&amp; !isalpha((int)format[inpos])) {</span>
+<span class="lineNum">     443 </span>                :                                 /* first look for argnum */
+<span class="lineNum">     444 </span><span class="lineCov">            141 :                                 temppos = inpos;</span>
+<span class="lineNum">     445 </span><span class="lineCov">            141 :                                 while (isdigit((int)format[temppos])) temppos++;</span>
+<span class="lineNum">     446 </span><span class="lineCov">            141 :                                 if (format[temppos] == '$') {</span>
+<span class="lineNum">     447 </span><span class="lineNoCov">              0 :                                         argnum = php_sprintf_getnumber(format, &amp;inpos);</span>
+<span class="lineNum">     448 </span>                : 
+<span class="lineNum">     449 </span><span class="lineNoCov">              0 :                                         if (argnum &lt;= 0) {</span>
+<span class="lineNum">     450 </span><span class="lineNoCov">              0 :                                                 efree(result);</span>
+<span class="lineNum">     451 </span><span class="lineNoCov">              0 :                                                 efree(args);</span>
+<span class="lineNum">     452 </span><span class="lineNoCov">              0 :                                                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Argument number must be greater than zero&quot;);</span>
+<span class="lineNum">     453 </span><span class="lineNoCov">              0 :                                                 return NULL;</span>
+<span class="lineNum">     454 </span>                :                                         }
+<span class="lineNum">     455 </span>                : 
+<span class="lineNum">     456 </span><span class="lineNoCov">              0 :                                         multiuse = 1;</span>
+<span class="lineNum">     457 </span><span class="lineNoCov">              0 :                                         inpos++;  /* skip the '$' */</span>
+<span class="lineNum">     458 </span>                :                                 } else {
+<span class="lineNum">     459 </span><span class="lineCov">            141 :                                         argnum = currarg++;</span>
+<span class="lineNum">     460 </span>                :                                 }
+<span class="lineNum">     461 </span>                : 
+<span class="lineNum">     462 </span><span class="lineCov">            141 :                                 argnum += format_offset;</span>
+<span class="lineNum">     463 </span>                : 
+<span class="lineNum">     464 </span>                :                                 /* after argnum comes modifiers */
+<span class="lineNum">     465 </span>                :                                 PRINTF_DEBUG((&quot;sprintf: looking for modifiers\n&quot;
+<span class="lineNum">     466 </span>                :                                                           &quot;sprintf: now looking at '%c', inpos=%d\n&quot;,
+<span class="lineNum">     467 </span>                :                                                           format[inpos], inpos));
+<span class="lineNum">     468 </span><span class="lineCov">            124 :                                 for (;; inpos++) {</span>
+<span class="lineNum">     469 </span><span class="lineCov">            389 :                                         if (format[inpos] == ' ' || format[inpos] == '0') {</span>
+<span class="lineNum">     470 </span><span class="lineCov">            124 :                                                 padding = format[inpos];</span>
+<span class="lineNum">     471 </span><span class="lineCov">            141 :                                         } else if (format[inpos] == '-') {</span>
+<span class="lineNum">     472 </span><span class="lineNoCov">              0 :                                                 alignment = ALIGN_LEFT;</span>
+<span class="lineNum">     473 </span>                :                                                 /* space padding, the default */
+<span class="lineNum">     474 </span><span class="lineCov">            141 :                                         } else if (format[inpos] == '+') {</span>
+<span class="lineNum">     475 </span><span class="lineNoCov">              0 :                                                 always_sign = 1;</span>
+<span class="lineNum">     476 </span><span class="lineCov">            141 :                                         } else if (format[inpos] == '\'') {</span>
+<span class="lineNum">     477 </span><span class="lineNoCov">              0 :                                                 padding = format[++inpos];</span>
+<span class="lineNum">     478 </span>                :                                         } else {
+<span class="lineNum">     479 </span>                :                                                 PRINTF_DEBUG((&quot;sprintf: end of modifiers\n&quot;));
+<span class="lineNum">     480 </span>                :                                                 break;
+<span class="lineNum">     481 </span>                :                                         }
+<span class="lineNum">     482 </span><span class="lineCov">            124 :                                 }</span>
+<span class="lineNum">     483 </span>                :                                 PRINTF_DEBUG((&quot;sprintf: padding='%c'\n&quot;, padding));
+<span class="lineNum">     484 </span>                :                                 PRINTF_DEBUG((&quot;sprintf: alignment=%s\n&quot;,
+<span class="lineNum">     485 </span>                :                                                           (alignment == ALIGN_LEFT) ? &quot;left&quot; : &quot;right&quot;));
+<span class="lineNum">     486 </span>                : 
+<span class="lineNum">     487 </span>                : 
+<span class="lineNum">     488 </span>                :                                 /* after modifiers comes width */
+<span class="lineNum">     489 </span><span class="lineCov">            141 :                                 if (isdigit((int)format[inpos])) {</span>
+<span class="lineNum">     490 </span>                :                                         PRINTF_DEBUG((&quot;sprintf: getting width\n&quot;));
+<span class="lineNum">     491 </span><span class="lineCov">            141 :                                         if ((width = php_sprintf_getnumber(format, &amp;inpos)) &lt; 0) {</span>
+<span class="lineNum">     492 </span><span class="lineNoCov">              0 :                                                 efree(result);</span>
+<span class="lineNum">     493 </span><span class="lineNoCov">              0 :                                                 efree(args);</span>
+<span class="lineNum">     494 </span><span class="lineNoCov">              0 :                                                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Width must be greater than zero and less than %d&quot;, INT_MAX);</span>
+<span class="lineNum">     495 </span><span class="lineNoCov">              0 :                                                 return NULL;</span>
+<span class="lineNum">     496 </span>                :                                         }
+<span class="lineNum">     497 </span><span class="lineCov">            141 :                                         adjusting |= ADJ_WIDTH;</span>
+<span class="lineNum">     498 </span>                :                                 } else {
+<span class="lineNum">     499 </span><span class="lineNoCov">              0 :                                         width = 0;</span>
+<span class="lineNum">     500 </span>                :                                 }
+<span class="lineNum">     501 </span>                :                                 PRINTF_DEBUG((&quot;sprintf: width=%d\n&quot;, width));
+<span class="lineNum">     502 </span>                : 
+<span class="lineNum">     503 </span>                :                                 /* after width and argnum comes precision */
+<span class="lineNum">     504 </span><span class="lineCov">            141 :                                 if (format[inpos] == '.') {</span>
+<span class="lineNum">     505 </span><span class="lineCov">              9 :                                         inpos++;</span>
+<span class="lineNum">     506 </span>                :                                         PRINTF_DEBUG((&quot;sprintf: getting precision\n&quot;));
+<span class="lineNum">     507 </span><span class="lineCov">              9 :                                         if (isdigit((int)format[inpos])) {</span>
+<span class="lineNum">     508 </span><span class="lineCov">              9 :                                                 if ((precision = php_sprintf_getnumber(format, &amp;inpos)) &lt; 0) {</span>
+<span class="lineNum">     509 </span><span class="lineNoCov">              0 :                                                         efree(result);</span>
+<span class="lineNum">     510 </span><span class="lineNoCov">              0 :                                                         efree(args);</span>
+<span class="lineNum">     511 </span><span class="lineNoCov">              0 :                                                         php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Precision must be greater than zero and less than %d&quot;, INT_MAX);</span>
+<span class="lineNum">     512 </span><span class="lineNoCov">              0 :                                                         return NULL;</span>
+<span class="lineNum">     513 </span>                :                                                 }
+<span class="lineNum">     514 </span><span class="lineCov">              9 :                                                 adjusting |= ADJ_PRECISION;</span>
+<span class="lineNum">     515 </span><span class="lineCov">              9 :                                                 expprec = 1;</span>
+<span class="lineNum">     516 </span>                :                                         } else {
+<span class="lineNum">     517 </span><span class="lineNoCov">              0 :                                                 precision = 0;</span>
+<span class="lineNum">     518 </span>                :                                         }
+<span class="lineNum">     519 </span>                :                                 } else {
+<span class="lineNum">     520 </span><span class="lineCov">            132 :                                         precision = 0;</span>
+<span class="lineNum">     521 </span>                :                                 }
+<span class="lineNum">     522 </span>                :                                 PRINTF_DEBUG((&quot;sprintf: precision=%d\n&quot;, precision));
+<span class="lineNum">     523 </span>                :                         } else {
+<span class="lineNum">     524 </span><span class="lineNoCov">              0 :                                 width = precision = 0;</span>
+<span class="lineNum">     525 </span><span class="lineNoCov">              0 :                                 argnum = currarg++ + format_offset;</span>
+<span class="lineNum">     526 </span>                :                         }
+<span class="lineNum">     527 </span>                : 
+<span class="lineNum">     528 </span><span class="lineCov">            141 :                         if (argnum &gt;= argc) {</span>
+<span class="lineNum">     529 </span><span class="lineNoCov">              0 :                                 efree(result);</span>
+<span class="lineNum">     530 </span><span class="lineNoCov">              0 :                                 efree(args);</span>
+<span class="lineNum">     531 </span><span class="lineNoCov">              0 :                                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Too few arguments&quot;);</span>
+<span class="lineNum">     532 </span><span class="lineNoCov">              0 :                                 return NULL;</span>
+<span class="lineNum">     533 </span>                :                         }
+<span class="lineNum">     534 </span>                : 
+<span class="lineNum">     535 </span><span class="lineCov">            141 :                         if (format[inpos] == 'l') {</span>
+<span class="lineNum">     536 </span><span class="lineNoCov">              0 :                                 inpos++;</span>
+<span class="lineNum">     537 </span>                :                         }
+<span class="lineNum">     538 </span>                :                         PRINTF_DEBUG((&quot;sprintf: format character='%c'\n&quot;, format[inpos]));
+<span class="lineNum">     539 </span>                :                         /* now we expect to find a type specifier */
+<span class="lineNum">     540 </span><span class="lineCov">            141 :                         if (multiuse) {</span>
+<span class="lineNum">     541 </span><span class="lineNoCov">              0 :                                 MAKE_STD_ZVAL(tmp);</span>
+<span class="lineNum">     542 </span><span class="lineNoCov">              0 :                                 *tmp = **(args[argnum]);</span>
+<span class="lineNum">     543 </span><span class="lineNoCov">              0 :                                 INIT_PZVAL(tmp);</span>
+<span class="lineNum">     544 </span><span class="lineNoCov">              0 :                                 zval_copy_ctor(tmp);</span>
+<span class="lineNum">     545 </span>                :                         } else {
+<span class="lineNum">     546 </span><span class="lineCov">            312 :                                 SEPARATE_ZVAL(args[argnum]);</span>
+<span class="lineNum">     547 </span><span class="lineCov">            141 :                                 tmp = *(args[argnum]);</span>
+<span class="lineNum">     548 </span>                :                         }
+<span class="lineNum">     549 </span>                : 
+<span class="lineNum">     550 </span><span class="lineCov">            141 :                         switch (format[inpos]) {</span>
+<span class="lineNum">     551 </span>                :                                 case 's': {
+<span class="lineNum">     552 </span>                :                                         zval *var, var_copy;
+<span class="lineNum">     553 </span>                :                                         int use_copy;
+<span class="lineNum">     554 </span>                : 
+<span class="lineNum">     555 </span><span class="lineNoCov">              0 :                                         zend_make_printable_zval(tmp, &amp;var_copy, &amp;use_copy);</span>
+<span class="lineNum">     556 </span><span class="lineNoCov">              0 :                                         if (use_copy) {</span>
+<span class="lineNum">     557 </span><span class="lineNoCov">              0 :                                                 var = &amp;var_copy;</span>
+<span class="lineNum">     558 </span>                :                                         } else {
+<span class="lineNum">     559 </span><span class="lineNoCov">              0 :                                                 var = tmp;</span>
+<span class="lineNum">     560 </span>                :                                         }
+<span class="lineNum">     561 </span><span class="lineNoCov">              0 :                                         php_sprintf_appendstring(&amp;result, &amp;outpos, &amp;size,</span>
+<span class="lineNum">     562 </span>                :                                                                                          Z_STRVAL_P(var),
+<span class="lineNum">     563 </span>                :                                                                                          width, precision, padding,
+<span class="lineNum">     564 </span>                :                                                                                          alignment,
+<span class="lineNum">     565 </span>                :                                                                                          Z_STRLEN_P(var),
+<span class="lineNum">     566 </span>                :                                                                                          0, expprec, 0);
+<span class="lineNum">     567 </span><span class="lineNoCov">              0 :                                         if (use_copy) {</span>
+<span class="lineNum">     568 </span>                :                                                 zval_dtor(&amp;var_copy);
+<span class="lineNum">     569 </span>                :                                         }
+<span class="lineNum">     570 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">     571 </span>                :                                 }
+<span class="lineNum">     572 </span>                : 
+<span class="lineNum">     573 </span>                :                                 case 'd':
+<span class="lineNum">     574 </span><span class="lineCov">            132 :                                         convert_to_long(tmp);</span>
+<span class="lineNum">     575 </span><span class="lineCov">            264 :                                         php_sprintf_appendint(&amp;result, &amp;outpos, &amp;size,</span>
+<span class="lineNum">     576 </span><span class="lineCov">            132 :                                                                                   Z_LVAL_P(tmp),</span>
+<span class="lineNum">     577 </span>                :                                                                                   width, padding, alignment,
+<span class="lineNum">     578 </span>                :                                                                                   always_sign);
+<span class="lineNum">     579 </span><span class="lineCov">            132 :                                         break;</span>
+<span class="lineNum">     580 </span>                : 
+<span class="lineNum">     581 </span>                :                                 case 'u':
+<span class="lineNum">     582 </span><span class="lineNoCov">              0 :                                         convert_to_long(tmp);</span>
+<span class="lineNum">     583 </span><span class="lineNoCov">              0 :                                         php_sprintf_appenduint(&amp;result, &amp;outpos, &amp;size,</span>
+<span class="lineNum">     584 </span><span class="lineNoCov">              0 :                                                                                   Z_LVAL_P(tmp),</span>
+<span class="lineNum">     585 </span>                :                                                                                   width, padding, alignment);
+<span class="lineNum">     586 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">     587 </span>                : 
+<span class="lineNum">     588 </span>                :                                 case 'g':
+<span class="lineNum">     589 </span>                :                                 case 'G':
+<span class="lineNum">     590 </span>                :                                 case 'e':
+<span class="lineNum">     591 </span>                :                                 case 'E':
+<span class="lineNum">     592 </span>                :                                 case 'f':
+<span class="lineNum">     593 </span>                :                                 case 'F':
+<span class="lineNum">     594 </span><span class="lineCov">              9 :                                         convert_to_double(tmp);</span>
+<span class="lineNum">     595 </span><span class="lineCov">             18 :                                         php_sprintf_appenddouble(&amp;result, &amp;outpos, &amp;size,</span>
+<span class="lineNum">     596 </span><span class="lineCov">              9 :                                                                                          Z_DVAL_P(tmp),</span>
+<span class="lineNum">     597 </span>                :                                                                                          width, padding, alignment,
+<span class="lineNum">     598 </span>                :                                                                                          precision, adjusting,
+<span class="lineNum">     599 </span><span class="lineCov">              9 :                                                                                          format[inpos], always_sign</span>
+<span class="lineNum">     600 </span>                :                                                                                          TSRMLS_CC);
+<span class="lineNum">     601 </span><span class="lineCov">              9 :                                         break;</span>
+<span class="lineNum">     602 </span>                :                                         
+<span class="lineNum">     603 </span>                :                                 case 'c':
+<span class="lineNum">     604 </span><span class="lineNoCov">              0 :                                         convert_to_long(tmp);</span>
+<span class="lineNum">     605 </span><span class="lineNoCov">              0 :                                         php_sprintf_appendchar(&amp;result, &amp;outpos, &amp;size,</span>
+<span class="lineNum">     606 </span><span class="lineNoCov">              0 :                                                                                 (char) Z_LVAL_P(tmp) TSRMLS_CC);</span>
+<span class="lineNum">     607 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">     608 </span>                : 
+<span class="lineNum">     609 </span>                :                                 case 'o':
+<span class="lineNum">     610 </span><span class="lineNoCov">              0 :                                         convert_to_long(tmp);</span>
+<span class="lineNum">     611 </span><span class="lineNoCov">              0 :                                         php_sprintf_append2n(&amp;result, &amp;outpos, &amp;size,</span>
+<span class="lineNum">     612 </span><span class="lineNoCov">              0 :                                                                                  Z_LVAL_P(tmp),</span>
+<span class="lineNum">     613 </span>                :                                                                                  width, padding, alignment, 3,
+<span class="lineNum">     614 </span>                :                                                                                  hexchars, expprec);
+<span class="lineNum">     615 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">     616 </span>                : 
+<span class="lineNum">     617 </span>                :                                 case 'x':
+<span class="lineNum">     618 </span><span class="lineNoCov">              0 :                                         convert_to_long(tmp);</span>
+<span class="lineNum">     619 </span><span class="lineNoCov">              0 :                                         php_sprintf_append2n(&amp;result, &amp;outpos, &amp;size,</span>
+<span class="lineNum">     620 </span><span class="lineNoCov">              0 :                                                                                  Z_LVAL_P(tmp),</span>
+<span class="lineNum">     621 </span>                :                                                                                  width, padding, alignment, 4,
+<span class="lineNum">     622 </span>                :                                                                                  hexchars, expprec);
+<span class="lineNum">     623 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">     624 </span>                : 
+<span class="lineNum">     625 </span>                :                                 case 'X':
+<span class="lineNum">     626 </span><span class="lineNoCov">              0 :                                         convert_to_long(tmp);</span>
+<span class="lineNum">     627 </span><span class="lineNoCov">              0 :                                         php_sprintf_append2n(&amp;result, &amp;outpos, &amp;size,</span>
+<span class="lineNum">     628 </span><span class="lineNoCov">              0 :                                                                                  Z_LVAL_P(tmp),</span>
+<span class="lineNum">     629 </span>                :                                                                                  width, padding, alignment, 4,
+<span class="lineNum">     630 </span>                :                                                                                  HEXCHARS, expprec);
+<span class="lineNum">     631 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">     632 </span>                : 
+<span class="lineNum">     633 </span>                :                                 case 'b':
+<span class="lineNum">     634 </span><span class="lineNoCov">              0 :                                         convert_to_long(tmp);</span>
+<span class="lineNum">     635 </span><span class="lineNoCov">              0 :                                         php_sprintf_append2n(&amp;result, &amp;outpos, &amp;size,</span>
+<span class="lineNum">     636 </span><span class="lineNoCov">              0 :                                                                                  Z_LVAL_P(tmp),</span>
+<span class="lineNum">     637 </span>                :                                                                                  width, padding, alignment, 1,
+<span class="lineNum">     638 </span>                :                                                                                  hexchars, expprec);
+<span class="lineNum">     639 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">     640 </span>                : 
+<span class="lineNum">     641 </span>                :                                 case '%':
+<span class="lineNum">     642 </span><span class="lineNoCov">              0 :                                         php_sprintf_appendchar(&amp;result, &amp;outpos, &amp;size, '%' TSRMLS_CC);</span>
+<span class="lineNum">     643 </span>                : 
+<span class="lineNum">     644 </span>                :                                         break;
+<span class="lineNum">     645 </span>                :                                 default:
+<span class="lineNum">     646 </span>                :                                         break;
+<span class="lineNum">     647 </span>                :                         }
+<span class="lineNum">     648 </span><span class="lineCov">            141 :                         if (multiuse) {</span>
+<span class="lineNum">     649 </span><span class="lineNoCov">              0 :                                 zval_ptr_dtor(&amp;tmp);</span>
+<span class="lineNum">     650 </span>                :                         }
+<span class="lineNum">     651 </span><span class="lineCov">            141 :                         inpos++;</span>
+<span class="lineNum">     652 </span>                :                 }
+<span class="lineNum">     653 </span>                :         }
+<span class="lineNum">     654 </span>                :         
+<span class="lineNum">     655 </span><span class="lineCov">            136 :         efree(args);</span>
+<span class="lineNum">     656 </span>                :         
+<span class="lineNum">     657 </span>                :         /* possibly, we have to make sure we have room for the terminating null? */
+<span class="lineNum">     658 </span><span class="lineCov">            136 :         result[outpos]=0;</span>
+<span class="lineNum">     659 </span><span class="lineCov">            136 :         *len = outpos;  </span>
+<span class="lineNum">     660 </span><span class="lineCov">            136 :         return result;</span>
+<span class="lineNum">     661 </span>                : }
+<span class="lineNum">     662 </span>                : /* }}} */
+<span class="lineNum">     663 </span>                : 
+<a name="664"><span class="lineNum">     664 </span>                : /* {{{ proto string sprintf(string format [, mixed arg1 [, mixed ...]])</a>
+<span class="lineNum">     665 </span>                :    Return a formatted string */
+<span class="lineNum">     666 </span><span class="lineCov">            136 : PHP_FUNCTION(user_sprintf)</span>
+<span class="lineNum">     667 </span>                : {
+<span class="lineNum">     668 </span>                :         char *result;
+<span class="lineNum">     669 </span>                :         int len;
+<span class="lineNum">     670 </span>                :         
+<span class="lineNum">     671 </span><span class="lineCov">            136 :         if ((result=php_formatted_print(ht, &amp;len, 0, 0 TSRMLS_CC))==NULL) {</span>
+<span class="lineNum">     672 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     673 </span>                :         }
+<span class="lineNum">     674 </span><span class="lineCov">            136 :         RETVAL_STRINGL(result, len, 0);</span>
+<span class="lineNum">     675 </span>                : }
+<span class="lineNum">     676 </span>                : /* }}} */
+<span class="lineNum">     677 </span>                : 
+<a name="678"><span class="lineNum">     678 </span>                : /* {{{ proto string vsprintf(string format, array args)</a>
+<span class="lineNum">     679 </span>                :    Return a formatted string */
+<span class="lineNum">     680 </span><span class="lineNoCov">              0 : PHP_FUNCTION(vsprintf)</span>
+<span class="lineNum">     681 </span>                : {
+<span class="lineNum">     682 </span>                :         char *result;
+<span class="lineNum">     683 </span>                :         int len;
+<span class="lineNum">     684 </span>                :         
+<span class="lineNum">     685 </span><span class="lineNoCov">              0 :         if ((result=php_formatted_print(ht, &amp;len, 1, 0 TSRMLS_CC))==NULL) {</span>
+<span class="lineNum">     686 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     687 </span>                :         }
+<span class="lineNum">     688 </span><span class="lineNoCov">              0 :         RETVAL_STRINGL(result, len, 0);</span>
+<span class="lineNum">     689 </span>                : }
+<span class="lineNum">     690 </span>                : /* }}} */
+<span class="lineNum">     691 </span>                : 
+<a name="692"><span class="lineNum">     692 </span>                : /* {{{ proto int printf(string format [, mixed arg1 [, mixed ...]])</a>
+<span class="lineNum">     693 </span>                :    Output a formatted string */
+<span class="lineNum">     694 </span><span class="lineNoCov">              0 : PHP_FUNCTION(user_printf)</span>
+<span class="lineNum">     695 </span>                : {
+<span class="lineNum">     696 </span>                :         char *result;
+<span class="lineNum">     697 </span>                :         int len, rlen;
+<span class="lineNum">     698 </span>                :         
+<span class="lineNum">     699 </span><span class="lineNoCov">              0 :         if ((result=php_formatted_print(ht, &amp;len, 0, 0 TSRMLS_CC))==NULL) {</span>
+<span class="lineNum">     700 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     701 </span>                :         }
+<span class="lineNum">     702 </span><span class="lineNoCov">              0 :         rlen = PHPWRITE(result, len);</span>
+<span class="lineNum">     703 </span><span class="lineNoCov">              0 :         efree(result);</span>
+<span class="lineNum">     704 </span><span class="lineNoCov">              0 :         RETURN_LONG(rlen);</span>
+<span class="lineNum">     705 </span>                : }
+<span class="lineNum">     706 </span>                : /* }}} */
+<span class="lineNum">     707 </span>                : 
+<a name="708"><span class="lineNum">     708 </span>                : /* {{{ proto int vprintf(string format, array args)</a>
+<span class="lineNum">     709 </span>                :    Output a formatted string */
+<span class="lineNum">     710 </span><span class="lineNoCov">              0 : PHP_FUNCTION(vprintf)</span>
+<span class="lineNum">     711 </span>                : {
+<span class="lineNum">     712 </span>                :         char *result;
+<span class="lineNum">     713 </span>                :         int len, rlen;
+<span class="lineNum">     714 </span>                :         
+<span class="lineNum">     715 </span><span class="lineNoCov">              0 :         if ((result=php_formatted_print(ht, &amp;len, 1, 0 TSRMLS_CC))==NULL) {</span>
+<span class="lineNum">     716 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     717 </span>                :         }
+<span class="lineNum">     718 </span><span class="lineNoCov">              0 :         rlen = PHPWRITE(result, len);</span>
+<span class="lineNum">     719 </span><span class="lineNoCov">              0 :         efree(result);</span>
+<span class="lineNum">     720 </span><span class="lineNoCov">              0 :         RETURN_LONG(rlen);</span>
+<span class="lineNum">     721 </span>                : }
+<span class="lineNum">     722 </span>                : /* }}} */
+<span class="lineNum">     723 </span>                : 
+<a name="724"><span class="lineNum">     724 </span>                : /* {{{ proto int fprintf(resource stream, string format [, mixed arg1 [, mixed ...]])</a>
+<span class="lineNum">     725 </span>                :    Output a formatted string into a stream */
+<span class="lineNum">     726 </span><span class="lineNoCov">              0 : PHP_FUNCTION(fprintf)</span>
+<span class="lineNum">     727 </span>                : {
+<span class="lineNum">     728 </span>                :         php_stream *stream;
+<span class="lineNum">     729 </span>                :         zval *arg1;
+<span class="lineNum">     730 </span>                :         char *result;
+<span class="lineNum">     731 </span>                :         int len;
+<span class="lineNum">     732 </span>                :         
+<span class="lineNum">     733 </span><span class="lineNoCov">              0 :         if (ZEND_NUM_ARGS() &lt; 2) {</span>
+<span class="lineNum">     734 </span><span class="lineNoCov">              0 :                 WRONG_PARAM_COUNT;</span>
+<span class="lineNum">     735 </span>                :         }
+<span class="lineNum">     736 </span>                :         
+<span class="lineNum">     737 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(1 TSRMLS_CC, &quot;r&quot;, &amp;arg1) == FAILURE) {</span>
+<span class="lineNum">     738 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     739 </span>                :         }
+<span class="lineNum">     740 </span>                :         
+<span class="lineNum">     741 </span><span class="lineNoCov">              0 :         php_stream_from_zval(stream, &amp;arg1);</span>
+<span class="lineNum">     742 </span>                : 
+<span class="lineNum">     743 </span><span class="lineNoCov">              0 :         if ((result=php_formatted_print(ht, &amp;len, 0, 1 TSRMLS_CC))==NULL) {</span>
+<span class="lineNum">     744 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     745 </span>                :         }
+<span class="lineNum">     746 </span>                : 
+<span class="lineNum">     747 </span><span class="lineNoCov">              0 :         php_stream_write(stream, result, len);</span>
+<span class="lineNum">     748 </span>                : 
+<span class="lineNum">     749 </span><span class="lineNoCov">              0 :         efree(result);</span>
+<span class="lineNum">     750 </span>                : 
+<span class="lineNum">     751 </span><span class="lineNoCov">              0 :         RETURN_LONG(len);</span>
+<span class="lineNum">     752 </span>                : }
+<span class="lineNum">     753 </span>                : /* }}} */
+<span class="lineNum">     754 </span>                : 
+<a name="755"><span class="lineNum">     755 </span>                : /* {{{ proto int vfprintf(resource stream, string format, array args)</a>
+<span class="lineNum">     756 </span>                :    Output a formatted string into a stream */
+<span class="lineNum">     757 </span><span class="lineNoCov">              0 : PHP_FUNCTION(vfprintf)</span>
+<span class="lineNum">     758 </span>                : {
+<span class="lineNum">     759 </span>                :         php_stream *stream;
+<span class="lineNum">     760 </span>                :         zval *arg1;
+<span class="lineNum">     761 </span>                :         char *result;
+<span class="lineNum">     762 </span>                :         int len;
+<span class="lineNum">     763 </span>                :         
+<span class="lineNum">     764 </span><span class="lineNoCov">              0 :         if (ZEND_NUM_ARGS() != 3) {</span>
+<span class="lineNum">     765 </span><span class="lineNoCov">              0 :                 WRONG_PARAM_COUNT;</span>
+<span class="lineNum">     766 </span>                :         }
+<span class="lineNum">     767 </span>                :         
+<span class="lineNum">     768 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(1 TSRMLS_CC, &quot;r&quot;, &amp;arg1) == FAILURE) {</span>
+<span class="lineNum">     769 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     770 </span>                :         }
+<span class="lineNum">     771 </span>                :         
+<span class="lineNum">     772 </span><span class="lineNoCov">              0 :         php_stream_from_zval(stream, &amp;arg1);</span>
+<span class="lineNum">     773 </span>                : 
+<span class="lineNum">     774 </span><span class="lineNoCov">              0 :         if ((result=php_formatted_print(ht, &amp;len, 1, 1 TSRMLS_CC))==NULL) {</span>
+<span class="lineNum">     775 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     776 </span>                :         }
+<span class="lineNum">     777 </span>                : 
+<span class="lineNum">     778 </span><span class="lineNoCov">              0 :         php_stream_write(stream, result, len);</span>
+<span class="lineNum">     779 </span>                : 
+<span class="lineNum">     780 </span><span class="lineNoCov">              0 :         efree(result);</span>
+<span class="lineNum">     781 </span>                : 
+<span class="lineNum">     782 </span><span class="lineNoCov">              0 :         RETURN_LONG(len);</span>
+<span class="lineNum">     783 </span>                : }
+<span class="lineNum">     784 </span>                : /* }}} */
+<span class="lineNum">     785 </span>                : 
+<span class="lineNum">     786 </span>                : /*
+<span class="lineNum">     787 </span>                :  * Local variables:
+<span class="lineNum">     788 </span>                :  * tab-width: 4
+<span class="lineNum">     789 </span>                :  * c-basic-offset: 4
+<span class="lineNum">     790 </span>                :  * End:
+<span class="lineNum">     791 </span>                :  * vim600: sw=4 ts=4 fdm=marker
+<span class="lineNum">     792 </span>                :  * vim&lt;600: sw=4 ts=4
+<span class="lineNum">     793 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

@@ -1,0 +1,347 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - ext/date/lib/unixtime2tm.c</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../../index.html">directory</a> - <a href="index.html">ext/date/lib</a> - unixtime2tm.c (source / <a href="unixtime2tm.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">111</td>
+          <td class="headerCovTableEntry">50</td>
+          <td class="headerCovTableEntryMed">45.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">5</td>
+          <td class="headerCovTableEntry">2</td>
+          <td class="headerCovTableEntryLo">40.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2010 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Authors: Derick Rethans &lt;derick@derickrethans.nl&gt;                    |
+<span class="lineNum">      16 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      17 </span>                :  */
+<span class="lineNum">      18 </span>                : 
+<span class="lineNum">      19 </span>                : /* $Id$ */
+<span class="lineNum">      20 </span>                : 
+<span class="lineNum">      21 </span>                : #include &quot;timelib.h&quot;
+<span class="lineNum">      22 </span>                : 
+<span class="lineNum">      23 </span>                : #include &lt;stdio.h&gt;
+<span class="lineNum">      24 </span>                : 
+<span class="lineNum">      25 </span>                : #ifdef HAVE_STDLIB_H
+<span class="lineNum">      26 </span>                : #include &lt;stdlib.h&gt;
+<span class="lineNum">      27 </span>                : #endif
+<span class="lineNum">      28 </span>                : 
+<span class="lineNum">      29 </span>                : #ifdef HAVE_STRING_H
+<span class="lineNum">      30 </span>                : #include &lt;string.h&gt;
+<span class="lineNum">      31 </span>                : #else
+<span class="lineNum">      32 </span>                : #include &lt;strings.h&gt;
+<span class="lineNum">      33 </span>                : #endif
+<span class="lineNum">      34 </span>                : 
+<span class="lineNum">      35 </span>                : static int month_tab_leap[12] = { -1, 30, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
+<span class="lineNum">      36 </span>                : static int month_tab[12] =      { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
+<span class="lineNum">      37 </span>                : 
+<a name="38"><span class="lineNum">      38 </span>                : </a>
+<span class="lineNum">      39 </span>                : /* Converts a Unix timestamp value into broken down time, in GMT */
+<span class="lineNum">      40 </span><span class="lineCov">              1 : void timelib_unixtime2gmt(timelib_time* tm, timelib_sll ts)</span>
+<span class="lineNum">      41 </span>                : {
+<span class="lineNum">      42 </span>                :         timelib_sll days, remainder, tmp_days;
+<span class="lineNum">      43 </span><span class="lineCov">              1 :         timelib_sll cur_year = 1970;</span>
+<span class="lineNum">      44 </span>                :         timelib_sll i;
+<span class="lineNum">      45 </span>                :         timelib_sll hours, minutes, seconds;
+<span class="lineNum">      46 </span>                :         int *months;
+<span class="lineNum">      47 </span>                : 
+<span class="lineNum">      48 </span><span class="lineCov">              1 :         days = ts / SECS_PER_DAY;</span>
+<span class="lineNum">      49 </span><span class="lineCov">              1 :         remainder = ts - (days * SECS_PER_DAY);</span>
+<span class="lineNum">      50 </span><span class="lineCov">              1 :         if (ts &lt; 0 &amp;&amp; remainder == 0) {</span>
+<span class="lineNum">      51 </span><span class="lineNoCov">              0 :                 days++;</span>
+<span class="lineNum">      52 </span><span class="lineNoCov">              0 :                 remainder -= SECS_PER_DAY;</span>
+<span class="lineNum">      53 </span>                :         }
+<span class="lineNum">      54 </span>                :         TIMELIB_DEBUG(printf(&quot;days=%lld, rem=%lld\n&quot;, days, remainder););
+<span class="lineNum">      55 </span>                : 
+<span class="lineNum">      56 </span><span class="lineCov">              1 :         if (ts &gt;= 0) {</span>
+<span class="lineNum">      57 </span><span class="lineCov">              1 :                 tmp_days = days + 1;</span>
+<span class="lineNum">      58 </span>                : 
+<span class="lineNum">      59 </span><span class="lineCov">              1 :                 if (tmp_days &gt;= DAYS_PER_LYEAR_PERIOD || tmp_days &lt;= -DAYS_PER_LYEAR_PERIOD) {</span>
+<span class="lineNum">      60 </span><span class="lineNoCov">              0 :                         cur_year += YEARS_PER_LYEAR_PERIOD * (tmp_days / DAYS_PER_LYEAR_PERIOD);</span>
+<span class="lineNum">      61 </span><span class="lineNoCov">              0 :                         tmp_days -= DAYS_PER_LYEAR_PERIOD * (tmp_days / DAYS_PER_LYEAR_PERIOD);</span>
+<span class="lineNum">      62 </span>                :                 }
+<span class="lineNum">      63 </span>                : 
+<span class="lineNum">      64 </span><span class="lineCov">             44 :                 while (tmp_days &gt;= DAYS_PER_LYEAR) {</span>
+<span class="lineNum">      65 </span><span class="lineCov">             42 :                         cur_year++;</span>
+<span class="lineNum">      66 </span><span class="lineCov">             53 :                         if (timelib_is_leap(cur_year)) {</span>
+<span class="lineNum">      67 </span><span class="lineCov">             11 :                                 tmp_days -= DAYS_PER_LYEAR;</span>
+<span class="lineNum">      68 </span>                :                         } else {
+<span class="lineNum">      69 </span><span class="lineCov">             31 :                                 tmp_days -= DAYS_PER_YEAR;</span>
+<span class="lineNum">      70 </span>                :                         }
+<span class="lineNum">      71 </span>                :                 }
+<span class="lineNum">      72 </span>                :         } else {
+<span class="lineNum">      73 </span><span class="lineNoCov">              0 :                 tmp_days = days;</span>
+<span class="lineNum">      74 </span>                : 
+<span class="lineNum">      75 </span>                :                 /* Guess why this might be for, it has to do with a pope ;-). It's also
+<span class="lineNum">      76 </span>                :                  * only valid for Great Brittain and it's colonies. It needs fixing for
+<span class="lineNum">      77 </span>                :                  * other locales. *sigh*, why is this crap so complex! */
+<span class="lineNum">      78 </span>                :                 /*
+<span class="lineNum">      79 </span>                :                 if (ts &lt;= TIMELIB_LL_CONST(-6857352000)) {
+<span class="lineNum">      80 </span>                :                         tmp_days -= 11;
+<span class="lineNum">      81 </span>                :                 }
+<span class="lineNum">      82 </span>                :                 */
+<span class="lineNum">      83 </span>                : 
+<span class="lineNum">      84 </span><span class="lineNoCov">              0 :                 while (tmp_days &lt;= 0) {</span>
+<span class="lineNum">      85 </span><span class="lineNoCov">              0 :                         if (tmp_days &lt; -1460970) {</span>
+<span class="lineNum">      86 </span><span class="lineNoCov">              0 :                                 cur_year -= 4000;</span>
+<span class="lineNum">      87 </span>                :                                 TIMELIB_DEBUG(printf(&quot;tmp_days=%lld, year=%lld\n&quot;, tmp_days, cur_year););
+<span class="lineNum">      88 </span><span class="lineNoCov">              0 :                                 tmp_days += 1460970;</span>
+<span class="lineNum">      89 </span>                :                         } else {
+<span class="lineNum">      90 </span><span class="lineNoCov">              0 :                                 cur_year--;</span>
+<span class="lineNum">      91 </span>                :                                 TIMELIB_DEBUG(printf(&quot;tmp_days=%lld, year=%lld\n&quot;, tmp_days, cur_year););
+<span class="lineNum">      92 </span><span class="lineNoCov">              0 :                                 if (timelib_is_leap(cur_year)) {</span>
+<span class="lineNum">      93 </span><span class="lineNoCov">              0 :                                         tmp_days += DAYS_PER_LYEAR;</span>
+<span class="lineNum">      94 </span>                :                                 } else {
+<span class="lineNum">      95 </span><span class="lineNoCov">              0 :                                         tmp_days += DAYS_PER_YEAR;</span>
+<span class="lineNum">      96 </span>                :                                 }
+<span class="lineNum">      97 </span>                :                         }
+<span class="lineNum">      98 </span>                :                 }
+<span class="lineNum">      99 </span><span class="lineNoCov">              0 :                 remainder += SECS_PER_DAY;</span>
+<span class="lineNum">     100 </span>                :         }
+<span class="lineNum">     101 </span>                :         TIMELIB_DEBUG(printf(&quot;tmp_days=%lld, year=%lld\n&quot;, tmp_days, cur_year););
+<span class="lineNum">     102 </span>                : 
+<span class="lineNum">     103 </span><span class="lineCov">              1 :         months = timelib_is_leap(cur_year) ? month_tab_leap : month_tab;</span>
+<span class="lineNum">     104 </span><span class="lineCov">              1 :         if (timelib_is_leap(cur_year) &amp;&amp; cur_year &lt; 1970) {</span>
+<span class="lineNum">     105 </span><span class="lineNoCov">              0 :                 tmp_days--;</span>
+<span class="lineNum">     106 </span>                :         }
+<span class="lineNum">     107 </span><span class="lineCov">              1 :         i = 11;</span>
+<span class="lineNum">     108 </span><span class="lineCov">              8 :         while (i &gt; 0) {</span>
+<span class="lineNum">     109 </span>                :                 TIMELIB_DEBUG(printf(&quot;month=%lld (%d)\n&quot;, i, months[i]););
+<span class="lineNum">     110 </span><span class="lineCov">              7 :                 if (tmp_days &gt; months[i]) {</span>
+<span class="lineNum">     111 </span><span class="lineCov">              1 :                         break;</span>
+<span class="lineNum">     112 </span>                :                 }
+<span class="lineNum">     113 </span><span class="lineCov">              6 :                 i--;</span>
+<span class="lineNum">     114 </span>                :         }
+<span class="lineNum">     115 </span>                :         TIMELIB_DEBUG(printf(&quot;A: ts=%lld, year=%lld, month=%lld, day=%lld,&quot;, ts, cur_year, i + 1, tmp_days - months[i]););
+<span class="lineNum">     116 </span>                : 
+<span class="lineNum">     117 </span>                :         /* That was the date, now we do the tiiiime */
+<span class="lineNum">     118 </span><span class="lineCov">              1 :         hours = remainder / 3600;</span>
+<span class="lineNum">     119 </span><span class="lineCov">              1 :         minutes = (remainder - hours * 3600) / 60;</span>
+<span class="lineNum">     120 </span><span class="lineCov">              1 :         seconds = remainder % 60;</span>
+<span class="lineNum">     121 </span>                :         TIMELIB_DEBUG(printf(&quot; hour=%lld, minute=%lld, second=%lld\n&quot;, hours, minutes, seconds););
+<span class="lineNum">     122 </span>                : 
+<span class="lineNum">     123 </span><span class="lineCov">              1 :         tm-&gt;y = cur_year;</span>
+<span class="lineNum">     124 </span><span class="lineCov">              1 :         tm-&gt;m = i + 1;</span>
+<span class="lineNum">     125 </span><span class="lineCov">              1 :         tm-&gt;d = tmp_days - months[i];</span>
+<span class="lineNum">     126 </span><span class="lineCov">              1 :         tm-&gt;h = hours;</span>
+<span class="lineNum">     127 </span><span class="lineCov">              1 :         tm-&gt;i = minutes;</span>
+<span class="lineNum">     128 </span><span class="lineCov">              1 :         tm-&gt;s = seconds;</span>
+<span class="lineNum">     129 </span><span class="lineCov">              1 :         tm-&gt;z = 0;</span>
+<span class="lineNum">     130 </span><span class="lineCov">              1 :         tm-&gt;dst = 0;</span>
+<span class="lineNum">     131 </span><span class="lineCov">              1 :         tm-&gt;sse = ts;</span>
+<span class="lineNum">     132 </span><span class="lineCov">              1 :         tm-&gt;sse_uptodate = 1;</span>
+<span class="lineNum">     133 </span><span class="lineCov">              1 :         tm-&gt;tim_uptodate = 1;</span>
+<span class="lineNum">     134 </span><span class="lineCov">              1 :         tm-&gt;is_localtime = 0;</span>
+<a name="135"><span class="lineNum">     135 </span><span class="lineCov">              1 : }</span></a>
+<span class="lineNum">     136 </span>                : 
+<span class="lineNum">     137 </span><span class="lineNoCov">              0 : void timelib_update_from_sse(timelib_time *tm)</span>
+<span class="lineNum">     138 </span>                : {
+<span class="lineNum">     139 </span>                :         timelib_sll sse;
+<span class="lineNum">     140 </span>                : 
+<span class="lineNum">     141 </span><span class="lineNoCov">              0 :         sse = tm-&gt;sse;</span>
+<span class="lineNum">     142 </span>                :         
+<span class="lineNum">     143 </span><span class="lineNoCov">              0 :         switch (tm-&gt;zone_type) {</span>
+<span class="lineNum">     144 </span>                :                 case TIMELIB_ZONETYPE_ABBR:
+<span class="lineNum">     145 </span>                :                 case TIMELIB_ZONETYPE_OFFSET: {
+<span class="lineNum">     146 </span><span class="lineNoCov">              0 :                         int z = tm-&gt;z;</span>
+<span class="lineNum">     147 </span><span class="lineNoCov">              0 :                         signed int dst = tm-&gt;dst;</span>
+<span class="lineNum">     148 </span>                :                         
+<span class="lineNum">     149 </span><span class="lineNoCov">              0 :                         timelib_unixtime2gmt(tm, tm-&gt;sse - (tm-&gt;z * 60) + (tm-&gt;dst * 3600));</span>
+<span class="lineNum">     150 </span>                : 
+<span class="lineNum">     151 </span><span class="lineNoCov">              0 :                         tm-&gt;z = z;</span>
+<span class="lineNum">     152 </span><span class="lineNoCov">              0 :                         tm-&gt;dst = dst;</span>
+<span class="lineNum">     153 </span><span class="lineNoCov">              0 :                         goto cleanup;</span>
+<span class="lineNum">     154 </span>                :                 }
+<span class="lineNum">     155 </span>                : 
+<span class="lineNum">     156 </span>                :                 case TIMELIB_ZONETYPE_ID: {
+<span class="lineNum">     157 </span>                :                         timelib_time_offset *gmt_offset;
+<span class="lineNum">     158 </span>                :                         
+<span class="lineNum">     159 </span><span class="lineNoCov">              0 :                         gmt_offset = timelib_get_time_zone_info(tm-&gt;sse, tm-&gt;tz_info);</span>
+<span class="lineNum">     160 </span><span class="lineNoCov">              0 :                         timelib_unixtime2gmt(tm, tm-&gt;sse + gmt_offset-&gt;offset);</span>
+<span class="lineNum">     161 </span><span class="lineNoCov">              0 :                         timelib_time_offset_dtor(gmt_offset);</span>
+<span class="lineNum">     162 </span>                :                         
+<span class="lineNum">     163 </span><span class="lineNoCov">              0 :                         goto cleanup;</span>
+<span class="lineNum">     164 </span>                :                 }
+<span class="lineNum">     165 </span>                : 
+<span class="lineNum">     166 </span>                :                 default:
+<span class="lineNum">     167 </span><span class="lineNoCov">              0 :                         timelib_unixtime2gmt(tm, tm-&gt;sse);</span>
+<span class="lineNum">     168 </span>                :                         goto cleanup;
+<span class="lineNum">     169 </span>                :         }
+<span class="lineNum">     170 </span>                : cleanup:
+<span class="lineNum">     171 </span><span class="lineNoCov">              0 :         tm-&gt;sse = sse;</span>
+<span class="lineNum">     172 </span><span class="lineNoCov">              0 :         tm-&gt;is_localtime = 1;</span>
+<span class="lineNum">     173 </span><span class="lineNoCov">              0 :         tm-&gt;have_zone = 1;</span>
+<a name="174"><span class="lineNum">     174 </span><span class="lineNoCov">              0 : }</span></a>
+<span class="lineNum">     175 </span>                : 
+<span class="lineNum">     176 </span><span class="lineCov">              1 : void timelib_unixtime2local(timelib_time *tm, timelib_sll ts)</span>
+<span class="lineNum">     177 </span>                : {
+<span class="lineNum">     178 </span>                :         timelib_time_offset *gmt_offset;
+<span class="lineNum">     179 </span><span class="lineCov">              1 :         timelib_tzinfo      *tz = tm-&gt;tz_info;</span>
+<span class="lineNum">     180 </span>                : 
+<span class="lineNum">     181 </span><span class="lineCov">              1 :         switch (tm-&gt;zone_type) {</span>
+<span class="lineNum">     182 </span>                :                 case TIMELIB_ZONETYPE_ABBR:
+<span class="lineNum">     183 </span>                :                 case TIMELIB_ZONETYPE_OFFSET: {
+<span class="lineNum">     184 </span><span class="lineNoCov">              0 :                         int z = tm-&gt;z;</span>
+<span class="lineNum">     185 </span><span class="lineNoCov">              0 :                         signed int dst = tm-&gt;dst;</span>
+<span class="lineNum">     186 </span>                :                         
+<span class="lineNum">     187 </span><span class="lineNoCov">              0 :                         timelib_unixtime2gmt(tm, ts - (tm-&gt;z * 60) + (tm-&gt;dst * 3600));</span>
+<span class="lineNum">     188 </span>                : 
+<span class="lineNum">     189 </span><span class="lineNoCov">              0 :                         tm-&gt;z = z;</span>
+<span class="lineNum">     190 </span><span class="lineNoCov">              0 :                         tm-&gt;dst = dst;</span>
+<span class="lineNum">     191 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     192 </span>                :                 }
+<span class="lineNum">     193 </span>                : 
+<span class="lineNum">     194 </span>                :                 case TIMELIB_ZONETYPE_ID:
+<span class="lineNum">     195 </span><span class="lineCov">              1 :                         gmt_offset = timelib_get_time_zone_info(ts, tz);</span>
+<span class="lineNum">     196 </span><span class="lineCov">              1 :                         timelib_unixtime2gmt(tm, ts + gmt_offset-&gt;offset);</span>
+<span class="lineNum">     197 </span>                : 
+<span class="lineNum">     198 </span>                :                         /* we need to reset the sse here as unixtime2gmt modifies it */
+<span class="lineNum">     199 </span><span class="lineCov">              1 :                         tm-&gt;sse = ts; </span>
+<span class="lineNum">     200 </span><span class="lineCov">              1 :                         tm-&gt;dst = gmt_offset-&gt;is_dst;</span>
+<span class="lineNum">     201 </span><span class="lineCov">              1 :                         tm-&gt;z = gmt_offset-&gt;offset;</span>
+<span class="lineNum">     202 </span><span class="lineCov">              1 :                         tm-&gt;tz_info = tz;</span>
+<span class="lineNum">     203 </span>                : 
+<span class="lineNum">     204 </span><span class="lineCov">              1 :                         timelib_time_tz_abbr_update(tm, gmt_offset-&gt;abbr);</span>
+<span class="lineNum">     205 </span><span class="lineCov">              1 :                         timelib_time_offset_dtor(gmt_offset);</span>
+<span class="lineNum">     206 </span><span class="lineCov">              1 :                         break;</span>
+<span class="lineNum">     207 </span>                : 
+<span class="lineNum">     208 </span>                :                 default:
+<span class="lineNum">     209 </span><span class="lineNoCov">              0 :                         tm-&gt;is_localtime = 0;</span>
+<span class="lineNum">     210 </span><span class="lineNoCov">              0 :                         tm-&gt;have_zone = 0;</span>
+<span class="lineNum">     211 </span><span class="lineNoCov">              0 :                         return;</span>
+<span class="lineNum">     212 </span>                :         }
+<span class="lineNum">     213 </span>                : 
+<span class="lineNum">     214 </span><span class="lineCov">              1 :         tm-&gt;is_localtime = 1;</span>
+<span class="lineNum">     215 </span><span class="lineCov">              1 :         tm-&gt;have_zone = 1;</span>
+<a name="216"><span class="lineNum">     216 </span>                : }</a>
+<span class="lineNum">     217 </span>                : 
+<span class="lineNum">     218 </span><span class="lineNoCov">              0 : void timelib_set_timezone(timelib_time *t, timelib_tzinfo *tz)</span>
+<span class="lineNum">     219 </span>                : {
+<span class="lineNum">     220 </span>                :         timelib_time_offset *gmt_offset;
+<span class="lineNum">     221 </span>                : 
+<span class="lineNum">     222 </span><span class="lineNoCov">              0 :         gmt_offset = timelib_get_time_zone_info(t-&gt;sse, tz);</span>
+<span class="lineNum">     223 </span><span class="lineNoCov">              0 :         t-&gt;z = gmt_offset-&gt;offset;</span>
+<span class="lineNum">     224 </span>                : /*
+<span class="lineNum">     225 </span>                :         if (t-&gt;dst != gmt_offset-&gt;is_dst) {
+<span class="lineNum">     226 </span>                :                 printf(&quot;ERROR (%d, %d)\n&quot;, t-&gt;dst, gmt_offset-&gt;is_dst);
+<span class="lineNum">     227 </span>                :                 exit(1);
+<span class="lineNum">     228 </span>                :         }
+<span class="lineNum">     229 </span>                : */
+<span class="lineNum">     230 </span><span class="lineNoCov">              0 :         t-&gt;dst = gmt_offset-&gt;is_dst;</span>
+<span class="lineNum">     231 </span><span class="lineNoCov">              0 :         t-&gt;tz_info = tz;</span>
+<span class="lineNum">     232 </span><span class="lineNoCov">              0 :         if (t-&gt;tz_abbr) {</span>
+<span class="lineNum">     233 </span><span class="lineNoCov">              0 :                 free(t-&gt;tz_abbr);</span>
+<span class="lineNum">     234 </span>                :         }
+<span class="lineNum">     235 </span><span class="lineNoCov">              0 :         t-&gt;tz_abbr = strdup(gmt_offset-&gt;abbr);</span>
+<span class="lineNum">     236 </span><span class="lineNoCov">              0 :         timelib_time_offset_dtor(gmt_offset);</span>
+<span class="lineNum">     237 </span>                : 
+<span class="lineNum">     238 </span><span class="lineNoCov">              0 :         t-&gt;have_zone = 1;</span>
+<span class="lineNum">     239 </span><span class="lineNoCov">              0 :         t-&gt;zone_type = TIMELIB_ZONETYPE_ID;</span>
+<span class="lineNum">     240 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     241 </span>                : 
+<span class="lineNum">     242 </span>                : /* Converts the time stored in the struct to localtime if localtime = true,
+<a name="243"><span class="lineNum">     243 </span>                :  * otherwise it converts it to gmttime. This is only done when necessary</a>
+<span class="lineNum">     244 </span>                :  * ofcourse. */
+<span class="lineNum">     245 </span><span class="lineNoCov">              0 : int timelib_apply_localtime(timelib_time *t, unsigned int localtime)</span>
+<span class="lineNum">     246 </span>                : {
+<span class="lineNum">     247 </span><span class="lineNoCov">              0 :         if (localtime) {</span>
+<span class="lineNum">     248 </span>                :                 /* Converting from GMT time to local time */
+<span class="lineNum">     249 </span>                :                 TIMELIB_DEBUG(printf(&quot;Converting from GMT time to local time\n&quot;););
+<span class="lineNum">     250 </span>                : 
+<span class="lineNum">     251 </span>                :                 /* Check if TZ is set */
+<span class="lineNum">     252 </span><span class="lineNoCov">              0 :                 if (!t-&gt;tz_info) {</span>
+<span class="lineNum">     253 </span>                :                         TIMELIB_DEBUG(printf(&quot;E: No timezone configured, can't switch to local time\n&quot;););
+<span class="lineNum">     254 </span><span class="lineNoCov">              0 :                         return -1;</span>
+<span class="lineNum">     255 </span>                :                 }
+<span class="lineNum">     256 </span>                : 
+<span class="lineNum">     257 </span><span class="lineNoCov">              0 :                 timelib_unixtime2local(t, t-&gt;sse);</span>
+<span class="lineNum">     258 </span>                :         } else {
+<span class="lineNum">     259 </span>                :                 /* Converting from local time to GMT time */
+<span class="lineNum">     260 </span>                :                 TIMELIB_DEBUG(printf(&quot;Converting from local time to GMT time\n&quot;););
+<span class="lineNum">     261 </span>                : 
+<span class="lineNum">     262 </span><span class="lineNoCov">              0 :                 timelib_unixtime2gmt(t, t-&gt;sse);</span>
+<span class="lineNum">     263 </span>                :         }
+<span class="lineNum">     264 </span><span class="lineNoCov">              0 :         return 0;</span>
+<span class="lineNum">     265 </span>                : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

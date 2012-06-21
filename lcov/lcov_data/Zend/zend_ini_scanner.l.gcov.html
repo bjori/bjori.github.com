@@ -1,0 +1,683 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - lcov_data/Zend/zend_ini_scanner.l</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../index.html">directory</a> - <a href="index.html">lcov_data/Zend</a> - zend_ini_scanner.l (source / <a href="zend_ini_scanner.l.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">184</td>
+          <td class="headerCovTableEntry">88</td>
+          <td class="headerCovTableEntryMed">47.8 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">11</td>
+          <td class="headerCovTableEntry">9</td>
+          <td class="headerCovTableEntryMed">81.8 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | Zend Engine                                                          |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1998-2012 Zend Technologies Ltd. (http://www.zend.com) |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 2.00 of the Zend license,     |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.zend.com/license/2_00.txt.                                |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the Zend license and are unable to  |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@zend.com so we can mail you a copy immediately.              |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Authors: Zeev Suraski &lt;zeev@zend.com&gt;                                |
+<span class="lineNum">      16 </span>                :    |          Jani Taskinen &lt;jani@php.net&gt;                                |
+<span class="lineNum">      17 </span>                :    |          Marcus Boerger &lt;helly@php.net&gt;                              |
+<span class="lineNum">      18 </span>                :    |          Nuno Lopes &lt;nlopess@php.net&gt;                                |
+<span class="lineNum">      19 </span>                :    |          Scott MacVicar &lt;scottmac@php.net&gt;                           |
+<span class="lineNum">      20 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      21 </span>                : */
+<span class="lineNum">      22 </span>                : 
+<span class="lineNum">      23 </span>                : /* $Id$ */
+<span class="lineNum">      24 </span>                : 
+<span class="lineNum">      25 </span>                : #include &lt;errno.h&gt;
+<span class="lineNum">      26 </span>                : #include &quot;zend.h&quot;
+<span class="lineNum">      27 </span>                : #include &quot;zend_globals.h&quot;
+<span class="lineNum">      28 </span>                : #include &lt;zend_ini_parser.h&gt;
+<span class="lineNum">      29 </span>                : #include &quot;zend_ini_scanner.h&quot;
+<span class="lineNum">      30 </span>                : 
+<span class="lineNum">      31 </span>                : #if 0
+<span class="lineNum">      32 </span>                : # define YYDEBUG(s, c) printf(&quot;state: %d char: %c\n&quot;, s, c)
+<span class="lineNum">      33 </span>                : #else
+<span class="lineNum">      34 </span>                : # define YYDEBUG(s, c)
+<span class="lineNum">      35 </span>                : #endif
+<span class="lineNum">      36 </span>                : 
+<span class="lineNum">      37 </span>                : #include &quot;zend_ini_scanner_defs.h&quot;
+<span class="lineNum">      38 </span>                : 
+<span class="lineNum">      39 </span>                : #define YYCTYPE   unsigned char
+<span class="lineNum">      40 </span>                : /* allow the scanner to read one null byte after the end of the string (from ZEND_MMAP_AHEAD)
+<span class="lineNum">      41 </span>                :  * so that if will be able to terminate to match the current token (e.g. non-enclosed string) */
+<span class="lineNum">      42 </span>                : #define YYFILL(n) { if (YYCURSOR &gt; YYLIMIT) return 0; }
+<span class="lineNum">      43 </span>                : #define YYCURSOR  SCNG(yy_cursor)
+<span class="lineNum">      44 </span>                : #define YYLIMIT   SCNG(yy_limit)
+<span class="lineNum">      45 </span>                : #define YYMARKER  SCNG(yy_marker)
+<span class="lineNum">      46 </span>                : 
+<span class="lineNum">      47 </span>                : #define YYGETCONDITION()  SCNG(yy_state)
+<span class="lineNum">      48 </span>                : #define YYSETCONDITION(s) SCNG(yy_state) = s
+<span class="lineNum">      49 </span>                : 
+<span class="lineNum">      50 </span>                : #define STATE(name)  yyc##name
+<span class="lineNum">      51 </span>                : 
+<span class="lineNum">      52 </span>                : /* emulate flex constructs */
+<span class="lineNum">      53 </span>                : #define BEGIN(state) YYSETCONDITION(STATE(state))
+<span class="lineNum">      54 </span>                : #define YYSTATE      YYGETCONDITION()
+<span class="lineNum">      55 </span>                : #define yytext       ((char*)SCNG(yy_text))
+<span class="lineNum">      56 </span>                : #define yyleng       SCNG(yy_leng)
+<span class="lineNum">      57 </span>                : #define yyless(x)    do {       YYCURSOR = (unsigned char*)yytext + x; \
+<span class="lineNum">      58 </span>                :                                                         yyleng   = (unsigned int)x; } while(0)
+<span class="lineNum">      59 </span>                : 
+<span class="lineNum">      60 </span>                : /* #define yymore()     goto yymore_restart */
+<span class="lineNum">      61 </span>                : 
+<span class="lineNum">      62 </span>                : /* perform sanity check. If this message is triggered you should
+<span class="lineNum">      63 </span>                :    increase the ZEND_MMAP_AHEAD value in the zend_streams.h file */
+<span class="lineNum">      64 </span>                : /*!max:re2c */
+<span class="lineNum">      65 </span>                : #if ZEND_MMAP_AHEAD &lt; (YYMAXFILL + 1)
+<span class="lineNum">      66 </span>                : # error ZEND_MMAP_AHEAD should be greater than YYMAXFILL
+<span class="lineNum">      67 </span>                : #endif
+<span class="lineNum">      68 </span>                : 
+<span class="lineNum">      69 </span>                : 
+<span class="lineNum">      70 </span>                : /* How it works (for the core ini directives):
+<span class="lineNum">      71 </span>                :  * ===========================================
+<span class="lineNum">      72 </span>                :  *
+<span class="lineNum">      73 </span>                :  * 1. Scanner scans file for tokens and passes them to parser.
+<span class="lineNum">      74 </span>                :  * 2. Parser parses the tokens and passes the name/value pairs to the callback
+<span class="lineNum">      75 </span>                :  *    function which stores them in the configuration hash table.
+<span class="lineNum">      76 </span>                :  * 3. Later REGISTER_INI_ENTRIES() is called which triggers the actual
+<span class="lineNum">      77 </span>                :  *    registering of ini entries and uses zend_get_configuration_directive()
+<span class="lineNum">      78 </span>                :  *    to fetch the previously stored name/value pair from configuration hash table
+<span class="lineNum">      79 </span>                :  *    and registers the static ini entries which match the name to the value
+<span class="lineNum">      80 </span>                :  *    into EG(ini_directives) hash table.
+<span class="lineNum">      81 </span>                :  * 4. PATH section entries are used per-request from down to top, each overriding
+<span class="lineNum">      82 </span>                :  *    previous if one exists. zend_alter_ini_entry() is called for each entry.
+<span class="lineNum">      83 </span>                :  *    Settings in PATH section are ZEND_INI_SYSTEM accessible and thus mimics the
+<span class="lineNum">      84 </span>                :  *    php_admin_* directives used within Apache httpd.conf when PHP is compiled as
+<span class="lineNum">      85 </span>                :  *    module for Apache.
+<span class="lineNum">      86 </span>                :  * 5. User defined ini files (like .htaccess for apache) are parsed for each request and
+<span class="lineNum">      87 </span>                :  *    stored in separate hash defined by SAPI.
+<span class="lineNum">      88 </span>                :  */
+<span class="lineNum">      89 </span>                : 
+<span class="lineNum">      90 </span>                : /* TODO: (ordered by importance :-)
+<span class="lineNum">      91 </span>                :  * ===============================================================================
+<span class="lineNum">      92 </span>                :  *
+<span class="lineNum">      93 </span>                :  *  - Separate constant lookup totally from plain strings (using CONSTANT pattern)
+<span class="lineNum">      94 </span>                :  *  - Add #if .. #else .. #endif and ==, !=, &lt;, &gt; , &lt;=, &gt;= operators
+<span class="lineNum">      95 </span>                :  *  - Add #include &quot;some.ini&quot;
+<span class="lineNum">      96 </span>                :  *  - Allow variables to refer to options also when using parse_ini_file()
+<span class="lineNum">      97 </span>                :  *
+<span class="lineNum">      98 </span>                :  */
+<span class="lineNum">      99 </span>                : 
+<span class="lineNum">     100 </span>                : /* Globals Macros */
+<span class="lineNum">     101 </span>                : #define SCNG    INI_SCNG
+<span class="lineNum">     102 </span>                : #ifdef ZTS
+<span class="lineNum">     103 </span>                : ZEND_API ts_rsrc_id ini_scanner_globals_id;
+<span class="lineNum">     104 </span>                : #else
+<span class="lineNum">     105 </span>                : ZEND_API zend_ini_scanner_globals ini_scanner_globals;
+<span class="lineNum">     106 </span>                : #endif
+<span class="lineNum">     107 </span>                : 
+<span class="lineNum">     108 </span>                : /* Eat leading whitespace */
+<span class="lineNum">     109 </span>                : #define EAT_LEADING_WHITESPACE()                     \
+<span class="lineNum">     110 </span>                :         while (yytext[0]) {                              \
+<span class="lineNum">     111 </span>                :                 if (yytext[0] == ' ' || yytext[0] == '\t') { \
+<span class="lineNum">     112 </span>                :                         SCNG(yy_text)++;                         \
+<span class="lineNum">     113 </span>                :                         yyleng--;                                \
+<span class="lineNum">     114 </span>                :                 } else {                                     \
+<span class="lineNum">     115 </span>                :                         break;                                   \
+<span class="lineNum">     116 </span>                :                 }                                            \
+<span class="lineNum">     117 </span>                :         }
+<span class="lineNum">     118 </span>                : 
+<span class="lineNum">     119 </span>                : /* Eat trailing whitespace + extra char */
+<span class="lineNum">     120 </span>                : #define EAT_TRAILING_WHITESPACE_EX(ch)              \
+<span class="lineNum">     121 </span>                :         while (yyleng &gt; 0 &amp;&amp; (                          \
+<span class="lineNum">     122 </span>                :                 (ch != 'X' &amp;&amp; yytext[yyleng - 1] ==  ch) || \
+<span class="lineNum">     123 </span>                :                 yytext[yyleng - 1] == '\n' ||               \
+<span class="lineNum">     124 </span>                :                 yytext[yyleng - 1] == '\r' ||               \
+<span class="lineNum">     125 </span>                :                 yytext[yyleng - 1] == '\t' ||               \
+<span class="lineNum">     126 </span>                :                 yytext[yyleng - 1] == ' ')                  \
+<span class="lineNum">     127 </span>                :         ) {                                             \
+<span class="lineNum">     128 </span>                :                 yyleng--;                                   \
+<span class="lineNum">     129 </span>                :         }
+<span class="lineNum">     130 </span>                : 
+<span class="lineNum">     131 </span>                : /* Eat trailing whitespace */
+<span class="lineNum">     132 </span>                : #define EAT_TRAILING_WHITESPACE()       EAT_TRAILING_WHITESPACE_EX('X')
+<span class="lineNum">     133 </span>                : 
+<span class="lineNum">     134 </span>                : #define zend_ini_copy_value(retval, str, len) {  \
+<span class="lineNum">     135 </span>                :         Z_STRVAL_P(retval) = zend_strndup(str, len); \
+<span class="lineNum">     136 </span>                :         Z_STRLEN_P(retval) = len;                    \
+<span class="lineNum">     137 </span>                :         Z_TYPE_P(retval) = IS_STRING;                \
+<span class="lineNum">     138 </span>                : }
+<span class="lineNum">     139 </span>                : 
+<span class="lineNum">     140 </span>                : #define RETURN_TOKEN(type, str, len) {           \
+<span class="lineNum">     141 </span>                :         zend_ini_copy_value(ini_lval, str, len);     \
+<span class="lineNum">     142 </span>                :         return type;                                 \
+<a name="143"><span class="lineNum">     143 </span>                : }</a>
+<span class="lineNum">     144 </span>                : 
+<span class="lineNum">     145 </span><span class="lineCov">           1439 : static void _yy_push_state(int new_state TSRMLS_DC)</span>
+<span class="lineNum">     146 </span>                : {
+<span class="lineNum">     147 </span><span class="lineCov">           1439 :         zend_stack_push(&amp;SCNG(state_stack), (void *) &amp;YYGETCONDITION(), sizeof(int));</span>
+<span class="lineNum">     148 </span><span class="lineCov">           1439 :         YYSETCONDITION(new_state);</span>
+<span class="lineNum">     149 </span><span class="lineCov">           1439 : }</span>
+<span class="lineNum">     150 </span>                : 
+<a name="151"><span class="lineNum">     151 </span>                : #define yy_push_state(state_and_tsrm) _yy_push_state(yyc##state_and_tsrm)</a>
+<span class="lineNum">     152 </span>                : 
+<span class="lineNum">     153 </span><span class="lineCov">             89 : static void yy_pop_state(TSRMLS_D)</span>
+<span class="lineNum">     154 </span>                : {
+<span class="lineNum">     155 </span>                :         int *stack_state;
+<span class="lineNum">     156 </span><span class="lineCov">             89 :         zend_stack_top(&amp;SCNG(state_stack), (void **) &amp;stack_state);</span>
+<span class="lineNum">     157 </span><span class="lineCov">             89 :         YYSETCONDITION(*stack_state);</span>
+<span class="lineNum">     158 </span><span class="lineCov">             89 :         zend_stack_del_top(&amp;SCNG(state_stack));</span>
+<a name="159"><span class="lineNum">     159 </span><span class="lineCov">             89 : }</span></a>
+<span class="lineNum">     160 </span>                : 
+<span class="lineNum">     161 </span><span class="lineCov">             93 : static void yy_scan_buffer(char *str, unsigned int len TSRMLS_DC)</span>
+<span class="lineNum">     162 </span>                : {
+<span class="lineNum">     163 </span><span class="lineCov">             93 :         YYCURSOR = (YYCTYPE*)str;</span>
+<span class="lineNum">     164 </span><span class="lineCov">             93 :         SCNG(yy_start) = YYCURSOR;</span>
+<span class="lineNum">     165 </span><span class="lineCov">             93 :         YYLIMIT  = YYCURSOR + len;</span>
+<span class="lineNum">     166 </span><span class="lineCov">             93 : }</span>
+<span class="lineNum">     167 </span>                : 
+<span class="lineNum">     168 </span>                : #define ini_filename SCNG(filename)
+<span class="lineNum">     169 </span>                : 
+<a name="170"><span class="lineNum">     170 </span>                : /* {{{ init_ini_scanner()</a>
+<span class="lineNum">     171 </span>                : */
+<span class="lineNum">     172 </span><span class="lineCov">             93 : static int init_ini_scanner(int scanner_mode, zend_file_handle *fh TSRMLS_DC)</span>
+<span class="lineNum">     173 </span>                : {
+<span class="lineNum">     174 </span>                :         /* Sanity check */
+<span class="lineNum">     175 </span><span class="lineCov">             93 :         if (scanner_mode != ZEND_INI_SCANNER_NORMAL &amp;&amp; scanner_mode != ZEND_INI_SCANNER_RAW) {</span>
+<span class="lineNum">     176 </span><span class="lineNoCov">              0 :                 zend_error(E_WARNING, &quot;Invalid scanner mode&quot;);</span>
+<span class="lineNum">     177 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">     178 </span>                :         }
+<span class="lineNum">     179 </span>                : 
+<span class="lineNum">     180 </span><span class="lineCov">             93 :         SCNG(lineno) = 1;</span>
+<span class="lineNum">     181 </span><span class="lineCov">             93 :         SCNG(scanner_mode) = scanner_mode;</span>
+<span class="lineNum">     182 </span><span class="lineCov">             93 :         SCNG(yy_in) = fh;</span>
+<span class="lineNum">     183 </span>                : 
+<span class="lineNum">     184 </span><span class="lineCov">             93 :         if (fh != NULL) {</span>
+<span class="lineNum">     185 </span><span class="lineCov">             45 :                 ini_filename = zend_strndup(fh-&gt;filename, strlen(fh-&gt;filename));</span>
+<span class="lineNum">     186 </span>                :         } else {
+<span class="lineNum">     187 </span><span class="lineCov">             48 :                 ini_filename = NULL;</span>
+<span class="lineNum">     188 </span>                :         }
+<span class="lineNum">     189 </span>                : 
+<span class="lineNum">     190 </span><span class="lineCov">             93 :         zend_stack_init(&amp;SCNG(state_stack));</span>
+<span class="lineNum">     191 </span><span class="lineCov">             93 :         BEGIN(INITIAL);</span>
+<span class="lineNum">     192 </span>                : 
+<span class="lineNum">     193 </span><span class="lineCov">             93 :         return SUCCESS;</span>
+<span class="lineNum">     194 </span>                : }
+<span class="lineNum">     195 </span>                : /* }}} */
+<span class="lineNum">     196 </span>                : 
+<a name="197"><span class="lineNum">     197 </span>                : /* {{{ shutdown_ini_scanner()</a>
+<span class="lineNum">     198 </span>                : */
+<span class="lineNum">     199 </span><span class="lineCov">             93 : void shutdown_ini_scanner(TSRMLS_D)</span>
+<span class="lineNum">     200 </span>                : {
+<span class="lineNum">     201 </span><span class="lineCov">             93 :         zend_stack_destroy(&amp;SCNG(state_stack));</span>
+<span class="lineNum">     202 </span><span class="lineCov">             93 :         if (ini_filename) {</span>
+<span class="lineNum">     203 </span><span class="lineCov">             45 :                 free(ini_filename);</span>
+<span class="lineNum">     204 </span>                :         }
+<span class="lineNum">     205 </span><span class="lineCov">             93 : }</span>
+<span class="lineNum">     206 </span>                : /* }}} */
+<span class="lineNum">     207 </span>                : 
+<a name="208"><span class="lineNum">     208 </span>                : /* {{{ zend_ini_scanner_get_lineno()</a>
+<span class="lineNum">     209 </span>                : */
+<span class="lineNum">     210 </span><span class="lineNoCov">              0 : int zend_ini_scanner_get_lineno(TSRMLS_D)</span>
+<span class="lineNum">     211 </span>                : {
+<span class="lineNum">     212 </span><span class="lineNoCov">              0 :         return SCNG(lineno);</span>
+<span class="lineNum">     213 </span>                : }
+<span class="lineNum">     214 </span>                : /* }}} */
+<span class="lineNum">     215 </span>                : 
+<a name="216"><span class="lineNum">     216 </span>                : /* {{{ zend_ini_scanner_get_filename()</a>
+<span class="lineNum">     217 </span>                : */
+<span class="lineNum">     218 </span><span class="lineNoCov">              0 : char *zend_ini_scanner_get_filename(TSRMLS_D)</span>
+<span class="lineNum">     219 </span>                : {
+<span class="lineNum">     220 </span><span class="lineNoCov">              0 :         return ini_filename ? ini_filename : &quot;Unknown&quot;;</span>
+<span class="lineNum">     221 </span>                : }
+<span class="lineNum">     222 </span>                : /* }}} */
+<span class="lineNum">     223 </span>                : 
+<a name="224"><span class="lineNum">     224 </span>                : /* {{{ zend_ini_open_file_for_scanning()</a>
+<span class="lineNum">     225 </span>                : */
+<span class="lineNum">     226 </span><span class="lineCov">             45 : int zend_ini_open_file_for_scanning(zend_file_handle *fh, int scanner_mode TSRMLS_DC)</span>
+<span class="lineNum">     227 </span>                : {
+<span class="lineNum">     228 </span>                :         char *buf;
+<span class="lineNum">     229 </span>                :         size_t size;
+<span class="lineNum">     230 </span>                : 
+<span class="lineNum">     231 </span><span class="lineCov">             45 :         if (zend_stream_fixup(fh, &amp;buf, &amp;size TSRMLS_CC) == FAILURE) {</span>
+<span class="lineNum">     232 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">     233 </span>                :         }
+<span class="lineNum">     234 </span>                : 
+<span class="lineNum">     235 </span><span class="lineCov">             45 :         if (init_ini_scanner(scanner_mode, fh TSRMLS_CC) == FAILURE) {</span>
+<span class="lineNum">     236 </span><span class="lineNoCov">              0 :                 zend_file_handle_dtor(fh TSRMLS_CC);</span>
+<span class="lineNum">     237 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">     238 </span>                :         }
+<span class="lineNum">     239 </span>                : 
+<span class="lineNum">     240 </span><span class="lineCov">             45 :         yy_scan_buffer(buf, size TSRMLS_CC);</span>
+<span class="lineNum">     241 </span>                : 
+<span class="lineNum">     242 </span><span class="lineCov">             45 :         return SUCCESS;</span>
+<span class="lineNum">     243 </span>                : }
+<span class="lineNum">     244 </span>                : /* }}} */
+<span class="lineNum">     245 </span>                : 
+<a name="246"><span class="lineNum">     246 </span>                : /* {{{ zend_ini_prepare_string_for_scanning()</a>
+<span class="lineNum">     247 </span>                : */
+<span class="lineNum">     248 </span><span class="lineCov">             48 : int zend_ini_prepare_string_for_scanning(char *str, int scanner_mode TSRMLS_DC)</span>
+<span class="lineNum">     249 </span>                : {
+<span class="lineNum">     250 </span><span class="lineCov">             48 :         int len = strlen(str);</span>
+<span class="lineNum">     251 </span>                : 
+<span class="lineNum">     252 </span><span class="lineCov">             48 :         if (init_ini_scanner(scanner_mode, NULL TSRMLS_CC) == FAILURE) {</span>
+<span class="lineNum">     253 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">     254 </span>                :         }
+<span class="lineNum">     255 </span>                : 
+<span class="lineNum">     256 </span><span class="lineCov">             48 :         yy_scan_buffer(str, len TSRMLS_CC);</span>
+<span class="lineNum">     257 </span>                : 
+<span class="lineNum">     258 </span><span class="lineCov">             48 :         return SUCCESS;</span>
+<span class="lineNum">     259 </span>                : }
+<span class="lineNum">     260 </span>                : /* }}} */
+<span class="lineNum">     261 </span>                : 
+<a name="262"><span class="lineNum">     262 </span>                : /* {{{ zend_ini_escape_string()</a>
+<span class="lineNum">     263 </span>                :  */
+<span class="lineNum">     264 </span><span class="lineCov">             89 : static void zend_ini_escape_string(zval *lval, char *str, int len, char quote_type TSRMLS_DC)</span>
+<span class="lineNum">     265 </span>                : {
+<span class="lineNum">     266 </span>                :         register char *s, *t;
+<span class="lineNum">     267 </span>                :         char *end;
+<span class="lineNum">     268 </span>                : 
+<span class="lineNum">     269 </span><span class="lineCov">             89 :         zend_ini_copy_value(lval, str, len);</span>
+<span class="lineNum">     270 </span>                : 
+<span class="lineNum">     271 </span>                :         /* convert escape sequences */
+<span class="lineNum">     272 </span><span class="lineCov">             89 :         s = t = Z_STRVAL_P(lval);</span>
+<span class="lineNum">     273 </span><span class="lineCov">             89 :         end = s + Z_STRLEN_P(lval);</span>
+<span class="lineNum">     274 </span>                : 
+<span class="lineNum">     275 </span><span class="lineCov">           1720 :         while (s &lt; end) {</span>
+<span class="lineNum">     276 </span><span class="lineCov">           1542 :                 if (*s == '\\') {</span>
+<span class="lineNum">     277 </span><span class="lineNoCov">              0 :                         s++;</span>
+<span class="lineNum">     278 </span><span class="lineNoCov">              0 :                         if (s &gt;= end) {</span>
+<span class="lineNum">     279 </span><span class="lineNoCov">              0 :                                 *t++ = '\\';</span>
+<span class="lineNum">     280 </span><span class="lineNoCov">              0 :                                 continue;</span>
+<span class="lineNum">     281 </span>                :                         }
+<span class="lineNum">     282 </span><span class="lineNoCov">              0 :                         switch (*s) {</span>
+<span class="lineNum">     283 </span>                :                                 case '&quot;':
+<span class="lineNum">     284 </span><span class="lineNoCov">              0 :                                         if (*s != quote_type) {</span>
+<span class="lineNum">     285 </span><span class="lineNoCov">              0 :                                                 *t++ = '\\';</span>
+<span class="lineNum">     286 </span><span class="lineNoCov">              0 :                                                 *t++ = *s;</span>
+<span class="lineNum">     287 </span><span class="lineNoCov">              0 :                                                 break;</span>
+<span class="lineNum">     288 </span>                :                                         }
+<span class="lineNum">     289 </span>                :                                 case '\\':
+<span class="lineNum">     290 </span>                :                                 case '$':
+<span class="lineNum">     291 </span><span class="lineNoCov">              0 :                                         *t++ = *s;</span>
+<span class="lineNum">     292 </span><span class="lineNoCov">              0 :                                         Z_STRLEN_P(lval)--;</span>
+<span class="lineNum">     293 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">     294 </span>                :                                 default:
+<span class="lineNum">     295 </span><span class="lineNoCov">              0 :                                         *t++ = '\\';</span>
+<span class="lineNum">     296 </span><span class="lineNoCov">              0 :                                         *t++ = *s;</span>
+<span class="lineNum">     297 </span>                :                                         break;
+<span class="lineNum">     298 </span>                :                         }
+<span class="lineNum">     299 </span>                :                 } else {
+<span class="lineNum">     300 </span><span class="lineCov">           1542 :                         *t++ = *s;</span>
+<span class="lineNum">     301 </span>                :                 }
+<span class="lineNum">     302 </span><span class="lineCov">           1542 :                 if (*s == '\n' || (*s == '\r' &amp;&amp; (*(s+1) != '\n'))) {</span>
+<span class="lineNum">     303 </span><span class="lineNoCov">              0 :                         SCNG(lineno)++;</span>
+<span class="lineNum">     304 </span>                :                 }
+<span class="lineNum">     305 </span><span class="lineCov">           1542 :                 s++;</span>
+<span class="lineNum">     306 </span>                :         }
+<span class="lineNum">     307 </span><span class="lineCov">             89 :         *t = 0;</span>
+<span class="lineNum">     308 </span><span class="lineCov">             89 : }</span>
+<a name="309"><span class="lineNum">     309 </span>                : /* }}} */</a>
+<span class="lineNum">     310 </span>                : 
+<span class="lineNum">     311 </span><span class="lineCov">           5363 : int ini_lex(zval *ini_lval TSRMLS_DC)</span>
+<span class="lineNum">     312 </span>                : {
+<span class="lineNum">     313 </span>                : restart:
+<span class="lineNum">     314 </span><span class="lineCov">           5363 :         SCNG(yy_text) = YYCURSOR;</span>
+<span class="lineNum">     315 </span>                : 
+<span class="lineNum">     316 </span>                : /* yymore_restart: */
+<span class="lineNum">     317 </span>                :         /* detect EOF */
+<span class="lineNum">     318 </span><span class="lineCov">           5363 :         if (YYCURSOR &gt;= YYLIMIT) {</span>
+<span class="lineNum">     319 </span><span class="lineCov">             93 :                 if (YYSTATE == STATE(ST_VALUE) || YYSTATE == STATE(ST_RAW)) {</span>
+<span class="lineNum">     320 </span><span class="lineNoCov">              0 :                         BEGIN(INITIAL);</span>
+<span class="lineNum">     321 </span><span class="lineNoCov">              0 :                         return END_OF_LINE;</span>
+<span class="lineNum">     322 </span>                :                 }
+<span class="lineNum">     323 </span><span class="lineCov">             93 :                 return 0;</span>
+<span class="lineNum">     324 </span>                :         }
+<span class="lineNum">     325 </span>                : 
+<span class="lineNum">     326 </span>                :         /* Eat any UTF-8 BOM we find in the first 3 bytes */
+<span class="lineNum">     327 </span><span class="lineCov">           5270 :         if (YYCURSOR == SCNG(yy_start) &amp;&amp; YYCURSOR + 3 &lt; YYLIMIT) {</span>
+<span class="lineNum">     328 </span><span class="lineCov">             48 :                 if (memcmp(YYCURSOR, &quot;\xef\xbb\xbf&quot;, 3) == 0) {</span>
+<span class="lineNum">     329 </span><span class="lineNoCov">              0 :                         YYCURSOR += 3;</span>
+<span class="lineNum">     330 </span><span class="lineNoCov">              0 :                         goto restart;</span>
+<span class="lineNum">     331 </span>                :                 }
+<span class="lineNum">     332 </span>                :         }
+<span class="lineNum">     333 </span>                : /*!re2c
+<span class="lineNum">     334 </span>                : re2c:yyfill:check = 0;
+<span class="lineNum">     335 </span>                : LNUM [0-9]+
+<span class="lineNum">     336 </span>                : DNUM ([0-9]*[\.][0-9]+)|([0-9]+[\.][0-9]*)
+<span class="lineNum">     337 </span>                : NUMBER [-]?{LNUM}|{DNUM}
+<span class="lineNum">     338 </span>                : ANY_CHAR (.|[\n\t])
+<span class="lineNum">     339 </span>                : NEWLINE (&quot;\r&quot;|&quot;\n&quot;|&quot;\r\n&quot;)
+<span class="lineNum">     340 </span>                : TABS_AND_SPACES [ \t]
+<span class="lineNum">     341 </span>                : WHITESPACE [ \t]+
+<span class="lineNum">     342 </span>                : CONSTANT [a-zA-Z_][a-zA-Z0-9_]*
+<span class="lineNum">     343 </span>                : LABEL [^=\n\r\t;|&amp;$~(){}!&quot;\[]+
+<span class="lineNum">     344 </span>                : TOKENS [:,.\[\]&quot;'()|^&amp;+-/*=%$!~&lt;&gt;?@{}]
+<span class="lineNum">     345 </span>                : OPERATORS [&amp;|~()!]
+<span class="lineNum">     346 </span>                : DOLLAR_CURLY &quot;${&quot;
+<span class="lineNum">     347 </span>                : 
+<span class="lineNum">     348 </span>                : SECTION_RAW_CHARS [^\]\n\r]
+<span class="lineNum">     349 </span>                : SINGLE_QUOTED_CHARS [^']
+<span class="lineNum">     350 </span>                : RAW_VALUE_CHARS [^&quot;\n\r;\000]
+<span class="lineNum">     351 </span>                : 
+<span class="lineNum">     352 </span>                : LITERAL_DOLLAR (&quot;$&quot;([^{\000]|(&quot;\\&quot;{ANY_CHAR})))
+<span class="lineNum">     353 </span>                : VALUE_CHARS         ([^$= \t\n\r;&amp;|~()!&quot;'\000]|{LITERAL_DOLLAR})
+<span class="lineNum">     354 </span>                : SECTION_VALUE_CHARS ([^$\n\r;&quot;'\]\\]|(&quot;\\&quot;{ANY_CHAR})|{LITERAL_DOLLAR})
+<span class="lineNum">     355 </span>                : 
+<span class="lineNum">     356 </span>                : &lt;!*&gt; := yyleng = YYCURSOR - SCNG(yy_text);
+<span class="lineNum">     357 </span>                : 
+<span class="lineNum">     358 </span>                : &lt;INITIAL&gt;&quot;[&quot; { /* Section start */
+<span class="lineNum">     359 </span>                :         /* Enter section data lookup state */
+<span class="lineNum">     360 </span><span class="lineNoCov">              0 :         if (SCNG(scanner_mode) == ZEND_INI_SCANNER_RAW) {</span>
+<span class="lineNum">     361 </span><span class="lineNoCov">              0 :                 yy_push_state(ST_SECTION_RAW TSRMLS_CC);</span>
+<span class="lineNum">     362 </span>                :         } else {
+<span class="lineNum">     363 </span><span class="lineNoCov">              0 :                 yy_push_state(ST_SECTION_VALUE TSRMLS_CC);</span>
+<span class="lineNum">     364 </span>                :         }
+<span class="lineNum">     365 </span><span class="lineNoCov">              0 :         return TC_SECTION;</span>
+<span class="lineNum">     366 </span>                : }
+<span class="lineNum">     367 </span>                : 
+<span class="lineNum">     368 </span>                : &lt;ST_VALUE,ST_SECTION_VALUE,ST_OFFSET&gt;&quot;'&quot;{SINGLE_QUOTED_CHARS}+&quot;'&quot; { /* Raw string */
+<span class="lineNum">     369 </span>                :         /* Eat leading and trailing single quotes */
+<span class="lineNum">     370 </span><span class="lineNoCov">              0 :         if (yytext[0] == '\'' &amp;&amp; yytext[yyleng - 1] == '\'') {</span>
+<span class="lineNum">     371 </span><span class="lineNoCov">              0 :                 SCNG(yy_text)++;</span>
+<span class="lineNum">     372 </span><span class="lineNoCov">              0 :                 yyleng = yyleng - 2;</span>
+<span class="lineNum">     373 </span>                :         }
+<span class="lineNum">     374 </span><span class="lineNoCov">              0 :         RETURN_TOKEN(TC_RAW, yytext, yyleng);</span>
+<span class="lineNum">     375 </span>                : }
+<span class="lineNum">     376 </span>                : 
+<span class="lineNum">     377 </span>                : &lt;ST_SECTION_RAW,ST_SECTION_VALUE&gt;&quot;]&quot;{TABS_AND_SPACES}*{NEWLINE}? { /* End of section */
+<span class="lineNum">     378 </span><span class="lineNoCov">              0 :         BEGIN(INITIAL);</span>
+<span class="lineNum">     379 </span><span class="lineNoCov">              0 :         SCNG(lineno)++;</span>
+<span class="lineNum">     380 </span><span class="lineNoCov">              0 :         return ']';</span>
+<span class="lineNum">     381 </span>                : }
+<span class="lineNum">     382 </span>                : 
+<span class="lineNum">     383 </span>                : &lt;INITIAL&gt;{LABEL}&quot;[&quot;{TABS_AND_SPACES}* { /* Start of option with offset */
+<span class="lineNum">     384 </span>                :         /* Eat leading whitespace */
+<span class="lineNum">     385 </span><span class="lineNoCov">              0 :         EAT_LEADING_WHITESPACE();</span>
+<span class="lineNum">     386 </span>                :         
+<span class="lineNum">     387 </span>                :         /* Eat trailing whitespace and [ */
+<span class="lineNum">     388 </span><span class="lineNoCov">              0 :         EAT_TRAILING_WHITESPACE_EX('[');</span>
+<span class="lineNum">     389 </span>                : 
+<span class="lineNum">     390 </span>                :         /* Enter offset lookup state */
+<span class="lineNum">     391 </span><span class="lineNoCov">              0 :         yy_push_state(ST_OFFSET TSRMLS_CC);</span>
+<span class="lineNum">     392 </span>                : 
+<span class="lineNum">     393 </span><span class="lineNoCov">              0 :         RETURN_TOKEN(TC_OFFSET, yytext, yyleng);</span>
+<span class="lineNum">     394 </span>                : }
+<span class="lineNum">     395 </span>                : 
+<span class="lineNum">     396 </span>                : &lt;ST_OFFSET&gt;{TABS_AND_SPACES}*&quot;]&quot; { /* End of section or an option offset */
+<span class="lineNum">     397 </span><span class="lineNoCov">              0 :         BEGIN(INITIAL);</span>
+<span class="lineNum">     398 </span><span class="lineNoCov">              0 :         return ']';</span>
+<span class="lineNum">     399 </span>                : }
+<span class="lineNum">     400 </span>                : 
+<span class="lineNum">     401 </span>                : &lt;ST_DOUBLE_QUOTES,ST_SECTION_VALUE,ST_VALUE,ST_OFFSET&gt;{DOLLAR_CURLY} { /* Variable start */
+<span class="lineNum">     402 </span><span class="lineNoCov">              0 :         yy_push_state(ST_VARNAME TSRMLS_CC);</span>
+<span class="lineNum">     403 </span><span class="lineNoCov">              0 :         return TC_DOLLAR_CURLY;</span>
+<span class="lineNum">     404 </span>                : }
+<span class="lineNum">     405 </span>                : 
+<span class="lineNum">     406 </span>                : &lt;ST_VARNAME&gt;{LABEL} { /* Variable name */
+<span class="lineNum">     407 </span>                :         /* Eat leading whitespace */
+<span class="lineNum">     408 </span><span class="lineNoCov">              0 :         EAT_LEADING_WHITESPACE();</span>
+<span class="lineNum">     409 </span>                : 
+<span class="lineNum">     410 </span>                :         /* Eat trailing whitespace */
+<span class="lineNum">     411 </span><span class="lineNoCov">              0 :         EAT_TRAILING_WHITESPACE();</span>
+<span class="lineNum">     412 </span>                : 
+<span class="lineNum">     413 </span><span class="lineNoCov">              0 :         RETURN_TOKEN(TC_VARNAME, yytext, yyleng);</span>
+<span class="lineNum">     414 </span>                : }
+<span class="lineNum">     415 </span>                : 
+<span class="lineNum">     416 </span>                : &lt;ST_VARNAME&gt;&quot;}&quot; { /* Variable end */
+<span class="lineNum">     417 </span><span class="lineNoCov">              0 :         yy_pop_state(TSRMLS_C);</span>
+<span class="lineNum">     418 </span><span class="lineNoCov">              0 :         return '}';</span>
+<span class="lineNum">     419 </span>                : }
+<span class="lineNum">     420 </span>                : 
+<span class="lineNum">     421 </span>                : &lt;INITIAL,ST_VALUE&gt;(&quot;true&quot;|&quot;on&quot;|&quot;yes&quot;){TABS_AND_SPACES}* { /* TRUE value (when used outside option value/offset this causes parse error!) */
+<span class="lineNum">     422 </span><span class="lineNoCov">              0 :         RETURN_TOKEN(BOOL_TRUE, &quot;1&quot;, 1);</span>
+<span class="lineNum">     423 </span>                : }
+<span class="lineNum">     424 </span>                : 
+<span class="lineNum">     425 </span>                : &lt;INITIAL,ST_VALUE&gt;(&quot;false&quot;|&quot;off&quot;|&quot;no&quot;|&quot;none&quot;|&quot;null&quot;){TABS_AND_SPACES}* { /* FALSE value (when used outside option value/offset this causes parse error!)*/
+<span class="lineNum">     426 </span><span class="lineCov">             44 :         RETURN_TOKEN(BOOL_FALSE, &quot;&quot;, 0);</span>
+<span class="lineNum">     427 </span>                : }
+<span class="lineNum">     428 </span>                : 
+<span class="lineNum">     429 </span>                : &lt;INITIAL&gt;{LABEL} { /* Get option name */
+<span class="lineNum">     430 </span>                :         /* Eat leading whitespace */
+<span class="lineNum">     431 </span><span class="lineCov">           1350 :         EAT_LEADING_WHITESPACE();</span>
+<span class="lineNum">     432 </span>                : 
+<span class="lineNum">     433 </span>                :         /* Eat trailing whitespace */
+<span class="lineNum">     434 </span><span class="lineCov">           1350 :         EAT_TRAILING_WHITESPACE();</span>
+<span class="lineNum">     435 </span>                : 
+<span class="lineNum">     436 </span><span class="lineCov">           1350 :         RETURN_TOKEN(TC_LABEL, yytext, yyleng);</span>
+<span class="lineNum">     437 </span>                : }
+<span class="lineNum">     438 </span>                : 
+<span class="lineNum">     439 </span>                : &lt;INITIAL&gt;{TABS_AND_SPACES}*[=]{TABS_AND_SPACES}* { /* Start option value */
+<span class="lineNum">     440 </span><span class="lineCov">           1350 :         if (SCNG(scanner_mode) == ZEND_INI_SCANNER_RAW) {</span>
+<span class="lineNum">     441 </span><span class="lineNoCov">              0 :                 yy_push_state(ST_RAW TSRMLS_CC);</span>
+<span class="lineNum">     442 </span>                :         } else {
+<span class="lineNum">     443 </span><span class="lineCov">           1350 :                 yy_push_state(ST_VALUE TSRMLS_CC);</span>
+<span class="lineNum">     444 </span>                :         }
+<span class="lineNum">     445 </span><span class="lineCov">           1350 :         return '=';</span>
+<span class="lineNum">     446 </span>                : }
+<span class="lineNum">     447 </span>                : 
+<span class="lineNum">     448 </span>                : &lt;ST_RAW&gt;[&quot;] {
+<span class="lineNum">     449 </span><span class="lineNoCov">              0 :         while (YYCURSOR &lt; YYLIMIT) {</span>
+<span class="lineNum">     450 </span><span class="lineNoCov">              0 :                 switch (*YYCURSOR++) {</span>
+<span class="lineNum">     451 </span>                :                         case '\n':
+<span class="lineNum">     452 </span><span class="lineNoCov">              0 :                                 SCNG(lineno)++;</span>
+<span class="lineNum">     453 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     454 </span>                :                         case '\r':
+<span class="lineNum">     455 </span><span class="lineNoCov">              0 :                                 if (*YYCURSOR != '\n') {</span>
+<span class="lineNum">     456 </span><span class="lineNoCov">              0 :                                         SCNG(lineno)++;</span>
+<span class="lineNum">     457 </span>                :                                 }
+<span class="lineNum">     458 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     459 </span>                :                         case '&quot;':
+<span class="lineNum">     460 </span><span class="lineNoCov">              0 :                                 yyleng = YYCURSOR - SCNG(yy_text) - 2;</span>
+<span class="lineNum">     461 </span><span class="lineNoCov">              0 :                                 SCNG(yy_text)++;</span>
+<span class="lineNum">     462 </span><span class="lineNoCov">              0 :                                 RETURN_TOKEN(TC_RAW, yytext, yyleng);</span>
+<span class="lineNum">     463 </span>                :                         case '\\':
+<span class="lineNum">     464 </span><span class="lineNoCov">              0 :                                 if (YYCURSOR &lt; YYLIMIT) {</span>
+<span class="lineNum">     465 </span><span class="lineNoCov">              0 :                                         YYCURSOR++;</span>
+<span class="lineNum">     466 </span>                :                                 }
+<span class="lineNum">     467 </span>                :                                 break;
+<span class="lineNum">     468 </span>                :                 }
+<span class="lineNum">     469 </span>                :         }
+<span class="lineNum">     470 </span><span class="lineNoCov">              0 :         yyleng = YYCURSOR - SCNG(yy_text);</span>
+<span class="lineNum">     471 </span><span class="lineNoCov">              0 :         RETURN_TOKEN(TC_RAW, yytext, yyleng);</span>
+<span class="lineNum">     472 </span>                : }
+<span class="lineNum">     473 </span>                : 
+<span class="lineNum">     474 </span>                : &lt;ST_RAW&gt;{RAW_VALUE_CHARS}+ { /* Raw value, only used when SCNG(scanner_mode) == ZEND_INI_SCANNER_RAW. */
+<span class="lineNum">     475 </span><span class="lineNoCov">              0 :         RETURN_TOKEN(TC_RAW, yytext, yyleng);</span>
+<span class="lineNum">     476 </span>                : }
+<span class="lineNum">     477 </span>                : 
+<span class="lineNum">     478 </span>                : &lt;ST_SECTION_RAW&gt;{SECTION_RAW_CHARS}+ { /* Raw value, only used when SCNG(scanner_mode) == ZEND_INI_SCANNER_RAW. */
+<span class="lineNum">     479 </span><span class="lineNoCov">              0 :         RETURN_TOKEN(TC_RAW, yytext, yyleng);</span>
+<span class="lineNum">     480 </span>                : }
+<span class="lineNum">     481 </span>                : 
+<span class="lineNum">     482 </span>                : &lt;ST_VALUE,ST_RAW&gt;{TABS_AND_SPACES}*{NEWLINE} { /* End of option value */
+<span class="lineNum">     483 </span><span class="lineCov">           1350 :         BEGIN(INITIAL);</span>
+<span class="lineNum">     484 </span><span class="lineCov">           1350 :         SCNG(lineno)++;</span>
+<span class="lineNum">     485 </span><span class="lineCov">           1350 :         return END_OF_LINE;</span>
+<span class="lineNum">     486 </span>                : }
+<span class="lineNum">     487 </span>                : 
+<span class="lineNum">     488 </span>                : &lt;ST_SECTION_VALUE,ST_VALUE,ST_OFFSET&gt;{CONSTANT} { /* Get constant option value */
+<span class="lineNum">     489 </span><span class="lineCov">              2 :         RETURN_TOKEN(TC_CONSTANT, yytext, yyleng);</span>
+<span class="lineNum">     490 </span>                : }
+<span class="lineNum">     491 </span>                : 
+<span class="lineNum">     492 </span>                : &lt;ST_SECTION_VALUE,ST_VALUE,ST_OFFSET&gt;{NUMBER} { /* Get number option value as string */
+<span class="lineNum">     493 </span><span class="lineCov">            818 :         RETURN_TOKEN(TC_NUMBER, yytext, yyleng);</span>
+<span class="lineNum">     494 </span>                : }
+<span class="lineNum">     495 </span>                : 
+<span class="lineNum">     496 </span>                : &lt;INITIAL&gt;{TOKENS} { /* Disallow these chars outside option values */
+<span class="lineNum">     497 </span><span class="lineNoCov">              0 :         return yytext[0];</span>
+<span class="lineNum">     498 </span>                : }
+<span class="lineNum">     499 </span>                : 
+<span class="lineNum">     500 </span>                : &lt;ST_VALUE&gt;{OPERATORS}{TABS_AND_SPACES}* { /* Boolean operators */
+<span class="lineNum">     501 </span><span class="lineNoCov">              0 :         return yytext[0];</span>
+<span class="lineNum">     502 </span>                : }
+<span class="lineNum">     503 </span>                : 
+<span class="lineNum">     504 </span>                : &lt;ST_VALUE&gt;[=] { /* Make = used in option value to trigger error */
+<span class="lineNum">     505 </span><span class="lineNoCov">              0 :         yyless(0);</span>
+<span class="lineNum">     506 </span><span class="lineNoCov">              0 :         BEGIN(INITIAL);</span>
+<span class="lineNum">     507 </span><span class="lineNoCov">              0 :         return END_OF_LINE;</span>
+<span class="lineNum">     508 </span>                : }
+<span class="lineNum">     509 </span>                : 
+<span class="lineNum">     510 </span>                : &lt;ST_VALUE&gt;{VALUE_CHARS}+ { /* Get everything else as option/offset value */
+<span class="lineNum">     511 </span><span class="lineCov">             44 :         RETURN_TOKEN(TC_STRING, yytext, yyleng);</span>
+<span class="lineNum">     512 </span>                : }
+<span class="lineNum">     513 </span>                : 
+<span class="lineNum">     514 </span>                : &lt;ST_SECTION_VALUE,ST_OFFSET&gt;{SECTION_VALUE_CHARS}+ { /* Get rest as section/offset value */
+<span class="lineNum">     515 </span><span class="lineNoCov">              0 :         RETURN_TOKEN(TC_STRING, yytext, yyleng);</span>
+<span class="lineNum">     516 </span>                : }
+<span class="lineNum">     517 </span>                : 
+<span class="lineNum">     518 </span>                : &lt;ST_SECTION_VALUE,ST_VALUE,ST_OFFSET&gt;{TABS_AND_SPACES}*[&quot;] { /* Double quoted '&quot;' string start */
+<span class="lineNum">     519 </span><span class="lineCov">             89 :         yy_push_state(ST_DOUBLE_QUOTES TSRMLS_CC);</span>
+<span class="lineNum">     520 </span><span class="lineCov">             89 :         return '&quot;';</span>
+<span class="lineNum">     521 </span>                : }
+<span class="lineNum">     522 </span>                : 
+<span class="lineNum">     523 </span>                : &lt;ST_DOUBLE_QUOTES&gt;[&quot;]{TABS_AND_SPACES}* { /* Double quoted '&quot;' string ends */
+<span class="lineNum">     524 </span><span class="lineCov">             89 :         yy_pop_state(TSRMLS_C);</span>
+<span class="lineNum">     525 </span><span class="lineCov">             89 :         return '&quot;';</span>
+<span class="lineNum">     526 </span>                : }
+<span class="lineNum">     527 </span>                : 
+<span class="lineNum">     528 </span>                : &lt;ST_DOUBLE_QUOTES&gt;[^] { /* Escape double quoted string contents */
+<span class="lineNum">     529 </span><span class="lineCov">             89 :         if (YYCURSOR &gt; YYLIMIT) {</span>
+<span class="lineNum">     530 </span><span class="lineNoCov">              0 :                 return 0;</span>
+<span class="lineNum">     531 </span>                :         }
+<span class="lineNum">     532 </span>                :         
+<span class="lineNum">     533 </span><span class="lineCov">           1631 :         while (YYCURSOR &lt; YYLIMIT) {</span>
+<span class="lineNum">     534 </span><span class="lineCov">           1542 :                 switch (*YYCURSOR++) {</span>
+<span class="lineNum">     535 </span>                :                         case '&quot;':
+<span class="lineNum">     536 </span><span class="lineCov">             89 :                                 if (YYCURSOR &lt; YYLIMIT &amp;&amp; YYCURSOR[-2] == '\\' &amp;&amp; *YYCURSOR != '\r' &amp;&amp; *YYCURSOR != '\n') {</span>
+<span class="lineNum">     537 </span><span class="lineNoCov">              0 :                                         continue;</span>
+<span class="lineNum">     538 </span>                :                                 }
+<span class="lineNum">     539 </span><span class="lineCov">             89 :                                 break;</span>
+<span class="lineNum">     540 </span>                :                         case '$':
+<span class="lineNum">     541 </span><span class="lineNoCov">              0 :                                 if (*YYCURSOR == '{') {</span>
+<span class="lineNum">     542 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">     543 </span>                :                                 }
+<span class="lineNum">     544 </span><span class="lineNoCov">              0 :                                 continue;</span>
+<span class="lineNum">     545 </span>                :                         case '\\':
+<span class="lineNum">     546 </span><span class="lineNoCov">              0 :                                 if (YYCURSOR &lt; YYLIMIT &amp;&amp; *YYCURSOR != '&quot;') {</span>
+<span class="lineNum">     547 </span><span class="lineNoCov">              0 :                                         YYCURSOR++;</span>
+<span class="lineNum">     548 </span>                :                                 }
+<span class="lineNum">     549 </span>                :                                 /* fall through */
+<span class="lineNum">     550 </span>                :                         default:
+<span class="lineNum">     551 </span><span class="lineCov">           1453 :                                 continue;</span>
+<span class="lineNum">     552 </span>                :                 }
+<span class="lineNum">     553 </span>                :                 
+<span class="lineNum">     554 </span><span class="lineCov">             89 :                 YYCURSOR--;</span>
+<span class="lineNum">     555 </span><span class="lineCov">             89 :                 break;</span>
+<span class="lineNum">     556 </span>                :         }
+<span class="lineNum">     557 </span>                : 
+<span class="lineNum">     558 </span><span class="lineCov">             89 :         yyleng = YYCURSOR - SCNG(yy_text);</span>
+<span class="lineNum">     559 </span>                :         
+<span class="lineNum">     560 </span><span class="lineCov">             89 :         zend_ini_escape_string(ini_lval, yytext, yyleng, '&quot;' TSRMLS_CC);</span>
+<span class="lineNum">     561 </span><span class="lineCov">             89 :         return TC_QUOTED_STRING;</span>
+<span class="lineNum">     562 </span>                : }
+<span class="lineNum">     563 </span>                : 
+<span class="lineNum">     564 </span>                : &lt;ST_SECTION_VALUE,ST_VALUE,ST_OFFSET&gt;{WHITESPACE} {
+<span class="lineNum">     565 </span><span class="lineNoCov">              0 :         RETURN_TOKEN(TC_WHITESPACE, yytext, yyleng);</span>
+<span class="lineNum">     566 </span>                : }
+<span class="lineNum">     567 </span>                : 
+<span class="lineNum">     568 </span>                : &lt;INITIAL,ST_RAW&gt;{TABS_AND_SPACES}+ {
+<span class="lineNum">     569 </span>                :         /* eat whitespace */
+<span class="lineNum">     570 </span><span class="lineNoCov">              0 :         goto restart;</span>
+<span class="lineNum">     571 </span>                : }
+<span class="lineNum">     572 </span>                : 
+<span class="lineNum">     573 </span>                : &lt;INITIAL&gt;{TABS_AND_SPACES}*{NEWLINE} {
+<span class="lineNum">     574 </span><span class="lineCov">             45 :         SCNG(lineno)++;</span>
+<span class="lineNum">     575 </span><span class="lineCov">             45 :         return END_OF_LINE;</span>
+<span class="lineNum">     576 </span>                : }
+<span class="lineNum">     577 </span>                : 
+<span class="lineNum">     578 </span>                : &lt;INITIAL,ST_VALUE,ST_RAW&gt;{TABS_AND_SPACES}*[;][^\r\n]*{NEWLINE} { /* Comment */
+<span class="lineNum">     579 </span><span class="lineNoCov">              0 :         BEGIN(INITIAL);</span>
+<span class="lineNum">     580 </span><span class="lineNoCov">              0 :         SCNG(lineno)++;</span>
+<span class="lineNum">     581 </span><span class="lineNoCov">              0 :         return END_OF_LINE;</span>
+<span class="lineNum">     582 </span>                : }
+<span class="lineNum">     583 </span>                : 
+<span class="lineNum">     584 </span>                : &lt;INITIAL&gt;{TABS_AND_SPACES}*[#][^\r\n]*{NEWLINE} { /* #Comment */
+<span class="lineNum">     585 </span><span class="lineNoCov">              0 :         zend_error(E_DEPRECATED, &quot;Comments starting with '#' are deprecated in %s on line %d&quot;, zend_ini_scanner_get_filename(TSRMLS_C), SCNG(lineno));</span>
+<span class="lineNum">     586 </span><span class="lineNoCov">              0 :         BEGIN(INITIAL);</span>
+<span class="lineNum">     587 </span><span class="lineNoCov">              0 :         SCNG(lineno)++;</span>
+<span class="lineNum">     588 </span><span class="lineNoCov">              0 :         return END_OF_LINE;</span>
+<span class="lineNum">     589 </span>                : }
+<span class="lineNum">     590 </span>                : 
+<span class="lineNum">     591 </span>                : &lt;ST_VALUE,ST_RAW&gt;[^] { /* End of option value (if EOF is reached before EOL */
+<span class="lineNum">     592 </span><span class="lineNoCov">              0 :         BEGIN(INITIAL);</span>
+<span class="lineNum">     593 </span><span class="lineNoCov">              0 :         return END_OF_LINE;</span>
+<span class="lineNum">     594 </span>                : }
+<span class="lineNum">     595 </span>                : 
+<span class="lineNum">     596 </span>                : &lt;*&gt;[^] {
+<span class="lineNum">     597 </span><span class="lineNoCov">              0 :         return 0;</span>
+<span class="lineNum">     598 </span>                : }
+<span class="lineNum">     599 </span>                : 
+<span class="lineNum">     600 </span>                : */
+<span class="lineNum">     601 </span>                : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

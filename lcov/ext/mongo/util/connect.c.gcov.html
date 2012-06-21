@@ -1,0 +1,441 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - ext/mongo/util/connect.c</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../../index.html">directory</a> - <a href="index.html">ext/mongo/util</a> - connect.c (source / <a href="connect.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">145</td>
+          <td class="headerCovTableEntry">103</td>
+          <td class="headerCovTableEntryHi">71.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">4</td>
+          <td class="headerCovTableEntry">4</td>
+          <td class="headerCovTableEntryHi">100.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : // connect.c</a>
+<span class="lineNum">       2 </span>                : /**
+<span class="lineNum">       3 </span>                :  *  Copyright 2009-2011 10gen, Inc.
+<span class="lineNum">       4 </span>                :  *
+<span class="lineNum">       5 </span>                :  *  Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+<span class="lineNum">       6 </span>                :  *  you may not use this file except in compliance with the License.
+<span class="lineNum">       7 </span>                :  *  You may obtain a copy of the License at
+<span class="lineNum">       8 </span>                :  *
+<span class="lineNum">       9 </span>                :  *  http://www.apache.org/licenses/LICENSE-2.0
+<span class="lineNum">      10 </span>                :  *
+<span class="lineNum">      11 </span>                :  *  Unless required by applicable law or agreed to in writing, software
+<span class="lineNum">      12 </span>                :  *  distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+<span class="lineNum">      13 </span>                :  *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+<span class="lineNum">      14 </span>                :  *  See the License for the specific language governing permissions and
+<span class="lineNum">      15 </span>                :  *  limitations under the License.
+<span class="lineNum">      16 </span>                :  */
+<span class="lineNum">      17 </span>                : 
+<span class="lineNum">      18 </span>                : #include &lt;php.h&gt;
+<span class="lineNum">      19 </span>                : #include &lt;zend_exceptions.h&gt;
+<span class="lineNum">      20 </span>                : 
+<span class="lineNum">      21 </span>                : #ifdef WIN32
+<span class="lineNum">      22 </span>                : #include &lt;winsock2.h&gt;
+<span class="lineNum">      23 </span>                : #  ifndef int64_t
+<span class="lineNum">      24 </span>                :      typedef __int64 int64_t;
+<span class="lineNum">      25 </span>                : #  endif
+<span class="lineNum">      26 </span>                : #else
+<span class="lineNum">      27 </span>                : #include &lt;netinet/in.h&gt;
+<span class="lineNum">      28 </span>                : #include &lt;netinet/tcp.h&gt;
+<span class="lineNum">      29 </span>                : #include &lt;fcntl.h&gt;
+<span class="lineNum">      30 </span>                : #include &lt;netdb.h&gt;
+<span class="lineNum">      31 </span>                : #include &lt;sys/un.h&gt;
+<span class="lineNum">      32 </span>                : #endif
+<span class="lineNum">      33 </span>                : 
+<span class="lineNum">      34 </span>                : #include &quot;../php_mongo.h&quot;
+<span class="lineNum">      35 </span>                : #include &quot;../mongo.h&quot;
+<span class="lineNum">      36 </span>                : #include &quot;../db.h&quot;
+<span class="lineNum">      37 </span>                : #include &quot;connect.h&quot;
+<span class="lineNum">      38 </span>                : #include &quot;log.h&quot;
+<span class="lineNum">      39 </span>                : 
+<span class="lineNum">      40 </span>                : extern zend_class_entry *mongo_ce_Mongo;
+<a name="41"><span class="lineNum">      41 </span>                : ZEND_EXTERN_MODULE_GLOBALS(mongo);</a>
+<span class="lineNum">      42 </span>                : 
+<span class="lineNum">      43 </span><span class="lineCov">             55 : int mongo_util_connect(mongo_server *server, int timeout, zval *errmsg TSRMLS_DC) {</span>
+<span class="lineNum">      44 </span>                :   struct sockaddr* sa;
+<span class="lineNum">      45 </span>                :   struct sockaddr_in si;
+<span class="lineNum">      46 </span>                :   socklen_t sn;
+<span class="lineNum">      47 </span>                :   int family;
+<span class="lineNum">      48 </span>                :   struct timeval tval;
+<span class="lineNum">      49 </span><span class="lineCov">             55 :   int connected = FAILURE, status = FAILURE;</span>
+<span class="lineNum">      50 </span>                : 
+<span class="lineNum">      51 </span>                : #ifdef WIN32
+<span class="lineNum">      52 </span>                :   WORD version;
+<span class="lineNum">      53 </span>                :   WSADATA wsaData;
+<span class="lineNum">      54 </span>                :   int size, error;
+<span class="lineNum">      55 </span>                :   u_long no = 0;
+<span class="lineNum">      56 </span>                :   const char yes = 1;
+<span class="lineNum">      57 </span>                : #else
+<span class="lineNum">      58 </span>                :   struct sockaddr_un su;
+<span class="lineNum">      59 </span>                :   uint size;
+<span class="lineNum">      60 </span><span class="lineCov">             55 :   int yes = 1;</span>
+<span class="lineNum">      61 </span>                : #endif
+<span class="lineNum">      62 </span>                : 
+<span class="lineNum">      63 </span>                : #ifdef WIN32
+<span class="lineNum">      64 </span>                :   family = AF_INET;
+<span class="lineNum">      65 </span>                :   sa = (struct sockaddr*)(&amp;si);
+<span class="lineNum">      66 </span>                :   sn = sizeof(si);
+<span class="lineNum">      67 </span>                : 
+<span class="lineNum">      68 </span>                :   version = MAKEWORD(2,2);
+<span class="lineNum">      69 </span>                :   error = WSAStartup(version, &amp;wsaData);
+<span class="lineNum">      70 </span>                : 
+<span class="lineNum">      71 </span>                :   if (error != 0) {
+<span class="lineNum">      72 </span>                :     return FAILURE;
+<span class="lineNum">      73 </span>                :   }
+<span class="lineNum">      74 </span>                : 
+<span class="lineNum">      75 </span>                :   // create socket
+<span class="lineNum">      76 </span>                :   server-&gt;socket = socket(family, SOCK_STREAM, 0);
+<span class="lineNum">      77 </span>                :   if (server-&gt;socket == INVALID_SOCKET) {
+<span class="lineNum">      78 </span>                :     if (errmsg) {
+<span class="lineNum">      79 </span>                :       ZVAL_STRING(errmsg, &quot;Could not create socket&quot;, 1);
+<span class="lineNum">      80 </span>                :     }
+<span class="lineNum">      81 </span>                :     return FAILURE;
+<span class="lineNum">      82 </span>                :   }
+<span class="lineNum">      83 </span>                : 
+<span class="lineNum">      84 </span>                : #else
+<span class="lineNum">      85 </span>                :   // domain socket
+<span class="lineNum">      86 </span><span class="lineCov">             55 :   if (server-&gt;port==0) {</span>
+<span class="lineNum">      87 </span><span class="lineNoCov">              0 :     family = AF_UNIX;</span>
+<span class="lineNum">      88 </span><span class="lineNoCov">              0 :     sa = (struct sockaddr*)(&amp;su);</span>
+<span class="lineNum">      89 </span><span class="lineNoCov">              0 :     sn = sizeof(su);</span>
+<span class="lineNum">      90 </span>                :   } else {
+<span class="lineNum">      91 </span><span class="lineCov">             55 :     family = AF_INET;</span>
+<span class="lineNum">      92 </span><span class="lineCov">             55 :     sa = (struct sockaddr*)(&amp;si);</span>
+<span class="lineNum">      93 </span><span class="lineCov">             55 :     sn = sizeof(si);</span>
+<span class="lineNum">      94 </span>                :   }
+<span class="lineNum">      95 </span>                : 
+<span class="lineNum">      96 </span>                :   // create socket
+<span class="lineNum">      97 </span><span class="lineCov">             55 :   if ((server-&gt;socket = socket(family, SOCK_STREAM, 0)) == FAILURE) {</span>
+<span class="lineNum">      98 </span><span class="lineNoCov">              0 :     if (errmsg) {</span>
+<span class="lineNum">      99 </span><span class="lineNoCov">              0 :       ZVAL_STRING(errmsg, strerror(errno), 1);</span>
+<span class="lineNum">     100 </span>                :     }
+<span class="lineNum">     101 </span><span class="lineNoCov">              0 :     return FAILURE;</span>
+<span class="lineNum">     102 </span>                :   }
+<span class="lineNum">     103 </span><span class="lineCov">             55 :   if (server-&gt;socket &gt; FD_SETSIZE) {</span>
+<span class="lineNum">     104 </span>                :     char *full_error;
+<span class="lineNum">     105 </span><span class="lineNoCov">              0 :     spprintf(&amp;full_error, 0, &quot;You have too many open sockets (%d) to fit in the FD_SETSIZE (%d). The extension can't work around that.&quot;, server-&gt;socket, FD_SETSIZE);</span>
+<span class="lineNum">     106 </span><span class="lineNoCov">              0 :     ZVAL_STRING(errmsg, full_error, 0);</span>
+<span class="lineNum">     107 </span><span class="lineNoCov">              0 :     return FAILURE;</span>
+<span class="lineNum">     108 </span>                :   }
+<span class="lineNum">     109 </span>                : #endif
+<span class="lineNum">     110 </span>                : 
+<span class="lineNum">     111 </span>                :   // timeout: set in ms or default of 20
+<span class="lineNum">     112 </span><span class="lineCov">             55 :   tval.tv_sec = timeout &lt;= 0 ? 20 : timeout / 1000;</span>
+<span class="lineNum">     113 </span><span class="lineCov">             55 :   tval.tv_usec = timeout &lt;= 0 ? 0 : (timeout % 1000) * 1000;</span>
+<span class="lineNum">     114 </span>                : 
+<span class="lineNum">     115 </span>                :   // get addresses
+<span class="lineNum">     116 </span><span class="lineCov">             55 :   if (mongo_util_connect__sockaddr(sa, family, server-&gt;host, server-&gt;port, errmsg) == FAILURE) {</span>
+<span class="lineNum">     117 </span><span class="lineCov">              3 :     mongo_util_disconnect(server TSRMLS_CC);</span>
+<span class="lineNum">     118 </span>                :     // errmsg set in mongo_get_sockaddr
+<span class="lineNum">     119 </span><span class="lineCov">              3 :     return FAILURE;</span>
+<span class="lineNum">     120 </span>                :   }
+<span class="lineNum">     121 </span>                : 
+<span class="lineNum">     122 </span><span class="lineCov">             52 :   setsockopt(server-&gt;socket, SOL_SOCKET, SO_KEEPALIVE, &amp;yes, INT_32);</span>
+<span class="lineNum">     123 </span><span class="lineCov">             52 :   setsockopt(server-&gt;socket, IPPROTO_TCP, TCP_NODELAY, &amp;yes, INT_32);</span>
+<span class="lineNum">     124 </span>                : 
+<span class="lineNum">     125 </span>                : #ifdef WIN32
+<span class="lineNum">     126 </span>                :   ioctlsocket(server-&gt;socket, FIONBIO, (u_long*)&amp;yes);
+<span class="lineNum">     127 </span>                : #else
+<span class="lineNum">     128 </span><span class="lineCov">             52 :   fcntl(server-&gt;socket, F_SETFL, FLAGS|O_NONBLOCK);</span>
+<span class="lineNum">     129 </span>                : #endif
+<span class="lineNum">     130 </span>                : 
+<span class="lineNum">     131 </span>                :   // connect
+<span class="lineNum">     132 </span><span class="lineCov">             52 :   status = connect(server-&gt;socket, sa, sn);</span>
+<span class="lineNum">     133 </span><span class="lineCov">             52 :   if (status &lt; 0) {</span>
+<span class="lineNum">     134 </span>                : #ifdef WIN32
+<span class="lineNum">     135 </span>                :     errno = WSAGetLastError();
+<span class="lineNum">     136 </span>                :     if (errno != WSAEINPROGRESS &amp;&amp; errno != WSAEWOULDBLOCK)
+<span class="lineNum">     137 </span>                : #else
+<span class="lineNum">     138 </span><span class="lineCov">             52 :     if (errno != EINPROGRESS)</span>
+<span class="lineNum">     139 </span>                : #endif
+<span class="lineNum">     140 </span>                :     {
+<span class="lineNum">     141 </span><span class="lineNoCov">              0 :       if (errmsg) {</span>
+<span class="lineNum">     142 </span><span class="lineNoCov">              0 :         ZVAL_STRING(errmsg, strerror(errno), 1);</span>
+<span class="lineNum">     143 </span>                :       }
+<span class="lineNum">     144 </span><span class="lineNoCov">              0 :       mongo_util_disconnect(server TSRMLS_CC);</span>
+<span class="lineNum">     145 </span><span class="lineNoCov">              0 :       return FAILURE;</span>
+<span class="lineNum">     146 </span>                :     }
+<span class="lineNum">     147 </span>                : 
+<span class="lineNum">     148 </span>                :     while (1) {
+<span class="lineNum">     149 </span>                :       fd_set rset, wset, eset;
+<span class="lineNum">     150 </span>                : 
+<span class="lineNum">     151 </span><span class="lineCov">             52 :       FD_ZERO(&amp;rset);</span>
+<span class="lineNum">     152 </span><span class="lineCov">             52 :       FD_SET(server-&gt;socket, &amp;rset);</span>
+<span class="lineNum">     153 </span><span class="lineCov">             52 :       FD_ZERO(&amp;wset);</span>
+<span class="lineNum">     154 </span><span class="lineCov">             52 :       FD_SET(server-&gt;socket, &amp;wset);</span>
+<span class="lineNum">     155 </span><span class="lineCov">             52 :       FD_ZERO(&amp;eset);</span>
+<span class="lineNum">     156 </span><span class="lineCov">             52 :       FD_SET(server-&gt;socket, &amp;eset);</span>
+<span class="lineNum">     157 </span>                : 
+<span class="lineNum">     158 </span><span class="lineCov">             52 :       if (select(server-&gt;socket+1, &amp;rset, &amp;wset, &amp;eset, &amp;tval) == 0) {</span>
+<span class="lineNum">     159 </span><span class="lineNoCov">              0 :         if (errmsg) {</span>
+<span class="lineNum">     160 </span><span class="lineNoCov">              0 :           ZVAL_STRING(errmsg, strerror(errno), 1);</span>
+<span class="lineNum">     161 </span>                :         }
+<span class="lineNum">     162 </span><span class="lineNoCov">              0 :         mongo_util_disconnect(server TSRMLS_CC);</span>
+<span class="lineNum">     163 </span><span class="lineNoCov">              0 :         return FAILURE;</span>
+<span class="lineNum">     164 </span>                :       }
+<span class="lineNum">     165 </span>                : 
+<span class="lineNum">     166 </span>                :       // if our descriptor has an error
+<span class="lineNum">     167 </span><span class="lineCov">             52 :       if (FD_ISSET(server-&gt;socket, &amp;eset)) {</span>
+<span class="lineNum">     168 </span><span class="lineNoCov">              0 :         if (errmsg) {</span>
+<span class="lineNum">     169 </span><span class="lineNoCov">              0 :           ZVAL_STRING(errmsg, strerror(errno), 1);</span>
+<span class="lineNum">     170 </span>                :         }
+<span class="lineNum">     171 </span><span class="lineNoCov">              0 :         mongo_util_disconnect(server TSRMLS_CC);</span>
+<span class="lineNum">     172 </span><span class="lineNoCov">              0 :         return FAILURE;</span>
+<span class="lineNum">     173 </span>                :       }
+<span class="lineNum">     174 </span>                : 
+<span class="lineNum">     175 </span>                :       // if our descriptor is ready break out
+<span class="lineNum">     176 </span><span class="lineCov">             52 :       if (FD_ISSET(server-&gt;socket, &amp;wset) || FD_ISSET(server-&gt;socket, &amp;rset)) {</span>
+<span class="lineNum">     177 </span>                :         break;
+<span class="lineNum">     178 </span>                :       }
+<span class="lineNum">     179 </span><span class="lineNoCov">              0 :     }</span>
+<span class="lineNum">     180 </span>                : 
+<span class="lineNum">     181 </span><span class="lineCov">             52 :     size = sn;</span>
+<span class="lineNum">     182 </span>                : 
+<span class="lineNum">     183 </span><span class="lineCov">             52 :     connected = getpeername(server-&gt;socket, sa, &amp;size);</span>
+<span class="lineNum">     184 </span><span class="lineCov">             52 :     if (connected == FAILURE) {</span>
+<span class="lineNum">     185 </span><span class="lineCov">              3 :       if (errmsg) {</span>
+<span class="lineNum">     186 </span><span class="lineCov">              3 :         ZVAL_STRING(errmsg, strerror(errno), 1);</span>
+<span class="lineNum">     187 </span>                :       }
+<span class="lineNum">     188 </span><span class="lineCov">              3 :       mongo_util_disconnect(server TSRMLS_CC);</span>
+<span class="lineNum">     189 </span><span class="lineCov">              3 :       return FAILURE;</span>
+<span class="lineNum">     190 </span>                :     }
+<span class="lineNum">     191 </span>                : 
+<span class="lineNum">     192 </span>                :     // set connected
+<span class="lineNum">     193 </span><span class="lineCov">             49 :     server-&gt;connected = 1;</span>
+<span class="lineNum">     194 </span>                :   }
+<span class="lineNum">     195 </span><span class="lineNoCov">              0 :   else if (status == SUCCESS) {</span>
+<span class="lineNum">     196 </span><span class="lineNoCov">              0 :     server-&gt;connected = 1;</span>
+<span class="lineNum">     197 </span>                :   }
+<span class="lineNum">     198 </span>                : 
+<span class="lineNum">     199 </span>                : 
+<span class="lineNum">     200 </span>                : // reset flags
+<span class="lineNum">     201 </span>                : #ifdef WIN32
+<span class="lineNum">     202 </span>                :   ioctlsocket(server-&gt;socket, FIONBIO, &amp;no);
+<span class="lineNum">     203 </span>                : #else
+<span class="lineNum">     204 </span><span class="lineCov">             49 :   fcntl(server-&gt;socket, F_SETFL, FLAGS);</span>
+<span class="lineNum">     205 </span>                : #endif
+<span class="lineNum">     206 </span><span class="lineCov">             49 :   return SUCCESS;</span>
+<a name="207"><span class="lineNum">     207 </span>                : }</a>
+<span class="lineNum">     208 </span>                : 
+<span class="lineNum">     209 </span><span class="lineCov">             49 : int mongo_util_connect_authenticate(mongo_server *server, zval *errmsg TSRMLS_DC) {</span>
+<span class="lineNum">     210 </span>                :   zval *connection, *db, *db_name, *username, *password, *ok;
+<span class="lineNum">     211 </span><span class="lineCov">             49 :   int logged_in = 0;</span>
+<span class="lineNum">     212 </span>                :   mongo_link *temp_link;
+<span class="lineNum">     213 </span>                : 
+<span class="lineNum">     214 </span>                :   // if we're not using authentication, we're always logged in
+<span class="lineNum">     215 </span><span class="lineCov">             49 :   if (!server-&gt;username || !server-&gt;password) {</span>
+<span class="lineNum">     216 </span><span class="lineCov">             47 :     return SUCCESS;</span>
+<span class="lineNum">     217 </span>                :   }
+<span class="lineNum">     218 </span>                : 
+<span class="lineNum">     219 </span>                :   // make a &quot;fake&quot; connection
+<span class="lineNum">     220 </span><span class="lineCov">              2 :   MAKE_STD_ZVAL(connection);</span>
+<span class="lineNum">     221 </span><span class="lineCov">              2 :   object_init_ex(connection, mongo_ce_Mongo);</span>
+<span class="lineNum">     222 </span><span class="lineCov">              2 :   temp_link = (mongo_link*)zend_object_store_get_object(connection TSRMLS_CC);</span>
+<span class="lineNum">     223 </span><span class="lineCov">              2 :   temp_link-&gt;server_set = (mongo_server_set*)emalloc(sizeof(mongo_server_set));</span>
+<span class="lineNum">     224 </span><span class="lineCov">              2 :   temp_link-&gt;server_set-&gt;num = 1;</span>
+<span class="lineNum">     225 </span><span class="lineCov">              2 :   temp_link-&gt;server_set-&gt;ts = 0;</span>
+<span class="lineNum">     226 </span><span class="lineCov">              2 :   temp_link-&gt;server_set-&gt;server_ts = 0;</span>
+<span class="lineNum">     227 </span><span class="lineCov">              2 :   temp_link-&gt;server_set-&gt;server = server;</span>
+<span class="lineNum">     228 </span><span class="lineCov">              2 :   temp_link-&gt;server_set-&gt;master = temp_link-&gt;server_set-&gt;server;</span>
+<span class="lineNum">     229 </span>                : 
+<span class="lineNum">     230 </span>                :   // initialize zval strings
+<span class="lineNum">     231 </span><span class="lineCov">              2 :   MAKE_STD_ZVAL(db_name);</span>
+<span class="lineNum">     232 </span><span class="lineCov">              2 :   ZVAL_STRING(db_name, server-&gt;db, 1);</span>
+<span class="lineNum">     233 </span><span class="lineCov">              2 :   MAKE_STD_ZVAL(username);</span>
+<span class="lineNum">     234 </span><span class="lineCov">              2 :   ZVAL_STRING(username, server-&gt;username, 1);</span>
+<span class="lineNum">     235 </span><span class="lineCov">              2 :   MAKE_STD_ZVAL(password);</span>
+<span class="lineNum">     236 </span><span class="lineCov">              2 :   ZVAL_STRING(password, server-&gt;password, 1);</span>
+<span class="lineNum">     237 </span>                : 
+<span class="lineNum">     238 </span>                :   // get admin db
+<span class="lineNum">     239 </span><span class="lineCov">              2 :   MAKE_STD_ZVAL(db);</span>
+<span class="lineNum">     240 </span><span class="lineCov">              4 :   MONGO_METHOD1(Mongo, selectDB, db, connection, db_name);</span>
+<span class="lineNum">     241 </span>                : 
+<span class="lineNum">     242 </span>                :   // log in
+<span class="lineNum">     243 </span><span class="lineCov">              2 :   MAKE_STD_ZVAL(ok);</span>
+<span class="lineNum">     244 </span><span class="lineCov">              6 :   MONGO_METHOD2(MongoDB, authenticate, ok, db, username, password);</span>
+<span class="lineNum">     245 </span>                : 
+<span class="lineNum">     246 </span><span class="lineCov">              2 :   if (EG(exception)) {</span>
+<span class="lineNum">     247 </span><span class="lineNoCov">              0 :     zend_clear_exception(TSRMLS_C);</span>
+<span class="lineNum">     248 </span>                : 
+<span class="lineNum">     249 </span><span class="lineNoCov">              0 :     zval_ptr_dtor(&amp;db_name);</span>
+<span class="lineNum">     250 </span><span class="lineNoCov">              0 :     zval_ptr_dtor(&amp;db);</span>
+<span class="lineNum">     251 </span><span class="lineNoCov">              0 :     zval_ptr_dtor(&amp;username);</span>
+<span class="lineNum">     252 </span><span class="lineNoCov">              0 :     zval_ptr_dtor(&amp;password);</span>
+<span class="lineNum">     253 </span>                : 
+<span class="lineNum">     254 </span>                :     // TODO: pick up error message
+<span class="lineNum">     255 </span><span class="lineNoCov">              0 :     if (errmsg) {</span>
+<span class="lineNum">     256 </span><span class="lineNoCov">              0 :       ZVAL_STRING(errmsg, &quot;failed running authenticate&quot;, 1);</span>
+<span class="lineNum">     257 </span>                :     }
+<span class="lineNum">     258 </span><span class="lineNoCov">              0 :     return FAILURE;</span>
+<span class="lineNum">     259 </span>                :   }
+<span class="lineNum">     260 </span>                : 
+<span class="lineNum">     261 </span><span class="lineCov">              2 :   zval_ptr_dtor(&amp;db_name);</span>
+<span class="lineNum">     262 </span><span class="lineCov">              2 :   zval_ptr_dtor(&amp;db);</span>
+<span class="lineNum">     263 </span><span class="lineCov">              2 :   zval_ptr_dtor(&amp;username);</span>
+<span class="lineNum">     264 </span><span class="lineCov">              2 :   zval_ptr_dtor(&amp;password);</span>
+<span class="lineNum">     265 </span>                : 
+<span class="lineNum">     266 </span>                :   // reset the socket so we don't close it when this is dtored
+<span class="lineNum">     267 </span><span class="lineCov">              2 :   temp_link-&gt;server_set-&gt;server = 0;</span>
+<span class="lineNum">     268 </span><span class="lineCov">              2 :   efree(temp_link-&gt;server_set);</span>
+<span class="lineNum">     269 </span><span class="lineCov">              2 :   temp_link-&gt;server_set = 0;</span>
+<span class="lineNum">     270 </span><span class="lineCov">              2 :   zval_ptr_dtor(&amp;connection);</span>
+<span class="lineNum">     271 </span>                : 
+<span class="lineNum">     272 </span><span class="lineCov">              2 :   if (EG(exception)) {</span>
+<span class="lineNum">     273 </span><span class="lineNoCov">              0 :     zval_ptr_dtor(&amp;ok);</span>
+<span class="lineNum">     274 </span><span class="lineNoCov">              0 :     return FAILURE;</span>
+<span class="lineNum">     275 </span>                :   }
+<span class="lineNum">     276 </span>                : 
+<span class="lineNum">     277 </span><span class="lineCov">              2 :   if (Z_TYPE_P(ok) == IS_ARRAY) {</span>
+<span class="lineNum">     278 </span>                :     zval **status;
+<span class="lineNum">     279 </span><span class="lineCov">              2 :     if (zend_hash_find(HASH_P(ok), &quot;ok&quot;, strlen(&quot;ok&quot;)+1, (void**)&amp;status) == SUCCESS) {</span>
+<span class="lineNum">     280 </span><span class="lineCov">              2 :       logged_in = (Z_TYPE_PP(status) == IS_BOOL &amp;&amp; Z_BVAL_PP(status)) || Z_DVAL_PP(status) == 1;</span>
+<span class="lineNum">     281 </span>                :     }
+<span class="lineNum">     282 </span>                :   }
+<span class="lineNum">     283 </span>                :   else {
+<span class="lineNum">     284 </span><span class="lineNoCov">              0 :     logged_in = Z_BVAL_P(ok);</span>
+<span class="lineNum">     285 </span>                :   }
+<span class="lineNum">     286 </span>                : 
+<span class="lineNum">     287 </span>                :   // check if we've logged in successfully
+<span class="lineNum">     288 </span><span class="lineCov">              2 :   if (!logged_in) {</span>
+<span class="lineNum">     289 </span>                :     char *full_error;
+<span class="lineNum">     290 </span><span class="lineCov">              2 :     spprintf(&amp;full_error, 0, &quot;Couldn't authenticate with database %s: username [%s], password [%s]&quot;, server-&gt;db, server-&gt;username, server-&gt;password);</span>
+<span class="lineNum">     291 </span><span class="lineCov">              2 :     if (errmsg) {</span>
+<span class="lineNum">     292 </span><span class="lineCov">              2 :       ZVAL_STRING(errmsg, full_error, 0);</span>
+<span class="lineNum">     293 </span>                :     }
+<span class="lineNum">     294 </span><span class="lineCov">              2 :     zval_ptr_dtor(&amp;ok);</span>
+<span class="lineNum">     295 </span><span class="lineCov">              2 :     return FAILURE;</span>
+<span class="lineNum">     296 </span>                :   }
+<span class="lineNum">     297 </span>                : 
+<span class="lineNum">     298 </span>                :   // successfully logged in
+<span class="lineNum">     299 </span><span class="lineNoCov">              0 :   zval_ptr_dtor(&amp;ok);</span>
+<span class="lineNum">     300 </span><span class="lineNoCov">              0 :   return SUCCESS;</span>
+<span class="lineNum">     301 </span>                : }
+<span class="lineNum">     302 </span>                : 
+<a name="303"><span class="lineNum">     303 </span>                : </a>
+<span class="lineNum">     304 </span>                : 
+<span class="lineNum">     305 </span><span class="lineCov">             55 : int mongo_util_connect__sockaddr(struct sockaddr *sa, int family, char *host, int port, zval *errmsg) {</span>
+<span class="lineNum">     306 </span>                : #ifndef WIN32
+<span class="lineNum">     307 </span><span class="lineCov">             55 :   if (family == AF_UNIX) {</span>
+<span class="lineNum">     308 </span><span class="lineNoCov">              0 :     struct sockaddr_un* su = (struct sockaddr_un*)(sa);</span>
+<span class="lineNum">     309 </span><span class="lineNoCov">              0 :     su-&gt;sun_family = AF_UNIX;</span>
+<span class="lineNum">     310 </span><span class="lineNoCov">              0 :     strncpy(su-&gt;sun_path, host, sizeof(su-&gt;sun_path));</span>
+<span class="lineNum">     311 </span>                :   } else {
+<span class="lineNum">     312 </span>                : #endif
+<span class="lineNum">     313 </span>                :     struct hostent *hostinfo;
+<span class="lineNum">     314 </span><span class="lineCov">             55 :     struct sockaddr_in* si = (struct sockaddr_in*)(sa);</span>
+<span class="lineNum">     315 </span>                : 
+<span class="lineNum">     316 </span><span class="lineCov">             55 :     si-&gt;sin_family = AF_INET;</span>
+<span class="lineNum">     317 </span><span class="lineCov">             55 :     si-&gt;sin_port = htons(port);</span>
+<span class="lineNum">     318 </span><span class="lineCov">             55 :     hostinfo = (struct hostent*)gethostbyname(host);</span>
+<span class="lineNum">     319 </span>                : 
+<span class="lineNum">     320 </span><span class="lineCov">             55 :     if (hostinfo == NULL) {</span>
+<span class="lineNum">     321 </span><span class="lineCov">              3 :       if (errmsg) {</span>
+<span class="lineNum">     322 </span>                :         char *errstr;
+<span class="lineNum">     323 </span><span class="lineCov">              1 :         spprintf(&amp;errstr, 0, &quot;couldn't get host info for %s&quot;, host);</span>
+<span class="lineNum">     324 </span><span class="lineCov">              1 :         ZVAL_STRING(errmsg, errstr, 0);</span>
+<span class="lineNum">     325 </span>                :       }
+<span class="lineNum">     326 </span><span class="lineCov">              3 :       return FAILURE;</span>
+<span class="lineNum">     327 </span>                :     }
+<span class="lineNum">     328 </span>                : 
+<span class="lineNum">     329 </span>                : #ifndef WIN32
+<span class="lineNum">     330 </span><span class="lineCov">             52 :     si-&gt;sin_addr = *((struct in_addr*)hostinfo-&gt;h_addr);</span>
+<span class="lineNum">     331 </span>                :   }
+<span class="lineNum">     332 </span>                : #else
+<span class="lineNum">     333 </span>                :     si-&gt;sin_addr.s_addr = ((struct in_addr*)(hostinfo-&gt;h_addr))-&gt;s_addr;
+<span class="lineNum">     334 </span>                : #endif
+<span class="lineNum">     335 </span>                : 
+<span class="lineNum">     336 </span><span class="lineCov">             52 :   return SUCCESS;</span>
+<span class="lineNum">     337 </span>                : }
+<a name="338"><span class="lineNum">     338 </span>                : </a>
+<span class="lineNum">     339 </span>                : 
+<span class="lineNum">     340 </span><span class="lineCov">             57 : int mongo_util_disconnect(mongo_server *server TSRMLS_DC) {</span>
+<span class="lineNum">     341 </span>                :   pid_t pid;
+<span class="lineNum">     342 </span>                : 
+<span class="lineNum">     343 </span><span class="lineCov">             57 :   if (!server || !server-&gt;socket) {</span>
+<span class="lineNum">     344 </span><span class="lineCov">              2 :     return 0;</span>
+<span class="lineNum">     345 </span>                :   }
+<span class="lineNum">     346 </span>                : 
+<span class="lineNum">     347 </span><span class="lineCov">             55 :   pid = getpid();</span>
+<span class="lineNum">     348 </span><span class="lineCov">             55 :   if (server-&gt;owner != pid) {</span>
+<span class="lineNum">     349 </span><span class="lineNoCov">              0 :                 mongo_log(MONGO_LOG_SERVER, MONGO_LOG_WARNING TSRMLS_CC, &quot;link (%s) owner PID (%d) doesn't match process PID (%d)&quot;, server-&gt;label, server-&gt;owner, pid);</span>
+<span class="lineNum">     350 </span><span class="lineNoCov">              0 :     return 0;</span>
+<span class="lineNum">     351 </span>                :   }
+<span class="lineNum">     352 </span>                : 
+<span class="lineNum">     353 </span><span class="lineCov">             55 :   MONGO_UTIL_DISCONNECT(server-&gt;socket);</span>
+<span class="lineNum">     354 </span><span class="lineCov">             55 :   server-&gt;connected = 0;</span>
+<span class="lineNum">     355 </span><span class="lineCov">             55 :   server-&gt;socket = 0;</span>
+<span class="lineNum">     356 </span>                : 
+<span class="lineNum">     357 </span><span class="lineCov">             55 :   return 1;</span>
+<span class="lineNum">     358 </span>                : }
+<span class="lineNum">     359 </span>                : 
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

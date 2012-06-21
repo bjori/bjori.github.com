@@ -1,0 +1,143 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - ext/spl/spl_engine.h</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../index.html">directory</a> - <a href="index.html">ext/spl</a> - spl_engine.h (source / <a href="spl_engine.h.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">8</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">2</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Authors: Marcus Boerger &lt;helly@php.net&gt;                              |
+<span class="lineNum">      16 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      17 </span>                :  */
+<span class="lineNum">      18 </span>                : 
+<span class="lineNum">      19 </span>                : /* $Id$ */
+<span class="lineNum">      20 </span>                : 
+<span class="lineNum">      21 </span>                : #ifndef SPL_ENGINE_H
+<span class="lineNum">      22 </span>                : #define SPL_ENGINE_H
+<span class="lineNum">      23 </span>                : 
+<span class="lineNum">      24 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">      25 </span>                : #include &quot;php_spl.h&quot;
+<span class="lineNum">      26 </span>                : #include &quot;zend_interfaces.h&quot;
+<span class="lineNum">      27 </span>                : 
+<span class="lineNum">      28 </span>                : PHPAPI void spl_instantiate(zend_class_entry *pce, zval **object, int alloc TSRMLS_DC);
+<span class="lineNum">      29 </span>                : 
+<span class="lineNum">      30 </span>                : PHPAPI long spl_offset_convert_to_long(zval *offset TSRMLS_DC);
+<a name="31"><span class="lineNum">      31 </span>                : </a>
+<span class="lineNum">      32 </span>                : /* {{{ spl_instantiate_arg_ex1 */
+<span class="lineNum">      33 </span><span class="lineNoCov">              0 : static inline int spl_instantiate_arg_ex1(zend_class_entry *pce, zval **retval, int alloc, zval *arg1 TSRMLS_DC)</span>
+<span class="lineNum">      34 </span>                : {
+<span class="lineNum">      35 </span><span class="lineNoCov">              0 :         spl_instantiate(pce, retval, alloc TSRMLS_CC);</span>
+<span class="lineNum">      36 </span>                :         
+<span class="lineNum">      37 </span><span class="lineNoCov">              0 :         zend_call_method(retval, pce, &amp;pce-&gt;constructor, pce-&gt;constructor-&gt;common.function_name, strlen(pce-&gt;constructor-&gt;common.function_name), NULL, 1, arg1, NULL TSRMLS_CC);</span>
+<span class="lineNum">      38 </span><span class="lineNoCov">              0 :         return 0;</span>
+<span class="lineNum">      39 </span>                : }
+<span class="lineNum">      40 </span>                : /* }}} */
+<a name="41"><span class="lineNum">      41 </span>                : </a>
+<span class="lineNum">      42 </span>                : /* {{{ spl_instantiate_arg_ex2 */
+<span class="lineNum">      43 </span><span class="lineNoCov">              0 : static inline int spl_instantiate_arg_ex2(zend_class_entry *pce, zval **retval, int alloc, zval *arg1, zval *arg2 TSRMLS_DC)</span>
+<span class="lineNum">      44 </span>                : {
+<span class="lineNum">      45 </span><span class="lineNoCov">              0 :         spl_instantiate(pce, retval, alloc TSRMLS_CC);</span>
+<span class="lineNum">      46 </span>                :         
+<span class="lineNum">      47 </span><span class="lineNoCov">              0 :         zend_call_method(retval, pce, &amp;pce-&gt;constructor, pce-&gt;constructor-&gt;common.function_name, strlen(pce-&gt;constructor-&gt;common.function_name), NULL, 2, arg1, arg2 TSRMLS_CC);</span>
+<span class="lineNum">      48 </span><span class="lineNoCov">              0 :         return 0;</span>
+<span class="lineNum">      49 </span>                : }
+<span class="lineNum">      50 </span>                : /* }}} */
+<span class="lineNum">      51 </span>                : 
+<span class="lineNum">      52 </span>                : #endif /* SPL_ENGINE_H */
+<span class="lineNum">      53 </span>                : 
+<span class="lineNum">      54 </span>                : /*
+<span class="lineNum">      55 </span>                :  * Local Variables:
+<span class="lineNum">      56 </span>                :  * c-basic-offset: 4
+<span class="lineNum">      57 </span>                :  * tab-width: 4
+<span class="lineNum">      58 </span>                :  * End:
+<span class="lineNum">      59 </span>                :  * vim600: fdm=marker
+<span class="lineNum">      60 </span>                :  * vim: noet sw=4 ts=4
+<span class="lineNum">      61 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

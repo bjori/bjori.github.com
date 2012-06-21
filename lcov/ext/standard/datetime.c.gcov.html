@@ -1,0 +1,210 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - ext/standard/datetime.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../index.html">directory</a> - <a href="index.html">ext/standard</a> - datetime.c (source / <a href="datetime.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">28</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">2</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Authors: Andi Gutmans &lt;andi@zend.com&gt;                                |
+<span class="lineNum">      16 </span>                :    |          Zeev Suraski &lt;zeev@zend.com&gt;                                |
+<span class="lineNum">      17 </span>                :    |          Rasmus Lerdorf &lt;rasmus@php.net&gt;                             |
+<span class="lineNum">      18 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      19 </span>                :  */
+<span class="lineNum">      20 </span>                : 
+<span class="lineNum">      21 </span>                : /* $Id$ */
+<span class="lineNum">      22 </span>                : 
+<span class="lineNum">      23 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">      24 </span>                : #include &quot;zend_operators.h&quot;
+<span class="lineNum">      25 </span>                : #include &quot;datetime.h&quot;
+<span class="lineNum">      26 </span>                : #include &quot;php_globals.h&quot;
+<span class="lineNum">      27 </span>                : 
+<span class="lineNum">      28 </span>                : #include &lt;time.h&gt;
+<span class="lineNum">      29 </span>                : #ifdef HAVE_SYS_TIME_H
+<span class="lineNum">      30 </span>                : # include &lt;sys/time.h&gt;
+<span class="lineNum">      31 </span>                : #endif
+<span class="lineNum">      32 </span>                : #include &lt;stdio.h&gt;
+<span class="lineNum">      33 </span>                : 
+<span class="lineNum">      34 </span>                : char *mon_full_names[] = {
+<span class="lineNum">      35 </span>                :         &quot;January&quot;, &quot;February&quot;, &quot;March&quot;, &quot;April&quot;,
+<span class="lineNum">      36 </span>                :         &quot;May&quot;, &quot;June&quot;, &quot;July&quot;, &quot;August&quot;,
+<span class="lineNum">      37 </span>                :         &quot;September&quot;, &quot;October&quot;, &quot;November&quot;, &quot;December&quot;
+<span class="lineNum">      38 </span>                : };
+<span class="lineNum">      39 </span>                : 
+<span class="lineNum">      40 </span>                : char *mon_short_names[] = {
+<span class="lineNum">      41 </span>                :         &quot;Jan&quot;, &quot;Feb&quot;, &quot;Mar&quot;, &quot;Apr&quot;, &quot;May&quot;, &quot;Jun&quot;, &quot;Jul&quot;, &quot;Aug&quot;, &quot;Sep&quot;, &quot;Oct&quot;, &quot;Nov&quot;, &quot;Dec&quot;
+<span class="lineNum">      42 </span>                : };
+<span class="lineNum">      43 </span>                : 
+<span class="lineNum">      44 </span>                : char *day_full_names[] = {
+<span class="lineNum">      45 </span>                :         &quot;Sunday&quot;, &quot;Monday&quot;, &quot;Tuesday&quot;, &quot;Wednesday&quot;, &quot;Thursday&quot;, &quot;Friday&quot;, &quot;Saturday&quot;
+<span class="lineNum">      46 </span>                : };
+<span class="lineNum">      47 </span>                : 
+<span class="lineNum">      48 </span>                : char *day_short_names[] = {
+<span class="lineNum">      49 </span>                :         &quot;Sun&quot;, &quot;Mon&quot;, &quot;Tue&quot;, &quot;Wed&quot;, &quot;Thu&quot;, &quot;Fri&quot;, &quot;Sat&quot;
+<span class="lineNum">      50 </span>                : };
+<span class="lineNum">      51 </span>                : 
+<a name="52"><span class="lineNum">      52 </span>                : /* {{{ PHPAPI char *php_std_date(time_t t TSRMLS_DC)</a>
+<span class="lineNum">      53 </span>                :    Return date string in standard format for http headers */
+<span class="lineNum">      54 </span><span class="lineNoCov">              0 : PHPAPI char *php_std_date(time_t t TSRMLS_DC)</span>
+<span class="lineNum">      55 </span>                : {
+<span class="lineNum">      56 </span>                :         struct tm *tm1, tmbuf;
+<span class="lineNum">      57 </span>                :         char *str;
+<span class="lineNum">      58 </span>                : 
+<span class="lineNum">      59 </span><span class="lineNoCov">              0 :         tm1 = php_gmtime_r(&amp;t, &amp;tmbuf);</span>
+<span class="lineNum">      60 </span><span class="lineNoCov">              0 :         str = emalloc(81);</span>
+<span class="lineNum">      61 </span><span class="lineNoCov">              0 :         str[0] = '\0';</span>
+<span class="lineNum">      62 </span>                : 
+<span class="lineNum">      63 </span><span class="lineNoCov">              0 :         if (!tm1) {</span>
+<span class="lineNum">      64 </span><span class="lineNoCov">              0 :                 return str;</span>
+<span class="lineNum">      65 </span>                :         }
+<span class="lineNum">      66 </span>                : 
+<span class="lineNum">      67 </span><span class="lineNoCov">              0 :         snprintf(str, 80, &quot;%s, %02d %s %04d %02d:%02d:%02d GMT&quot;,</span>
+<span class="lineNum">      68 </span><span class="lineNoCov">              0 :                         day_short_names[tm1-&gt;tm_wday],</span>
+<span class="lineNum">      69 </span>                :                         tm1-&gt;tm_mday,
+<span class="lineNum">      70 </span><span class="lineNoCov">              0 :                         mon_short_names[tm1-&gt;tm_mon],</span>
+<span class="lineNum">      71 </span>                :                         tm1-&gt;tm_year + 1900,
+<span class="lineNum">      72 </span>                :                         tm1-&gt;tm_hour, tm1-&gt;tm_min, tm1-&gt;tm_sec);
+<span class="lineNum">      73 </span>                : 
+<span class="lineNum">      74 </span><span class="lineNoCov">              0 :         str[79] = 0;</span>
+<span class="lineNum">      75 </span><span class="lineNoCov">              0 :         return (str);</span>
+<span class="lineNum">      76 </span>                : }
+<span class="lineNum">      77 </span>                : /* }}} */
+<span class="lineNum">      78 </span>                : 
+<span class="lineNum">      79 </span>                : #if HAVE_STRPTIME
+<span class="lineNum">      80 </span>                : #ifndef HAVE_STRPTIME_DECL_FAILS
+<span class="lineNum">      81 </span>                : char *strptime(const char *s, const char *format, struct tm *tm);
+<span class="lineNum">      82 </span>                : #endif
+<span class="lineNum">      83 </span>                : 
+<a name="84"><span class="lineNum">      84 </span>                : /* {{{ proto string strptime(string timestamp, string format)</a>
+<span class="lineNum">      85 </span>                :    Parse a time/date generated with strftime() */
+<span class="lineNum">      86 </span><span class="lineNoCov">              0 : PHP_FUNCTION(strptime)</span>
+<span class="lineNum">      87 </span>                : {
+<span class="lineNum">      88 </span>                :         char      *ts;
+<span class="lineNum">      89 </span>                :         int        ts_length;
+<span class="lineNum">      90 </span>                :         char      *format;
+<span class="lineNum">      91 </span>                :         int        format_length;
+<span class="lineNum">      92 </span>                :         struct tm  parsed_time;
+<span class="lineNum">      93 </span>                :         char      *unparsed_part;
+<span class="lineNum">      94 </span>                : 
+<span class="lineNum">      95 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;ss&quot;, &amp;ts, &amp;ts_length, &amp;format, &amp;format_length) == FAILURE) {</span>
+<span class="lineNum">      96 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">      97 </span>                :         }
+<span class="lineNum">      98 </span>                : 
+<span class="lineNum">      99 </span><span class="lineNoCov">              0 :         memset(&amp;parsed_time, 0, sizeof(parsed_time));</span>
+<span class="lineNum">     100 </span>                : 
+<span class="lineNum">     101 </span><span class="lineNoCov">              0 :         unparsed_part = strptime(ts, format, &amp;parsed_time);</span>
+<span class="lineNum">     102 </span><span class="lineNoCov">              0 :         if (unparsed_part == NULL) {</span>
+<span class="lineNum">     103 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     104 </span>                :         }
+<span class="lineNum">     105 </span>                : 
+<span class="lineNum">     106 </span><span class="lineNoCov">              0 :         array_init(return_value);</span>
+<span class="lineNum">     107 </span><span class="lineNoCov">              0 :         add_assoc_long(return_value, &quot;tm_sec&quot;,   parsed_time.tm_sec);</span>
+<span class="lineNum">     108 </span><span class="lineNoCov">              0 :         add_assoc_long(return_value, &quot;tm_min&quot;,   parsed_time.tm_min);</span>
+<span class="lineNum">     109 </span><span class="lineNoCov">              0 :         add_assoc_long(return_value, &quot;tm_hour&quot;,  parsed_time.tm_hour);</span>
+<span class="lineNum">     110 </span><span class="lineNoCov">              0 :         add_assoc_long(return_value, &quot;tm_mday&quot;,  parsed_time.tm_mday);</span>
+<span class="lineNum">     111 </span><span class="lineNoCov">              0 :         add_assoc_long(return_value, &quot;tm_mon&quot;,   parsed_time.tm_mon);</span>
+<span class="lineNum">     112 </span><span class="lineNoCov">              0 :         add_assoc_long(return_value, &quot;tm_year&quot;,  parsed_time.tm_year);</span>
+<span class="lineNum">     113 </span><span class="lineNoCov">              0 :         add_assoc_long(return_value, &quot;tm_wday&quot;,  parsed_time.tm_wday);</span>
+<span class="lineNum">     114 </span><span class="lineNoCov">              0 :         add_assoc_long(return_value, &quot;tm_yday&quot;,  parsed_time.tm_yday);</span>
+<span class="lineNum">     115 </span><span class="lineNoCov">              0 :         add_assoc_string(return_value, &quot;unparsed&quot;, unparsed_part, 1);</span>
+<span class="lineNum">     116 </span>                : }
+<span class="lineNum">     117 </span>                : /* }}} */
+<span class="lineNum">     118 </span>                : 
+<span class="lineNum">     119 </span>                : #endif
+<span class="lineNum">     120 </span>                : 
+<span class="lineNum">     121 </span>                : /*
+<span class="lineNum">     122 </span>                :  * Local variables:
+<span class="lineNum">     123 </span>                :  * tab-width: 4
+<span class="lineNum">     124 </span>                :  * c-basic-offset: 4
+<span class="lineNum">     125 </span>                :  * End:
+<span class="lineNum">     126 </span>                :  * vim600: sw=4 ts=4 fdm=marker
+<span class="lineNum">     127 </span>                :  * vim&lt;600: sw=4 ts=4
+<span class="lineNum">     128 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

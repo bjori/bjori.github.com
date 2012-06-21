@@ -1,0 +1,1430 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - ext/spl/spl_observer.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../index.html">directory</a> - <a href="index.html">ext/spl</a> - spl_observer.c (source / <a href="spl_observer.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">542</td>
+          <td class="headerCovTableEntry">20</td>
+          <td class="headerCovTableEntryLo">3.7 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">45</td>
+          <td class="headerCovTableEntry">1</td>
+          <td class="headerCovTableEntryLo">2.2 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is SplSubject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Authors: Marcus Boerger &lt;helly@php.net&gt;                              |
+<span class="lineNum">      16 </span>                :    |          Etienne Kneuss &lt;colder@php.net&gt;                             |
+<span class="lineNum">      17 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      18 </span>                :  */
+<span class="lineNum">      19 </span>                : 
+<span class="lineNum">      20 </span>                : /* $Id$ */
+<span class="lineNum">      21 </span>                : 
+<span class="lineNum">      22 </span>                : #ifdef HAVE_CONFIG_H
+<span class="lineNum">      23 </span>                : # include &quot;config.h&quot;
+<span class="lineNum">      24 </span>                : #endif
+<span class="lineNum">      25 </span>                : 
+<span class="lineNum">      26 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">      27 </span>                : #include &quot;php_ini.h&quot;
+<span class="lineNum">      28 </span>                : #include &quot;ext/standard/info.h&quot;
+<span class="lineNum">      29 </span>                : #include &quot;ext/standard/php_var.h&quot;
+<span class="lineNum">      30 </span>                : #include &quot;ext/standard/php_smart_str.h&quot;
+<span class="lineNum">      31 </span>                : #include &quot;zend_interfaces.h&quot;
+<span class="lineNum">      32 </span>                : #include &quot;zend_exceptions.h&quot;
+<span class="lineNum">      33 </span>                : 
+<span class="lineNum">      34 </span>                : #include &quot;php_spl.h&quot;
+<span class="lineNum">      35 </span>                : #include &quot;spl_functions.h&quot;
+<span class="lineNum">      36 </span>                : #include &quot;spl_engine.h&quot;
+<span class="lineNum">      37 </span>                : #include &quot;spl_observer.h&quot;
+<span class="lineNum">      38 </span>                : #include &quot;spl_iterators.h&quot;
+<span class="lineNum">      39 </span>                : #include &quot;spl_array.h&quot;
+<span class="lineNum">      40 </span>                : #include &quot;spl_exceptions.h&quot;
+<span class="lineNum">      41 </span>                : 
+<span class="lineNum">      42 </span>                : SPL_METHOD(SplObserver, update);
+<span class="lineNum">      43 </span>                : SPL_METHOD(SplSubject, attach);
+<span class="lineNum">      44 </span>                : SPL_METHOD(SplSubject, detach);
+<span class="lineNum">      45 </span>                : SPL_METHOD(SplSubject, notify);
+<span class="lineNum">      46 </span>                : 
+<span class="lineNum">      47 </span>                : ZEND_BEGIN_ARG_INFO(arginfo_SplObserver_update, 0)
+<span class="lineNum">      48 </span>                :         ZEND_ARG_OBJ_INFO(0, SplSubject, SplSubject, 0)
+<span class="lineNum">      49 </span>                : ZEND_END_ARG_INFO();
+<span class="lineNum">      50 </span>                : 
+<span class="lineNum">      51 </span>                : static const zend_function_entry spl_funcs_SplObserver[] = {
+<span class="lineNum">      52 </span>                :         SPL_ABSTRACT_ME(SplObserver, update,   arginfo_SplObserver_update)
+<span class="lineNum">      53 </span>                :         {NULL, NULL, NULL}
+<span class="lineNum">      54 </span>                : };
+<span class="lineNum">      55 </span>                : 
+<span class="lineNum">      56 </span>                : ZEND_BEGIN_ARG_INFO(arginfo_SplSubject_attach, 0)
+<span class="lineNum">      57 </span>                :         ZEND_ARG_OBJ_INFO(0, SplObserver, SplObserver, 0)
+<span class="lineNum">      58 </span>                : ZEND_END_ARG_INFO();
+<span class="lineNum">      59 </span>                : 
+<span class="lineNum">      60 </span>                : ZEND_BEGIN_ARG_INFO(arginfo_SplSubject_void, 0)
+<span class="lineNum">      61 </span>                : ZEND_END_ARG_INFO();
+<span class="lineNum">      62 </span>                : 
+<span class="lineNum">      63 </span>                : /*ZEND_BEGIN_ARG_INFO_EX(arginfo_SplSubject_notify, 0, 0, 1)
+<span class="lineNum">      64 </span>                :         ZEND_ARG_OBJ_INFO(0, ignore, SplObserver, 1)
+<span class="lineNum">      65 </span>                : ZEND_END_ARG_INFO();*/
+<span class="lineNum">      66 </span>                : 
+<span class="lineNum">      67 </span>                : static const zend_function_entry spl_funcs_SplSubject[] = {
+<span class="lineNum">      68 </span>                :         SPL_ABSTRACT_ME(SplSubject,  attach,   arginfo_SplSubject_attach)
+<span class="lineNum">      69 </span>                :         SPL_ABSTRACT_ME(SplSubject,  detach,   arginfo_SplSubject_attach)
+<span class="lineNum">      70 </span>                :         SPL_ABSTRACT_ME(SplSubject,  notify,   arginfo_SplSubject_void)
+<span class="lineNum">      71 </span>                :         {NULL, NULL, NULL}
+<span class="lineNum">      72 </span>                : };
+<span class="lineNum">      73 </span>                : 
+<span class="lineNum">      74 </span>                : PHPAPI zend_class_entry     *spl_ce_SplObserver;
+<span class="lineNum">      75 </span>                : PHPAPI zend_class_entry     *spl_ce_SplSubject;
+<span class="lineNum">      76 </span>                : PHPAPI zend_class_entry     *spl_ce_SplObjectStorage;
+<span class="lineNum">      77 </span>                : PHPAPI zend_class_entry     *spl_ce_MultipleIterator;
+<span class="lineNum">      78 </span>                : 
+<span class="lineNum">      79 </span>                : PHPAPI zend_object_handlers spl_handler_SplObjectStorage;
+<span class="lineNum">      80 </span>                : 
+<span class="lineNum">      81 </span>                : typedef struct _spl_SplObjectStorage { /* {{{ */
+<span class="lineNum">      82 </span>                :         zend_object       std;
+<span class="lineNum">      83 </span>                :         HashTable         storage;
+<span class="lineNum">      84 </span>                :         long              index;
+<span class="lineNum">      85 </span>                :         HashPosition      pos;
+<span class="lineNum">      86 </span>                :         long              flags;
+<span class="lineNum">      87 </span>                :         zend_function    *fptr_get_hash;
+<span class="lineNum">      88 </span>                :         HashTable        *debug_info;
+<span class="lineNum">      89 </span>                : } spl_SplObjectStorage; /* }}} */
+<span class="lineNum">      90 </span>                : 
+<span class="lineNum">      91 </span>                : /* {{{ storage is an assoc aray of [zend_object_value]=&gt;[zval *obj, zval *inf] */
+<span class="lineNum">      92 </span>                : typedef struct _spl_SplObjectStorageElement {
+<span class="lineNum">      93 </span>                :         zval* obj;
+<span class="lineNum">      94 </span>                :         zval* inf;
+<a name="95"><span class="lineNum">      95 </span>                : } spl_SplObjectStorageElement; /* }}} */</a>
+<span class="lineNum">      96 </span>                : 
+<span class="lineNum">      97 </span><span class="lineNoCov">              0 : void spl_SplOjectStorage_free_storage(void *object TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">      98 </span>                : {
+<span class="lineNum">      99 </span><span class="lineNoCov">              0 :         spl_SplObjectStorage *intern = (spl_SplObjectStorage *)object;</span>
+<span class="lineNum">     100 </span>                : 
+<span class="lineNum">     101 </span><span class="lineNoCov">              0 :         zend_object_std_dtor(&amp;intern-&gt;std TSRMLS_CC);</span>
+<span class="lineNum">     102 </span>                :         
+<span class="lineNum">     103 </span><span class="lineNoCov">              0 :         zend_hash_destroy(&amp;intern-&gt;storage);</span>
+<span class="lineNum">     104 </span>                :         
+<span class="lineNum">     105 </span><span class="lineNoCov">              0 :         if (intern-&gt;debug_info != NULL) {</span>
+<span class="lineNum">     106 </span><span class="lineNoCov">              0 :                 zend_hash_destroy(intern-&gt;debug_info);</span>
+<span class="lineNum">     107 </span><span class="lineNoCov">              0 :                 efree(intern-&gt;debug_info);</span>
+<span class="lineNum">     108 </span>                :         }
+<span class="lineNum">     109 </span>                : 
+<span class="lineNum">     110 </span><span class="lineNoCov">              0 :         efree(object);</span>
+<a name="111"><span class="lineNum">     111 </span><span class="lineNoCov">              0 : } /* }}} */</span></a>
+<span class="lineNum">     112 </span>                : 
+<span class="lineNum">     113 </span><span class="lineNoCov">              0 : static char *spl_object_storage_get_hash(spl_SplObjectStorage *intern, zval *this,  zval *obj, int *hash_len_ptr TSRMLS_DC) {</span>
+<span class="lineNum">     114 </span><span class="lineNoCov">              0 :         if (intern-&gt;fptr_get_hash) {</span>
+<span class="lineNum">     115 </span>                :                 zval *rv;
+<span class="lineNum">     116 </span><span class="lineNoCov">              0 :                 zend_call_method_with_1_params(&amp;this, intern-&gt;std.ce, &amp;intern-&gt;fptr_get_hash, &quot;getHash&quot;, &amp;rv, obj);</span>
+<span class="lineNum">     117 </span><span class="lineNoCov">              0 :                 if (rv) {</span>
+<span class="lineNum">     118 </span><span class="lineNoCov">              0 :                         if (Z_TYPE_P(rv) == IS_STRING) {</span>
+<span class="lineNum">     119 </span><span class="lineNoCov">              0 :                                 int hash_len = Z_STRLEN_P(rv);</span>
+<span class="lineNum">     120 </span><span class="lineNoCov">              0 :                                 char *hash = emalloc((hash_len+1)*sizeof(char));</span>
+<span class="lineNum">     121 </span><span class="lineNoCov">              0 :                                 strncpy(hash, Z_STRVAL_P(rv), hash_len);</span>
+<span class="lineNum">     122 </span><span class="lineNoCov">              0 :                                 hash[hash_len] = 0;</span>
+<span class="lineNum">     123 </span>                : 
+<span class="lineNum">     124 </span><span class="lineNoCov">              0 :                                 zval_ptr_dtor(&amp;rv);</span>
+<span class="lineNum">     125 </span><span class="lineNoCov">              0 :                                 if (hash_len_ptr) {</span>
+<span class="lineNum">     126 </span><span class="lineNoCov">              0 :                                         *hash_len_ptr = hash_len;</span>
+<span class="lineNum">     127 </span>                :                                 }
+<span class="lineNum">     128 </span><span class="lineNoCov">              0 :                                 return hash;</span>
+<span class="lineNum">     129 </span>                :                         } else {
+<span class="lineNum">     130 </span><span class="lineNoCov">              0 :                                 zend_throw_exception(spl_ce_RuntimeException, &quot;Hash needs to be a string&quot;, 0 TSRMLS_CC);</span>
+<span class="lineNum">     131 </span>                : 
+<span class="lineNum">     132 </span><span class="lineNoCov">              0 :                                 zval_ptr_dtor(&amp;rv);</span>
+<span class="lineNum">     133 </span><span class="lineNoCov">              0 :                                 return NULL;</span>
+<span class="lineNum">     134 </span>                :                         }
+<span class="lineNum">     135 </span>                :                 } else {
+<span class="lineNum">     136 </span><span class="lineNoCov">              0 :                         return NULL;</span>
+<span class="lineNum">     137 </span>                :                 }
+<span class="lineNum">     138 </span>                :         } else {
+<span class="lineNum">     139 </span><span class="lineNoCov">              0 :                 int hash_len = sizeof(zend_object_value);</span>
+<span class="lineNum">     140 </span>                : 
+<span class="lineNum">     141 </span>                : #if HAVE_PACKED_OBJECT_VALUE
+<span class="lineNum">     142 </span>                : 
+<span class="lineNum">     143 </span>                :                 if (hash_len_ptr) {
+<span class="lineNum">     144 </span>                :                         *hash_len_ptr = hash_len;
+<span class="lineNum">     145 </span>                :                 }
+<span class="lineNum">     146 </span>                : 
+<span class="lineNum">     147 </span>                :                 return (char*)&amp;Z_OBJVAL_P(obj);
+<span class="lineNum">     148 </span>                : #else
+<span class="lineNum">     149 </span><span class="lineNoCov">              0 :                 char *hash = emalloc(hash_len + 1);</span>
+<span class="lineNum">     150 </span>                : 
+<span class="lineNum">     151 </span>                :                 zend_object_value zvalue;
+<span class="lineNum">     152 </span><span class="lineNoCov">              0 :                 memset(&amp;zvalue, 0, sizeof(zend_object_value));</span>
+<span class="lineNum">     153 </span><span class="lineNoCov">              0 :                 zvalue.handle = Z_OBJ_HANDLE_P(obj);</span>
+<span class="lineNum">     154 </span><span class="lineNoCov">              0 :                 zvalue.handlers = Z_OBJ_HT_P(obj);</span>
+<span class="lineNum">     155 </span>                : 
+<span class="lineNum">     156 </span><span class="lineNoCov">              0 :                 memcpy(hash, (char *)&amp;zvalue, hash_len);</span>
+<span class="lineNum">     157 </span><span class="lineNoCov">              0 :                 hash[hash_len] = 0;</span>
+<span class="lineNum">     158 </span>                : 
+<span class="lineNum">     159 </span><span class="lineNoCov">              0 :                 if (hash_len_ptr) {</span>
+<span class="lineNum">     160 </span><span class="lineNoCov">              0 :                         *hash_len_ptr = hash_len;</span>
+<span class="lineNum">     161 </span>                :                 }
+<span class="lineNum">     162 </span>                : 
+<span class="lineNum">     163 </span><span class="lineNoCov">              0 :                 return hash;</span>
+<span class="lineNum">     164 </span>                : #endif
+<span class="lineNum">     165 </span>                :         }
+<a name="166"><span class="lineNum">     166 </span>                : }</a>
+<span class="lineNum">     167 </span>                : 
+<span class="lineNum">     168 </span><span class="lineNoCov">              0 : static void spl_object_storage_free_hash(spl_SplObjectStorage *intern, char *hash) {</span>
+<span class="lineNum">     169 </span><span class="lineNoCov">              0 :         if (intern-&gt;fptr_get_hash) {</span>
+<span class="lineNum">     170 </span><span class="lineNoCov">              0 :                 efree(hash);</span>
+<span class="lineNum">     171 </span>                :         } else {
+<span class="lineNum">     172 </span>                : #if HAVE_PACKED_OBJECT_VALUE
+<span class="lineNum">     173 </span>                :                 /* Nothing to do */
+<span class="lineNum">     174 </span>                : #else
+<span class="lineNum">     175 </span><span class="lineNoCov">              0 :                 efree(hash);</span>
+<span class="lineNum">     176 </span>                : #endif
+<span class="lineNum">     177 </span>                :         }
+<a name="178"><span class="lineNum">     178 </span><span class="lineNoCov">              0 : }</span></a>
+<span class="lineNum">     179 </span>                : 
+<span class="lineNum">     180 </span><span class="lineNoCov">              0 : static void spl_object_storage_dtor(spl_SplObjectStorageElement *element) /* {{{ */</span>
+<span class="lineNum">     181 </span>                : {
+<span class="lineNum">     182 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;element-&gt;obj);</span>
+<span class="lineNum">     183 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;element-&gt;inf);</span>
+<a name="184"><span class="lineNum">     184 </span><span class="lineNoCov">              0 : } /* }}} */</span></a>
+<span class="lineNum">     185 </span>                : 
+<span class="lineNum">     186 </span><span class="lineNoCov">              0 : spl_SplObjectStorageElement* spl_object_storage_get(spl_SplObjectStorage *intern, char *hash, int hash_len TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     187 </span>                : {
+<span class="lineNum">     188 </span>                :         spl_SplObjectStorageElement *element;
+<span class="lineNum">     189 </span><span class="lineNoCov">              0 :         if (zend_hash_find(&amp;intern-&gt;storage, hash, hash_len, (void**)&amp;element) == SUCCESS) {</span>
+<span class="lineNum">     190 </span><span class="lineNoCov">              0 :                 return element;</span>
+<span class="lineNum">     191 </span>                :         } else {
+<span class="lineNum">     192 </span><span class="lineNoCov">              0 :                 return NULL;</span>
+<span class="lineNum">     193 </span>                :         }
+<a name="194"><span class="lineNum">     194 </span>                : } /* }}} */</a>
+<span class="lineNum">     195 </span>                : 
+<span class="lineNum">     196 </span><span class="lineNoCov">              0 : void spl_object_storage_attach(spl_SplObjectStorage *intern, zval *this, zval *obj, zval *inf TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     197 </span>                : {
+<span class="lineNum">     198 </span>                :         spl_SplObjectStorageElement *pelement, element;
+<span class="lineNum">     199 </span>                :         
+<span class="lineNum">     200 </span>                :         int hash_len;
+<span class="lineNum">     201 </span><span class="lineNoCov">              0 :         char *hash = spl_object_storage_get_hash(intern, this, obj, &amp;hash_len TSRMLS_CC);</span>
+<span class="lineNum">     202 </span><span class="lineNoCov">              0 :         if (!hash) {</span>
+<span class="lineNum">     203 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     204 </span>                :         }
+<span class="lineNum">     205 </span>                : 
+<span class="lineNum">     206 </span><span class="lineNoCov">              0 :         pelement = spl_object_storage_get(intern, hash, hash_len TSRMLS_CC);</span>
+<span class="lineNum">     207 </span>                : 
+<span class="lineNum">     208 </span><span class="lineNoCov">              0 :         if (inf) {</span>
+<span class="lineNum">     209 </span>                :                 Z_ADDREF_P(inf);
+<span class="lineNum">     210 </span>                :         } else {
+<span class="lineNum">     211 </span><span class="lineNoCov">              0 :                 ALLOC_INIT_ZVAL(inf);</span>
+<span class="lineNum">     212 </span>                :         }
+<span class="lineNum">     213 </span><span class="lineNoCov">              0 :         if (pelement) {</span>
+<span class="lineNum">     214 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;pelement-&gt;inf);</span>
+<span class="lineNum">     215 </span><span class="lineNoCov">              0 :                 pelement-&gt;inf = inf;</span>
+<span class="lineNum">     216 </span><span class="lineNoCov">              0 :                 spl_object_storage_free_hash(intern, hash);</span>
+<span class="lineNum">     217 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     218 </span>                :         }
+<span class="lineNum">     219 </span>                :         Z_ADDREF_P(obj);
+<span class="lineNum">     220 </span><span class="lineNoCov">              0 :         element.obj = obj;</span>
+<span class="lineNum">     221 </span><span class="lineNoCov">              0 :         element.inf = inf;</span>
+<span class="lineNum">     222 </span><span class="lineNoCov">              0 :         zend_hash_update(&amp;intern-&gt;storage, hash, hash_len, &amp;element, sizeof(spl_SplObjectStorageElement), NULL);</span>
+<span class="lineNum">     223 </span><span class="lineNoCov">              0 :         spl_object_storage_free_hash(intern, hash);</span>
+<a name="224"><span class="lineNum">     224 </span>                : } /* }}} */</a>
+<span class="lineNum">     225 </span>                : 
+<span class="lineNum">     226 </span><span class="lineNoCov">              0 : int spl_object_storage_detach(spl_SplObjectStorage *intern, zval *this, zval *obj TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     227 </span>                : {
+<span class="lineNum">     228 </span><span class="lineNoCov">              0 :         int hash_len, ret = FAILURE;</span>
+<span class="lineNum">     229 </span><span class="lineNoCov">              0 :         char *hash = spl_object_storage_get_hash(intern, this, obj, &amp;hash_len TSRMLS_CC);</span>
+<span class="lineNum">     230 </span><span class="lineNoCov">              0 :         if (!hash) {</span>
+<span class="lineNum">     231 </span><span class="lineNoCov">              0 :                 return ret;</span>
+<span class="lineNum">     232 </span>                :         }
+<span class="lineNum">     233 </span><span class="lineNoCov">              0 :         ret = zend_hash_del(&amp;intern-&gt;storage, hash, hash_len);</span>
+<span class="lineNum">     234 </span><span class="lineNoCov">              0 :         spl_object_storage_free_hash(intern, hash);</span>
+<span class="lineNum">     235 </span>                :         
+<span class="lineNum">     236 </span><span class="lineNoCov">              0 :         return ret;</span>
+<a name="237"><span class="lineNum">     237 </span>                : } /* }}}*/</a>
+<span class="lineNum">     238 </span>                : 
+<span class="lineNum">     239 </span><span class="lineNoCov">              0 : void spl_object_storage_addall(spl_SplObjectStorage *intern, zval *this, spl_SplObjectStorage *other TSRMLS_DC) { /* {{{ */</span>
+<span class="lineNum">     240 </span>                :         HashPosition pos;
+<span class="lineNum">     241 </span>                :         spl_SplObjectStorageElement *element;
+<span class="lineNum">     242 </span>                : 
+<span class="lineNum">     243 </span><span class="lineNoCov">              0 :         zend_hash_internal_pointer_reset_ex(&amp;other-&gt;storage, &amp;pos);</span>
+<span class="lineNum">     244 </span><span class="lineNoCov">              0 :         while (zend_hash_get_current_data_ex(&amp;other-&gt;storage, (void **)&amp;element, &amp;pos) == SUCCESS) {</span>
+<span class="lineNum">     245 </span><span class="lineNoCov">              0 :                 spl_object_storage_attach(intern, this, element-&gt;obj, element-&gt;inf TSRMLS_CC);</span>
+<span class="lineNum">     246 </span><span class="lineNoCov">              0 :                 zend_hash_move_forward_ex(&amp;other-&gt;storage, &amp;pos);</span>
+<span class="lineNum">     247 </span>                :         }
+<span class="lineNum">     248 </span>                : 
+<span class="lineNum">     249 </span><span class="lineNoCov">              0 :         zend_hash_internal_pointer_reset_ex(&amp;intern-&gt;storage, &amp;intern-&gt;pos);</span>
+<span class="lineNum">     250 </span><span class="lineNoCov">              0 :         intern-&gt;index = 0;</span>
+<a name="251"><span class="lineNum">     251 </span><span class="lineNoCov">              0 : } /* }}} */</span></a>
+<span class="lineNum">     252 </span>                : 
+<span class="lineNum">     253 </span><span class="lineNoCov">              0 : static zend_object_value spl_object_storage_new_ex(zend_class_entry *class_type, spl_SplObjectStorage **obj, zval *orig TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     254 </span>                : {
+<span class="lineNum">     255 </span>                :         zend_object_value     retval;
+<span class="lineNum">     256 </span>                :         spl_SplObjectStorage *intern;
+<span class="lineNum">     257 </span><span class="lineNoCov">              0 :         zend_class_entry     *parent = class_type;</span>
+<span class="lineNum">     258 </span>                : 
+<span class="lineNum">     259 </span><span class="lineNoCov">              0 :         intern = emalloc(sizeof(spl_SplObjectStorage));</span>
+<span class="lineNum">     260 </span><span class="lineNoCov">              0 :         memset(intern, 0, sizeof(spl_SplObjectStorage));</span>
+<span class="lineNum">     261 </span><span class="lineNoCov">              0 :         *obj = intern;</span>
+<span class="lineNum">     262 </span>                : 
+<span class="lineNum">     263 </span><span class="lineNoCov">              0 :         zend_object_std_init(&amp;intern-&gt;std, class_type TSRMLS_CC);</span>
+<span class="lineNum">     264 </span><span class="lineNoCov">              0 :         object_properties_init(&amp;intern-&gt;std, class_type);</span>
+<span class="lineNum">     265 </span>                : 
+<span class="lineNum">     266 </span><span class="lineNoCov">              0 :         zend_hash_init(&amp;intern-&gt;storage, 0, NULL, (void (*)(void *))spl_object_storage_dtor, 0);</span>
+<span class="lineNum">     267 </span>                : 
+<span class="lineNum">     268 </span><span class="lineNoCov">              0 :         retval.handle = zend_objects_store_put(intern, (zend_objects_store_dtor_t)zend_objects_destroy_object, (zend_objects_free_object_storage_t) spl_SplOjectStorage_free_storage, NULL TSRMLS_CC);</span>
+<span class="lineNum">     269 </span><span class="lineNoCov">              0 :         retval.handlers = &amp;spl_handler_SplObjectStorage;</span>
+<span class="lineNum">     270 </span>                : 
+<span class="lineNum">     271 </span><span class="lineNoCov">              0 :         if (orig) {</span>
+<span class="lineNum">     272 </span><span class="lineNoCov">              0 :                 spl_SplObjectStorage *other = (spl_SplObjectStorage*)zend_object_store_get_object(orig TSRMLS_CC);</span>
+<span class="lineNum">     273 </span><span class="lineNoCov">              0 :                 spl_object_storage_addall(intern, orig, other TSRMLS_CC);</span>
+<span class="lineNum">     274 </span>                :         }
+<span class="lineNum">     275 </span>                : 
+<span class="lineNum">     276 </span><span class="lineNoCov">              0 :         while (parent) {</span>
+<span class="lineNum">     277 </span><span class="lineNoCov">              0 :                 if (parent == spl_ce_SplObjectStorage) {</span>
+<span class="lineNum">     278 </span><span class="lineNoCov">              0 :                         if (class_type != spl_ce_SplObjectStorage) {</span>
+<span class="lineNum">     279 </span><span class="lineNoCov">              0 :                                 zend_hash_find(&amp;class_type-&gt;function_table, &quot;gethash&quot;,    sizeof(&quot;gethash&quot;),    (void **) &amp;intern-&gt;fptr_get_hash);</span>
+<span class="lineNum">     280 </span><span class="lineNoCov">              0 :                                 if (intern-&gt;fptr_get_hash-&gt;common.scope == spl_ce_SplObjectStorage) {</span>
+<span class="lineNum">     281 </span><span class="lineNoCov">              0 :                                         intern-&gt;fptr_get_hash = NULL;</span>
+<span class="lineNum">     282 </span>                :                                 }
+<span class="lineNum">     283 </span>                :                         }
+<span class="lineNum">     284 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     285 </span>                :                 }
+<span class="lineNum">     286 </span>                : 
+<span class="lineNum">     287 </span><span class="lineNoCov">              0 :                 parent = parent-&gt;parent;</span>
+<span class="lineNum">     288 </span>                :         }
+<span class="lineNum">     289 </span>                : 
+<span class="lineNum">     290 </span><span class="lineNoCov">              0 :         return retval;</span>
+<span class="lineNum">     291 </span>                : }
+<span class="lineNum">     292 </span>                : /* }}} */
+<a name="293"><span class="lineNum">     293 </span>                : </a>
+<span class="lineNum">     294 </span>                : /* {{{ spl_object_storage_clone */
+<span class="lineNum">     295 </span><span class="lineNoCov">              0 : static zend_object_value spl_object_storage_clone(zval *zobject TSRMLS_DC)</span>
+<span class="lineNum">     296 </span>                : {
+<span class="lineNum">     297 </span>                :         zend_object_value new_obj_val;
+<span class="lineNum">     298 </span>                :         zend_object *old_object;
+<span class="lineNum">     299 </span>                :         zend_object *new_object;
+<span class="lineNum">     300 </span><span class="lineNoCov">              0 :         zend_object_handle handle = Z_OBJ_HANDLE_P(zobject);</span>
+<span class="lineNum">     301 </span>                :         spl_SplObjectStorage *intern;
+<span class="lineNum">     302 </span>                : 
+<span class="lineNum">     303 </span><span class="lineNoCov">              0 :         old_object = zend_objects_get_address(zobject TSRMLS_CC);</span>
+<span class="lineNum">     304 </span><span class="lineNoCov">              0 :         new_obj_val = spl_object_storage_new_ex(old_object-&gt;ce, &amp;intern, zobject TSRMLS_CC);</span>
+<span class="lineNum">     305 </span><span class="lineNoCov">              0 :         new_object = &amp;intern-&gt;std;</span>
+<span class="lineNum">     306 </span>                : 
+<span class="lineNum">     307 </span><span class="lineNoCov">              0 :         zend_objects_clone_members(new_object, new_obj_val, old_object, handle TSRMLS_CC);</span>
+<span class="lineNum">     308 </span>                : 
+<span class="lineNum">     309 </span><span class="lineNoCov">              0 :         return new_obj_val;</span>
+<span class="lineNum">     310 </span>                : }
+<a name="311"><span class="lineNum">     311 </span>                : /* }}} */</a>
+<span class="lineNum">     312 </span>                : 
+<span class="lineNum">     313 </span><span class="lineNoCov">              0 : static HashTable* spl_object_storage_debug_info(zval *obj, int *is_temp TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     314 </span>                : {
+<span class="lineNum">     315 </span><span class="lineNoCov">              0 :         spl_SplObjectStorage *intern = (spl_SplObjectStorage*)zend_object_store_get_object(obj TSRMLS_CC);</span>
+<span class="lineNum">     316 </span>                :         spl_SplObjectStorageElement *element;
+<span class="lineNum">     317 </span>                :         HashTable *props;
+<span class="lineNum">     318 </span>                :         HashPosition pos;
+<span class="lineNum">     319 </span>                :         zval *tmp, *storage;
+<span class="lineNum">     320 </span>                :         char md5str[33];
+<span class="lineNum">     321 </span>                :         int name_len;
+<span class="lineNum">     322 </span>                :         char *zname;
+<span class="lineNum">     323 </span>                : 
+<span class="lineNum">     324 </span><span class="lineNoCov">              0 :         *is_temp = 0;</span>
+<span class="lineNum">     325 </span>                : 
+<span class="lineNum">     326 </span><span class="lineNoCov">              0 :         props = Z_OBJPROP_P(obj);</span>
+<span class="lineNum">     327 </span><span class="lineNoCov">              0 :         zend_hash_del(props, &quot;\x00gcdata&quot;, sizeof(&quot;\x00gcdata&quot;));</span>
+<span class="lineNum">     328 </span>                : 
+<span class="lineNum">     329 </span><span class="lineNoCov">              0 :         if (intern-&gt;debug_info == NULL) {</span>
+<span class="lineNum">     330 </span><span class="lineNoCov">              0 :                 ALLOC_HASHTABLE(intern-&gt;debug_info);</span>
+<span class="lineNum">     331 </span><span class="lineNoCov">              0 :                 ZEND_INIT_SYMTABLE_EX(intern-&gt;debug_info, zend_hash_num_elements(props) + 1, 0);</span>
+<span class="lineNum">     332 </span>                :         }
+<span class="lineNum">     333 </span>                : 
+<span class="lineNum">     334 </span><span class="lineNoCov">              0 :         if (intern-&gt;debug_info-&gt;nApplyCount == 0) {</span>
+<span class="lineNum">     335 </span><span class="lineNoCov">              0 :                 zend_hash_copy(intern-&gt;debug_info, props, (copy_ctor_func_t) zval_add_ref, (void *) &amp;tmp, sizeof(zval *));</span>
+<span class="lineNum">     336 </span>                : 
+<span class="lineNum">     337 </span><span class="lineNoCov">              0 :                 MAKE_STD_ZVAL(storage);</span>
+<span class="lineNum">     338 </span><span class="lineNoCov">              0 :                 array_init(storage);</span>
+<span class="lineNum">     339 </span>                : 
+<span class="lineNum">     340 </span><span class="lineNoCov">              0 :                 zend_hash_internal_pointer_reset_ex(&amp;intern-&gt;storage, &amp;pos);</span>
+<span class="lineNum">     341 </span><span class="lineNoCov">              0 :                 while (zend_hash_get_current_data_ex(&amp;intern-&gt;storage, (void **)&amp;element, &amp;pos) == SUCCESS) {</span>
+<span class="lineNum">     342 </span><span class="lineNoCov">              0 :                                 php_spl_object_hash(element-&gt;obj, md5str TSRMLS_CC);</span>
+<span class="lineNum">     343 </span><span class="lineNoCov">              0 :                                 MAKE_STD_ZVAL(tmp);</span>
+<span class="lineNum">     344 </span><span class="lineNoCov">              0 :                                 array_init(tmp);</span>
+<span class="lineNum">     345 </span>                :                                 /* Incrementing the refcount of obj and inf would confuse the garbage collector.
+<span class="lineNum">     346 </span>                :                                  * Prefer to null the destructor */
+<span class="lineNum">     347 </span><span class="lineNoCov">              0 :                                 Z_ARRVAL_P(tmp)-&gt;pDestructor = NULL;</span>
+<span class="lineNum">     348 </span><span class="lineNoCov">              0 :                                 add_assoc_zval_ex(tmp, &quot;obj&quot;, sizeof(&quot;obj&quot;), element-&gt;obj);</span>
+<span class="lineNum">     349 </span><span class="lineNoCov">              0 :                                 add_assoc_zval_ex(tmp, &quot;inf&quot;, sizeof(&quot;inf&quot;), element-&gt;inf);</span>
+<span class="lineNum">     350 </span><span class="lineNoCov">              0 :                                 add_assoc_zval_ex(storage, md5str, 33, tmp);</span>
+<span class="lineNum">     351 </span><span class="lineNoCov">              0 :                                 zend_hash_move_forward_ex(&amp;intern-&gt;storage, &amp;pos);</span>
+<span class="lineNum">     352 </span>                :                 }
+<span class="lineNum">     353 </span>                : 
+<span class="lineNum">     354 </span><span class="lineNoCov">              0 :                 zname = spl_gen_private_prop_name(spl_ce_SplObjectStorage, &quot;storage&quot;, sizeof(&quot;storage&quot;)-1, &amp;name_len TSRMLS_CC);</span>
+<span class="lineNum">     355 </span><span class="lineNoCov">              0 :                 zend_symtable_update(intern-&gt;debug_info, zname, name_len+1, &amp;storage, sizeof(zval *), NULL);</span>
+<span class="lineNum">     356 </span><span class="lineNoCov">              0 :                 efree(zname);</span>
+<span class="lineNum">     357 </span>                :         }
+<span class="lineNum">     358 </span>                : 
+<span class="lineNum">     359 </span><span class="lineNoCov">              0 :         return intern-&gt;debug_info;</span>
+<span class="lineNum">     360 </span>                : }
+<span class="lineNum">     361 </span>                : /* }}} */
+<span class="lineNum">     362 </span>                : 
+<span class="lineNum">     363 </span>                : /* overriden for garbage collection
+<a name="364"><span class="lineNum">     364 </span>                :  * This is very hacky, but unfortunately the garbage collector can only query objects for</a>
+<span class="lineNum">     365 </span>                :  * dependencies through get_properties */
+<span class="lineNum">     366 </span><span class="lineNoCov">              0 : static HashTable *spl_object_storage_get_properties(zval *obj TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     367 </span>                : {
+<span class="lineNum">     368 </span><span class="lineNoCov">              0 :         spl_SplObjectStorage *intern = (spl_SplObjectStorage*)zend_object_store_get_object(obj TSRMLS_CC);</span>
+<span class="lineNum">     369 </span>                :         spl_SplObjectStorageElement *element;
+<span class="lineNum">     370 </span>                :         HashTable *props;
+<span class="lineNum">     371 </span>                :         HashPosition pos;
+<span class="lineNum">     372 </span><span class="lineNoCov">              0 :         zval *gcdata_arr = NULL,</span>
+<span class="lineNum">     373 </span>                :                  **gcdata_arr_pp;
+<span class="lineNum">     374 </span>                : 
+<span class="lineNum">     375 </span><span class="lineNoCov">              0 :         props = std_object_handlers.get_properties(obj TSRMLS_CC);</span>
+<span class="lineNum">     376 </span>                :         
+<span class="lineNum">     377 </span><span class="lineNoCov">              0 :         if (!GC_G(gc_active)) {</span>
+<span class="lineNum">     378 </span><span class="lineNoCov">              0 :                 zend_hash_del(props, &quot;\x00gcdata&quot;, sizeof(&quot;\x00gcdata&quot;));</span>
+<span class="lineNum">     379 </span><span class="lineNoCov">              0 :                 return props;</span>
+<span class="lineNum">     380 </span>                :         }
+<span class="lineNum">     381 </span>                : 
+<span class="lineNum">     382 </span><span class="lineNoCov">              0 :         if (props-&gt;nApplyCount &gt; 0) {</span>
+<span class="lineNum">     383 </span><span class="lineNoCov">              0 :                 return props;</span>
+<span class="lineNum">     384 </span>                :         }
+<span class="lineNum">     385 </span>                : 
+<span class="lineNum">     386 </span>                :         /* clean \x00gcdata, as it may be out of date */
+<span class="lineNum">     387 </span><span class="lineNoCov">              0 :         if (zend_hash_find(props, &quot;\x00gcdata&quot;, sizeof(&quot;\x00gcdata&quot;), (void**) &amp;gcdata_arr_pp) == SUCCESS) {</span>
+<span class="lineNum">     388 </span><span class="lineNoCov">              0 :                 gcdata_arr = *gcdata_arr_pp;</span>
+<span class="lineNum">     389 </span><span class="lineNoCov">              0 :                 zend_hash_clean(Z_ARRVAL_P(gcdata_arr));</span>
+<span class="lineNum">     390 </span>                :         }
+<span class="lineNum">     391 </span>                : 
+<span class="lineNum">     392 </span><span class="lineNoCov">              0 :         if (gcdata_arr == NULL) {</span>
+<span class="lineNum">     393 </span><span class="lineNoCov">              0 :                 MAKE_STD_ZVAL(gcdata_arr);</span>
+<span class="lineNum">     394 </span><span class="lineNoCov">              0 :                 array_init(gcdata_arr);</span>
+<span class="lineNum">     395 </span>                :                 /* don't decrease refcount of members when destroying */
+<span class="lineNum">     396 </span><span class="lineNoCov">              0 :                 Z_ARRVAL_P(gcdata_arr)-&gt;pDestructor = NULL;</span>
+<span class="lineNum">     397 </span>                : 
+<span class="lineNum">     398 </span>                :                 /* name starts with \x00 to make tampering in user-land more difficult */
+<span class="lineNum">     399 </span><span class="lineNoCov">              0 :                 zend_hash_add(props, &quot;\x00gcdata&quot;, sizeof(&quot;\x00gcdata&quot;), &amp;gcdata_arr, sizeof(gcdata_arr), NULL);</span>
+<span class="lineNum">     400 </span>                :         }
+<span class="lineNum">     401 </span>                : 
+<span class="lineNum">     402 </span><span class="lineNoCov">              0 :         zend_hash_internal_pointer_reset_ex(&amp;intern-&gt;storage, &amp;pos);</span>
+<span class="lineNum">     403 </span><span class="lineNoCov">              0 :         while (zend_hash_get_current_data_ex(&amp;intern-&gt;storage, (void **)&amp;element, &amp;pos) == SUCCESS) {</span>
+<span class="lineNum">     404 </span><span class="lineNoCov">              0 :                 add_next_index_zval(gcdata_arr, element-&gt;obj);</span>
+<span class="lineNum">     405 </span><span class="lineNoCov">              0 :                 add_next_index_zval(gcdata_arr, element-&gt;inf);</span>
+<span class="lineNum">     406 </span><span class="lineNoCov">              0 :                 zend_hash_move_forward_ex(&amp;intern-&gt;storage, &amp;pos);</span>
+<span class="lineNum">     407 </span>                :         }
+<span class="lineNum">     408 </span>                : 
+<span class="lineNum">     409 </span><span class="lineNoCov">              0 :         return props;</span>
+<span class="lineNum">     410 </span>                : }
+<a name="411"><span class="lineNum">     411 </span>                : /* }}} */</a>
+<span class="lineNum">     412 </span>                : 
+<span class="lineNum">     413 </span><span class="lineNoCov">              0 : static int spl_object_storage_compare_info(spl_SplObjectStorageElement *e1, spl_SplObjectStorageElement *e2 TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     414 </span>                : {
+<span class="lineNum">     415 </span>                :         zval result;
+<span class="lineNum">     416 </span>                : 
+<span class="lineNum">     417 </span><span class="lineNoCov">              0 :         if (compare_function(&amp;result, e1-&gt;inf, e2-&gt;inf TSRMLS_CC) == FAILURE) {</span>
+<span class="lineNum">     418 </span><span class="lineNoCov">              0 :                 return 1;</span>
+<span class="lineNum">     419 </span>                :         }
+<span class="lineNum">     420 </span>                : 
+<span class="lineNum">     421 </span><span class="lineNoCov">              0 :         return Z_LVAL(result);</span>
+<span class="lineNum">     422 </span>                : }
+<a name="423"><span class="lineNum">     423 </span>                : /* }}} */</a>
+<span class="lineNum">     424 </span>                : 
+<span class="lineNum">     425 </span><span class="lineNoCov">              0 : static int spl_object_storage_compare_objects(zval *o1, zval *o2 TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     426 </span>                : {
+<span class="lineNum">     427 </span><span class="lineNoCov">              0 :         zend_object *zo1 = (zend_object *)zend_object_store_get_object(o1 TSRMLS_CC);</span>
+<span class="lineNum">     428 </span><span class="lineNoCov">              0 :         zend_object *zo2 = (zend_object *)zend_object_store_get_object(o2 TSRMLS_CC);</span>
+<span class="lineNum">     429 </span>                : 
+<span class="lineNum">     430 </span><span class="lineNoCov">              0 :         if (zo1-&gt;ce != spl_ce_SplObjectStorage || zo2-&gt;ce != spl_ce_SplObjectStorage) {</span>
+<span class="lineNum">     431 </span><span class="lineNoCov">              0 :                 return 1;</span>
+<span class="lineNum">     432 </span>                :         }
+<span class="lineNum">     433 </span>                : 
+<span class="lineNum">     434 </span><span class="lineNoCov">              0 :         return zend_hash_compare(&amp;((spl_SplObjectStorage *)zo1)-&gt;storage, &amp;((spl_SplObjectStorage *)zo2)-&gt;storage, (compare_func_t) spl_object_storage_compare_info, 0 TSRMLS_CC);</span>
+<span class="lineNum">     435 </span>                : }
+<span class="lineNum">     436 </span>                : /* }}} */
+<a name="437"><span class="lineNum">     437 </span>                : </a>
+<span class="lineNum">     438 </span>                : /* {{{ spl_array_object_new */
+<span class="lineNum">     439 </span><span class="lineNoCov">              0 : static zend_object_value spl_SplObjectStorage_new(zend_class_entry *class_type TSRMLS_DC)</span>
+<span class="lineNum">     440 </span>                : {
+<span class="lineNum">     441 </span>                :         spl_SplObjectStorage *tmp;
+<span class="lineNum">     442 </span><span class="lineNoCov">              0 :         return spl_object_storage_new_ex(class_type, &amp;tmp, NULL TSRMLS_CC);</span>
+<span class="lineNum">     443 </span>                : }
+<a name="444"><span class="lineNum">     444 </span>                : /* }}} */</a>
+<span class="lineNum">     445 </span>                : 
+<span class="lineNum">     446 </span><span class="lineNoCov">              0 : int spl_object_storage_contains(spl_SplObjectStorage *intern, zval *this, zval *obj TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     447 </span>                : {
+<span class="lineNum">     448 </span>                :         int hash_len, found;
+<span class="lineNum">     449 </span><span class="lineNoCov">              0 :         char *hash = spl_object_storage_get_hash(intern, this, obj, &amp;hash_len TSRMLS_CC);</span>
+<span class="lineNum">     450 </span><span class="lineNoCov">              0 :         if (!hash) {</span>
+<span class="lineNum">     451 </span><span class="lineNoCov">              0 :                 return 0;</span>
+<span class="lineNum">     452 </span>                :         }
+<span class="lineNum">     453 </span>                : 
+<span class="lineNum">     454 </span><span class="lineNoCov">              0 :         found = zend_hash_exists(&amp;intern-&gt;storage, hash, hash_len);</span>
+<span class="lineNum">     455 </span><span class="lineNoCov">              0 :         spl_object_storage_free_hash(intern, hash);</span>
+<span class="lineNum">     456 </span><span class="lineNoCov">              0 :         return found;</span>
+<span class="lineNum">     457 </span>                : } /* }}} */
+<span class="lineNum">     458 </span>                : 
+<a name="459"><span class="lineNum">     459 </span>                : /* {{{ proto void SplObjectStorage::attach($obj, $inf = NULL)</a>
+<span class="lineNum">     460 </span>                :  Attaches an object to the storage if not yet contained */
+<span class="lineNum">     461 </span><span class="lineNoCov">              0 : SPL_METHOD(SplObjectStorage, attach)</span>
+<span class="lineNum">     462 </span>                : {
+<span class="lineNum">     463 </span><span class="lineNoCov">              0 :         zval *obj, *inf = NULL;</span>
+<span class="lineNum">     464 </span>                : 
+<span class="lineNum">     465 </span><span class="lineNoCov">              0 :         spl_SplObjectStorage *intern = (spl_SplObjectStorage*)zend_object_store_get_object(getThis() TSRMLS_CC);</span>
+<span class="lineNum">     466 </span>                : 
+<span class="lineNum">     467 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;o|z!&quot;, &amp;obj, &amp;inf) == FAILURE) {</span>
+<span class="lineNum">     468 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     469 </span>                :         }
+<span class="lineNum">     470 </span><span class="lineNoCov">              0 :         spl_object_storage_attach(intern, getThis(), obj, inf TSRMLS_CC);</span>
+<span class="lineNum">     471 </span>                : } /* }}} */
+<span class="lineNum">     472 </span>                : 
+<a name="473"><span class="lineNum">     473 </span>                : /* {{{ proto void SplObjectStorage::detach($obj)</a>
+<span class="lineNum">     474 </span>                :  Detaches an object from the storage */
+<span class="lineNum">     475 </span><span class="lineNoCov">              0 : SPL_METHOD(SplObjectStorage, detach)</span>
+<span class="lineNum">     476 </span>                : {
+<span class="lineNum">     477 </span>                :         zval *obj;
+<span class="lineNum">     478 </span><span class="lineNoCov">              0 :         spl_SplObjectStorage *intern = (spl_SplObjectStorage*)zend_object_store_get_object(getThis() TSRMLS_CC);</span>
+<span class="lineNum">     479 </span>                : 
+<span class="lineNum">     480 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;o&quot;, &amp;obj) == FAILURE) {</span>
+<span class="lineNum">     481 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     482 </span>                :         }
+<span class="lineNum">     483 </span><span class="lineNoCov">              0 :         spl_object_storage_detach(intern, getThis(), obj TSRMLS_CC);</span>
+<span class="lineNum">     484 </span>                : 
+<span class="lineNum">     485 </span><span class="lineNoCov">              0 :         zend_hash_internal_pointer_reset_ex(&amp;intern-&gt;storage, &amp;intern-&gt;pos);</span>
+<span class="lineNum">     486 </span><span class="lineNoCov">              0 :         intern-&gt;index = 0;</span>
+<span class="lineNum">     487 </span>                : } /* }}} */
+<span class="lineNum">     488 </span>                : 
+<a name="489"><span class="lineNum">     489 </span>                : /* {{{ proto string SplObjectStorage::getHash($object)</a>
+<span class="lineNum">     490 </span>                :  Returns the hash of an object */
+<span class="lineNum">     491 </span><span class="lineNoCov">              0 : SPL_METHOD(SplObjectStorage, getHash)</span>
+<span class="lineNum">     492 </span>                : {
+<span class="lineNum">     493 </span>                :         zval *obj;
+<span class="lineNum">     494 </span>                :         char *hash;
+<span class="lineNum">     495 </span>                : 
+<span class="lineNum">     496 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;o&quot;, &amp;obj) == FAILURE) {</span>
+<span class="lineNum">     497 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     498 </span>                :         }
+<span class="lineNum">     499 </span>                : 
+<span class="lineNum">     500 </span><span class="lineNoCov">              0 :         hash = emalloc(33);</span>
+<span class="lineNum">     501 </span><span class="lineNoCov">              0 :         php_spl_object_hash(obj, hash TSRMLS_CC);</span>
+<span class="lineNum">     502 </span>                :         
+<span class="lineNum">     503 </span><span class="lineNoCov">              0 :         RETVAL_STRING(hash, 0);</span>
+<span class="lineNum">     504 </span>                : 
+<span class="lineNum">     505 </span>                : } /* }}} */
+<span class="lineNum">     506 </span>                : 
+<a name="507"><span class="lineNum">     507 </span>                : /* {{{ proto mixed SplObjectStorage::offsetGet($object)</a>
+<span class="lineNum">     508 </span>                :  Returns associated information for a stored object */
+<span class="lineNum">     509 </span><span class="lineNoCov">              0 : SPL_METHOD(SplObjectStorage, offsetGet)</span>
+<span class="lineNum">     510 </span>                : {
+<span class="lineNum">     511 </span>                :         zval *obj;
+<span class="lineNum">     512 </span>                :         spl_SplObjectStorageElement *element;
+<span class="lineNum">     513 </span><span class="lineNoCov">              0 :         spl_SplObjectStorage *intern = (spl_SplObjectStorage*)zend_object_store_get_object(getThis() TSRMLS_CC);</span>
+<span class="lineNum">     514 </span>                :         char *hash;
+<span class="lineNum">     515 </span>                :         int hash_len;
+<span class="lineNum">     516 </span>                : 
+<span class="lineNum">     517 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;o&quot;, &amp;obj) == FAILURE) {</span>
+<span class="lineNum">     518 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     519 </span>                :         }
+<span class="lineNum">     520 </span>                : 
+<span class="lineNum">     521 </span><span class="lineNoCov">              0 :         hash = spl_object_storage_get_hash(intern, getThis(), obj, &amp;hash_len TSRMLS_CC);</span>
+<span class="lineNum">     522 </span><span class="lineNoCov">              0 :         if (!hash) {</span>
+<span class="lineNum">     523 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     524 </span>                :         }
+<span class="lineNum">     525 </span>                : 
+<span class="lineNum">     526 </span><span class="lineNoCov">              0 :         element = spl_object_storage_get(intern, hash, hash_len TSRMLS_CC);</span>
+<span class="lineNum">     527 </span><span class="lineNoCov">              0 :         spl_object_storage_free_hash(intern, hash);</span>
+<span class="lineNum">     528 </span>                : 
+<span class="lineNum">     529 </span><span class="lineNoCov">              0 :         if (!element) {</span>
+<span class="lineNum">     530 </span><span class="lineNoCov">              0 :                 zend_throw_exception_ex(spl_ce_UnexpectedValueException, 0 TSRMLS_CC, &quot;Object not found&quot;);</span>
+<span class="lineNum">     531 </span>                :         } else {
+<span class="lineNum">     532 </span><span class="lineNoCov">              0 :                 RETURN_ZVAL(element-&gt;inf,1, 0);</span>
+<span class="lineNum">     533 </span>                :         }
+<span class="lineNum">     534 </span>                : } /* }}} */
+<span class="lineNum">     535 </span>                : 
+<a name="536"><span class="lineNum">     536 </span>                : /* {{{ proto bool SplObjectStorage::addAll(SplObjectStorage $os)</a>
+<span class="lineNum">     537 </span>                :  Add all elements contained in $os */
+<span class="lineNum">     538 </span><span class="lineNoCov">              0 : SPL_METHOD(SplObjectStorage, addAll)</span>
+<span class="lineNum">     539 </span>                : {
+<span class="lineNum">     540 </span>                :         zval *obj;
+<span class="lineNum">     541 </span><span class="lineNoCov">              0 :         spl_SplObjectStorage *intern = (spl_SplObjectStorage *)zend_object_store_get_object(getThis() TSRMLS_CC);</span>
+<span class="lineNum">     542 </span>                :         spl_SplObjectStorage *other;
+<span class="lineNum">     543 </span>                : 
+<span class="lineNum">     544 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;O&quot;, &amp;obj, spl_ce_SplObjectStorage) == FAILURE) {</span>
+<span class="lineNum">     545 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     546 </span>                :         }
+<span class="lineNum">     547 </span>                : 
+<span class="lineNum">     548 </span><span class="lineNoCov">              0 :         other = (spl_SplObjectStorage *)zend_object_store_get_object(obj TSRMLS_CC);</span>
+<span class="lineNum">     549 </span>                : 
+<span class="lineNum">     550 </span><span class="lineNoCov">              0 :         spl_object_storage_addall(intern, getThis(),  other TSRMLS_CC);</span>
+<span class="lineNum">     551 </span>                : 
+<span class="lineNum">     552 </span><span class="lineNoCov">              0 :         RETURN_LONG(zend_hash_num_elements(&amp;intern-&gt;storage));</span>
+<span class="lineNum">     553 </span>                : } /* }}} */
+<span class="lineNum">     554 </span>                : 
+<a name="555"><span class="lineNum">     555 </span>                : /* {{{ proto bool SplObjectStorage::removeAll(SplObjectStorage $os)</a>
+<span class="lineNum">     556 </span>                :  Remove all elements contained in $os */
+<span class="lineNum">     557 </span><span class="lineNoCov">              0 : SPL_METHOD(SplObjectStorage, removeAll)</span>
+<span class="lineNum">     558 </span>                : {
+<span class="lineNum">     559 </span>                :         zval *obj;
+<span class="lineNum">     560 </span><span class="lineNoCov">              0 :         spl_SplObjectStorage *intern = (spl_SplObjectStorage *)zend_object_store_get_object(getThis() TSRMLS_CC);</span>
+<span class="lineNum">     561 </span>                :         spl_SplObjectStorage *other;
+<span class="lineNum">     562 </span>                :         spl_SplObjectStorageElement *element;
+<span class="lineNum">     563 </span>                : 
+<span class="lineNum">     564 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;O&quot;, &amp;obj, spl_ce_SplObjectStorage) == FAILURE) {</span>
+<span class="lineNum">     565 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     566 </span>                :         }
+<span class="lineNum">     567 </span>                : 
+<span class="lineNum">     568 </span><span class="lineNoCov">              0 :         other = (spl_SplObjectStorage *)zend_object_store_get_object(obj TSRMLS_CC);</span>
+<span class="lineNum">     569 </span>                : 
+<span class="lineNum">     570 </span><span class="lineNoCov">              0 :         zend_hash_internal_pointer_reset(&amp;other-&gt;storage);</span>
+<span class="lineNum">     571 </span><span class="lineNoCov">              0 :         while (zend_hash_get_current_data(&amp;other-&gt;storage, (void **)&amp;element) == SUCCESS) {</span>
+<span class="lineNum">     572 </span><span class="lineNoCov">              0 :                 if (spl_object_storage_detach(intern, getThis(), element-&gt;obj TSRMLS_CC) == FAILURE) {</span>
+<span class="lineNum">     573 </span><span class="lineNoCov">              0 :                         zend_hash_move_forward(&amp;other-&gt;storage);</span>
+<span class="lineNum">     574 </span>                :                 }
+<span class="lineNum">     575 </span>                :         }
+<span class="lineNum">     576 </span>                : 
+<span class="lineNum">     577 </span><span class="lineNoCov">              0 :         zend_hash_internal_pointer_reset_ex(&amp;intern-&gt;storage, &amp;intern-&gt;pos);</span>
+<span class="lineNum">     578 </span><span class="lineNoCov">              0 :         intern-&gt;index = 0;</span>
+<span class="lineNum">     579 </span>                : 
+<span class="lineNum">     580 </span><span class="lineNoCov">              0 :         RETURN_LONG(zend_hash_num_elements(&amp;intern-&gt;storage));</span>
+<span class="lineNum">     581 </span>                : } /* }}} */
+<span class="lineNum">     582 </span>                : 
+<a name="583"><span class="lineNum">     583 </span>                : /* {{{ proto bool SplObjectStorage::removeAllExcept(SplObjectStorage $os)</a>
+<span class="lineNum">     584 </span>                :  Remove elements not common to both this SplObjectStorage instance and $os */
+<span class="lineNum">     585 </span><span class="lineNoCov">              0 : SPL_METHOD(SplObjectStorage, removeAllExcept)</span>
+<span class="lineNum">     586 </span>                : {
+<span class="lineNum">     587 </span>                :         zval *obj;
+<span class="lineNum">     588 </span><span class="lineNoCov">              0 :         spl_SplObjectStorage *intern = (spl_SplObjectStorage *)zend_object_store_get_object(getThis() TSRMLS_CC);</span>
+<span class="lineNum">     589 </span>                :         spl_SplObjectStorage *other;
+<span class="lineNum">     590 </span>                :         spl_SplObjectStorageElement *element;
+<span class="lineNum">     591 </span>                : 
+<span class="lineNum">     592 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;O&quot;, &amp;obj, spl_ce_SplObjectStorage) == FAILURE) {</span>
+<span class="lineNum">     593 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     594 </span>                :         }
+<span class="lineNum">     595 </span>                : 
+<span class="lineNum">     596 </span><span class="lineNoCov">              0 :         other = (spl_SplObjectStorage *)zend_object_store_get_object(obj TSRMLS_CC);</span>
+<span class="lineNum">     597 </span>                : 
+<span class="lineNum">     598 </span><span class="lineNoCov">              0 :         zend_hash_internal_pointer_reset(&amp;intern-&gt;storage);</span>
+<span class="lineNum">     599 </span><span class="lineNoCov">              0 :         while (zend_hash_get_current_data(&amp;intern-&gt;storage, (void **)&amp;element) == SUCCESS) {</span>
+<span class="lineNum">     600 </span><span class="lineNoCov">              0 :                 if (!spl_object_storage_contains(other, getThis(), element-&gt;obj TSRMLS_CC)) {</span>
+<span class="lineNum">     601 </span><span class="lineNoCov">              0 :                         spl_object_storage_detach(intern, getThis(), element-&gt;obj TSRMLS_CC);</span>
+<span class="lineNum">     602 </span>                :                 }
+<span class="lineNum">     603 </span><span class="lineNoCov">              0 :                 zend_hash_move_forward(&amp;intern-&gt;storage);</span>
+<span class="lineNum">     604 </span>                :         }
+<span class="lineNum">     605 </span>                : 
+<span class="lineNum">     606 </span><span class="lineNoCov">              0 :         zend_hash_internal_pointer_reset_ex(&amp;intern-&gt;storage, &amp;intern-&gt;pos);</span>
+<span class="lineNum">     607 </span><span class="lineNoCov">              0 :         intern-&gt;index = 0;</span>
+<span class="lineNum">     608 </span>                : 
+<span class="lineNum">     609 </span><span class="lineNoCov">              0 :         RETURN_LONG(zend_hash_num_elements(&amp;intern-&gt;storage));</span>
+<span class="lineNum">     610 </span>                : }
+<span class="lineNum">     611 </span>                : /* }}} */
+<span class="lineNum">     612 </span>                : 
+<a name="613"><span class="lineNum">     613 </span>                : /* {{{ proto bool SplObjectStorage::contains($obj)</a>
+<span class="lineNum">     614 </span>                :  Determine whethe an object is contained in the storage */
+<span class="lineNum">     615 </span><span class="lineNoCov">              0 : SPL_METHOD(SplObjectStorage, contains)</span>
+<span class="lineNum">     616 </span>                : {
+<span class="lineNum">     617 </span>                :         zval *obj;
+<span class="lineNum">     618 </span><span class="lineNoCov">              0 :         spl_SplObjectStorage *intern = (spl_SplObjectStorage*)zend_object_store_get_object(getThis() TSRMLS_CC);</span>
+<span class="lineNum">     619 </span>                : 
+<span class="lineNum">     620 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;o&quot;, &amp;obj) == FAILURE) {</span>
+<span class="lineNum">     621 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     622 </span>                :         }
+<span class="lineNum">     623 </span><span class="lineNoCov">              0 :         RETURN_BOOL(spl_object_storage_contains(intern, getThis(), obj TSRMLS_CC));</span>
+<span class="lineNum">     624 </span>                : } /* }}} */
+<span class="lineNum">     625 </span>                : 
+<a name="626"><span class="lineNum">     626 </span>                : /* {{{ proto int SplObjectStorage::count()</a>
+<span class="lineNum">     627 </span>                :  Determine number of objects in storage */
+<span class="lineNum">     628 </span><span class="lineNoCov">              0 : SPL_METHOD(SplObjectStorage, count)</span>
+<span class="lineNum">     629 </span>                : {
+<span class="lineNum">     630 </span><span class="lineNoCov">              0 :         spl_SplObjectStorage *intern = (spl_SplObjectStorage*)zend_object_store_get_object(getThis() TSRMLS_CC);</span>
+<span class="lineNum">     631 </span>                :         
+<span class="lineNum">     632 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters_none() == FAILURE) {</span>
+<span class="lineNum">     633 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     634 </span>                :         }
+<span class="lineNum">     635 </span>                :         
+<span class="lineNum">     636 </span><span class="lineNoCov">              0 :         RETURN_LONG(zend_hash_num_elements(&amp;intern-&gt;storage));</span>
+<span class="lineNum">     637 </span>                : } /* }}} */
+<span class="lineNum">     638 </span>                : 
+<a name="639"><span class="lineNum">     639 </span>                : /* {{{ proto void SplObjectStorage::rewind()</a>
+<span class="lineNum">     640 </span>                :  Rewind to first position */
+<span class="lineNum">     641 </span><span class="lineNoCov">              0 : SPL_METHOD(SplObjectStorage, rewind)</span>
+<span class="lineNum">     642 </span>                : {
+<span class="lineNum">     643 </span><span class="lineNoCov">              0 :         spl_SplObjectStorage *intern = (spl_SplObjectStorage*)zend_object_store_get_object(getThis() TSRMLS_CC);</span>
+<span class="lineNum">     644 </span>                :         
+<span class="lineNum">     645 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters_none() == FAILURE) {</span>
+<span class="lineNum">     646 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     647 </span>                :         }
+<span class="lineNum">     648 </span>                :         
+<span class="lineNum">     649 </span><span class="lineNoCov">              0 :         zend_hash_internal_pointer_reset_ex(&amp;intern-&gt;storage, &amp;intern-&gt;pos);</span>
+<span class="lineNum">     650 </span><span class="lineNoCov">              0 :         intern-&gt;index = 0;</span>
+<span class="lineNum">     651 </span>                : } /* }}} */
+<span class="lineNum">     652 </span>                : 
+<a name="653"><span class="lineNum">     653 </span>                : /* {{{ proto bool SplObjectStorage::valid()</a>
+<span class="lineNum">     654 </span>                :  Returns whether current position is valid */
+<span class="lineNum">     655 </span><span class="lineNoCov">              0 : SPL_METHOD(SplObjectStorage, valid)</span>
+<span class="lineNum">     656 </span>                : {
+<span class="lineNum">     657 </span><span class="lineNoCov">              0 :         spl_SplObjectStorage *intern = (spl_SplObjectStorage*)zend_object_store_get_object(getThis() TSRMLS_CC);</span>
+<span class="lineNum">     658 </span>                :         
+<span class="lineNum">     659 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters_none() == FAILURE) {</span>
+<span class="lineNum">     660 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     661 </span>                :         }
+<span class="lineNum">     662 </span>                :         
+<span class="lineNum">     663 </span><span class="lineNoCov">              0 :         RETURN_BOOL(zend_hash_has_more_elements_ex(&amp;intern-&gt;storage, &amp;intern-&gt;pos) == SUCCESS);</span>
+<span class="lineNum">     664 </span>                : } /* }}} */
+<span class="lineNum">     665 </span>                : 
+<a name="666"><span class="lineNum">     666 </span>                : /* {{{ proto mixed SplObjectStorage::key()</a>
+<span class="lineNum">     667 </span>                :  Returns current key */
+<span class="lineNum">     668 </span><span class="lineNoCov">              0 : SPL_METHOD(SplObjectStorage, key)</span>
+<span class="lineNum">     669 </span>                : {
+<span class="lineNum">     670 </span><span class="lineNoCov">              0 :         spl_SplObjectStorage *intern = (spl_SplObjectStorage*)zend_object_store_get_object(getThis() TSRMLS_CC);</span>
+<span class="lineNum">     671 </span>                :         
+<span class="lineNum">     672 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters_none() == FAILURE) {</span>
+<span class="lineNum">     673 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     674 </span>                :         }
+<span class="lineNum">     675 </span>                :         
+<span class="lineNum">     676 </span><span class="lineNoCov">              0 :         RETURN_LONG(intern-&gt;index);</span>
+<span class="lineNum">     677 </span>                : } /* }}} */
+<span class="lineNum">     678 </span>                : 
+<a name="679"><span class="lineNum">     679 </span>                : /* {{{ proto mixed SplObjectStorage::current()</a>
+<span class="lineNum">     680 </span>                :  Returns current element */
+<span class="lineNum">     681 </span><span class="lineNoCov">              0 : SPL_METHOD(SplObjectStorage, current)</span>
+<span class="lineNum">     682 </span>                : {
+<span class="lineNum">     683 </span>                :         spl_SplObjectStorageElement *element;
+<span class="lineNum">     684 </span><span class="lineNoCov">              0 :         spl_SplObjectStorage *intern = (spl_SplObjectStorage*)zend_object_store_get_object(getThis() TSRMLS_CC);</span>
+<span class="lineNum">     685 </span>                :         
+<span class="lineNum">     686 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters_none() == FAILURE) {</span>
+<span class="lineNum">     687 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     688 </span>                :         }
+<span class="lineNum">     689 </span>                :         
+<span class="lineNum">     690 </span><span class="lineNoCov">              0 :         if (zend_hash_get_current_data_ex(&amp;intern-&gt;storage, (void**)&amp;element, &amp;intern-&gt;pos) == FAILURE) {</span>
+<span class="lineNum">     691 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     692 </span>                :         }
+<span class="lineNum">     693 </span><span class="lineNoCov">              0 :         RETVAL_ZVAL(element-&gt;obj, 1, 0);</span>
+<span class="lineNum">     694 </span>                : } /* }}} */
+<span class="lineNum">     695 </span>                : 
+<a name="696"><span class="lineNum">     696 </span>                : /* {{{ proto mixed SplObjectStorage::getInfo()</a>
+<span class="lineNum">     697 </span>                :  Returns associated information to current element */
+<span class="lineNum">     698 </span><span class="lineNoCov">              0 : SPL_METHOD(SplObjectStorage, getInfo)</span>
+<span class="lineNum">     699 </span>                : {
+<span class="lineNum">     700 </span>                :         spl_SplObjectStorageElement *element;
+<span class="lineNum">     701 </span><span class="lineNoCov">              0 :         spl_SplObjectStorage *intern = (spl_SplObjectStorage*)zend_object_store_get_object(getThis() TSRMLS_CC);</span>
+<span class="lineNum">     702 </span>                : 
+<span class="lineNum">     703 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters_none() == FAILURE) {</span>
+<span class="lineNum">     704 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     705 </span>                :         }
+<span class="lineNum">     706 </span>                :         
+<span class="lineNum">     707 </span><span class="lineNoCov">              0 :         if (zend_hash_get_current_data_ex(&amp;intern-&gt;storage, (void**)&amp;element, &amp;intern-&gt;pos) == FAILURE) {</span>
+<span class="lineNum">     708 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     709 </span>                :         }
+<span class="lineNum">     710 </span><span class="lineNoCov">              0 :         RETVAL_ZVAL(element-&gt;inf, 1, 0);</span>
+<span class="lineNum">     711 </span>                : } /* }}} */
+<span class="lineNum">     712 </span>                : 
+<a name="713"><span class="lineNum">     713 </span>                : /* {{{ proto mixed SplObjectStorage::setInfo(mixed $inf)</a>
+<span class="lineNum">     714 </span>                :  Sets associated information of current element to $inf */
+<span class="lineNum">     715 </span><span class="lineNoCov">              0 : SPL_METHOD(SplObjectStorage, setInfo)</span>
+<span class="lineNum">     716 </span>                : {
+<span class="lineNum">     717 </span>                :         spl_SplObjectStorageElement *element;
+<span class="lineNum">     718 </span><span class="lineNoCov">              0 :         spl_SplObjectStorage *intern = (spl_SplObjectStorage*)zend_object_store_get_object(getThis() TSRMLS_CC);</span>
+<span class="lineNum">     719 </span>                :         zval *inf;
+<span class="lineNum">     720 </span>                :         
+<span class="lineNum">     721 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;z&quot;, &amp;inf) == FAILURE) {</span>
+<span class="lineNum">     722 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     723 </span>                :         }
+<span class="lineNum">     724 </span>                : 
+<span class="lineNum">     725 </span><span class="lineNoCov">              0 :         if (zend_hash_get_current_data_ex(&amp;intern-&gt;storage, (void**)&amp;element, &amp;intern-&gt;pos) == FAILURE) {</span>
+<span class="lineNum">     726 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     727 </span>                :         }
+<span class="lineNum">     728 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;element-&gt;inf);</span>
+<span class="lineNum">     729 </span><span class="lineNoCov">              0 :         element-&gt;inf = inf;</span>
+<span class="lineNum">     730 </span><span class="lineNoCov">              0 :         Z_ADDREF_P(inf);</span>
+<span class="lineNum">     731 </span>                : } /* }}} */
+<span class="lineNum">     732 </span>                : 
+<a name="733"><span class="lineNum">     733 </span>                : /* {{{ proto void SplObjectStorage::next()</a>
+<span class="lineNum">     734 </span>                :  Moves position forward */
+<span class="lineNum">     735 </span><span class="lineNoCov">              0 : SPL_METHOD(SplObjectStorage, next)</span>
+<span class="lineNum">     736 </span>                : {
+<span class="lineNum">     737 </span><span class="lineNoCov">              0 :         spl_SplObjectStorage *intern = (spl_SplObjectStorage*)zend_object_store_get_object(getThis() TSRMLS_CC);</span>
+<span class="lineNum">     738 </span>                :         
+<span class="lineNum">     739 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters_none() == FAILURE) {</span>
+<span class="lineNum">     740 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     741 </span>                :         }
+<span class="lineNum">     742 </span>                :         
+<span class="lineNum">     743 </span><span class="lineNoCov">              0 :         zend_hash_move_forward_ex(&amp;intern-&gt;storage, &amp;intern-&gt;pos);</span>
+<span class="lineNum">     744 </span><span class="lineNoCov">              0 :         intern-&gt;index++;</span>
+<span class="lineNum">     745 </span>                : } /* }}} */
+<span class="lineNum">     746 </span>                : 
+<a name="747"><span class="lineNum">     747 </span>                : /* {{{ proto string SplObjectStorage::serialize()</a>
+<span class="lineNum">     748 </span>                :  Serializes storage */
+<span class="lineNum">     749 </span><span class="lineNoCov">              0 : SPL_METHOD(SplObjectStorage, serialize)</span>
+<span class="lineNum">     750 </span>                : {
+<span class="lineNum">     751 </span><span class="lineNoCov">              0 :         spl_SplObjectStorage *intern = (spl_SplObjectStorage*)zend_object_store_get_object(getThis() TSRMLS_CC);</span>
+<span class="lineNum">     752 </span>                : 
+<span class="lineNum">     753 </span>                :         spl_SplObjectStorageElement *element;
+<span class="lineNum">     754 </span>                :         zval members, *pmembers, *flags;
+<span class="lineNum">     755 </span>                :         HashPosition      pos;
+<span class="lineNum">     756 </span>                :         php_serialize_data_t var_hash;
+<span class="lineNum">     757 </span><span class="lineNoCov">              0 :         smart_str buf = {0};</span>
+<span class="lineNum">     758 </span>                : 
+<span class="lineNum">     759 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters_none() == FAILURE) {</span>
+<span class="lineNum">     760 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     761 </span>                :         }
+<span class="lineNum">     762 </span>                : 
+<span class="lineNum">     763 </span><span class="lineNoCov">              0 :         PHP_VAR_SERIALIZE_INIT(var_hash);</span>
+<span class="lineNum">     764 </span>                :         
+<span class="lineNum">     765 </span>                :         /* storage */
+<span class="lineNum">     766 </span><span class="lineNoCov">              0 :         smart_str_appendl(&amp;buf, &quot;x:&quot;, 2);</span>
+<span class="lineNum">     767 </span><span class="lineNoCov">              0 :         MAKE_STD_ZVAL(flags);</span>
+<span class="lineNum">     768 </span><span class="lineNoCov">              0 :         ZVAL_LONG(flags, zend_hash_num_elements(&amp;intern-&gt;storage));</span>
+<span class="lineNum">     769 </span><span class="lineNoCov">              0 :         php_var_serialize(&amp;buf, &amp;flags, &amp;var_hash TSRMLS_CC);</span>
+<span class="lineNum">     770 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;flags);</span>
+<span class="lineNum">     771 </span>                : 
+<span class="lineNum">     772 </span><span class="lineNoCov">              0 :         zend_hash_internal_pointer_reset_ex(&amp;intern-&gt;storage, &amp;pos);</span>
+<span class="lineNum">     773 </span>                : 
+<span class="lineNum">     774 </span><span class="lineNoCov">              0 :         while(zend_hash_has_more_elements_ex(&amp;intern-&gt;storage, &amp;pos) == SUCCESS) {</span>
+<span class="lineNum">     775 </span><span class="lineNoCov">              0 :                 if (zend_hash_get_current_data_ex(&amp;intern-&gt;storage, (void**)&amp;element, &amp;pos) == FAILURE) {</span>
+<span class="lineNum">     776 </span><span class="lineNoCov">              0 :                         smart_str_free(&amp;buf);</span>
+<span class="lineNum">     777 </span><span class="lineNoCov">              0 :                         PHP_VAR_SERIALIZE_DESTROY(var_hash);</span>
+<span class="lineNum">     778 </span><span class="lineNoCov">              0 :                         RETURN_NULL();</span>
+<span class="lineNum">     779 </span>                :                 }
+<span class="lineNum">     780 </span><span class="lineNoCov">              0 :                 php_var_serialize(&amp;buf, &amp;element-&gt;obj, &amp;var_hash TSRMLS_CC);</span>
+<span class="lineNum">     781 </span><span class="lineNoCov">              0 :                 smart_str_appendc(&amp;buf, ',');</span>
+<span class="lineNum">     782 </span><span class="lineNoCov">              0 :                 php_var_serialize(&amp;buf, &amp;element-&gt;inf, &amp;var_hash TSRMLS_CC);</span>
+<span class="lineNum">     783 </span><span class="lineNoCov">              0 :                 smart_str_appendc(&amp;buf, ';');</span>
+<span class="lineNum">     784 </span><span class="lineNoCov">              0 :                 zend_hash_move_forward_ex(&amp;intern-&gt;storage, &amp;pos);</span>
+<span class="lineNum">     785 </span>                :         }
+<span class="lineNum">     786 </span>                : 
+<span class="lineNum">     787 </span>                :         /* members */
+<span class="lineNum">     788 </span><span class="lineNoCov">              0 :         smart_str_appendl(&amp;buf, &quot;m:&quot;, 2);</span>
+<span class="lineNum">     789 </span><span class="lineNoCov">              0 :         INIT_PZVAL(&amp;members);</span>
+<span class="lineNum">     790 </span><span class="lineNoCov">              0 :         Z_ARRVAL(members) = zend_std_get_properties(getThis() TSRMLS_CC);</span>
+<span class="lineNum">     791 </span><span class="lineNoCov">              0 :         Z_TYPE(members) = IS_ARRAY;</span>
+<span class="lineNum">     792 </span><span class="lineNoCov">              0 :         pmembers = &amp;members;</span>
+<span class="lineNum">     793 </span><span class="lineNoCov">              0 :         php_var_serialize(&amp;buf, &amp;pmembers, &amp;var_hash TSRMLS_CC); /* finishes the string */</span>
+<span class="lineNum">     794 </span>                : 
+<span class="lineNum">     795 </span>                :         /* done */
+<span class="lineNum">     796 </span><span class="lineNoCov">              0 :         PHP_VAR_SERIALIZE_DESTROY(var_hash);</span>
+<span class="lineNum">     797 </span>                : 
+<span class="lineNum">     798 </span><span class="lineNoCov">              0 :         if (buf.c) {</span>
+<span class="lineNum">     799 </span><span class="lineNoCov">              0 :                 RETURN_STRINGL(buf.c, buf.len, 0);</span>
+<span class="lineNum">     800 </span>                :         } else {
+<span class="lineNum">     801 </span><span class="lineNoCov">              0 :                 RETURN_NULL();</span>
+<span class="lineNum">     802 </span>                :         }
+<span class="lineNum">     803 </span>                :         
+<span class="lineNum">     804 </span>                : } /* }}} */
+<span class="lineNum">     805 </span>                : 
+<a name="806"><span class="lineNum">     806 </span>                : /* {{{ proto void SplObjectStorage::unserialize(string serialized)</a>
+<span class="lineNum">     807 </span>                :  Unserializes storage */
+<span class="lineNum">     808 </span><span class="lineNoCov">              0 : SPL_METHOD(SplObjectStorage, unserialize)</span>
+<span class="lineNum">     809 </span>                : {
+<span class="lineNum">     810 </span><span class="lineNoCov">              0 :         spl_SplObjectStorage *intern = (spl_SplObjectStorage*)zend_object_store_get_object(getThis() TSRMLS_CC);</span>
+<span class="lineNum">     811 </span>                : 
+<span class="lineNum">     812 </span>                :         char *buf;
+<span class="lineNum">     813 </span>                :         int buf_len;
+<span class="lineNum">     814 </span>                :         const unsigned char *p, *s;
+<span class="lineNum">     815 </span>                :         php_unserialize_data_t var_hash;
+<span class="lineNum">     816 </span><span class="lineNoCov">              0 :         zval *pentry, *pmembers, *pcount = NULL, *pinf;</span>
+<span class="lineNum">     817 </span>                :         long count;
+<span class="lineNum">     818 </span>                :         
+<span class="lineNum">     819 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;s&quot;, &amp;buf, &amp;buf_len) == FAILURE) {</span>
+<span class="lineNum">     820 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     821 </span>                :         }
+<span class="lineNum">     822 </span>                : 
+<span class="lineNum">     823 </span><span class="lineNoCov">              0 :         if (buf_len == 0) {</span>
+<span class="lineNum">     824 </span><span class="lineNoCov">              0 :                 zend_throw_exception_ex(spl_ce_UnexpectedValueException, 0 TSRMLS_CC, &quot;Empty serialized string cannot be empty&quot;);</span>
+<span class="lineNum">     825 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     826 </span>                :         }
+<span class="lineNum">     827 </span>                : 
+<span class="lineNum">     828 </span>                :         /* storage */
+<span class="lineNum">     829 </span><span class="lineNoCov">              0 :         s = p = (const unsigned char*)buf;</span>
+<span class="lineNum">     830 </span><span class="lineNoCov">              0 :         PHP_VAR_UNSERIALIZE_INIT(var_hash);</span>
+<span class="lineNum">     831 </span>                : 
+<span class="lineNum">     832 </span><span class="lineNoCov">              0 :         if (*p!= 'x' || *++p != ':') {</span>
+<span class="lineNum">     833 </span>                :                 goto outexcept;
+<span class="lineNum">     834 </span>                :         }
+<span class="lineNum">     835 </span><span class="lineNoCov">              0 :         ++p;</span>
+<span class="lineNum">     836 </span>                : 
+<span class="lineNum">     837 </span><span class="lineNoCov">              0 :         ALLOC_INIT_ZVAL(pcount);</span>
+<span class="lineNum">     838 </span><span class="lineNoCov">              0 :         if (!php_var_unserialize(&amp;pcount, &amp;p, s + buf_len, &amp;var_hash TSRMLS_CC) || Z_TYPE_P(pcount) != IS_LONG) {</span>
+<span class="lineNum">     839 </span>                :                 goto outexcept;
+<span class="lineNum">     840 </span>                :         }
+<span class="lineNum">     841 </span>                : 
+<span class="lineNum">     842 </span><span class="lineNoCov">              0 :         --p; /* for ';' */</span>
+<span class="lineNum">     843 </span><span class="lineNoCov">              0 :         count = Z_LVAL_P(pcount);</span>
+<span class="lineNum">     844 </span>                :                 
+<span class="lineNum">     845 </span><span class="lineNoCov">              0 :         while(count-- &gt; 0) {</span>
+<span class="lineNum">     846 </span>                :                 spl_SplObjectStorageElement *pelement;
+<span class="lineNum">     847 </span>                :                 char *hash;
+<span class="lineNum">     848 </span>                :                 int hash_len;
+<span class="lineNum">     849 </span>                :                 
+<span class="lineNum">     850 </span><span class="lineNoCov">              0 :                 if (*p != ';') {</span>
+<span class="lineNum">     851 </span><span class="lineNoCov">              0 :                         goto outexcept;</span>
+<span class="lineNum">     852 </span>                :                 }
+<span class="lineNum">     853 </span><span class="lineNoCov">              0 :                 ++p;</span>
+<span class="lineNum">     854 </span><span class="lineNoCov">              0 :                 if(*p != 'O' &amp;&amp; *p != 'C' &amp;&amp; *p != 'r') {</span>
+<span class="lineNum">     855 </span><span class="lineNoCov">              0 :                         goto outexcept;</span>
+<span class="lineNum">     856 </span>                :                 }
+<span class="lineNum">     857 </span><span class="lineNoCov">              0 :                 ALLOC_INIT_ZVAL(pentry);</span>
+<span class="lineNum">     858 </span><span class="lineNoCov">              0 :                 if (!php_var_unserialize(&amp;pentry, &amp;p, s + buf_len, &amp;var_hash TSRMLS_CC)) {</span>
+<span class="lineNum">     859 </span><span class="lineNoCov">              0 :                         zval_ptr_dtor(&amp;pentry);</span>
+<span class="lineNum">     860 </span><span class="lineNoCov">              0 :                         goto outexcept;</span>
+<span class="lineNum">     861 </span>                :                 }
+<span class="lineNum">     862 </span><span class="lineNoCov">              0 :                 if(Z_TYPE_P(pentry) != IS_OBJECT) {</span>
+<span class="lineNum">     863 </span><span class="lineNoCov">              0 :                         zval_ptr_dtor(&amp;pentry);</span>
+<span class="lineNum">     864 </span><span class="lineNoCov">              0 :                         goto outexcept;</span>
+<span class="lineNum">     865 </span>                :                 }
+<span class="lineNum">     866 </span><span class="lineNoCov">              0 :                 ALLOC_INIT_ZVAL(pinf);</span>
+<span class="lineNum">     867 </span><span class="lineNoCov">              0 :                 if (*p == ',') { /* new version has inf */</span>
+<span class="lineNum">     868 </span><span class="lineNoCov">              0 :                         ++p;</span>
+<span class="lineNum">     869 </span><span class="lineNoCov">              0 :                         if (!php_var_unserialize(&amp;pinf, &amp;p, s + buf_len, &amp;var_hash TSRMLS_CC)) {</span>
+<span class="lineNum">     870 </span><span class="lineNoCov">              0 :                                 zval_ptr_dtor(&amp;pinf);</span>
+<span class="lineNum">     871 </span><span class="lineNoCov">              0 :                                 goto outexcept;</span>
+<span class="lineNum">     872 </span>                :                         }
+<span class="lineNum">     873 </span>                :                 }
+<span class="lineNum">     874 </span>                : 
+<span class="lineNum">     875 </span><span class="lineNoCov">              0 :                 hash = spl_object_storage_get_hash(intern, getThis(), pentry, &amp;hash_len TSRMLS_CC);</span>
+<span class="lineNum">     876 </span><span class="lineNoCov">              0 :                 if (!hash) {</span>
+<span class="lineNum">     877 </span><span class="lineNoCov">              0 :                         zval_ptr_dtor(&amp;pentry);</span>
+<span class="lineNum">     878 </span><span class="lineNoCov">              0 :                         zval_ptr_dtor(&amp;pinf);</span>
+<span class="lineNum">     879 </span><span class="lineNoCov">              0 :                         goto outexcept;</span>
+<span class="lineNum">     880 </span>                :                 }
+<span class="lineNum">     881 </span><span class="lineNoCov">              0 :                 pelement = spl_object_storage_get(intern, hash, hash_len TSRMLS_CC);</span>
+<span class="lineNum">     882 </span><span class="lineNoCov">              0 :                 spl_object_storage_free_hash(intern, hash);</span>
+<span class="lineNum">     883 </span><span class="lineNoCov">              0 :                 if(pelement) {</span>
+<span class="lineNum">     884 </span><span class="lineNoCov">              0 :                         if(pelement-&gt;inf) {</span>
+<span class="lineNum">     885 </span><span class="lineNoCov">              0 :                                 var_push_dtor(&amp;var_hash, &amp;pelement-&gt;inf);</span>
+<span class="lineNum">     886 </span>                :                         }
+<span class="lineNum">     887 </span><span class="lineNoCov">              0 :                         if(pelement-&gt;obj) {</span>
+<span class="lineNum">     888 </span><span class="lineNoCov">              0 :                                 var_push_dtor(&amp;var_hash, &amp;pelement-&gt;obj);</span>
+<span class="lineNum">     889 </span>                :                         }
+<span class="lineNum">     890 </span>                :                 } 
+<span class="lineNum">     891 </span><span class="lineNoCov">              0 :                 spl_object_storage_attach(intern, getThis(), pentry, pinf TSRMLS_CC);</span>
+<span class="lineNum">     892 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;pentry);</span>
+<span class="lineNum">     893 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;pinf);</span>
+<span class="lineNum">     894 </span>                :         }
+<span class="lineNum">     895 </span>                : 
+<span class="lineNum">     896 </span><span class="lineNoCov">              0 :         if (*p != ';') {</span>
+<span class="lineNum">     897 </span><span class="lineNoCov">              0 :                 goto outexcept;</span>
+<span class="lineNum">     898 </span>                :         }
+<span class="lineNum">     899 </span><span class="lineNoCov">              0 :         ++p;</span>
+<span class="lineNum">     900 </span>                : 
+<span class="lineNum">     901 </span>                :         /* members */
+<span class="lineNum">     902 </span><span class="lineNoCov">              0 :         if (*p!= 'm' || *++p != ':') {</span>
+<span class="lineNum">     903 </span>                :                 goto outexcept;
+<span class="lineNum">     904 </span>                :         }
+<span class="lineNum">     905 </span><span class="lineNoCov">              0 :         ++p;</span>
+<span class="lineNum">     906 </span>                : 
+<span class="lineNum">     907 </span><span class="lineNoCov">              0 :         ALLOC_INIT_ZVAL(pmembers);</span>
+<span class="lineNum">     908 </span><span class="lineNoCov">              0 :         if (!php_var_unserialize(&amp;pmembers, &amp;p, s + buf_len, &amp;var_hash TSRMLS_CC)) {</span>
+<span class="lineNum">     909 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;pmembers);</span>
+<span class="lineNum">     910 </span><span class="lineNoCov">              0 :                 goto outexcept;</span>
+<span class="lineNum">     911 </span>                :         }
+<span class="lineNum">     912 </span>                : 
+<span class="lineNum">     913 </span>                :         /* copy members */
+<span class="lineNum">     914 </span><span class="lineNoCov">              0 :         if (!intern-&gt;std.properties) {</span>
+<span class="lineNum">     915 </span><span class="lineNoCov">              0 :                 rebuild_object_properties(&amp;intern-&gt;std);</span>
+<span class="lineNum">     916 </span>                :         }
+<span class="lineNum">     917 </span><span class="lineNoCov">              0 :         zend_hash_copy(intern-&gt;std.properties, Z_ARRVAL_P(pmembers), (copy_ctor_func_t) zval_add_ref, (void *) NULL, sizeof(zval *));</span>
+<span class="lineNum">     918 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;pmembers);</span>
+<span class="lineNum">     919 </span>                : 
+<span class="lineNum">     920 </span>                :         /* done reading $serialized */
+<span class="lineNum">     921 </span><span class="lineNoCov">              0 :         if (pcount) {</span>
+<span class="lineNum">     922 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;pcount);</span>
+<span class="lineNum">     923 </span>                :         }
+<span class="lineNum">     924 </span><span class="lineNoCov">              0 :         PHP_VAR_UNSERIALIZE_DESTROY(var_hash);</span>
+<span class="lineNum">     925 </span><span class="lineNoCov">              0 :         return;</span>
+<span class="lineNum">     926 </span>                : 
+<span class="lineNum">     927 </span>                : outexcept:
+<span class="lineNum">     928 </span><span class="lineNoCov">              0 :         if (pcount) {</span>
+<span class="lineNum">     929 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;pcount);</span>
+<span class="lineNum">     930 </span>                :         }
+<span class="lineNum">     931 </span><span class="lineNoCov">              0 :         PHP_VAR_UNSERIALIZE_DESTROY(var_hash);</span>
+<span class="lineNum">     932 </span><span class="lineNoCov">              0 :         zend_throw_exception_ex(spl_ce_UnexpectedValueException, 0 TSRMLS_CC, &quot;Error at offset %ld of %d bytes&quot;, (long)((char*)p - buf), buf_len);</span>
+<span class="lineNum">     933 </span><span class="lineNoCov">              0 :         return;</span>
+<span class="lineNum">     934 </span>                : 
+<span class="lineNum">     935 </span>                : } /* }}} */
+<span class="lineNum">     936 </span>                : 
+<span class="lineNum">     937 </span>                : ZEND_BEGIN_ARG_INFO(arginfo_Object, 0)
+<span class="lineNum">     938 </span>                :         ZEND_ARG_INFO(0, object)
+<span class="lineNum">     939 </span>                : ZEND_END_ARG_INFO();
+<span class="lineNum">     940 </span>                : 
+<span class="lineNum">     941 </span>                : ZEND_BEGIN_ARG_INFO_EX(arginfo_attach, 0, 0, 1)
+<span class="lineNum">     942 </span>                :         ZEND_ARG_INFO(0, object)
+<span class="lineNum">     943 </span>                :         ZEND_ARG_INFO(0, inf)
+<span class="lineNum">     944 </span>                : ZEND_END_ARG_INFO();
+<span class="lineNum">     945 </span>                : 
+<span class="lineNum">     946 </span>                : ZEND_BEGIN_ARG_INFO(arginfo_Serialized, 0)
+<span class="lineNum">     947 </span>                :         ZEND_ARG_INFO(0, serialized)
+<span class="lineNum">     948 </span>                : ZEND_END_ARG_INFO();
+<span class="lineNum">     949 </span>                : 
+<span class="lineNum">     950 </span>                : ZEND_BEGIN_ARG_INFO(arginfo_setInfo, 0)
+<span class="lineNum">     951 </span>                :         ZEND_ARG_INFO(0, info)
+<span class="lineNum">     952 </span>                : ZEND_END_ARG_INFO();
+<span class="lineNum">     953 </span>                : 
+<span class="lineNum">     954 </span>                : ZEND_BEGIN_ARG_INFO(arginfo_getHash, 0)
+<span class="lineNum">     955 </span>                :         ZEND_ARG_INFO(0, object)
+<span class="lineNum">     956 </span>                : ZEND_END_ARG_INFO();
+<span class="lineNum">     957 </span>                : 
+<span class="lineNum">     958 </span>                : ZEND_BEGIN_ARG_INFO_EX(arginfo_offsetGet, 0, 0, 1)
+<span class="lineNum">     959 </span>                :         ZEND_ARG_INFO(0, object)
+<span class="lineNum">     960 </span>                : ZEND_END_ARG_INFO()
+<span class="lineNum">     961 </span>                : 
+<span class="lineNum">     962 </span>                : ZEND_BEGIN_ARG_INFO(arginfo_splobject_void, 0)
+<span class="lineNum">     963 </span>                : ZEND_END_ARG_INFO()
+<span class="lineNum">     964 </span>                : 
+<span class="lineNum">     965 </span>                : static const zend_function_entry spl_funcs_SplObjectStorage[] = {
+<span class="lineNum">     966 </span>                :         SPL_ME(SplObjectStorage,  attach,      arginfo_attach,        0)
+<span class="lineNum">     967 </span>                :         SPL_ME(SplObjectStorage,  detach,      arginfo_Object,        0)
+<span class="lineNum">     968 </span>                :         SPL_ME(SplObjectStorage,  contains,    arginfo_Object,        0)
+<span class="lineNum">     969 </span>                :         SPL_ME(SplObjectStorage,  addAll,      arginfo_Object,        0)
+<span class="lineNum">     970 </span>                :         SPL_ME(SplObjectStorage,  removeAll,   arginfo_Object,        0)
+<span class="lineNum">     971 </span>                :         SPL_ME(SplObjectStorage,  removeAllExcept,   arginfo_Object,  0)
+<span class="lineNum">     972 </span>                :         SPL_ME(SplObjectStorage,  getInfo,     arginfo_splobject_void,0)
+<span class="lineNum">     973 </span>                :         SPL_ME(SplObjectStorage,  setInfo,     arginfo_setInfo,       0)
+<span class="lineNum">     974 </span>                :         SPL_ME(SplObjectStorage,  getHash,     arginfo_getHash,       0)
+<span class="lineNum">     975 </span>                :         /* Countable */
+<span class="lineNum">     976 </span>                :         SPL_ME(SplObjectStorage,  count,       arginfo_splobject_void,0)
+<span class="lineNum">     977 </span>                :         /* Iterator */
+<span class="lineNum">     978 </span>                :         SPL_ME(SplObjectStorage,  rewind,      arginfo_splobject_void,0)
+<span class="lineNum">     979 </span>                :         SPL_ME(SplObjectStorage,  valid,       arginfo_splobject_void,0)
+<span class="lineNum">     980 </span>                :         SPL_ME(SplObjectStorage,  key,         arginfo_splobject_void,0)
+<span class="lineNum">     981 </span>                :         SPL_ME(SplObjectStorage,  current,     arginfo_splobject_void,0)
+<span class="lineNum">     982 </span>                :         SPL_ME(SplObjectStorage,  next,        arginfo_splobject_void,0)
+<span class="lineNum">     983 </span>                :         /* Serializable */
+<span class="lineNum">     984 </span>                :         SPL_ME(SplObjectStorage,  unserialize, arginfo_Serialized,    0)
+<span class="lineNum">     985 </span>                :         SPL_ME(SplObjectStorage,  serialize,   arginfo_splobject_void,0)
+<span class="lineNum">     986 </span>                :         /* ArrayAccess */
+<span class="lineNum">     987 </span>                :         SPL_MA(SplObjectStorage, offsetExists, SplObjectStorage, contains, arginfo_offsetGet, 0)
+<span class="lineNum">     988 </span>                :         SPL_MA(SplObjectStorage, offsetSet,    SplObjectStorage, attach,   arginfo_attach, 0)
+<span class="lineNum">     989 </span>                :         SPL_MA(SplObjectStorage, offsetUnset,  SplObjectStorage, detach,   arginfo_offsetGet, 0)
+<span class="lineNum">     990 </span>                :         SPL_ME(SplObjectStorage, offsetGet,    arginfo_offsetGet,     0)
+<span class="lineNum">     991 </span>                :         {NULL, NULL, NULL}
+<span class="lineNum">     992 </span>                : };
+<span class="lineNum">     993 </span>                : 
+<span class="lineNum">     994 </span>                : typedef enum {
+<span class="lineNum">     995 </span>                :         MIT_NEED_ANY     = 0,
+<span class="lineNum">     996 </span>                :         MIT_NEED_ALL     = 1,
+<span class="lineNum">     997 </span>                :         MIT_KEYS_NUMERIC = 0,
+<span class="lineNum">     998 </span>                :         MIT_KEYS_ASSOC   = 2
+<span class="lineNum">     999 </span>                : } MultipleIteratorFlags;
+<span class="lineNum">    1000 </span>                : 
+<span class="lineNum">    1001 </span>                : #define SPL_MULTIPLE_ITERATOR_GET_ALL_CURRENT   1
+<span class="lineNum">    1002 </span>                : #define SPL_MULTIPLE_ITERATOR_GET_ALL_KEY       2
+<span class="lineNum">    1003 </span>                : 
+<a name="1004"><span class="lineNum">    1004 </span>                : /* {{{ proto void MultipleIterator::__construct([int flags = MIT_NEED_ALL|MIT_KEYS_NUMERIC])</a>
+<span class="lineNum">    1005 </span>                :    Iterator that iterates over several iterators one after the other */
+<span class="lineNum">    1006 </span><span class="lineNoCov">              0 : SPL_METHOD(MultipleIterator, __construct)</span>
+<span class="lineNum">    1007 </span>                : {
+<span class="lineNum">    1008 </span>                :         spl_SplObjectStorage   *intern;
+<span class="lineNum">    1009 </span><span class="lineNoCov">              0 :         long                    flags = MIT_NEED_ALL|MIT_KEYS_NUMERIC;</span>
+<span class="lineNum">    1010 </span>                :         zend_error_handling error_handling;
+<span class="lineNum">    1011 </span>                : 
+<span class="lineNum">    1012 </span><span class="lineNoCov">              0 :         zend_replace_error_handling(EH_THROW, spl_ce_InvalidArgumentException, &amp;error_handling TSRMLS_CC);</span>
+<span class="lineNum">    1013 </span>                : 
+<span class="lineNum">    1014 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;|l&quot;, &amp;flags) == FAILURE) {</span>
+<span class="lineNum">    1015 </span><span class="lineNoCov">              0 :                 zend_restore_error_handling(&amp;error_handling TSRMLS_CC);</span>
+<span class="lineNum">    1016 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">    1017 </span>                :         }
+<span class="lineNum">    1018 </span>                : 
+<span class="lineNum">    1019 </span><span class="lineNoCov">              0 :         intern = (spl_SplObjectStorage*)zend_object_store_get_object(getThis() TSRMLS_CC);</span>
+<span class="lineNum">    1020 </span><span class="lineNoCov">              0 :         intern-&gt;flags = flags;</span>
+<span class="lineNum">    1021 </span><span class="lineNoCov">              0 :         zend_restore_error_handling(&amp;error_handling TSRMLS_CC);</span>
+<span class="lineNum">    1022 </span>                : }
+<span class="lineNum">    1023 </span>                : /* }}} */
+<span class="lineNum">    1024 </span>                : 
+<a name="1025"><span class="lineNum">    1025 </span>                : /* {{{ proto int MultipleIterator::getFlags()</a>
+<span class="lineNum">    1026 </span>                :    Return current flags */
+<span class="lineNum">    1027 </span><span class="lineNoCov">              0 : SPL_METHOD(MultipleIterator, getFlags)</span>
+<span class="lineNum">    1028 </span>                : {
+<span class="lineNum">    1029 </span><span class="lineNoCov">              0 :         spl_SplObjectStorage *intern = (spl_SplObjectStorage*)zend_object_store_get_object(getThis() TSRMLS_CC);</span>
+<span class="lineNum">    1030 </span>                :         
+<span class="lineNum">    1031 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters_none() == FAILURE) {</span>
+<span class="lineNum">    1032 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">    1033 </span>                :         }
+<span class="lineNum">    1034 </span><span class="lineNoCov">              0 :         RETURN_LONG(intern-&gt;flags);</span>
+<span class="lineNum">    1035 </span>                : }
+<span class="lineNum">    1036 </span>                : /* }}} */
+<span class="lineNum">    1037 </span>                : 
+<a name="1038"><span class="lineNum">    1038 </span>                : /* {{{ proto int MultipleIterator::setFlags(int flags)</a>
+<span class="lineNum">    1039 </span>                :    Set flags */
+<span class="lineNum">    1040 </span><span class="lineNoCov">              0 : SPL_METHOD(MultipleIterator, setFlags)</span>
+<span class="lineNum">    1041 </span>                : {
+<span class="lineNum">    1042 </span>                :         spl_SplObjectStorage *intern;
+<span class="lineNum">    1043 </span><span class="lineNoCov">              0 :         intern = (spl_SplObjectStorage*)zend_object_store_get_object(getThis() TSRMLS_CC);</span>
+<span class="lineNum">    1044 </span>                : 
+<span class="lineNum">    1045 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;l&quot;, &amp;intern-&gt;flags) == FAILURE) {</span>
+<span class="lineNum">    1046 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">    1047 </span>                :         }
+<span class="lineNum">    1048 </span>                : }
+<span class="lineNum">    1049 </span>                : /* }}} */
+<span class="lineNum">    1050 </span>                : 
+<a name="1051"><span class="lineNum">    1051 </span>                : /* {{{ proto void attachIterator(Iterator iterator[, mixed info]) throws InvalidArgumentException</a>
+<span class="lineNum">    1052 </span>                :    Attach a new iterator */
+<span class="lineNum">    1053 </span><span class="lineNoCov">              0 : SPL_METHOD(MultipleIterator, attachIterator)</span>
+<span class="lineNum">    1054 </span>                : {
+<span class="lineNum">    1055 </span>                :         spl_SplObjectStorage        *intern;
+<span class="lineNum">    1056 </span><span class="lineNoCov">              0 :         zval                        *iterator = NULL, *info = NULL;</span>
+<span class="lineNum">    1057 </span>                : 
+<span class="lineNum">    1058 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;O|z!&quot;, &amp;iterator, zend_ce_iterator, &amp;info) == FAILURE) {</span>
+<span class="lineNum">    1059 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">    1060 </span>                :         }
+<span class="lineNum">    1061 </span>                : 
+<span class="lineNum">    1062 </span><span class="lineNoCov">              0 :         intern = (spl_SplObjectStorage*)zend_object_store_get_object(getThis() TSRMLS_CC);</span>
+<span class="lineNum">    1063 </span>                : 
+<span class="lineNum">    1064 </span><span class="lineNoCov">              0 :         if (info != NULL) {</span>
+<span class="lineNum">    1065 </span>                :                 spl_SplObjectStorageElement *element;
+<span class="lineNum">    1066 </span>                :                 zval                         compare_result;
+<span class="lineNum">    1067 </span>                : 
+<span class="lineNum">    1068 </span><span class="lineNoCov">              0 :                 if (Z_TYPE_P(info) != IS_LONG &amp;&amp; Z_TYPE_P(info) != IS_STRING) {</span>
+<span class="lineNum">    1069 </span><span class="lineNoCov">              0 :                         zend_throw_exception(spl_ce_InvalidArgumentException, &quot;Info must be NULL, integer or string&quot;, 0 TSRMLS_CC);</span>
+<span class="lineNum">    1070 </span><span class="lineNoCov">              0 :                         return;</span>
+<span class="lineNum">    1071 </span>                :                 }
+<span class="lineNum">    1072 </span>                : 
+<span class="lineNum">    1073 </span><span class="lineNoCov">              0 :                 zend_hash_internal_pointer_reset_ex(&amp;intern-&gt;storage, &amp;intern-&gt;pos);</span>
+<span class="lineNum">    1074 </span><span class="lineNoCov">              0 :                 while (zend_hash_get_current_data_ex(&amp;intern-&gt;storage, (void**)&amp;element, &amp;intern-&gt;pos) == SUCCESS) {</span>
+<span class="lineNum">    1075 </span><span class="lineNoCov">              0 :                         is_identical_function(&amp;compare_result, info, element-&gt;inf TSRMLS_CC);</span>
+<span class="lineNum">    1076 </span><span class="lineNoCov">              0 :                         if (Z_LVAL(compare_result)) {</span>
+<span class="lineNum">    1077 </span><span class="lineNoCov">              0 :                                 zend_throw_exception(spl_ce_InvalidArgumentException, &quot;Key duplication error&quot;, 0 TSRMLS_CC);</span>
+<span class="lineNum">    1078 </span><span class="lineNoCov">              0 :                                 return;</span>
+<span class="lineNum">    1079 </span>                :                         }
+<span class="lineNum">    1080 </span><span class="lineNoCov">              0 :                         zend_hash_move_forward_ex(&amp;intern-&gt;storage, &amp;intern-&gt;pos);</span>
+<span class="lineNum">    1081 </span>                :                 }
+<span class="lineNum">    1082 </span>                :         }
+<span class="lineNum">    1083 </span>                : 
+<span class="lineNum">    1084 </span><span class="lineNoCov">              0 :         spl_object_storage_attach(intern, getThis(), iterator, info TSRMLS_CC);</span>
+<span class="lineNum">    1085 </span>                : }
+<span class="lineNum">    1086 </span>                : /* }}} */
+<span class="lineNum">    1087 </span>                : 
+<a name="1088"><span class="lineNum">    1088 </span>                : /* {{{ proto void MultipleIterator::rewind()</a>
+<span class="lineNum">    1089 </span>                :    Rewind all attached iterator instances */
+<span class="lineNum">    1090 </span><span class="lineNoCov">              0 : SPL_METHOD(MultipleIterator, rewind)</span>
+<span class="lineNum">    1091 </span>                : {
+<span class="lineNum">    1092 </span>                :         spl_SplObjectStorage        *intern;
+<span class="lineNum">    1093 </span>                :         spl_SplObjectStorageElement *element;
+<span class="lineNum">    1094 </span>                :         zval                        *it;
+<span class="lineNum">    1095 </span>                : 
+<span class="lineNum">    1096 </span><span class="lineNoCov">              0 :         intern = (spl_SplObjectStorage*)zend_object_store_get_object(getThis() TSRMLS_CC);</span>
+<span class="lineNum">    1097 </span>                :         
+<span class="lineNum">    1098 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters_none() == FAILURE) {</span>
+<span class="lineNum">    1099 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">    1100 </span>                :         }
+<span class="lineNum">    1101 </span>                : 
+<span class="lineNum">    1102 </span><span class="lineNoCov">              0 :         zend_hash_internal_pointer_reset_ex(&amp;intern-&gt;storage, &amp;intern-&gt;pos);</span>
+<span class="lineNum">    1103 </span><span class="lineNoCov">              0 :         while (zend_hash_get_current_data_ex(&amp;intern-&gt;storage, (void**)&amp;element, &amp;intern-&gt;pos) == SUCCESS &amp;&amp; !EG(exception)) {</span>
+<span class="lineNum">    1104 </span><span class="lineNoCov">              0 :                 it = element-&gt;obj;</span>
+<span class="lineNum">    1105 </span><span class="lineNoCov">              0 :                 zend_call_method_with_0_params(&amp;it, Z_OBJCE_P(it), &amp;Z_OBJCE_P(it)-&gt;iterator_funcs.zf_rewind, &quot;rewind&quot;, NULL);</span>
+<span class="lineNum">    1106 </span><span class="lineNoCov">              0 :                 zend_hash_move_forward_ex(&amp;intern-&gt;storage, &amp;intern-&gt;pos);</span>
+<span class="lineNum">    1107 </span>                :         }
+<span class="lineNum">    1108 </span>                : }
+<span class="lineNum">    1109 </span>                : /* }}} */
+<span class="lineNum">    1110 </span>                : 
+<a name="1111"><span class="lineNum">    1111 </span>                : /* {{{ proto void MultipleIterator::next()</a>
+<span class="lineNum">    1112 </span>                :    Move all attached iterator instances forward */
+<span class="lineNum">    1113 </span><span class="lineNoCov">              0 : SPL_METHOD(MultipleIterator, next)</span>
+<span class="lineNum">    1114 </span>                : {
+<span class="lineNum">    1115 </span>                :         spl_SplObjectStorage        *intern;
+<span class="lineNum">    1116 </span>                :         spl_SplObjectStorageElement *element;
+<span class="lineNum">    1117 </span>                :         zval                        *it;
+<span class="lineNum">    1118 </span>                : 
+<span class="lineNum">    1119 </span><span class="lineNoCov">              0 :         intern = (spl_SplObjectStorage*)zend_object_store_get_object(getThis() TSRMLS_CC);</span>
+<span class="lineNum">    1120 </span>                :         
+<span class="lineNum">    1121 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters_none() == FAILURE) {</span>
+<span class="lineNum">    1122 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">    1123 </span>                :         }
+<span class="lineNum">    1124 </span>                : 
+<span class="lineNum">    1125 </span><span class="lineNoCov">              0 :         zend_hash_internal_pointer_reset_ex(&amp;intern-&gt;storage, &amp;intern-&gt;pos);</span>
+<span class="lineNum">    1126 </span><span class="lineNoCov">              0 :         while (zend_hash_get_current_data_ex(&amp;intern-&gt;storage, (void**)&amp;element, &amp;intern-&gt;pos) == SUCCESS &amp;&amp; !EG(exception)) {</span>
+<span class="lineNum">    1127 </span><span class="lineNoCov">              0 :                 it = element-&gt;obj;</span>
+<span class="lineNum">    1128 </span><span class="lineNoCov">              0 :                 zend_call_method_with_0_params(&amp;it, Z_OBJCE_P(it), &amp;Z_OBJCE_P(it)-&gt;iterator_funcs.zf_next, &quot;next&quot;, NULL);</span>
+<span class="lineNum">    1129 </span><span class="lineNoCov">              0 :                 zend_hash_move_forward_ex(&amp;intern-&gt;storage, &amp;intern-&gt;pos);</span>
+<span class="lineNum">    1130 </span>                :         }
+<span class="lineNum">    1131 </span>                : }
+<span class="lineNum">    1132 </span>                : /* }}} */
+<span class="lineNum">    1133 </span>                : 
+<a name="1134"><span class="lineNum">    1134 </span>                : /* {{{ proto bool MultipleIterator::valid()</a>
+<span class="lineNum">    1135 </span>                :    Return whether all or one sub iterator is valid depending on flags */
+<span class="lineNum">    1136 </span><span class="lineNoCov">              0 : SPL_METHOD(MultipleIterator, valid)</span>
+<span class="lineNum">    1137 </span>                : {
+<span class="lineNum">    1138 </span>                :         spl_SplObjectStorage        *intern;
+<span class="lineNum">    1139 </span>                :         spl_SplObjectStorageElement *element;
+<span class="lineNum">    1140 </span><span class="lineNoCov">              0 :         zval                        *it, *retval = NULL;</span>
+<span class="lineNum">    1141 </span>                :         long                         expect, valid;
+<span class="lineNum">    1142 </span>                : 
+<span class="lineNum">    1143 </span><span class="lineNoCov">              0 :         intern = (spl_SplObjectStorage*)zend_object_store_get_object(getThis() TSRMLS_CC);</span>
+<span class="lineNum">    1144 </span>                :         
+<span class="lineNum">    1145 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters_none() == FAILURE) {</span>
+<span class="lineNum">    1146 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">    1147 </span>                :         }
+<span class="lineNum">    1148 </span>                : 
+<span class="lineNum">    1149 </span><span class="lineNoCov">              0 :         if (!zend_hash_num_elements(&amp;intern-&gt;storage)) {</span>
+<span class="lineNum">    1150 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">    1151 </span>                :         }
+<span class="lineNum">    1152 </span>                : 
+<span class="lineNum">    1153 </span><span class="lineNoCov">              0 :         expect = (intern-&gt;flags &amp; MIT_NEED_ALL) ? 1 : 0;</span>
+<span class="lineNum">    1154 </span>                : 
+<span class="lineNum">    1155 </span><span class="lineNoCov">              0 :         zend_hash_internal_pointer_reset_ex(&amp;intern-&gt;storage, &amp;intern-&gt;pos);</span>
+<span class="lineNum">    1156 </span><span class="lineNoCov">              0 :         while (zend_hash_get_current_data_ex(&amp;intern-&gt;storage, (void**)&amp;element, &amp;intern-&gt;pos) == SUCCESS &amp;&amp; !EG(exception)) {</span>
+<span class="lineNum">    1157 </span><span class="lineNoCov">              0 :                 it = element-&gt;obj;</span>
+<span class="lineNum">    1158 </span><span class="lineNoCov">              0 :                 zend_call_method_with_0_params(&amp;it, Z_OBJCE_P(it), &amp;Z_OBJCE_P(it)-&gt;iterator_funcs.zf_valid, &quot;valid&quot;, &amp;retval);</span>
+<span class="lineNum">    1159 </span>                : 
+<span class="lineNum">    1160 </span><span class="lineNoCov">              0 :                 if (retval) {</span>
+<span class="lineNum">    1161 </span><span class="lineNoCov">              0 :                         valid = Z_LVAL_P(retval);</span>
+<span class="lineNum">    1162 </span><span class="lineNoCov">              0 :                         zval_ptr_dtor(&amp;retval);</span>
+<span class="lineNum">    1163 </span>                :                 } else {
+<span class="lineNum">    1164 </span><span class="lineNoCov">              0 :                         valid = 0;</span>
+<span class="lineNum">    1165 </span>                :                 }
+<span class="lineNum">    1166 </span>                : 
+<span class="lineNum">    1167 </span><span class="lineNoCov">              0 :                 if (expect != valid) {</span>
+<span class="lineNum">    1168 </span><span class="lineNoCov">              0 :                         RETURN_BOOL(!expect);</span>
+<span class="lineNum">    1169 </span>                :                 }
+<span class="lineNum">    1170 </span>                : 
+<span class="lineNum">    1171 </span><span class="lineNoCov">              0 :                 zend_hash_move_forward_ex(&amp;intern-&gt;storage, &amp;intern-&gt;pos);</span>
+<span class="lineNum">    1172 </span>                :         }
+<span class="lineNum">    1173 </span>                : 
+<span class="lineNum">    1174 </span><span class="lineNoCov">              0 :         RETURN_BOOL(expect);</span>
+<span class="lineNum">    1175 </span>                : }
+<a name="1176"><span class="lineNum">    1176 </span>                : /* }}} */</a>
+<span class="lineNum">    1177 </span>                : 
+<span class="lineNum">    1178 </span><span class="lineNoCov">              0 : static void spl_multiple_iterator_get_all(spl_SplObjectStorage *intern, int get_type, zval *return_value TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">    1179 </span>                : {
+<span class="lineNum">    1180 </span>                :         spl_SplObjectStorageElement *element;
+<span class="lineNum">    1181 </span><span class="lineNoCov">              0 :         zval                        *it, *retval = NULL;</span>
+<span class="lineNum">    1182 </span><span class="lineNoCov">              0 :         int                          valid = 1, num_elements;</span>
+<span class="lineNum">    1183 </span>                : 
+<span class="lineNum">    1184 </span><span class="lineNoCov">              0 :         num_elements = zend_hash_num_elements(&amp;intern-&gt;storage);</span>
+<span class="lineNum">    1185 </span><span class="lineNoCov">              0 :         if (num_elements &lt; 1) {</span>
+<span class="lineNum">    1186 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">    1187 </span>                :         }
+<span class="lineNum">    1188 </span>                : 
+<span class="lineNum">    1189 </span><span class="lineNoCov">              0 :         array_init_size(return_value, num_elements);</span>
+<span class="lineNum">    1190 </span>                :         
+<span class="lineNum">    1191 </span><span class="lineNoCov">              0 :         zend_hash_internal_pointer_reset_ex(&amp;intern-&gt;storage, &amp;intern-&gt;pos);</span>
+<span class="lineNum">    1192 </span><span class="lineNoCov">              0 :         while (zend_hash_get_current_data_ex(&amp;intern-&gt;storage, (void**)&amp;element, &amp;intern-&gt;pos) == SUCCESS &amp;&amp; !EG(exception)) {</span>
+<span class="lineNum">    1193 </span><span class="lineNoCov">              0 :                 it = element-&gt;obj;</span>
+<span class="lineNum">    1194 </span><span class="lineNoCov">              0 :                 zend_call_method_with_0_params(&amp;it, Z_OBJCE_P(it), &amp;Z_OBJCE_P(it)-&gt;iterator_funcs.zf_valid, &quot;valid&quot;, &amp;retval);</span>
+<span class="lineNum">    1195 </span>                : 
+<span class="lineNum">    1196 </span><span class="lineNoCov">              0 :                 if (retval) {</span>
+<span class="lineNum">    1197 </span><span class="lineNoCov">              0 :                         valid = Z_LVAL_P(retval);</span>
+<span class="lineNum">    1198 </span><span class="lineNoCov">              0 :                         zval_ptr_dtor(&amp;retval);</span>
+<span class="lineNum">    1199 </span>                :                 } else {
+<span class="lineNum">    1200 </span><span class="lineNoCov">              0 :                         valid = 0;</span>
+<span class="lineNum">    1201 </span>                :                 }
+<span class="lineNum">    1202 </span>                : 
+<span class="lineNum">    1203 </span><span class="lineNoCov">              0 :                 if (valid) {</span>
+<span class="lineNum">    1204 </span><span class="lineNoCov">              0 :                         if (SPL_MULTIPLE_ITERATOR_GET_ALL_CURRENT == get_type) {</span>
+<span class="lineNum">    1205 </span><span class="lineNoCov">              0 :                                 zend_call_method_with_0_params(&amp;it, Z_OBJCE_P(it), &amp;Z_OBJCE_P(it)-&gt;iterator_funcs.zf_current, &quot;current&quot;, &amp;retval);</span>
+<span class="lineNum">    1206 </span>                :                         } else {
+<span class="lineNum">    1207 </span><span class="lineNoCov">              0 :                                 zend_call_method_with_0_params(&amp;it, Z_OBJCE_P(it), &amp;Z_OBJCE_P(it)-&gt;iterator_funcs.zf_key,     &quot;key&quot;,     &amp;retval);</span>
+<span class="lineNum">    1208 </span>                :                         }
+<span class="lineNum">    1209 </span><span class="lineNoCov">              0 :                         if (!retval) {</span>
+<span class="lineNum">    1210 </span><span class="lineNoCov">              0 :                                 zend_throw_exception(spl_ce_RuntimeException, &quot;Failed to call sub iterator method&quot;, 0 TSRMLS_CC);</span>
+<span class="lineNum">    1211 </span><span class="lineNoCov">              0 :                                 return;</span>
+<span class="lineNum">    1212 </span>                :                         }
+<span class="lineNum">    1213 </span><span class="lineNoCov">              0 :                 } else if (intern-&gt;flags &amp; MIT_NEED_ALL) {</span>
+<span class="lineNum">    1214 </span><span class="lineNoCov">              0 :                         if (SPL_MULTIPLE_ITERATOR_GET_ALL_CURRENT == get_type) {</span>
+<span class="lineNum">    1215 </span><span class="lineNoCov">              0 :                                 zend_throw_exception(spl_ce_RuntimeException, &quot;Called current() with non valid sub iterator&quot;, 0 TSRMLS_CC);</span>
+<span class="lineNum">    1216 </span>                :                         } else {
+<span class="lineNum">    1217 </span><span class="lineNoCov">              0 :                                 zend_throw_exception(spl_ce_RuntimeException, &quot;Called key() with non valid sub iterator&quot;, 0 TSRMLS_CC);</span>
+<span class="lineNum">    1218 </span>                :                         }
+<span class="lineNum">    1219 </span><span class="lineNoCov">              0 :                         return;</span>
+<span class="lineNum">    1220 </span>                :                 } else {
+<span class="lineNum">    1221 </span><span class="lineNoCov">              0 :                         ALLOC_INIT_ZVAL(retval);</span>
+<span class="lineNum">    1222 </span>                :                 }
+<span class="lineNum">    1223 </span>                : 
+<span class="lineNum">    1224 </span><span class="lineNoCov">              0 :                 if (intern-&gt;flags &amp; MIT_KEYS_ASSOC) {</span>
+<span class="lineNum">    1225 </span><span class="lineNoCov">              0 :                         switch (Z_TYPE_P(element-&gt;inf)) {</span>
+<span class="lineNum">    1226 </span>                :                                 case IS_LONG:
+<span class="lineNum">    1227 </span><span class="lineNoCov">              0 :                                         add_index_zval(return_value, Z_LVAL_P(element-&gt;inf), retval);</span>
+<span class="lineNum">    1228 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">    1229 </span>                :                                 case IS_STRING:
+<span class="lineNum">    1230 </span><span class="lineNoCov">              0 :                                         add_assoc_zval_ex(return_value, Z_STRVAL_P(element-&gt;inf), Z_STRLEN_P(element-&gt;inf)+1U, retval);</span>
+<span class="lineNum">    1231 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">    1232 </span>                :                                 default:
+<span class="lineNum">    1233 </span><span class="lineNoCov">              0 :                                         zval_ptr_dtor(&amp;retval);</span>
+<span class="lineNum">    1234 </span><span class="lineNoCov">              0 :                                         zend_throw_exception(spl_ce_InvalidArgumentException, &quot;Sub-Iterator is associated with NULL&quot;, 0 TSRMLS_CC);</span>
+<span class="lineNum">    1235 </span><span class="lineNoCov">              0 :                                         return;</span>
+<span class="lineNum">    1236 </span>                :                         }
+<span class="lineNum">    1237 </span>                :                 } else {
+<span class="lineNum">    1238 </span><span class="lineNoCov">              0 :                         add_next_index_zval(return_value, retval);</span>
+<span class="lineNum">    1239 </span>                :                 }
+<span class="lineNum">    1240 </span>                : 
+<span class="lineNum">    1241 </span><span class="lineNoCov">              0 :                 zend_hash_move_forward_ex(&amp;intern-&gt;storage, &amp;intern-&gt;pos);</span>
+<span class="lineNum">    1242 </span>                :         }
+<span class="lineNum">    1243 </span>                : }
+<span class="lineNum">    1244 </span>                : /* }}} */
+<span class="lineNum">    1245 </span>                : 
+<a name="1246"><span class="lineNum">    1246 </span>                : /* {{{ proto array current() throws RuntimeException throws InvalidArgumentException</a>
+<span class="lineNum">    1247 </span>                :    Return an array of all registered Iterator instances current() result */
+<span class="lineNum">    1248 </span><span class="lineNoCov">              0 : SPL_METHOD(MultipleIterator, current)</span>
+<span class="lineNum">    1249 </span>                : {
+<span class="lineNum">    1250 </span>                :         spl_SplObjectStorage        *intern;
+<span class="lineNum">    1251 </span><span class="lineNoCov">              0 :         intern = (spl_SplObjectStorage*)zend_object_store_get_object(getThis() TSRMLS_CC);</span>
+<span class="lineNum">    1252 </span>                :         
+<span class="lineNum">    1253 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters_none() == FAILURE) {</span>
+<span class="lineNum">    1254 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">    1255 </span>                :         }
+<span class="lineNum">    1256 </span>                : 
+<span class="lineNum">    1257 </span><span class="lineNoCov">              0 :         spl_multiple_iterator_get_all(intern, SPL_MULTIPLE_ITERATOR_GET_ALL_CURRENT, return_value TSRMLS_CC);</span>
+<span class="lineNum">    1258 </span>                : }
+<span class="lineNum">    1259 </span>                : /* }}} */
+<span class="lineNum">    1260 </span>                : 
+<a name="1261"><span class="lineNum">    1261 </span>                : /* {{{ proto array MultipleIterator::key()</a>
+<span class="lineNum">    1262 </span>                :    Return an array of all registered Iterator instances key() result */
+<span class="lineNum">    1263 </span><span class="lineNoCov">              0 : SPL_METHOD(MultipleIterator, key)</span>
+<span class="lineNum">    1264 </span>                : {
+<span class="lineNum">    1265 </span>                :         spl_SplObjectStorage        *intern;
+<span class="lineNum">    1266 </span><span class="lineNoCov">              0 :         intern = (spl_SplObjectStorage*)zend_object_store_get_object(getThis() TSRMLS_CC);</span>
+<span class="lineNum">    1267 </span>                :         
+<span class="lineNum">    1268 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters_none() == FAILURE) {</span>
+<span class="lineNum">    1269 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">    1270 </span>                :         }
+<span class="lineNum">    1271 </span>                : 
+<span class="lineNum">    1272 </span><span class="lineNoCov">              0 :         spl_multiple_iterator_get_all(intern, SPL_MULTIPLE_ITERATOR_GET_ALL_KEY, return_value TSRMLS_CC);</span>
+<span class="lineNum">    1273 </span>                : }
+<span class="lineNum">    1274 </span>                : /* }}} */
+<span class="lineNum">    1275 </span>                : 
+<span class="lineNum">    1276 </span>                : ZEND_BEGIN_ARG_INFO_EX(arginfo_MultipleIterator_attachIterator, 0, 0, 1)
+<span class="lineNum">    1277 </span>                :         ZEND_ARG_OBJ_INFO(0, iterator, Iterator, 0)
+<span class="lineNum">    1278 </span>                :         ZEND_ARG_INFO(0, infos)
+<span class="lineNum">    1279 </span>                : ZEND_END_ARG_INFO();
+<span class="lineNum">    1280 </span>                : 
+<span class="lineNum">    1281 </span>                : ZEND_BEGIN_ARG_INFO_EX(arginfo_MultipleIterator_detachIterator, 0, 0, 1)
+<span class="lineNum">    1282 </span>                :         ZEND_ARG_OBJ_INFO(0, iterator, Iterator, 0)
+<span class="lineNum">    1283 </span>                : ZEND_END_ARG_INFO();
+<span class="lineNum">    1284 </span>                : 
+<span class="lineNum">    1285 </span>                : ZEND_BEGIN_ARG_INFO_EX(arginfo_MultipleIterator_containsIterator, 0, 0, 1)
+<span class="lineNum">    1286 </span>                :         ZEND_ARG_OBJ_INFO(0, iterator, Iterator, 0)
+<span class="lineNum">    1287 </span>                : ZEND_END_ARG_INFO();
+<span class="lineNum">    1288 </span>                : 
+<span class="lineNum">    1289 </span>                : ZEND_BEGIN_ARG_INFO_EX(arginfo_MultipleIterator_setflags, 0, 0, 1)
+<span class="lineNum">    1290 </span>                :         ZEND_ARG_INFO(0, flags)
+<span class="lineNum">    1291 </span>                : ZEND_END_ARG_INFO();
+<span class="lineNum">    1292 </span>                : 
+<span class="lineNum">    1293 </span>                : static const zend_function_entry spl_funcs_MultipleIterator[] = {
+<span class="lineNum">    1294 </span>                :         SPL_ME(MultipleIterator,  __construct,            arginfo_MultipleIterator_setflags,          0)
+<span class="lineNum">    1295 </span>                :         SPL_ME(MultipleIterator,  getFlags,               arginfo_splobject_void,                     0)
+<span class="lineNum">    1296 </span>                :         SPL_ME(MultipleIterator,  setFlags,               arginfo_MultipleIterator_setflags,          0)
+<span class="lineNum">    1297 </span>                :         SPL_ME(MultipleIterator,  attachIterator,         arginfo_MultipleIterator_attachIterator,    0)
+<span class="lineNum">    1298 </span>                :         SPL_MA(MultipleIterator,  detachIterator,         SplObjectStorage, detach,   arginfo_MultipleIterator_detachIterator,   0)
+<span class="lineNum">    1299 </span>                :         SPL_MA(MultipleIterator,  containsIterator,       SplObjectStorage, contains, arginfo_MultipleIterator_containsIterator, 0)
+<span class="lineNum">    1300 </span>                :         SPL_MA(MultipleIterator,  countIterators,         SplObjectStorage, count,    arginfo_splobject_void,                    0)
+<span class="lineNum">    1301 </span>                :         /* Iterator */
+<span class="lineNum">    1302 </span>                :         SPL_ME(MultipleIterator,  rewind,                 arginfo_splobject_void,                     0)
+<span class="lineNum">    1303 </span>                :         SPL_ME(MultipleIterator,  valid,                  arginfo_splobject_void,                     0)
+<span class="lineNum">    1304 </span>                :         SPL_ME(MultipleIterator,  key,                    arginfo_splobject_void,                     0)
+<span class="lineNum">    1305 </span>                :         SPL_ME(MultipleIterator,  current,                arginfo_splobject_void,                     0)
+<span class="lineNum">    1306 </span>                :         SPL_ME(MultipleIterator,  next,                   arginfo_splobject_void,                     0)
+<span class="lineNum">    1307 </span>                :         {NULL, NULL, NULL}
+<span class="lineNum">    1308 </span>                : };
+<a name="1309"><span class="lineNum">    1309 </span>                : </a>
+<span class="lineNum">    1310 </span>                : /* {{{ PHP_MINIT_FUNCTION(spl_observer) */
+<span class="lineNum">    1311 </span><span class="lineCov">             48 : PHP_MINIT_FUNCTION(spl_observer)</span>
+<span class="lineNum">    1312 </span>                : {
+<span class="lineNum">    1313 </span><span class="lineCov">             48 :         REGISTER_SPL_INTERFACE(SplObserver);</span>
+<span class="lineNum">    1314 </span><span class="lineCov">             48 :         REGISTER_SPL_INTERFACE(SplSubject);</span>
+<span class="lineNum">    1315 </span>                : 
+<span class="lineNum">    1316 </span><span class="lineCov">             48 :         REGISTER_SPL_STD_CLASS_EX(SplObjectStorage, spl_SplObjectStorage_new, spl_funcs_SplObjectStorage);</span>
+<span class="lineNum">    1317 </span><span class="lineCov">             48 :         memcpy(&amp;spl_handler_SplObjectStorage, zend_get_std_object_handlers(), sizeof(zend_object_handlers));</span>
+<span class="lineNum">    1318 </span>                : 
+<span class="lineNum">    1319 </span><span class="lineCov">             48 :         spl_handler_SplObjectStorage.get_properties  = spl_object_storage_get_properties;</span>
+<span class="lineNum">    1320 </span><span class="lineCov">             48 :         spl_handler_SplObjectStorage.get_debug_info  = spl_object_storage_debug_info;</span>
+<span class="lineNum">    1321 </span><span class="lineCov">             48 :         spl_handler_SplObjectStorage.compare_objects = spl_object_storage_compare_objects;</span>
+<span class="lineNum">    1322 </span><span class="lineCov">             48 :         spl_handler_SplObjectStorage.clone_obj       = spl_object_storage_clone;</span>
+<span class="lineNum">    1323 </span>                : 
+<span class="lineNum">    1324 </span><span class="lineCov">             48 :         REGISTER_SPL_IMPLEMENTS(SplObjectStorage, Countable);</span>
+<span class="lineNum">    1325 </span><span class="lineCov">             48 :         REGISTER_SPL_IMPLEMENTS(SplObjectStorage, Iterator);</span>
+<span class="lineNum">    1326 </span><span class="lineCov">             48 :         REGISTER_SPL_IMPLEMENTS(SplObjectStorage, Serializable);</span>
+<span class="lineNum">    1327 </span><span class="lineCov">             48 :         REGISTER_SPL_IMPLEMENTS(SplObjectStorage, ArrayAccess);</span>
+<span class="lineNum">    1328 </span>                : 
+<span class="lineNum">    1329 </span><span class="lineCov">             48 :         REGISTER_SPL_STD_CLASS_EX(MultipleIterator, spl_SplObjectStorage_new, spl_funcs_MultipleIterator);</span>
+<span class="lineNum">    1330 </span><span class="lineCov">             48 :         REGISTER_SPL_ITERATOR(MultipleIterator);</span>
+<span class="lineNum">    1331 </span>                : 
+<span class="lineNum">    1332 </span><span class="lineCov">             48 :         REGISTER_SPL_CLASS_CONST_LONG(MultipleIterator, &quot;MIT_NEED_ANY&quot;,     MIT_NEED_ANY);</span>
+<span class="lineNum">    1333 </span><span class="lineCov">             48 :         REGISTER_SPL_CLASS_CONST_LONG(MultipleIterator, &quot;MIT_NEED_ALL&quot;,     MIT_NEED_ALL);</span>
+<span class="lineNum">    1334 </span><span class="lineCov">             48 :         REGISTER_SPL_CLASS_CONST_LONG(MultipleIterator, &quot;MIT_KEYS_NUMERIC&quot;, MIT_KEYS_NUMERIC);</span>
+<span class="lineNum">    1335 </span><span class="lineCov">             48 :         REGISTER_SPL_CLASS_CONST_LONG(MultipleIterator, &quot;MIT_KEYS_ASSOC&quot;,   MIT_KEYS_ASSOC);</span>
+<span class="lineNum">    1336 </span>                : 
+<span class="lineNum">    1337 </span><span class="lineCov">             48 :         return SUCCESS;</span>
+<span class="lineNum">    1338 </span>                : }
+<span class="lineNum">    1339 </span>                : /* }}} */
+<span class="lineNum">    1340 </span>                : 
+<span class="lineNum">    1341 </span>                : /*
+<span class="lineNum">    1342 </span>                :  * Local variables:
+<span class="lineNum">    1343 </span>                :  * tab-width: 4
+<span class="lineNum">    1344 </span>                :  * c-basic-offset: 4
+<span class="lineNum">    1345 </span>                :  * End:
+<span class="lineNum">    1346 </span>                :  * vim600: fdm=marker
+<span class="lineNum">    1347 </span>                :  * vim: noet sw=4 ts=4
+<span class="lineNum">    1348 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

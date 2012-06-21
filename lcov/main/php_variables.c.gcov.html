@@ -1,0 +1,947 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - main/php_variables.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../index.html">directory</a> - <a href="index.html">main</a> - php_variables.c (source / <a href="php_variables.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">450</td>
+          <td class="headerCovTableEntry">204</td>
+          <td class="headerCovTableEntryMed">45.3 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">21</td>
+          <td class="headerCovTableEntry">17</td>
+          <td class="headerCovTableEntryMed">81.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Authors: Rasmus Lerdorf &lt;rasmus@lerdorf.on.ca&gt;                       |
+<span class="lineNum">      16 </span>                :    |          Zeev Suraski &lt;zeev@zend.com&gt;                                |
+<span class="lineNum">      17 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      18 </span>                :  */
+<span class="lineNum">      19 </span>                : 
+<span class="lineNum">      20 </span>                : /* $Id$ */
+<span class="lineNum">      21 </span>                : 
+<span class="lineNum">      22 </span>                : #include &lt;stdio.h&gt;
+<span class="lineNum">      23 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">      24 </span>                : #include &quot;ext/standard/php_standard.h&quot;
+<span class="lineNum">      25 </span>                : #include &quot;ext/standard/credits.h&quot;
+<span class="lineNum">      26 </span>                : #include &quot;php_variables.h&quot;
+<span class="lineNum">      27 </span>                : #include &quot;php_globals.h&quot;
+<span class="lineNum">      28 </span>                : #include &quot;php_content_types.h&quot;
+<span class="lineNum">      29 </span>                : #include &quot;SAPI.h&quot;
+<span class="lineNum">      30 </span>                : #include &quot;php_logos.h&quot;
+<span class="lineNum">      31 </span>                : #include &quot;zend_globals.h&quot;
+<span class="lineNum">      32 </span>                : 
+<span class="lineNum">      33 </span>                : /* for systems that need to override reading of environment variables */
+<span class="lineNum">      34 </span>                : void _php_import_environment_variables(zval *array_ptr TSRMLS_DC);
+<a name="35"><span class="lineNum">      35 </span>                : PHPAPI void (*php_import_environment_variables)(zval *array_ptr TSRMLS_DC) = _php_import_environment_variables;</a>
+<span class="lineNum">      36 </span>                : 
+<span class="lineNum">      37 </span><span class="lineCov">           1675 : PHPAPI void php_register_variable(char *var, char *strval, zval *track_vars_array TSRMLS_DC)</span>
+<span class="lineNum">      38 </span>                : {
+<span class="lineNum">      39 </span><span class="lineCov">           1675 :         php_register_variable_safe(var, strval, strlen(strval), track_vars_array TSRMLS_CC);</span>
+<span class="lineNum">      40 </span><span class="lineCov">           1675 : }</span>
+<a name="41"><span class="lineNum">      41 </span>                : </a>
+<span class="lineNum">      42 </span>                : /* binary-safe version */
+<span class="lineNum">      43 </span><span class="lineCov">           1675 : PHPAPI void php_register_variable_safe(char *var, char *strval, int str_len, zval *track_vars_array TSRMLS_DC)</span>
+<span class="lineNum">      44 </span>                : {
+<span class="lineNum">      45 </span>                :         zval new_entry;
+<span class="lineNum">      46 </span>                :         assert(strval != NULL);
+<span class="lineNum">      47 </span>                :         
+<span class="lineNum">      48 </span>                :         /* Prepare value */
+<span class="lineNum">      49 </span><span class="lineCov">           1675 :         Z_STRLEN(new_entry) = str_len;</span>
+<span class="lineNum">      50 </span><span class="lineCov">           1675 :         Z_STRVAL(new_entry) = estrndup(strval, Z_STRLEN(new_entry));</span>
+<span class="lineNum">      51 </span><span class="lineCov">           1675 :         Z_TYPE(new_entry) = IS_STRING;</span>
+<span class="lineNum">      52 </span>                : 
+<span class="lineNum">      53 </span><span class="lineCov">           1675 :         php_register_variable_ex(var, &amp;new_entry, track_vars_array TSRMLS_CC);</span>
+<a name="54"><span class="lineNum">      54 </span><span class="lineCov">           1675 : }</span></a>
+<span class="lineNum">      55 </span>                : 
+<span class="lineNum">      56 </span><span class="lineCov">           1771 : PHPAPI void php_register_variable_ex(char *var_name, zval *val, zval *track_vars_array TSRMLS_DC)</span>
+<span class="lineNum">      57 </span>                : {
+<span class="lineNum">      58 </span><span class="lineCov">           1771 :         char *p = NULL;</span>
+<span class="lineNum">      59 </span>                :         char *ip;               /* index pointer */
+<span class="lineNum">      60 </span>                :         char *index;
+<span class="lineNum">      61 </span>                :         char *var, *var_orig;
+<span class="lineNum">      62 </span>                :         int var_len, index_len;
+<span class="lineNum">      63 </span>                :         zval *gpc_element, **gpc_element_p;
+<span class="lineNum">      64 </span><span class="lineCov">           1771 :         zend_bool is_array = 0;</span>
+<span class="lineNum">      65 </span><span class="lineCov">           1771 :         HashTable *symtable1 = NULL;</span>
+<span class="lineNum">      66 </span>                :         ALLOCA_FLAG(use_heap)
+<span class="lineNum">      67 </span>                : 
+<span class="lineNum">      68 </span>                :         assert(var_name != NULL);
+<span class="lineNum">      69 </span>                : 
+<span class="lineNum">      70 </span><span class="lineCov">           1771 :         if (track_vars_array) {</span>
+<span class="lineNum">      71 </span><span class="lineCov">           1771 :                 symtable1 = Z_ARRVAL_P(track_vars_array);</span>
+<span class="lineNum">      72 </span>                :         }
+<span class="lineNum">      73 </span>                : 
+<span class="lineNum">      74 </span><span class="lineCov">           1771 :         if (!symtable1) {</span>
+<span class="lineNum">      75 </span>                :                 /* Nothing to do */
+<span class="lineNum">      76 </span>                :                 zval_dtor(val);
+<span class="lineNum">      77 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">      78 </span>                :         }
+<span class="lineNum">      79 </span>                : 
+<span class="lineNum">      80 </span>                : 
+<span class="lineNum">      81 </span>                :         /* ignore leading spaces in the variable name */
+<span class="lineNum">      82 </span><span class="lineCov">           3542 :         while (*var_name &amp;&amp; *var_name==' ') {</span>
+<span class="lineNum">      83 </span><span class="lineNoCov">              0 :                 var_name++;</span>
+<span class="lineNum">      84 </span>                :         }
+<span class="lineNum">      85 </span>                :         
+<span class="lineNum">      86 </span>                :         /*
+<span class="lineNum">      87 </span>                :          * Prepare variable name
+<span class="lineNum">      88 </span>                :          */
+<span class="lineNum">      89 </span><span class="lineCov">           1771 :         var_len = strlen(var_name);</span>
+<span class="lineNum">      90 </span><span class="lineCov">           1771 :         var = var_orig = do_alloca(var_len + 1, use_heap);</span>
+<span class="lineNum">      91 </span><span class="lineCov">           1771 :         memcpy(var_orig, var_name, var_len + 1);</span>
+<span class="lineNum">      92 </span>                : 
+<span class="lineNum">      93 </span>                :         /* ensure that we don't have spaces or dots in the variable name (not binary safe) */
+<span class="lineNum">      94 </span><span class="lineCov">          18082 :         for (p = var; *p; p++) {</span>
+<span class="lineNum">      95 </span><span class="lineCov">          16311 :                 if (*p == ' ' || *p == '.') {</span>
+<span class="lineNum">      96 </span><span class="lineNoCov">              0 :                         *p='_';</span>
+<span class="lineNum">      97 </span><span class="lineCov">          16311 :                 } else if (*p == '[') {</span>
+<span class="lineNum">      98 </span><span class="lineNoCov">              0 :                         is_array = 1;</span>
+<span class="lineNum">      99 </span><span class="lineNoCov">              0 :                         ip = p;</span>
+<span class="lineNum">     100 </span><span class="lineNoCov">              0 :                         *p = 0;</span>
+<span class="lineNum">     101 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     102 </span>                :                 }
+<span class="lineNum">     103 </span>                :         }
+<span class="lineNum">     104 </span><span class="lineCov">           1771 :         var_len = p - var;</span>
+<span class="lineNum">     105 </span>                : 
+<span class="lineNum">     106 </span><span class="lineCov">           1771 :         if (var_len==0) { /* empty variable name, or variable name with a space in it */</span>
+<span class="lineNum">     107 </span>                :                 zval_dtor(val);
+<span class="lineNum">     108 </span><span class="lineNoCov">              0 :                 free_alloca(var_orig, use_heap);</span>
+<span class="lineNum">     109 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     110 </span>                :         }
+<span class="lineNum">     111 </span>                : 
+<span class="lineNum">     112 </span>                :         /* GLOBALS hijack attempt, reject parameter */
+<span class="lineNum">     113 </span><span class="lineCov">           1771 :         if (symtable1 == EG(active_symbol_table) &amp;&amp;</span>
+<span class="lineNum">     114 </span>                :                 var_len == sizeof(&quot;GLOBALS&quot;)-1 &amp;&amp;
+<span class="lineNum">     115 </span><span class="lineNoCov">              0 :                 !memcmp(var, &quot;GLOBALS&quot;, sizeof(&quot;GLOBALS&quot;)-1)) {</span>
+<span class="lineNum">     116 </span>                :                 zval_dtor(val);
+<span class="lineNum">     117 </span><span class="lineNoCov">              0 :                 free_alloca(var_orig, use_heap);</span>
+<span class="lineNum">     118 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     119 </span>                :         }
+<span class="lineNum">     120 </span>                : 
+<span class="lineNum">     121 </span><span class="lineCov">           1771 :         index = var;</span>
+<span class="lineNum">     122 </span><span class="lineCov">           1771 :         index_len = var_len;</span>
+<span class="lineNum">     123 </span>                : 
+<span class="lineNum">     124 </span><span class="lineCov">           1771 :         if (is_array) {</span>
+<span class="lineNum">     125 </span><span class="lineNoCov">              0 :                 int nest_level = 0;</span>
+<span class="lineNum">     126 </span>                :                 while (1) {
+<span class="lineNum">     127 </span>                :                         char *index_s;
+<span class="lineNum">     128 </span><span class="lineNoCov">              0 :                         int new_idx_len = 0;</span>
+<span class="lineNum">     129 </span>                : 
+<span class="lineNum">     130 </span><span class="lineNoCov">              0 :                         if(++nest_level &gt; PG(max_input_nesting_level)) {</span>
+<span class="lineNum">     131 </span>                :                                 HashTable *ht;
+<span class="lineNum">     132 </span>                :                                 /* too many levels of nesting */
+<span class="lineNum">     133 </span>                : 
+<span class="lineNum">     134 </span><span class="lineNoCov">              0 :                                 if (track_vars_array) {</span>
+<span class="lineNum">     135 </span><span class="lineNoCov">              0 :                                         ht = Z_ARRVAL_P(track_vars_array);</span>
+<span class="lineNum">     136 </span><span class="lineNoCov">              0 :                                         zend_symtable_del(ht, var, var_len + 1);</span>
+<span class="lineNum">     137 </span>                :                                 }
+<span class="lineNum">     138 </span>                : 
+<span class="lineNum">     139 </span>                :                                 zval_dtor(val);
+<span class="lineNum">     140 </span>                : 
+<span class="lineNum">     141 </span>                :                                 /* do not output the error message to the screen,
+<span class="lineNum">     142 </span>                :                                  this helps us to to avoid &quot;information disclosure&quot; */
+<span class="lineNum">     143 </span><span class="lineNoCov">              0 :                                 if (!PG(display_errors)) {</span>
+<span class="lineNum">     144 </span><span class="lineNoCov">              0 :                                         php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Input variable nesting level exceeded %ld. To increase the limit change max_input_nesting_level in php.ini.&quot;, PG(max_input_nesting_level));</span>
+<span class="lineNum">     145 </span>                :                                 }
+<span class="lineNum">     146 </span><span class="lineNoCov">              0 :                                 free_alloca(var_orig, use_heap);</span>
+<span class="lineNum">     147 </span><span class="lineNoCov">              0 :                                 return;</span>
+<span class="lineNum">     148 </span>                :                         }
+<span class="lineNum">     149 </span>                : 
+<span class="lineNum">     150 </span><span class="lineNoCov">              0 :                         ip++;</span>
+<span class="lineNum">     151 </span><span class="lineNoCov">              0 :                         index_s = ip;</span>
+<span class="lineNum">     152 </span><span class="lineNoCov">              0 :                         if (isspace(*ip)) {</span>
+<span class="lineNum">     153 </span><span class="lineNoCov">              0 :                                 ip++;</span>
+<span class="lineNum">     154 </span>                :                         }
+<span class="lineNum">     155 </span><span class="lineNoCov">              0 :                         if (*ip==']') {</span>
+<span class="lineNum">     156 </span><span class="lineNoCov">              0 :                                 index_s = NULL;</span>
+<span class="lineNum">     157 </span>                :                         } else {
+<span class="lineNum">     158 </span><span class="lineNoCov">              0 :                                 ip = strchr(ip, ']');</span>
+<span class="lineNum">     159 </span><span class="lineNoCov">              0 :                                 if (!ip) {</span>
+<span class="lineNum">     160 </span>                :                                         /* PHP variables cannot contain '[' in their names, so we replace the character with a '_' */
+<span class="lineNum">     161 </span><span class="lineNoCov">              0 :                                         *(index_s - 1) = '_';</span>
+<span class="lineNum">     162 </span>                : 
+<span class="lineNum">     163 </span><span class="lineNoCov">              0 :                                         index_len = 0;</span>
+<span class="lineNum">     164 </span><span class="lineNoCov">              0 :                                         if (index) {</span>
+<span class="lineNum">     165 </span><span class="lineNoCov">              0 :                                                 index_len = strlen(index);</span>
+<span class="lineNum">     166 </span>                :                                         }
+<span class="lineNum">     167 </span><span class="lineNoCov">              0 :                                         goto plain_var;</span>
+<span class="lineNum">     168 </span>                :                                         return;
+<span class="lineNum">     169 </span>                :                                 }
+<span class="lineNum">     170 </span><span class="lineNoCov">              0 :                                 *ip = 0;</span>
+<span class="lineNum">     171 </span><span class="lineNoCov">              0 :                                 new_idx_len = strlen(index_s);  </span>
+<span class="lineNum">     172 </span>                :                         }
+<span class="lineNum">     173 </span>                : 
+<span class="lineNum">     174 </span><span class="lineNoCov">              0 :                         if (!index) {</span>
+<span class="lineNum">     175 </span><span class="lineNoCov">              0 :                                 MAKE_STD_ZVAL(gpc_element);</span>
+<span class="lineNum">     176 </span><span class="lineNoCov">              0 :                                 array_init(gpc_element);</span>
+<span class="lineNum">     177 </span><span class="lineNoCov">              0 :                                 if (zend_hash_next_index_insert(symtable1, &amp;gpc_element, sizeof(zval *), (void **) &amp;gpc_element_p) == FAILURE) {</span>
+<span class="lineNum">     178 </span><span class="lineNoCov">              0 :                                         zval_ptr_dtor(&amp;gpc_element);</span>
+<span class="lineNum">     179 </span>                :                                         zval_dtor(val);
+<span class="lineNum">     180 </span><span class="lineNoCov">              0 :                                         free_alloca(var_orig, use_heap);</span>
+<span class="lineNum">     181 </span><span class="lineNoCov">              0 :                                         return;</span>
+<span class="lineNum">     182 </span>                :                                 }
+<span class="lineNum">     183 </span>                :                         } else {
+<span class="lineNum">     184 </span><span class="lineNoCov">              0 :                                 if (zend_symtable_find(symtable1, index, index_len + 1, (void **) &amp;gpc_element_p) == FAILURE</span>
+<span class="lineNum">     185 </span><span class="lineNoCov">              0 :                                         || Z_TYPE_PP(gpc_element_p) != IS_ARRAY) {</span>
+<span class="lineNum">     186 </span><span class="lineNoCov">              0 :                                         MAKE_STD_ZVAL(gpc_element);</span>
+<span class="lineNum">     187 </span><span class="lineNoCov">              0 :                                         array_init(gpc_element);</span>
+<span class="lineNum">     188 </span><span class="lineNoCov">              0 :                                         zend_symtable_update(symtable1, index, index_len + 1, &amp;gpc_element, sizeof(zval *), (void **) &amp;gpc_element_p);</span>
+<span class="lineNum">     189 </span>                :                                 }
+<span class="lineNum">     190 </span>                :                         }
+<span class="lineNum">     191 </span><span class="lineNoCov">              0 :                         symtable1 = Z_ARRVAL_PP(gpc_element_p);</span>
+<span class="lineNum">     192 </span>                :                         /* ip pointed to the '[' character, now obtain the key */
+<span class="lineNum">     193 </span><span class="lineNoCov">              0 :                         index = index_s;</span>
+<span class="lineNum">     194 </span><span class="lineNoCov">              0 :                         index_len = new_idx_len;</span>
+<span class="lineNum">     195 </span>                : 
+<span class="lineNum">     196 </span><span class="lineNoCov">              0 :                         ip++;</span>
+<span class="lineNum">     197 </span><span class="lineNoCov">              0 :                         if (*ip == '[') {</span>
+<span class="lineNum">     198 </span><span class="lineNoCov">              0 :                                 is_array = 1;</span>
+<span class="lineNum">     199 </span><span class="lineNoCov">              0 :                                 *ip = 0;</span>
+<span class="lineNum">     200 </span>                :                         } else {
+<span class="lineNum">     201 </span><span class="lineNoCov">              0 :                                 goto plain_var;</span>
+<span class="lineNum">     202 </span>                :                         }
+<span class="lineNum">     203 </span><span class="lineNoCov">              0 :                 }</span>
+<span class="lineNum">     204 </span>                :         } else {
+<span class="lineNum">     205 </span>                : plain_var:
+<span class="lineNum">     206 </span><span class="lineCov">           1771 :                 MAKE_STD_ZVAL(gpc_element);</span>
+<span class="lineNum">     207 </span><span class="lineCov">           1771 :                 gpc_element-&gt;value = val-&gt;value;</span>
+<span class="lineNum">     208 </span><span class="lineCov">           1771 :                 Z_TYPE_P(gpc_element) = Z_TYPE_P(val);</span>
+<span class="lineNum">     209 </span><span class="lineCov">           1771 :                 if (!index) {</span>
+<span class="lineNum">     210 </span><span class="lineNoCov">              0 :                         if (zend_hash_next_index_insert(symtable1, &amp;gpc_element, sizeof(zval *), (void **) &amp;gpc_element_p) == FAILURE) {</span>
+<span class="lineNum">     211 </span><span class="lineNoCov">              0 :                                 zval_ptr_dtor(&amp;gpc_element);</span>
+<span class="lineNum">     212 </span>                :                         }
+<span class="lineNum">     213 </span>                :                 } else {
+<span class="lineNum">     214 </span>                :                         /* 
+<span class="lineNum">     215 </span>                :                          * According to rfc2965, more specific paths are listed above the less specific ones.
+<span class="lineNum">     216 </span>                :                          * If we encounter a duplicate cookie name, we should skip it, since it is not possible
+<span class="lineNum">     217 </span>                :                          * to have the same (plain text) cookie name for the same path and we should not overwrite
+<span class="lineNum">     218 </span>                :                          * more specific cookies with the less specific ones.
+<span class="lineNum">     219 </span>                :                          */
+<span class="lineNum">     220 </span><span class="lineCov">           3542 :                         if (PG(http_globals)[TRACK_VARS_COOKIE] &amp;&amp;</span>
+<span class="lineNum">     221 </span><span class="lineCov">           1771 :                                 symtable1 == Z_ARRVAL_P(PG(http_globals)[TRACK_VARS_COOKIE]) &amp;&amp;</span>
+<span class="lineNum">     222 </span><span class="lineNoCov">              0 :                                 zend_symtable_exists(symtable1, index, index_len + 1)) {</span>
+<span class="lineNum">     223 </span><span class="lineNoCov">              0 :                                 zval_ptr_dtor(&amp;gpc_element);</span>
+<span class="lineNum">     224 </span>                :                         } else {
+<span class="lineNum">     225 </span><span class="lineCov">           1771 :                                 zend_symtable_update(symtable1, index, index_len + 1, &amp;gpc_element, sizeof(zval *), (void **) &amp;gpc_element_p);</span>
+<span class="lineNum">     226 </span>                :                         }
+<span class="lineNum">     227 </span>                :                 }
+<span class="lineNum">     228 </span>                :         }
+<span class="lineNum">     229 </span><span class="lineCov">           1771 :         free_alloca(var_orig, use_heap);</span>
+<a name="230"><span class="lineNum">     230 </span>                : }</a>
+<span class="lineNum">     231 </span>                : 
+<span class="lineNum">     232 </span><span class="lineNoCov">              0 : SAPI_API SAPI_POST_HANDLER_FUNC(php_std_post_handler)</span>
+<span class="lineNum">     233 </span>                : {
+<span class="lineNum">     234 </span>                :         char *var, *val, *e, *s, *p;
+<span class="lineNum">     235 </span><span class="lineNoCov">              0 :         zval *array_ptr = (zval *) arg;</span>
+<span class="lineNum">     236 </span><span class="lineNoCov">              0 :         long count = 0;</span>
+<span class="lineNum">     237 </span>                : 
+<span class="lineNum">     238 </span><span class="lineNoCov">              0 :         if (SG(request_info).post_data == NULL) {</span>
+<span class="lineNum">     239 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     240 </span>                :         }       
+<span class="lineNum">     241 </span>                : 
+<span class="lineNum">     242 </span><span class="lineNoCov">              0 :         s = SG(request_info).post_data;</span>
+<span class="lineNum">     243 </span><span class="lineNoCov">              0 :         e = s + SG(request_info).post_data_length;</span>
+<span class="lineNum">     244 </span>                : 
+<span class="lineNum">     245 </span><span class="lineNoCov">              0 :         while (s &lt; e &amp;&amp; (p = memchr(s, '&amp;', (e - s)))) {</span>
+<span class="lineNum">     246 </span>                : last_value:
+<span class="lineNum">     247 </span><span class="lineNoCov">              0 :                 if ((val = memchr(s, '=', (p - s)))) { /* have a value */</span>
+<span class="lineNum">     248 </span>                :                         unsigned int val_len, new_val_len;
+<span class="lineNum">     249 </span>                : 
+<span class="lineNum">     250 </span><span class="lineNoCov">              0 :                         if (++count &gt; PG(max_input_vars)) {</span>
+<span class="lineNum">     251 </span><span class="lineNoCov">              0 :                                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Input variables exceeded %ld. To increase the limit change max_input_vars in php.ini.&quot;, PG(max_input_vars));</span>
+<span class="lineNum">     252 </span><span class="lineNoCov">              0 :                                 return;</span>
+<span class="lineNum">     253 </span>                :                         }
+<span class="lineNum">     254 </span><span class="lineNoCov">              0 :                         var = s;</span>
+<span class="lineNum">     255 </span>                : 
+<span class="lineNum">     256 </span><span class="lineNoCov">              0 :                         php_url_decode(var, (val - s));</span>
+<span class="lineNum">     257 </span><span class="lineNoCov">              0 :                         val++;</span>
+<span class="lineNum">     258 </span><span class="lineNoCov">              0 :                         val_len = php_url_decode(val, (p - val));</span>
+<span class="lineNum">     259 </span><span class="lineNoCov">              0 :                         val = estrndup(val, val_len);</span>
+<span class="lineNum">     260 </span><span class="lineNoCov">              0 :                         if (sapi_module.input_filter(PARSE_POST, var, &amp;val, val_len, &amp;new_val_len TSRMLS_CC)) {</span>
+<span class="lineNum">     261 </span><span class="lineNoCov">              0 :                                 php_register_variable_safe(var, val, new_val_len, array_ptr TSRMLS_CC);</span>
+<span class="lineNum">     262 </span>                :                         }
+<span class="lineNum">     263 </span><span class="lineNoCov">              0 :                         efree(val);</span>
+<span class="lineNum">     264 </span>                :                 }
+<span class="lineNum">     265 </span><span class="lineNoCov">              0 :                 s = p + 1;</span>
+<span class="lineNum">     266 </span>                :         }
+<span class="lineNum">     267 </span><span class="lineNoCov">              0 :         if (s &lt; e) {</span>
+<span class="lineNum">     268 </span><span class="lineNoCov">              0 :                 p = e;</span>
+<span class="lineNum">     269 </span><span class="lineNoCov">              0 :                 goto last_value;</span>
+<span class="lineNum">     270 </span>                :         }
+<a name="271"><span class="lineNum">     271 </span>                : }</a>
+<span class="lineNum">     272 </span>                : 
+<span class="lineNum">     273 </span><span class="lineCov">            240 : SAPI_API SAPI_INPUT_FILTER_FUNC(php_default_input_filter)</span>
+<span class="lineNum">     274 </span>                : {
+<span class="lineNum">     275 </span>                :         /* TODO: check .ini setting here and apply user-defined input filter */
+<span class="lineNum">     276 </span><span class="lineCov">            240 :         if(new_val_len) *new_val_len = val_len;</span>
+<span class="lineNum">     277 </span><span class="lineCov">            240 :         return 1;</span>
+<a name="278"><span class="lineNum">     278 </span>                : }</a>
+<span class="lineNum">     279 </span>                : 
+<span class="lineNum">     280 </span><span class="lineCov">             96 : SAPI_API SAPI_TREAT_DATA_FUNC(php_default_treat_data)</span>
+<span class="lineNum">     281 </span>                : {
+<span class="lineNum">     282 </span><span class="lineCov">             96 :         char *res = NULL, *var, *val, *separator = NULL;</span>
+<span class="lineNum">     283 </span>                :         const char *c_var;
+<span class="lineNum">     284 </span>                :         zval *array_ptr;
+<span class="lineNum">     285 </span><span class="lineCov">             96 :         int free_buffer = 0;</span>
+<span class="lineNum">     286 </span><span class="lineCov">             96 :         char *strtok_buf = NULL;</span>
+<span class="lineNum">     287 </span><span class="lineCov">             96 :         long count = 0;</span>
+<span class="lineNum">     288 </span>                :         
+<span class="lineNum">     289 </span><span class="lineCov">             96 :         switch (arg) {</span>
+<span class="lineNum">     290 </span>                :                 case PARSE_POST:
+<span class="lineNum">     291 </span>                :                 case PARSE_GET:
+<span class="lineNum">     292 </span>                :                 case PARSE_COOKIE:
+<span class="lineNum">     293 </span><span class="lineCov">             96 :                         ALLOC_ZVAL(array_ptr);</span>
+<span class="lineNum">     294 </span><span class="lineCov">             96 :                         array_init(array_ptr);</span>
+<span class="lineNum">     295 </span><span class="lineCov">             96 :                         INIT_PZVAL(array_ptr);</span>
+<span class="lineNum">     296 </span><span class="lineCov">             96 :                         switch (arg) {</span>
+<span class="lineNum">     297 </span>                :                                 case PARSE_POST:
+<span class="lineNum">     298 </span><span class="lineNoCov">              0 :                                         if (PG(http_globals)[TRACK_VARS_POST]) {</span>
+<span class="lineNum">     299 </span><span class="lineNoCov">              0 :                                                 zval_ptr_dtor(&amp;PG(http_globals)[TRACK_VARS_POST]);</span>
+<span class="lineNum">     300 </span>                :                                         }
+<span class="lineNum">     301 </span><span class="lineNoCov">              0 :                                         PG(http_globals)[TRACK_VARS_POST] = array_ptr;</span>
+<span class="lineNum">     302 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">     303 </span>                :                                 case PARSE_GET:
+<span class="lineNum">     304 </span><span class="lineCov">             48 :                                         if (PG(http_globals)[TRACK_VARS_GET]) {</span>
+<span class="lineNum">     305 </span><span class="lineNoCov">              0 :                                                 zval_ptr_dtor(&amp;PG(http_globals)[TRACK_VARS_GET]);</span>
+<span class="lineNum">     306 </span>                :                                         }
+<span class="lineNum">     307 </span><span class="lineCov">             48 :                                         PG(http_globals)[TRACK_VARS_GET] = array_ptr;</span>
+<span class="lineNum">     308 </span><span class="lineCov">             48 :                                         break;</span>
+<span class="lineNum">     309 </span>                :                                 case PARSE_COOKIE:
+<span class="lineNum">     310 </span><span class="lineCov">             48 :                                         if (PG(http_globals)[TRACK_VARS_COOKIE]) {</span>
+<span class="lineNum">     311 </span><span class="lineNoCov">              0 :                                                 zval_ptr_dtor(&amp;PG(http_globals)[TRACK_VARS_COOKIE]);</span>
+<span class="lineNum">     312 </span>                :                                         }
+<span class="lineNum">     313 </span><span class="lineCov">             48 :                                         PG(http_globals)[TRACK_VARS_COOKIE] = array_ptr;</span>
+<span class="lineNum">     314 </span>                :                                         break;
+<span class="lineNum">     315 </span>                :                         }
+<span class="lineNum">     316 </span><span class="lineCov">             96 :                         break;</span>
+<span class="lineNum">     317 </span>                :                 default:
+<span class="lineNum">     318 </span><span class="lineNoCov">              0 :                         array_ptr = destArray;</span>
+<span class="lineNum">     319 </span>                :                         break;
+<span class="lineNum">     320 </span>                :         }
+<span class="lineNum">     321 </span>                : 
+<span class="lineNum">     322 </span><span class="lineCov">             96 :         if (arg == PARSE_POST) {</span>
+<span class="lineNum">     323 </span><span class="lineNoCov">              0 :                 sapi_handle_post(array_ptr TSRMLS_CC);</span>
+<span class="lineNum">     324 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     325 </span>                :         }
+<span class="lineNum">     326 </span>                : 
+<span class="lineNum">     327 </span><span class="lineCov">             96 :         if (arg == PARSE_GET) {         /* GET data */</span>
+<span class="lineNum">     328 </span><span class="lineCov">             48 :                 c_var = SG(request_info).query_string;</span>
+<span class="lineNum">     329 </span><span class="lineCov">             48 :                 if (c_var &amp;&amp; *c_var) {</span>
+<span class="lineNum">     330 </span><span class="lineNoCov">              0 :                         res = (char *) estrdup(c_var);</span>
+<span class="lineNum">     331 </span><span class="lineNoCov">              0 :                         free_buffer = 1;</span>
+<span class="lineNum">     332 </span>                :                 } else {
+<span class="lineNum">     333 </span><span class="lineCov">             48 :                         free_buffer = 0;</span>
+<span class="lineNum">     334 </span>                :                 }
+<span class="lineNum">     335 </span><span class="lineCov">             48 :         } else if (arg == PARSE_COOKIE) {               /* Cookie data */</span>
+<span class="lineNum">     336 </span><span class="lineCov">             48 :                 c_var = SG(request_info).cookie_data;</span>
+<span class="lineNum">     337 </span><span class="lineCov">             48 :                 if (c_var &amp;&amp; *c_var) {</span>
+<span class="lineNum">     338 </span><span class="lineNoCov">              0 :                         res = (char *) estrdup(c_var);</span>
+<span class="lineNum">     339 </span><span class="lineNoCov">              0 :                         free_buffer = 1;</span>
+<span class="lineNum">     340 </span>                :                 } else {
+<span class="lineNum">     341 </span><span class="lineCov">             48 :                         free_buffer = 0;</span>
+<span class="lineNum">     342 </span>                :                 }
+<span class="lineNum">     343 </span><span class="lineNoCov">              0 :         } else if (arg == PARSE_STRING) {               /* String data */</span>
+<span class="lineNum">     344 </span><span class="lineNoCov">              0 :                 res = str;</span>
+<span class="lineNum">     345 </span><span class="lineNoCov">              0 :                 free_buffer = 1;</span>
+<span class="lineNum">     346 </span>                :         }
+<span class="lineNum">     347 </span>                : 
+<span class="lineNum">     348 </span><span class="lineCov">             96 :         if (!res) {</span>
+<span class="lineNum">     349 </span><span class="lineCov">             96 :                 return;</span>
+<span class="lineNum">     350 </span>                :         }
+<span class="lineNum">     351 </span>                : 
+<span class="lineNum">     352 </span><span class="lineNoCov">              0 :         switch (arg) {</span>
+<span class="lineNum">     353 </span>                :                 case PARSE_GET:
+<span class="lineNum">     354 </span>                :                 case PARSE_STRING:
+<span class="lineNum">     355 </span><span class="lineNoCov">              0 :                         separator = (char *) estrdup(PG(arg_separator).input);</span>
+<span class="lineNum">     356 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     357 </span>                :                 case PARSE_COOKIE:
+<span class="lineNum">     358 </span><span class="lineNoCov">              0 :                         separator = &quot;;\0&quot;;</span>
+<span class="lineNum">     359 </span>                :                         break;
+<span class="lineNum">     360 </span>                :         }
+<span class="lineNum">     361 </span>                :         
+<span class="lineNum">     362 </span><span class="lineNoCov">              0 :         var = php_strtok_r(res, separator, &amp;strtok_buf);</span>
+<span class="lineNum">     363 </span>                :         
+<span class="lineNum">     364 </span><span class="lineNoCov">              0 :         while (var) {</span>
+<span class="lineNum">     365 </span><span class="lineNoCov">              0 :                 val = strchr(var, '=');</span>
+<span class="lineNum">     366 </span>                : 
+<span class="lineNum">     367 </span><span class="lineNoCov">              0 :                 if (arg == PARSE_COOKIE) {</span>
+<span class="lineNum">     368 </span>                :                         /* Remove leading spaces from cookie names, needed for multi-cookie header where ; can be followed by a space */
+<span class="lineNum">     369 </span><span class="lineNoCov">              0 :                         while (isspace(*var)) {</span>
+<span class="lineNum">     370 </span><span class="lineNoCov">              0 :                                 var++;</span>
+<span class="lineNum">     371 </span>                :                         }
+<span class="lineNum">     372 </span><span class="lineNoCov">              0 :                         if (var == val || *var == '\0') {</span>
+<span class="lineNum">     373 </span>                :                                 goto next_cookie;
+<span class="lineNum">     374 </span>                :                         }
+<span class="lineNum">     375 </span>                :                 }
+<span class="lineNum">     376 </span>                : 
+<span class="lineNum">     377 </span><span class="lineNoCov">              0 :                 if (++count &gt; PG(max_input_vars)) {</span>
+<span class="lineNum">     378 </span><span class="lineNoCov">              0 :                         php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Input variables exceeded %ld. To increase the limit change max_input_vars in php.ini.&quot;, PG(max_input_vars));</span>
+<span class="lineNum">     379 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     380 </span>                :                 }
+<span class="lineNum">     381 </span>                : 
+<span class="lineNum">     382 </span><span class="lineNoCov">              0 :                 if (val) { /* have a value */</span>
+<span class="lineNum">     383 </span>                :                         int val_len;
+<span class="lineNum">     384 </span>                :                         unsigned int new_val_len;
+<span class="lineNum">     385 </span>                : 
+<span class="lineNum">     386 </span><span class="lineNoCov">              0 :                         *val++ = '\0';</span>
+<span class="lineNum">     387 </span><span class="lineNoCov">              0 :                         php_url_decode(var, strlen(var));</span>
+<span class="lineNum">     388 </span><span class="lineNoCov">              0 :                         val_len = php_url_decode(val, strlen(val));</span>
+<span class="lineNum">     389 </span><span class="lineNoCov">              0 :                         val = estrndup(val, val_len);</span>
+<span class="lineNum">     390 </span><span class="lineNoCov">              0 :                         if (sapi_module.input_filter(arg, var, &amp;val, val_len, &amp;new_val_len TSRMLS_CC)) {</span>
+<span class="lineNum">     391 </span><span class="lineNoCov">              0 :                                 php_register_variable_safe(var, val, new_val_len, array_ptr TSRMLS_CC);</span>
+<span class="lineNum">     392 </span>                :                         }
+<span class="lineNum">     393 </span><span class="lineNoCov">              0 :                         efree(val);</span>
+<span class="lineNum">     394 </span>                :                 } else {
+<span class="lineNum">     395 </span>                :                         int val_len;
+<span class="lineNum">     396 </span>                :                         unsigned int new_val_len;
+<span class="lineNum">     397 </span>                : 
+<span class="lineNum">     398 </span><span class="lineNoCov">              0 :                         php_url_decode(var, strlen(var));</span>
+<span class="lineNum">     399 </span><span class="lineNoCov">              0 :                         val_len = 0;</span>
+<span class="lineNum">     400 </span><span class="lineNoCov">              0 :                         val = estrndup(&quot;&quot;, val_len);</span>
+<span class="lineNum">     401 </span><span class="lineNoCov">              0 :                         if (sapi_module.input_filter(arg, var, &amp;val, val_len, &amp;new_val_len TSRMLS_CC)) {</span>
+<span class="lineNum">     402 </span><span class="lineNoCov">              0 :                                 php_register_variable_safe(var, val, new_val_len, array_ptr TSRMLS_CC);</span>
+<span class="lineNum">     403 </span>                :                         }
+<span class="lineNum">     404 </span><span class="lineNoCov">              0 :                         efree(val);</span>
+<span class="lineNum">     405 </span>                :                 }
+<span class="lineNum">     406 </span>                : next_cookie:
+<span class="lineNum">     407 </span><span class="lineNoCov">              0 :                 var = php_strtok_r(NULL, separator, &amp;strtok_buf);</span>
+<span class="lineNum">     408 </span>                :         }
+<span class="lineNum">     409 </span>                : 
+<span class="lineNum">     410 </span><span class="lineNoCov">              0 :         if (arg != PARSE_COOKIE) {</span>
+<span class="lineNum">     411 </span><span class="lineNoCov">              0 :                 efree(separator);</span>
+<span class="lineNum">     412 </span>                :         }
+<span class="lineNum">     413 </span>                : 
+<span class="lineNum">     414 </span><span class="lineNoCov">              0 :         if (free_buffer) {</span>
+<span class="lineNum">     415 </span><span class="lineNoCov">              0 :                 efree(res);</span>
+<span class="lineNum">     416 </span>                :         }
+<a name="417"><span class="lineNum">     417 </span>                : }</a>
+<span class="lineNum">     418 </span>                : 
+<span class="lineNum">     419 </span><span class="lineCov">             49 : void _php_import_environment_variables(zval *array_ptr TSRMLS_DC)</span>
+<span class="lineNum">     420 </span>                : {
+<span class="lineNum">     421 </span>                :         char buf[128];
+<span class="lineNum">     422 </span><span class="lineCov">             49 :         char **env, *p, *t = buf;</span>
+<span class="lineNum">     423 </span><span class="lineCov">             49 :         size_t alloc_size = sizeof(buf);</span>
+<span class="lineNum">     424 </span>                :         unsigned long nlen; /* ptrdiff_t is not portable */
+<span class="lineNum">     425 </span>                : 
+<span class="lineNum">     426 </span><span class="lineCov">           1484 :         for (env = environ; env != NULL &amp;&amp; *env != NULL; env++) {</span>
+<span class="lineNum">     427 </span><span class="lineCov">           1435 :                 p = strchr(*env, '=');</span>
+<span class="lineNum">     428 </span><span class="lineCov">           1435 :                 if (!p) {                               /* malformed entry? */</span>
+<span class="lineNum">     429 </span><span class="lineNoCov">              0 :                         continue;</span>
+<span class="lineNum">     430 </span>                :                 }
+<span class="lineNum">     431 </span><span class="lineCov">           1435 :                 nlen = p - *env;</span>
+<span class="lineNum">     432 </span><span class="lineCov">           1435 :                 if (nlen &gt;= alloc_size) {</span>
+<span class="lineNum">     433 </span><span class="lineNoCov">              0 :                         alloc_size = nlen + 64;</span>
+<span class="lineNum">     434 </span><span class="lineNoCov">              0 :                         t = (t == buf ? emalloc(alloc_size): erealloc(t, alloc_size));</span>
+<span class="lineNum">     435 </span>                :                 }
+<span class="lineNum">     436 </span><span class="lineCov">           1435 :                 memcpy(t, *env, nlen);</span>
+<span class="lineNum">     437 </span><span class="lineCov">           1435 :                 t[nlen] = '\0';</span>
+<span class="lineNum">     438 </span><span class="lineCov">           1435 :                 php_register_variable(t, p + 1, array_ptr TSRMLS_CC);</span>
+<span class="lineNum">     439 </span>                :         }
+<span class="lineNum">     440 </span><span class="lineCov">             49 :         if (t != buf &amp;&amp; t != NULL) {</span>
+<span class="lineNum">     441 </span><span class="lineNoCov">              0 :                 efree(t);</span>
+<span class="lineNum">     442 </span>                :         }
+<a name="443"><span class="lineNum">     443 </span><span class="lineCov">             49 : }</span></a>
+<span class="lineNum">     444 </span>                : 
+<span class="lineNum">     445 </span><span class="lineNoCov">              0 : zend_bool php_std_auto_global_callback(char *name, uint name_len TSRMLS_DC)</span>
+<span class="lineNum">     446 </span>                : {
+<span class="lineNum">     447 </span><span class="lineNoCov">              0 :         zend_printf(&quot;%s\n&quot;, name);</span>
+<span class="lineNum">     448 </span><span class="lineNoCov">              0 :         return 0; /* don't rearm */</span>
+<span class="lineNum">     449 </span>                : }
+<span class="lineNum">     450 </span>                : 
+<a name="451"><span class="lineNum">     451 </span>                : /* {{{ php_build_argv</a>
+<span class="lineNum">     452 </span>                :  */
+<span class="lineNum">     453 </span><span class="lineCov">             48 : static void php_build_argv(char *s, zval *track_vars_array TSRMLS_DC)</span>
+<span class="lineNum">     454 </span>                : {
+<span class="lineNum">     455 </span>                :         zval *arr, *argc, *tmp;
+<span class="lineNum">     456 </span><span class="lineCov">             48 :         int count = 0;</span>
+<span class="lineNum">     457 </span>                :         char *ss, *space;
+<span class="lineNum">     458 </span>                :         
+<span class="lineNum">     459 </span><span class="lineCov">             48 :         if (!(SG(request_info).argc || track_vars_array)) {</span>
+<span class="lineNum">     460 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     461 </span>                :         }
+<span class="lineNum">     462 </span>                :         
+<span class="lineNum">     463 </span><span class="lineCov">             48 :         ALLOC_INIT_ZVAL(arr);</span>
+<span class="lineNum">     464 </span><span class="lineCov">             48 :         array_init(arr);</span>
+<span class="lineNum">     465 </span>                : 
+<span class="lineNum">     466 </span>                :         /* Prepare argv */
+<span class="lineNum">     467 </span><span class="lineCov">             48 :         if (SG(request_info).argc) { /* are we in cli sapi? */</span>
+<span class="lineNum">     468 </span>                :                 int i;
+<span class="lineNum">     469 </span><span class="lineCov">            102 :                 for (i = 0; i &lt; SG(request_info).argc; i++) {</span>
+<span class="lineNum">     470 </span><span class="lineCov">             54 :                         ALLOC_ZVAL(tmp);</span>
+<span class="lineNum">     471 </span><span class="lineCov">             54 :                         Z_TYPE_P(tmp) = IS_STRING;</span>
+<span class="lineNum">     472 </span><span class="lineCov">             54 :                         Z_STRLEN_P(tmp) = strlen(SG(request_info).argv[i]);</span>
+<span class="lineNum">     473 </span><span class="lineCov">             54 :                         Z_STRVAL_P(tmp) = estrndup(SG(request_info).argv[i], Z_STRLEN_P(tmp));</span>
+<span class="lineNum">     474 </span><span class="lineCov">             54 :                         INIT_PZVAL(tmp);</span>
+<span class="lineNum">     475 </span><span class="lineCov">             54 :                         if (zend_hash_next_index_insert(Z_ARRVAL_P(arr), &amp;tmp, sizeof(zval *), NULL) == FAILURE) {</span>
+<span class="lineNum">     476 </span><span class="lineNoCov">              0 :                                 if (Z_TYPE_P(tmp) == IS_STRING) {</span>
+<span class="lineNum">     477 </span><span class="lineNoCov">              0 :                                         efree(Z_STRVAL_P(tmp));</span>
+<span class="lineNum">     478 </span>                :                                 }
+<span class="lineNum">     479 </span>                :                         }
+<span class="lineNum">     480 </span>                :                 }
+<span class="lineNum">     481 </span><span class="lineNoCov">              0 :         } else  if (s &amp;&amp; *s) {</span>
+<span class="lineNum">     482 </span><span class="lineNoCov">              0 :                 ss = s;</span>
+<span class="lineNum">     483 </span><span class="lineNoCov">              0 :                 while (ss) {</span>
+<span class="lineNum">     484 </span><span class="lineNoCov">              0 :                         space = strchr(ss, '+');</span>
+<span class="lineNum">     485 </span><span class="lineNoCov">              0 :                         if (space) {</span>
+<span class="lineNum">     486 </span><span class="lineNoCov">              0 :                                 *space = '\0';</span>
+<span class="lineNum">     487 </span>                :                         }
+<span class="lineNum">     488 </span>                :                         /* auto-type */
+<span class="lineNum">     489 </span><span class="lineNoCov">              0 :                         ALLOC_ZVAL(tmp);</span>
+<span class="lineNum">     490 </span><span class="lineNoCov">              0 :                         Z_TYPE_P(tmp) = IS_STRING;</span>
+<span class="lineNum">     491 </span><span class="lineNoCov">              0 :                         Z_STRLEN_P(tmp) = strlen(ss);</span>
+<span class="lineNum">     492 </span><span class="lineNoCov">              0 :                         Z_STRVAL_P(tmp) = estrndup(ss, Z_STRLEN_P(tmp));</span>
+<span class="lineNum">     493 </span><span class="lineNoCov">              0 :                         INIT_PZVAL(tmp);</span>
+<span class="lineNum">     494 </span><span class="lineNoCov">              0 :                         count++;</span>
+<span class="lineNum">     495 </span><span class="lineNoCov">              0 :                         if (zend_hash_next_index_insert(Z_ARRVAL_P(arr), &amp;tmp, sizeof(zval *), NULL) == FAILURE) {</span>
+<span class="lineNum">     496 </span><span class="lineNoCov">              0 :                                 if (Z_TYPE_P(tmp) == IS_STRING) {</span>
+<span class="lineNum">     497 </span><span class="lineNoCov">              0 :                                         efree(Z_STRVAL_P(tmp));</span>
+<span class="lineNum">     498 </span>                :                                 }
+<span class="lineNum">     499 </span>                :                         }
+<span class="lineNum">     500 </span><span class="lineNoCov">              0 :                         if (space) {</span>
+<span class="lineNum">     501 </span><span class="lineNoCov">              0 :                                 *space = '+';</span>
+<span class="lineNum">     502 </span><span class="lineNoCov">              0 :                                 ss = space + 1;</span>
+<span class="lineNum">     503 </span>                :                         } else {
+<span class="lineNum">     504 </span><span class="lineNoCov">              0 :                                 ss = space;</span>
+<span class="lineNum">     505 </span>                :                         }
+<span class="lineNum">     506 </span>                :                 }
+<span class="lineNum">     507 </span>                :         }
+<span class="lineNum">     508 </span>                : 
+<span class="lineNum">     509 </span>                :         /* prepare argc */
+<span class="lineNum">     510 </span><span class="lineCov">             48 :         ALLOC_INIT_ZVAL(argc);</span>
+<span class="lineNum">     511 </span><span class="lineCov">             48 :         if (SG(request_info).argc) {</span>
+<span class="lineNum">     512 </span><span class="lineCov">             48 :                 Z_LVAL_P(argc) = SG(request_info).argc;</span>
+<span class="lineNum">     513 </span>                :         } else {
+<span class="lineNum">     514 </span><span class="lineNoCov">              0 :                 Z_LVAL_P(argc) = count;</span>
+<span class="lineNum">     515 </span>                :         }
+<span class="lineNum">     516 </span><span class="lineCov">             48 :         Z_TYPE_P(argc) = IS_LONG;</span>
+<span class="lineNum">     517 </span>                : 
+<span class="lineNum">     518 </span><span class="lineCov">             48 :         if (SG(request_info).argc) {</span>
+<span class="lineNum">     519 </span><span class="lineCov">             48 :                 Z_ADDREF_P(arr);</span>
+<span class="lineNum">     520 </span><span class="lineCov">             48 :                 Z_ADDREF_P(argc);</span>
+<span class="lineNum">     521 </span><span class="lineCov">             48 :                 zend_hash_update(&amp;EG(symbol_table), &quot;argv&quot;, sizeof(&quot;argv&quot;), &amp;arr, sizeof(zval *), NULL);</span>
+<span class="lineNum">     522 </span><span class="lineCov">             48 :                 zend_hash_add(&amp;EG(symbol_table), &quot;argc&quot;, sizeof(&quot;argc&quot;), &amp;argc, sizeof(zval *), NULL);</span>
+<span class="lineNum">     523 </span>                :         } 
+<span class="lineNum">     524 </span><span class="lineCov">             48 :         if (track_vars_array) {</span>
+<span class="lineNum">     525 </span><span class="lineNoCov">              0 :                 Z_ADDREF_P(arr);</span>
+<span class="lineNum">     526 </span><span class="lineNoCov">              0 :                 Z_ADDREF_P(argc);</span>
+<span class="lineNum">     527 </span><span class="lineNoCov">              0 :                 zend_hash_update(Z_ARRVAL_P(track_vars_array), &quot;argv&quot;, sizeof(&quot;argv&quot;), &amp;arr, sizeof(zval *), NULL);</span>
+<span class="lineNum">     528 </span><span class="lineNoCov">              0 :                 zend_hash_update(Z_ARRVAL_P(track_vars_array), &quot;argc&quot;, sizeof(&quot;argc&quot;), &amp;argc, sizeof(zval *), NULL);</span>
+<span class="lineNum">     529 </span>                :         }
+<span class="lineNum">     530 </span><span class="lineCov">             48 :         zval_ptr_dtor(&amp;arr);</span>
+<span class="lineNum">     531 </span><span class="lineCov">             48 :         zval_ptr_dtor(&amp;argc);</span>
+<span class="lineNum">     532 </span>                : }
+<span class="lineNum">     533 </span>                : /* }}} */
+<span class="lineNum">     534 </span>                : 
+<a name="535"><span class="lineNum">     535 </span>                : /* {{{ php_handle_special_queries</a>
+<span class="lineNum">     536 </span>                :  */
+<span class="lineNum">     537 </span><span class="lineCov">             45 : PHPAPI int php_handle_special_queries(TSRMLS_D)</span>
+<span class="lineNum">     538 </span>                : {
+<span class="lineNum">     539 </span><span class="lineCov">             45 :         if (PG(expose_php) &amp;&amp; SG(request_info).query_string &amp;&amp; SG(request_info).query_string[0] == '=') {</span>
+<span class="lineNum">     540 </span><span class="lineNoCov">              0 :                 if (php_info_logos(SG(request_info).query_string + 1 TSRMLS_CC)) {</span>
+<span class="lineNum">     541 </span><span class="lineNoCov">              0 :                         return 1;</span>
+<span class="lineNum">     542 </span><span class="lineNoCov">              0 :                 } else if (!strcmp(SG(request_info).query_string + 1, PHP_CREDITS_GUID)) {</span>
+<span class="lineNum">     543 </span><span class="lineNoCov">              0 :                         php_print_credits(PHP_CREDITS_ALL TSRMLS_CC);</span>
+<span class="lineNum">     544 </span><span class="lineNoCov">              0 :                         return 1;</span>
+<span class="lineNum">     545 </span>                :                 }
+<span class="lineNum">     546 </span>                :         }
+<span class="lineNum">     547 </span><span class="lineCov">             45 :         return 0;</span>
+<span class="lineNum">     548 </span>                : }
+<span class="lineNum">     549 </span>                : /* }}} */
+<span class="lineNum">     550 </span>                : 
+<a name="551"><span class="lineNum">     551 </span>                : /* {{{ php_register_server_variables</a>
+<span class="lineNum">     552 </span>                :  */
+<span class="lineNum">     553 </span><span class="lineCov">             48 : static inline void php_register_server_variables(TSRMLS_D)</span>
+<span class="lineNum">     554 </span>                : {
+<span class="lineNum">     555 </span><span class="lineCov">             48 :         zval *array_ptr = NULL;</span>
+<span class="lineNum">     556 </span>                : 
+<span class="lineNum">     557 </span><span class="lineCov">             48 :         ALLOC_ZVAL(array_ptr);</span>
+<span class="lineNum">     558 </span><span class="lineCov">             48 :         array_init(array_ptr);</span>
+<span class="lineNum">     559 </span><span class="lineCov">             48 :         INIT_PZVAL(array_ptr);</span>
+<span class="lineNum">     560 </span><span class="lineCov">             48 :         if (PG(http_globals)[TRACK_VARS_SERVER]) {</span>
+<span class="lineNum">     561 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;PG(http_globals)[TRACK_VARS_SERVER]);</span>
+<span class="lineNum">     562 </span>                :         }
+<span class="lineNum">     563 </span><span class="lineCov">             48 :         PG(http_globals)[TRACK_VARS_SERVER] = array_ptr;</span>
+<span class="lineNum">     564 </span>                : 
+<span class="lineNum">     565 </span>                :         /* Server variables */
+<span class="lineNum">     566 </span><span class="lineCov">             48 :         if (sapi_module.register_server_variables) {</span>
+<span class="lineNum">     567 </span><span class="lineCov">             48 :                 sapi_module.register_server_variables(array_ptr TSRMLS_CC);</span>
+<span class="lineNum">     568 </span>                :         }
+<span class="lineNum">     569 </span>                : 
+<span class="lineNum">     570 </span>                :         /* PHP Authentication support */
+<span class="lineNum">     571 </span><span class="lineCov">             48 :         if (SG(request_info).auth_user) {</span>
+<span class="lineNum">     572 </span><span class="lineNoCov">              0 :                 php_register_variable(&quot;PHP_AUTH_USER&quot;, SG(request_info).auth_user, array_ptr TSRMLS_CC);</span>
+<span class="lineNum">     573 </span>                :         }
+<span class="lineNum">     574 </span><span class="lineCov">             48 :         if (SG(request_info).auth_password) {</span>
+<span class="lineNum">     575 </span><span class="lineNoCov">              0 :                 php_register_variable(&quot;PHP_AUTH_PW&quot;, SG(request_info).auth_password, array_ptr TSRMLS_CC);</span>
+<span class="lineNum">     576 </span>                :         }
+<span class="lineNum">     577 </span><span class="lineCov">             48 :         if (SG(request_info).auth_digest) {</span>
+<span class="lineNum">     578 </span><span class="lineNoCov">              0 :                 php_register_variable(&quot;PHP_AUTH_DIGEST&quot;, SG(request_info).auth_digest, array_ptr TSRMLS_CC);</span>
+<span class="lineNum">     579 </span>                :         }
+<span class="lineNum">     580 </span>                :         /* store request init time */
+<span class="lineNum">     581 </span>                :         {
+<span class="lineNum">     582 </span>                :                 zval request_time_float, request_time_long;
+<span class="lineNum">     583 </span><span class="lineCov">             48 :                 Z_TYPE(request_time_float) = IS_DOUBLE;</span>
+<span class="lineNum">     584 </span><span class="lineCov">             48 :                 Z_DVAL(request_time_float) = sapi_get_request_time(TSRMLS_C);</span>
+<span class="lineNum">     585 </span><span class="lineCov">             48 :                 php_register_variable_ex(&quot;REQUEST_TIME_FLOAT&quot;, &amp;request_time_float, array_ptr TSRMLS_CC);</span>
+<span class="lineNum">     586 </span><span class="lineCov">             48 :                 Z_TYPE(request_time_long) = IS_LONG;</span>
+<span class="lineNum">     587 </span><span class="lineCov">             96 :                 Z_LVAL(request_time_long) = zend_dval_to_lval(Z_DVAL(request_time_float));</span>
+<span class="lineNum">     588 </span><span class="lineCov">             48 :                 php_register_variable_ex(&quot;REQUEST_TIME&quot;, &amp;request_time_long, array_ptr TSRMLS_CC);</span>
+<span class="lineNum">     589 </span>                :         }
+<span class="lineNum">     590 </span>                : 
+<span class="lineNum">     591 </span><span class="lineCov">             48 : }</span>
+<span class="lineNum">     592 </span>                : /* }}} */
+<span class="lineNum">     593 </span>                : 
+<a name="594"><span class="lineNum">     594 </span>                : /* {{{ php_autoglobal_merge</a>
+<span class="lineNum">     595 </span>                :  */
+<span class="lineNum">     596 </span><span class="lineNoCov">              0 : static void php_autoglobal_merge(HashTable *dest, HashTable *src TSRMLS_DC)</span>
+<span class="lineNum">     597 </span>                : {
+<span class="lineNum">     598 </span>                :         zval **src_entry, **dest_entry;
+<span class="lineNum">     599 </span>                :         char *string_key;
+<span class="lineNum">     600 </span>                :         uint string_key_len;
+<span class="lineNum">     601 </span>                :         ulong num_key;
+<span class="lineNum">     602 </span>                :         HashPosition pos;
+<span class="lineNum">     603 </span>                :         int key_type;
+<span class="lineNum">     604 </span><span class="lineNoCov">              0 :         int globals_check = (dest == (&amp;EG(symbol_table)));</span>
+<span class="lineNum">     605 </span>                : 
+<span class="lineNum">     606 </span><span class="lineNoCov">              0 :         zend_hash_internal_pointer_reset_ex(src, &amp;pos);</span>
+<span class="lineNum">     607 </span><span class="lineNoCov">              0 :         while (zend_hash_get_current_data_ex(src, (void **)&amp;src_entry, &amp;pos) == SUCCESS) {</span>
+<span class="lineNum">     608 </span><span class="lineNoCov">              0 :                 key_type = zend_hash_get_current_key_ex(src, &amp;string_key, &amp;string_key_len, &amp;num_key, 0, &amp;pos);</span>
+<span class="lineNum">     609 </span><span class="lineNoCov">              0 :                 if (Z_TYPE_PP(src_entry) != IS_ARRAY</span>
+<span class="lineNum">     610 </span><span class="lineNoCov">              0 :                         || (key_type == HASH_KEY_IS_STRING &amp;&amp; zend_hash_find(dest, string_key, string_key_len, (void **) &amp;dest_entry) != SUCCESS)</span>
+<span class="lineNum">     611 </span><span class="lineNoCov">              0 :                         || (key_type == HASH_KEY_IS_LONG &amp;&amp; zend_hash_index_find(dest, num_key, (void **)&amp;dest_entry) != SUCCESS)</span>
+<span class="lineNum">     612 </span><span class="lineNoCov">              0 :                         || Z_TYPE_PP(dest_entry) != IS_ARRAY</span>
+<span class="lineNum">     613 </span>                :                         ) {
+<span class="lineNum">     614 </span><span class="lineNoCov">              0 :                         Z_ADDREF_PP(src_entry);</span>
+<span class="lineNum">     615 </span><span class="lineNoCov">              0 :                         if (key_type == HASH_KEY_IS_STRING) {</span>
+<span class="lineNum">     616 </span><span class="lineNoCov">              0 :                                 if (!globals_check || string_key_len != sizeof(&quot;GLOBALS&quot;) || memcmp(string_key, &quot;GLOBALS&quot;, sizeof(&quot;GLOBALS&quot;) - 1)) {</span>
+<span class="lineNum">     617 </span><span class="lineNoCov">              0 :                                         zend_hash_update(dest, string_key, string_key_len, src_entry, sizeof(zval *), NULL);</span>
+<span class="lineNum">     618 </span>                :                                 } else {
+<span class="lineNum">     619 </span><span class="lineNoCov">              0 :                                         Z_DELREF_PP(src_entry);</span>
+<span class="lineNum">     620 </span>                :                                 }
+<span class="lineNum">     621 </span>                :                         } else {
+<span class="lineNum">     622 </span><span class="lineNoCov">              0 :                                 zend_hash_index_update(dest, num_key, src_entry, sizeof(zval *), NULL);</span>
+<span class="lineNum">     623 </span>                :                         }
+<span class="lineNum">     624 </span>                :                 } else {
+<span class="lineNum">     625 </span><span class="lineNoCov">              0 :                         SEPARATE_ZVAL(dest_entry);</span>
+<span class="lineNum">     626 </span><span class="lineNoCov">              0 :                         php_autoglobal_merge(Z_ARRVAL_PP(dest_entry), Z_ARRVAL_PP(src_entry) TSRMLS_CC);</span>
+<span class="lineNum">     627 </span>                :                 }
+<span class="lineNum">     628 </span><span class="lineNoCov">              0 :                 zend_hash_move_forward_ex(src, &amp;pos);</span>
+<span class="lineNum">     629 </span>                :         }
+<span class="lineNum">     630 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     631 </span>                : /* }}} */
+<span class="lineNum">     632 </span>                : 
+<span class="lineNum">     633 </span>                : static zend_bool php_auto_globals_create_server(const char *name, uint name_len TSRMLS_DC);
+<span class="lineNum">     634 </span>                : static zend_bool php_auto_globals_create_env(const char *name, uint name_len TSRMLS_DC);
+<span class="lineNum">     635 </span>                : static zend_bool php_auto_globals_create_request(const char *name, uint name_len TSRMLS_DC);
+<span class="lineNum">     636 </span>                : 
+<a name="637"><span class="lineNum">     637 </span>                : /* {{{ php_hash_environment</a>
+<span class="lineNum">     638 </span>                :  */
+<span class="lineNum">     639 </span><span class="lineCov">             48 : int php_hash_environment(TSRMLS_D)</span>
+<span class="lineNum">     640 </span>                : {
+<span class="lineNum">     641 </span><span class="lineCov">             48 :         memset(PG(http_globals), 0, sizeof(PG(http_globals)));</span>
+<span class="lineNum">     642 </span><span class="lineCov">             48 :         zend_activate_auto_globals(TSRMLS_C);</span>
+<span class="lineNum">     643 </span><span class="lineCov">             48 :         if (PG(register_argc_argv)) {</span>
+<span class="lineNum">     644 </span><span class="lineCov">             48 :                 php_build_argv(SG(request_info).query_string, PG(http_globals)[TRACK_VARS_SERVER] TSRMLS_CC);</span>
+<span class="lineNum">     645 </span>                :         }
+<span class="lineNum">     646 </span><span class="lineCov">             48 :         return SUCCESS;</span>
+<span class="lineNum">     647 </span>                : }
+<a name="648"><span class="lineNum">     648 </span>                : /* }}} */</a>
+<span class="lineNum">     649 </span>                : 
+<span class="lineNum">     650 </span><span class="lineCov">             48 : static zend_bool php_auto_globals_create_get(const char *name, uint name_len TSRMLS_DC)</span>
+<span class="lineNum">     651 </span>                : {
+<span class="lineNum">     652 </span>                :         zval *vars;
+<span class="lineNum">     653 </span>                : 
+<span class="lineNum">     654 </span><span class="lineCov">             96 :         if (PG(variables_order) &amp;&amp; (strchr(PG(variables_order),'G') || strchr(PG(variables_order),'g'))) {</span>
+<span class="lineNum">     655 </span><span class="lineCov">             48 :                 sapi_module.treat_data(PARSE_GET, NULL, NULL TSRMLS_CC);</span>
+<span class="lineNum">     656 </span><span class="lineCov">             48 :                 vars = PG(http_globals)[TRACK_VARS_GET];</span>
+<span class="lineNum">     657 </span>                :         } else {
+<span class="lineNum">     658 </span><span class="lineNoCov">              0 :                 ALLOC_ZVAL(vars);</span>
+<span class="lineNum">     659 </span><span class="lineNoCov">              0 :                 array_init(vars);</span>
+<span class="lineNum">     660 </span><span class="lineNoCov">              0 :                 INIT_PZVAL(vars);</span>
+<span class="lineNum">     661 </span><span class="lineNoCov">              0 :                 if (PG(http_globals)[TRACK_VARS_GET]) {</span>
+<span class="lineNum">     662 </span><span class="lineNoCov">              0 :                         zval_ptr_dtor(&amp;PG(http_globals)[TRACK_VARS_GET]);</span>
+<span class="lineNum">     663 </span>                :                 }
+<span class="lineNum">     664 </span><span class="lineNoCov">              0 :                 PG(http_globals)[TRACK_VARS_GET] = vars;</span>
+<span class="lineNum">     665 </span>                :         }
+<span class="lineNum">     666 </span>                : 
+<span class="lineNum">     667 </span><span class="lineCov">             48 :         zend_hash_update(&amp;EG(symbol_table), name, name_len + 1, &amp;vars, sizeof(zval *), NULL);</span>
+<span class="lineNum">     668 </span><span class="lineCov">             48 :         Z_ADDREF_P(vars);</span>
+<span class="lineNum">     669 </span>                :         
+<span class="lineNum">     670 </span><span class="lineCov">             48 :         return 0; /* don't rearm */</span>
+<a name="671"><span class="lineNum">     671 </span>                : }</a>
+<span class="lineNum">     672 </span>                : 
+<span class="lineNum">     673 </span><span class="lineCov">             48 : static zend_bool php_auto_globals_create_post(const char *name, uint name_len TSRMLS_DC)</span>
+<span class="lineNum">     674 </span>                : {
+<span class="lineNum">     675 </span>                :         zval *vars;
+<span class="lineNum">     676 </span>                : 
+<span class="lineNum">     677 </span><span class="lineCov">            192 :         if (PG(variables_order) &amp;&amp;</span>
+<span class="lineNum">     678 </span><span class="lineCov">             48 :                         (strchr(PG(variables_order),'P') || strchr(PG(variables_order),'p')) &amp;&amp;</span>
+<span class="lineNum">     679 </span><span class="lineCov">             48 :                 !SG(headers_sent) &amp;&amp;</span>
+<span class="lineNum">     680 </span><span class="lineCov">             48 :                 SG(request_info).request_method &amp;&amp;</span>
+<span class="lineNum">     681 </span><span class="lineNoCov">              0 :                 !strcasecmp(SG(request_info).request_method, &quot;POST&quot;)) {</span>
+<span class="lineNum">     682 </span><span class="lineNoCov">              0 :                 sapi_module.treat_data(PARSE_POST, NULL, NULL TSRMLS_CC);</span>
+<span class="lineNum">     683 </span><span class="lineNoCov">              0 :                 vars = PG(http_globals)[TRACK_VARS_POST];</span>
+<span class="lineNum">     684 </span>                :         } else {
+<span class="lineNum">     685 </span><span class="lineCov">             48 :                 ALLOC_ZVAL(vars);</span>
+<span class="lineNum">     686 </span><span class="lineCov">             48 :                 array_init(vars);</span>
+<span class="lineNum">     687 </span><span class="lineCov">             48 :                 INIT_PZVAL(vars);</span>
+<span class="lineNum">     688 </span><span class="lineCov">             48 :                 if (PG(http_globals)[TRACK_VARS_POST]) {</span>
+<span class="lineNum">     689 </span><span class="lineNoCov">              0 :                         zval_ptr_dtor(&amp;PG(http_globals)[TRACK_VARS_POST]);</span>
+<span class="lineNum">     690 </span>                :                 }
+<span class="lineNum">     691 </span><span class="lineCov">             48 :                 PG(http_globals)[TRACK_VARS_POST] = vars;</span>
+<span class="lineNum">     692 </span>                :         }
+<span class="lineNum">     693 </span>                : 
+<span class="lineNum">     694 </span><span class="lineCov">             48 :         zend_hash_update(&amp;EG(symbol_table), name, name_len + 1, &amp;vars, sizeof(zval *), NULL);</span>
+<span class="lineNum">     695 </span><span class="lineCov">             48 :         Z_ADDREF_P(vars);</span>
+<span class="lineNum">     696 </span>                :         
+<span class="lineNum">     697 </span><span class="lineCov">             48 :         return 0; /* don't rearm */</span>
+<a name="698"><span class="lineNum">     698 </span>                : }</a>
+<span class="lineNum">     699 </span>                : 
+<span class="lineNum">     700 </span><span class="lineCov">             48 : static zend_bool php_auto_globals_create_cookie(const char *name, uint name_len TSRMLS_DC)</span>
+<span class="lineNum">     701 </span>                : {
+<span class="lineNum">     702 </span>                :         zval *vars;
+<span class="lineNum">     703 </span>                : 
+<span class="lineNum">     704 </span><span class="lineCov">             96 :         if (PG(variables_order) &amp;&amp; (strchr(PG(variables_order),'C') || strchr(PG(variables_order),'c'))) {</span>
+<span class="lineNum">     705 </span><span class="lineCov">             48 :                 sapi_module.treat_data(PARSE_COOKIE, NULL, NULL TSRMLS_CC);</span>
+<span class="lineNum">     706 </span><span class="lineCov">             48 :                 vars = PG(http_globals)[TRACK_VARS_COOKIE];</span>
+<span class="lineNum">     707 </span>                :         } else {
+<span class="lineNum">     708 </span><span class="lineNoCov">              0 :                 ALLOC_ZVAL(vars);</span>
+<span class="lineNum">     709 </span><span class="lineNoCov">              0 :                 array_init(vars);</span>
+<span class="lineNum">     710 </span><span class="lineNoCov">              0 :                 INIT_PZVAL(vars);</span>
+<span class="lineNum">     711 </span><span class="lineNoCov">              0 :                 if (PG(http_globals)[TRACK_VARS_COOKIE]) {</span>
+<span class="lineNum">     712 </span><span class="lineNoCov">              0 :                         zval_ptr_dtor(&amp;PG(http_globals)[TRACK_VARS_COOKIE]);</span>
+<span class="lineNum">     713 </span>                :                 }
+<span class="lineNum">     714 </span><span class="lineNoCov">              0 :                 PG(http_globals)[TRACK_VARS_COOKIE] = vars;</span>
+<span class="lineNum">     715 </span>                :         }
+<span class="lineNum">     716 </span>                : 
+<span class="lineNum">     717 </span><span class="lineCov">             48 :         zend_hash_update(&amp;EG(symbol_table), name, name_len + 1, &amp;vars, sizeof(zval *), NULL);</span>
+<span class="lineNum">     718 </span><span class="lineCov">             48 :         Z_ADDREF_P(vars);</span>
+<span class="lineNum">     719 </span>                :         
+<span class="lineNum">     720 </span><span class="lineCov">             48 :         return 0; /* don't rearm */</span>
+<a name="721"><span class="lineNum">     721 </span>                : }</a>
+<span class="lineNum">     722 </span>                : 
+<span class="lineNum">     723 </span><span class="lineCov">             48 : static zend_bool php_auto_globals_create_files(const char *name, uint name_len TSRMLS_DC)</span>
+<span class="lineNum">     724 </span>                : {
+<span class="lineNum">     725 </span>                :         zval *vars;
+<span class="lineNum">     726 </span>                : 
+<span class="lineNum">     727 </span><span class="lineCov">             48 :         if (PG(http_globals)[TRACK_VARS_FILES]) {</span>
+<span class="lineNum">     728 </span><span class="lineNoCov">              0 :                 vars = PG(http_globals)[TRACK_VARS_FILES];</span>
+<span class="lineNum">     729 </span>                :         } else {
+<span class="lineNum">     730 </span><span class="lineCov">             48 :                 ALLOC_ZVAL(vars);</span>
+<span class="lineNum">     731 </span><span class="lineCov">             48 :                 array_init(vars);</span>
+<span class="lineNum">     732 </span><span class="lineCov">             48 :                 INIT_PZVAL(vars);</span>
+<span class="lineNum">     733 </span><span class="lineCov">             48 :                 PG(http_globals)[TRACK_VARS_FILES] = vars;</span>
+<span class="lineNum">     734 </span>                :         }
+<span class="lineNum">     735 </span>                : 
+<span class="lineNum">     736 </span><span class="lineCov">             48 :         zend_hash_update(&amp;EG(symbol_table), name, name_len + 1, &amp;vars, sizeof(zval *), NULL);</span>
+<span class="lineNum">     737 </span><span class="lineCov">             48 :         Z_ADDREF_P(vars);</span>
+<span class="lineNum">     738 </span>                :         
+<span class="lineNum">     739 </span><span class="lineCov">             48 :         return 0; /* don't rearm */</span>
+<a name="740"><span class="lineNum">     740 </span>                : }</a>
+<span class="lineNum">     741 </span>                : 
+<span class="lineNum">     742 </span><span class="lineCov">             48 : static zend_bool php_auto_globals_create_server(const char *name, uint name_len TSRMLS_DC)</span>
+<span class="lineNum">     743 </span>                : {
+<span class="lineNum">     744 </span><span class="lineCov">             96 :         if (PG(variables_order) &amp;&amp; (strchr(PG(variables_order),'S') || strchr(PG(variables_order),'s'))) {</span>
+<span class="lineNum">     745 </span><span class="lineCov">             48 :                 php_register_server_variables(TSRMLS_C);</span>
+<span class="lineNum">     746 </span>                : 
+<span class="lineNum">     747 </span><span class="lineCov">             48 :                 if (PG(register_argc_argv)) {</span>
+<span class="lineNum">     748 </span><span class="lineCov">             48 :                         if (SG(request_info).argc) {</span>
+<span class="lineNum">     749 </span>                :                                 zval **argc, **argv;
+<span class="lineNum">     750 </span>                :         
+<span class="lineNum">     751 </span><span class="lineCov">             96 :                                 if (zend_hash_find(&amp;EG(symbol_table), &quot;argc&quot;, sizeof(&quot;argc&quot;), (void**)&amp;argc) == SUCCESS &amp;&amp;</span>
+<span class="lineNum">     752 </span><span class="lineCov">             48 :                                         zend_hash_find(&amp;EG(symbol_table), &quot;argv&quot;, sizeof(&quot;argv&quot;), (void**)&amp;argv) == SUCCESS) {</span>
+<span class="lineNum">     753 </span><span class="lineCov">             48 :                                         Z_ADDREF_PP(argc);</span>
+<span class="lineNum">     754 </span><span class="lineCov">             48 :                                         Z_ADDREF_PP(argv);</span>
+<span class="lineNum">     755 </span><span class="lineCov">             48 :                                         zend_hash_update(Z_ARRVAL_P(PG(http_globals)[TRACK_VARS_SERVER]), &quot;argv&quot;, sizeof(&quot;argv&quot;), argv, sizeof(zval *), NULL);</span>
+<span class="lineNum">     756 </span><span class="lineCov">             48 :                                         zend_hash_update(Z_ARRVAL_P(PG(http_globals)[TRACK_VARS_SERVER]), &quot;argc&quot;, sizeof(&quot;argc&quot;), argc, sizeof(zval *), NULL);</span>
+<span class="lineNum">     757 </span>                :                                 }
+<span class="lineNum">     758 </span>                :                         } else {
+<span class="lineNum">     759 </span><span class="lineNoCov">              0 :                                 php_build_argv(SG(request_info).query_string, PG(http_globals)[TRACK_VARS_SERVER] TSRMLS_CC);</span>
+<span class="lineNum">     760 </span>                :                         }
+<span class="lineNum">     761 </span>                :                 }
+<span class="lineNum">     762 </span>                :         
+<span class="lineNum">     763 </span>                :         } else {
+<span class="lineNum">     764 </span><span class="lineNoCov">              0 :                 zval *server_vars=NULL;</span>
+<span class="lineNum">     765 </span><span class="lineNoCov">              0 :                 ALLOC_ZVAL(server_vars);</span>
+<span class="lineNum">     766 </span><span class="lineNoCov">              0 :                 array_init(server_vars);</span>
+<span class="lineNum">     767 </span><span class="lineNoCov">              0 :                 INIT_PZVAL(server_vars);</span>
+<span class="lineNum">     768 </span><span class="lineNoCov">              0 :                 if (PG(http_globals)[TRACK_VARS_SERVER]) {</span>
+<span class="lineNum">     769 </span><span class="lineNoCov">              0 :                         zval_ptr_dtor(&amp;PG(http_globals)[TRACK_VARS_SERVER]);</span>
+<span class="lineNum">     770 </span>                :                 }
+<span class="lineNum">     771 </span><span class="lineNoCov">              0 :                 PG(http_globals)[TRACK_VARS_SERVER] = server_vars;</span>
+<span class="lineNum">     772 </span>                :         }
+<span class="lineNum">     773 </span>                : 
+<span class="lineNum">     774 </span><span class="lineCov">             48 :         zend_hash_update(&amp;EG(symbol_table), name, name_len + 1, &amp;PG(http_globals)[TRACK_VARS_SERVER], sizeof(zval *), NULL);</span>
+<span class="lineNum">     775 </span><span class="lineCov">             48 :         Z_ADDREF_P(PG(http_globals)[TRACK_VARS_SERVER]);</span>
+<span class="lineNum">     776 </span>                :         
+<span class="lineNum">     777 </span><span class="lineCov">             48 :         return 0; /* don't rearm */</span>
+<a name="778"><span class="lineNum">     778 </span>                : }</a>
+<span class="lineNum">     779 </span>                : 
+<span class="lineNum">     780 </span><span class="lineCov">              1 : static zend_bool php_auto_globals_create_env(const char *name, uint name_len TSRMLS_DC)</span>
+<span class="lineNum">     781 </span>                : {
+<span class="lineNum">     782 </span><span class="lineCov">              1 :         zval *env_vars = NULL;</span>
+<span class="lineNum">     783 </span><span class="lineCov">              1 :         ALLOC_ZVAL(env_vars);</span>
+<span class="lineNum">     784 </span><span class="lineCov">              1 :         array_init(env_vars);</span>
+<span class="lineNum">     785 </span><span class="lineCov">              1 :         INIT_PZVAL(env_vars);</span>
+<span class="lineNum">     786 </span><span class="lineCov">              1 :         if (PG(http_globals)[TRACK_VARS_ENV]) {</span>
+<span class="lineNum">     787 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;PG(http_globals)[TRACK_VARS_ENV]);</span>
+<span class="lineNum">     788 </span>                :         }
+<span class="lineNum">     789 </span><span class="lineCov">              1 :         PG(http_globals)[TRACK_VARS_ENV] = env_vars;</span>
+<span class="lineNum">     790 </span>                :         
+<span class="lineNum">     791 </span><span class="lineCov">              1 :         if (PG(variables_order) &amp;&amp; (strchr(PG(variables_order),'E') || strchr(PG(variables_order),'e'))) {</span>
+<span class="lineNum">     792 </span><span class="lineCov">              1 :                 php_import_environment_variables(PG(http_globals)[TRACK_VARS_ENV] TSRMLS_CC);</span>
+<span class="lineNum">     793 </span>                :         }
+<span class="lineNum">     794 </span>                : 
+<span class="lineNum">     795 </span><span class="lineCov">              1 :         zend_hash_update(&amp;EG(symbol_table), name, name_len + 1, &amp;PG(http_globals)[TRACK_VARS_ENV], sizeof(zval *), NULL);</span>
+<span class="lineNum">     796 </span><span class="lineCov">              1 :         Z_ADDREF_P(PG(http_globals)[TRACK_VARS_ENV]);</span>
+<span class="lineNum">     797 </span>                : 
+<span class="lineNum">     798 </span><span class="lineCov">              1 :         return 0; /* don't rearm */</span>
+<a name="799"><span class="lineNum">     799 </span>                : }</a>
+<span class="lineNum">     800 </span>                : 
+<span class="lineNum">     801 </span><span class="lineNoCov">              0 : static zend_bool php_auto_globals_create_request(const char *name, uint name_len TSRMLS_DC)</span>
+<span class="lineNum">     802 </span>                : {
+<span class="lineNum">     803 </span>                :         zval *form_variables;
+<span class="lineNum">     804 </span><span class="lineNoCov">              0 :         unsigned char _gpc_flags[3] = {0, 0, 0};</span>
+<span class="lineNum">     805 </span>                :         char *p;
+<span class="lineNum">     806 </span>                : 
+<span class="lineNum">     807 </span><span class="lineNoCov">              0 :         ALLOC_ZVAL(form_variables);</span>
+<span class="lineNum">     808 </span><span class="lineNoCov">              0 :         array_init(form_variables);</span>
+<span class="lineNum">     809 </span><span class="lineNoCov">              0 :         INIT_PZVAL(form_variables);</span>
+<span class="lineNum">     810 </span>                : 
+<span class="lineNum">     811 </span><span class="lineNoCov">              0 :         if (PG(request_order) != NULL) {</span>
+<span class="lineNum">     812 </span><span class="lineNoCov">              0 :                 p = PG(request_order);</span>
+<span class="lineNum">     813 </span>                :         } else {
+<span class="lineNum">     814 </span><span class="lineNoCov">              0 :                 p = PG(variables_order);</span>
+<span class="lineNum">     815 </span>                :         }
+<span class="lineNum">     816 </span>                : 
+<span class="lineNum">     817 </span><span class="lineNoCov">              0 :         for (; p &amp;&amp; *p; p++) {</span>
+<span class="lineNum">     818 </span><span class="lineNoCov">              0 :                 switch (*p) {</span>
+<span class="lineNum">     819 </span>                :                         case 'g':
+<span class="lineNum">     820 </span>                :                         case 'G':
+<span class="lineNum">     821 </span><span class="lineNoCov">              0 :                                 if (!_gpc_flags[0]) {</span>
+<span class="lineNum">     822 </span><span class="lineNoCov">              0 :                                         php_autoglobal_merge(Z_ARRVAL_P(form_variables), Z_ARRVAL_P(PG(http_globals)[TRACK_VARS_GET]) TSRMLS_CC);</span>
+<span class="lineNum">     823 </span><span class="lineNoCov">              0 :                                         _gpc_flags[0] = 1;</span>
+<span class="lineNum">     824 </span>                :                                 }
+<span class="lineNum">     825 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     826 </span>                :                         case 'p':
+<span class="lineNum">     827 </span>                :                         case 'P':
+<span class="lineNum">     828 </span><span class="lineNoCov">              0 :                                 if (!_gpc_flags[1]) {</span>
+<span class="lineNum">     829 </span><span class="lineNoCov">              0 :                                         php_autoglobal_merge(Z_ARRVAL_P(form_variables), Z_ARRVAL_P(PG(http_globals)[TRACK_VARS_POST]) TSRMLS_CC);</span>
+<span class="lineNum">     830 </span><span class="lineNoCov">              0 :                                         _gpc_flags[1] = 1;</span>
+<span class="lineNum">     831 </span>                :                                 }
+<span class="lineNum">     832 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     833 </span>                :                         case 'c':
+<span class="lineNum">     834 </span>                :                         case 'C':
+<span class="lineNum">     835 </span><span class="lineNoCov">              0 :                                 if (!_gpc_flags[2]) {</span>
+<span class="lineNum">     836 </span><span class="lineNoCov">              0 :                                         php_autoglobal_merge(Z_ARRVAL_P(form_variables), Z_ARRVAL_P(PG(http_globals)[TRACK_VARS_COOKIE]) TSRMLS_CC);</span>
+<span class="lineNum">     837 </span><span class="lineNoCov">              0 :                                         _gpc_flags[2] = 1;</span>
+<span class="lineNum">     838 </span>                :                                 }
+<span class="lineNum">     839 </span>                :                                 break;
+<span class="lineNum">     840 </span>                :                 }
+<span class="lineNum">     841 </span>                :         }
+<span class="lineNum">     842 </span>                : 
+<span class="lineNum">     843 </span><span class="lineNoCov">              0 :         zend_hash_update(&amp;EG(symbol_table), name, name_len + 1, &amp;form_variables, sizeof(zval *), NULL);</span>
+<span class="lineNum">     844 </span><span class="lineNoCov">              0 :         return 0;</span>
+<a name="845"><span class="lineNum">     845 </span>                : }</a>
+<span class="lineNum">     846 </span>                : 
+<span class="lineNum">     847 </span><span class="lineCov">             48 : void php_startup_auto_globals(TSRMLS_D)</span>
+<span class="lineNum">     848 </span>                : {
+<span class="lineNum">     849 </span><span class="lineCov">             48 :         zend_register_auto_global(ZEND_STRL(&quot;_GET&quot;), 0, php_auto_globals_create_get TSRMLS_CC);</span>
+<span class="lineNum">     850 </span><span class="lineCov">             48 :         zend_register_auto_global(ZEND_STRL(&quot;_POST&quot;), 0, php_auto_globals_create_post TSRMLS_CC);</span>
+<span class="lineNum">     851 </span><span class="lineCov">             48 :         zend_register_auto_global(ZEND_STRL(&quot;_COOKIE&quot;), 0, php_auto_globals_create_cookie TSRMLS_CC);</span>
+<span class="lineNum">     852 </span><span class="lineCov">             48 :         zend_register_auto_global(ZEND_STRL(&quot;_SERVER&quot;), PG(auto_globals_jit), php_auto_globals_create_server TSRMLS_CC);</span>
+<span class="lineNum">     853 </span><span class="lineCov">             48 :         zend_register_auto_global(ZEND_STRL(&quot;_ENV&quot;), PG(auto_globals_jit), php_auto_globals_create_env TSRMLS_CC);</span>
+<span class="lineNum">     854 </span><span class="lineCov">             48 :         zend_register_auto_global(ZEND_STRL(&quot;_REQUEST&quot;), PG(auto_globals_jit), php_auto_globals_create_request TSRMLS_CC);</span>
+<span class="lineNum">     855 </span><span class="lineCov">             48 :         zend_register_auto_global(ZEND_STRL(&quot;_FILES&quot;), 0, php_auto_globals_create_files TSRMLS_CC);</span>
+<span class="lineNum">     856 </span><span class="lineCov">             48 : }</span>
+<span class="lineNum">     857 </span>                : 
+<span class="lineNum">     858 </span>                : /*
+<span class="lineNum">     859 </span>                :  * Local variables:
+<span class="lineNum">     860 </span>                :  * tab-width: 4
+<span class="lineNum">     861 </span>                :  * c-basic-offset: 4
+<span class="lineNum">     862 </span>                :  * End:
+<span class="lineNum">     863 </span>                :  * vim600: sw=4 ts=4 fdm=marker
+<span class="lineNum">     864 </span>                :  * vim&lt;600: sw=4 ts=4
+<span class="lineNum">     865 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

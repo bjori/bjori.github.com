@@ -1,0 +1,626 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - main/streams/filter.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../index.html">directory</a> - <a href="index.html">main/streams</a> - filter.c (source / <a href="filter.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">265</td>
+          <td class="headerCovTableEntry">6</td>
+          <td class="headerCovTableEntryLo">2.3 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">21</td>
+          <td class="headerCovTableEntry">3</td>
+          <td class="headerCovTableEntryLo">14.3 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Authors: Wez Furlong &lt;wez@thebrainroom.com&gt;                          |
+<span class="lineNum">      16 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      17 </span>                :  */
+<span class="lineNum">      18 </span>                : 
+<span class="lineNum">      19 </span>                : /* $Id$ */
+<span class="lineNum">      20 </span>                : 
+<span class="lineNum">      21 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">      22 </span>                : #include &quot;php_globals.h&quot;
+<span class="lineNum">      23 </span>                : #include &quot;php_network.h&quot;
+<span class="lineNum">      24 </span>                : #include &quot;php_open_temporary_file.h&quot;
+<span class="lineNum">      25 </span>                : #include &quot;ext/standard/file.h&quot;
+<span class="lineNum">      26 </span>                : #include &lt;stddef.h&gt;
+<span class="lineNum">      27 </span>                : #include &lt;fcntl.h&gt;
+<span class="lineNum">      28 </span>                : 
+<span class="lineNum">      29 </span>                : #include &quot;php_streams_int.h&quot;
+<span class="lineNum">      30 </span>                : 
+<span class="lineNum">      31 </span>                : /* Global filter hash, copied to FG(stream_filters) on registration of volatile filter */
+<span class="lineNum">      32 </span>                : static HashTable stream_filters_hash;
+<a name="33"><span class="lineNum">      33 </span>                : </a>
+<span class="lineNum">      34 </span>                : /* Should only be used during core initialization */
+<span class="lineNum">      35 </span><span class="lineCov">             96 : PHPAPI HashTable *php_get_stream_filters_hash_global(void)</span>
+<span class="lineNum">      36 </span>                : {
+<span class="lineNum">      37 </span><span class="lineCov">             96 :         return &amp;stream_filters_hash;</span>
+<span class="lineNum">      38 </span>                : }
+<a name="39"><span class="lineNum">      39 </span>                : </a>
+<span class="lineNum">      40 </span>                : /* Normal hash selection/retrieval call */
+<span class="lineNum">      41 </span><span class="lineNoCov">              0 : PHPAPI HashTable *_php_get_stream_filters_hash(TSRMLS_D)</span>
+<span class="lineNum">      42 </span>                : {
+<span class="lineNum">      43 </span><span class="lineNoCov">              0 :         return (FG(stream_filters) ? FG(stream_filters) : &amp;stream_filters_hash);</span>
+<span class="lineNum">      44 </span>                : }
+<a name="45"><span class="lineNum">      45 </span>                : </a>
+<span class="lineNum">      46 </span>                : /* API for registering GLOBAL filters */
+<span class="lineNum">      47 </span><span class="lineCov">            336 : PHPAPI int php_stream_filter_register_factory(const char *filterpattern, php_stream_filter_factory *factory TSRMLS_DC)</span>
+<span class="lineNum">      48 </span>                : {
+<span class="lineNum">      49 </span><span class="lineCov">            336 :         return zend_hash_add(&amp;stream_filters_hash, (char*)filterpattern, strlen(filterpattern) + 1, factory, sizeof(*factory), NULL);</span>
+<a name="50"><span class="lineNum">      50 </span>                : }</a>
+<span class="lineNum">      51 </span>                : 
+<span class="lineNum">      52 </span><span class="lineCov">            336 : PHPAPI int php_stream_filter_unregister_factory(const char *filterpattern TSRMLS_DC)</span>
+<span class="lineNum">      53 </span>                : {
+<span class="lineNum">      54 </span><span class="lineCov">            336 :         return zend_hash_del(&amp;stream_filters_hash, (char*)filterpattern, strlen(filterpattern) + 1);</span>
+<span class="lineNum">      55 </span>                : }
+<a name="56"><span class="lineNum">      56 </span>                : </a>
+<span class="lineNum">      57 </span>                : /* API for registering VOLATILE wrappers */
+<span class="lineNum">      58 </span><span class="lineNoCov">              0 : PHPAPI int php_stream_filter_register_factory_volatile(const char *filterpattern, php_stream_filter_factory *factory TSRMLS_DC)</span>
+<span class="lineNum">      59 </span>                : {
+<span class="lineNum">      60 </span><span class="lineNoCov">              0 :         if (!FG(stream_filters)) {</span>
+<span class="lineNum">      61 </span>                :                 php_stream_filter_factory tmpfactory;
+<span class="lineNum">      62 </span>                : 
+<span class="lineNum">      63 </span><span class="lineNoCov">              0 :                 ALLOC_HASHTABLE(FG(stream_filters));</span>
+<span class="lineNum">      64 </span><span class="lineNoCov">              0 :                 zend_hash_init(FG(stream_filters), zend_hash_num_elements(&amp;stream_filters_hash), NULL, NULL, 1);</span>
+<span class="lineNum">      65 </span><span class="lineNoCov">              0 :                 zend_hash_copy(FG(stream_filters), &amp;stream_filters_hash, NULL, &amp;tmpfactory, sizeof(php_stream_filter_factory));</span>
+<span class="lineNum">      66 </span>                :         }
+<span class="lineNum">      67 </span>                : 
+<span class="lineNum">      68 </span><span class="lineNoCov">              0 :         return zend_hash_add(FG(stream_filters), (char*)filterpattern, strlen(filterpattern) + 1, factory, sizeof(*factory), NULL);</span>
+<span class="lineNum">      69 </span>                : }
+<span class="lineNum">      70 </span>                : 
+<a name="71"><span class="lineNum">      71 </span>                : /* Buckets */</a>
+<span class="lineNum">      72 </span>                : 
+<span class="lineNum">      73 </span><span class="lineNoCov">              0 : PHPAPI php_stream_bucket *php_stream_bucket_new(php_stream *stream, char *buf, size_t buflen, int own_buf, int buf_persistent TSRMLS_DC)</span>
+<span class="lineNum">      74 </span>                : {
+<span class="lineNum">      75 </span><span class="lineNoCov">              0 :         int is_persistent = php_stream_is_persistent(stream);</span>
+<span class="lineNum">      76 </span>                :         php_stream_bucket *bucket;
+<span class="lineNum">      77 </span>                : 
+<span class="lineNum">      78 </span><span class="lineNoCov">              0 :         bucket = (php_stream_bucket*)pemalloc(sizeof(php_stream_bucket), is_persistent);</span>
+<span class="lineNum">      79 </span>                : 
+<span class="lineNum">      80 </span><span class="lineNoCov">              0 :         if (bucket == NULL) {</span>
+<span class="lineNum">      81 </span><span class="lineNoCov">              0 :                 return NULL;</span>
+<span class="lineNum">      82 </span>                :         }
+<span class="lineNum">      83 </span>                :         
+<span class="lineNum">      84 </span><span class="lineNoCov">              0 :         bucket-&gt;next = bucket-&gt;prev = NULL;</span>
+<span class="lineNum">      85 </span>                : 
+<span class="lineNum">      86 </span><span class="lineNoCov">              0 :         if (is_persistent &amp;&amp; !buf_persistent) {</span>
+<span class="lineNum">      87 </span>                :                 /* all data in a persistent bucket must also be persistent */
+<span class="lineNum">      88 </span><span class="lineNoCov">              0 :                 bucket-&gt;buf = pemalloc(buflen, 1);</span>
+<span class="lineNum">      89 </span>                :                 
+<span class="lineNum">      90 </span><span class="lineNoCov">              0 :                 if (bucket-&gt;buf == NULL) {</span>
+<span class="lineNum">      91 </span><span class="lineNoCov">              0 :                         pefree(bucket, 1);</span>
+<span class="lineNum">      92 </span><span class="lineNoCov">              0 :                         return NULL;</span>
+<span class="lineNum">      93 </span>                :                 }
+<span class="lineNum">      94 </span>                :                 
+<span class="lineNum">      95 </span><span class="lineNoCov">              0 :                 memcpy(bucket-&gt;buf, buf, buflen);</span>
+<span class="lineNum">      96 </span><span class="lineNoCov">              0 :                 bucket-&gt;buflen = buflen;</span>
+<span class="lineNum">      97 </span><span class="lineNoCov">              0 :                 bucket-&gt;own_buf = 1;</span>
+<span class="lineNum">      98 </span>                :         } else {
+<span class="lineNum">      99 </span><span class="lineNoCov">              0 :                 bucket-&gt;buf = buf;</span>
+<span class="lineNum">     100 </span><span class="lineNoCov">              0 :                 bucket-&gt;buflen = buflen;</span>
+<span class="lineNum">     101 </span><span class="lineNoCov">              0 :                 bucket-&gt;own_buf = own_buf;</span>
+<span class="lineNum">     102 </span>                :         }
+<span class="lineNum">     103 </span><span class="lineNoCov">              0 :         bucket-&gt;is_persistent = is_persistent;</span>
+<span class="lineNum">     104 </span><span class="lineNoCov">              0 :         bucket-&gt;refcount = 1;</span>
+<span class="lineNum">     105 </span><span class="lineNoCov">              0 :         bucket-&gt;brigade = NULL;</span>
+<span class="lineNum">     106 </span>                : 
+<span class="lineNum">     107 </span><span class="lineNoCov">              0 :         return bucket;</span>
+<span class="lineNum">     108 </span>                : }
+<span class="lineNum">     109 </span>                : 
+<span class="lineNum">     110 </span>                : /* Given a bucket, returns a version of that bucket with a writeable buffer.
+<span class="lineNum">     111 </span>                :  * If the original bucket has a refcount of 1 and owns its buffer, then it
+<span class="lineNum">     112 </span>                :  * is returned unchanged.
+<span class="lineNum">     113 </span>                :  * Otherwise, a copy of the buffer is made.
+<span class="lineNum">     114 </span>                :  * In both cases, the original bucket is unlinked from its brigade.
+<a name="115"><span class="lineNum">     115 </span>                :  * If a copy is made, the original bucket is delref'd.</a>
+<span class="lineNum">     116 </span>                :  * */
+<span class="lineNum">     117 </span><span class="lineNoCov">              0 : PHPAPI php_stream_bucket *php_stream_bucket_make_writeable(php_stream_bucket *bucket TSRMLS_DC)</span>
+<span class="lineNum">     118 </span>                : {
+<span class="lineNum">     119 </span>                :         php_stream_bucket *retval;
+<span class="lineNum">     120 </span>                : 
+<span class="lineNum">     121 </span><span class="lineNoCov">              0 :         php_stream_bucket_unlink(bucket TSRMLS_CC);</span>
+<span class="lineNum">     122 </span>                :         
+<span class="lineNum">     123 </span><span class="lineNoCov">              0 :         if (bucket-&gt;refcount == 1 &amp;&amp; bucket-&gt;own_buf) {</span>
+<span class="lineNum">     124 </span><span class="lineNoCov">              0 :                 return bucket;</span>
+<span class="lineNum">     125 </span>                :         }
+<span class="lineNum">     126 </span>                : 
+<span class="lineNum">     127 </span><span class="lineNoCov">              0 :         retval = (php_stream_bucket*)pemalloc(sizeof(php_stream_bucket), bucket-&gt;is_persistent);</span>
+<span class="lineNum">     128 </span><span class="lineNoCov">              0 :         memcpy(retval, bucket, sizeof(*retval));</span>
+<span class="lineNum">     129 </span>                : 
+<span class="lineNum">     130 </span><span class="lineNoCov">              0 :         retval-&gt;buf = pemalloc(retval-&gt;buflen, retval-&gt;is_persistent);</span>
+<span class="lineNum">     131 </span><span class="lineNoCov">              0 :         memcpy(retval-&gt;buf, bucket-&gt;buf, retval-&gt;buflen);</span>
+<span class="lineNum">     132 </span>                : 
+<span class="lineNum">     133 </span><span class="lineNoCov">              0 :         retval-&gt;refcount = 1;</span>
+<span class="lineNum">     134 </span><span class="lineNoCov">              0 :         retval-&gt;own_buf = 1;</span>
+<span class="lineNum">     135 </span>                : 
+<span class="lineNum">     136 </span><span class="lineNoCov">              0 :         php_stream_bucket_delref(bucket TSRMLS_CC);</span>
+<span class="lineNum">     137 </span>                :         
+<span class="lineNum">     138 </span><span class="lineNoCov">              0 :         return retval;</span>
+<a name="139"><span class="lineNum">     139 </span>                : }</a>
+<span class="lineNum">     140 </span>                : 
+<span class="lineNum">     141 </span><span class="lineNoCov">              0 : PHPAPI int php_stream_bucket_split(php_stream_bucket *in, php_stream_bucket **left, php_stream_bucket **right, size_t length TSRMLS_DC)</span>
+<span class="lineNum">     142 </span>                : {
+<span class="lineNum">     143 </span><span class="lineNoCov">              0 :         *left = (php_stream_bucket*)pecalloc(1, sizeof(php_stream_bucket), in-&gt;is_persistent);</span>
+<span class="lineNum">     144 </span><span class="lineNoCov">              0 :         *right = (php_stream_bucket*)pecalloc(1, sizeof(php_stream_bucket), in-&gt;is_persistent);</span>
+<span class="lineNum">     145 </span>                : 
+<span class="lineNum">     146 </span><span class="lineNoCov">              0 :         if (*left == NULL || *right == NULL) {</span>
+<span class="lineNum">     147 </span>                :                 goto exit_fail;
+<span class="lineNum">     148 </span>                :         }
+<span class="lineNum">     149 </span>                : 
+<span class="lineNum">     150 </span><span class="lineNoCov">              0 :         (*left)-&gt;buf = pemalloc(length, in-&gt;is_persistent);</span>
+<span class="lineNum">     151 </span><span class="lineNoCov">              0 :         (*left)-&gt;buflen = length;</span>
+<span class="lineNum">     152 </span><span class="lineNoCov">              0 :         memcpy((*left)-&gt;buf, in-&gt;buf, length);</span>
+<span class="lineNum">     153 </span><span class="lineNoCov">              0 :         (*left)-&gt;refcount = 1;</span>
+<span class="lineNum">     154 </span><span class="lineNoCov">              0 :         (*left)-&gt;own_buf = 1;</span>
+<span class="lineNum">     155 </span><span class="lineNoCov">              0 :         (*left)-&gt;is_persistent = in-&gt;is_persistent;</span>
+<span class="lineNum">     156 </span>                :         
+<span class="lineNum">     157 </span><span class="lineNoCov">              0 :         (*right)-&gt;buflen = in-&gt;buflen - length;</span>
+<span class="lineNum">     158 </span><span class="lineNoCov">              0 :         (*right)-&gt;buf = pemalloc((*right)-&gt;buflen, in-&gt;is_persistent);</span>
+<span class="lineNum">     159 </span><span class="lineNoCov">              0 :         memcpy((*right)-&gt;buf, in-&gt;buf + length, (*right)-&gt;buflen);</span>
+<span class="lineNum">     160 </span><span class="lineNoCov">              0 :         (*right)-&gt;refcount = 1;</span>
+<span class="lineNum">     161 </span><span class="lineNoCov">              0 :         (*right)-&gt;own_buf = 1;</span>
+<span class="lineNum">     162 </span><span class="lineNoCov">              0 :         (*right)-&gt;is_persistent = in-&gt;is_persistent;</span>
+<span class="lineNum">     163 </span>                :         
+<span class="lineNum">     164 </span><span class="lineNoCov">              0 :         return SUCCESS;</span>
+<span class="lineNum">     165 </span>                :         
+<span class="lineNum">     166 </span>                : exit_fail:
+<span class="lineNum">     167 </span><span class="lineNoCov">              0 :         if (*right) {</span>
+<span class="lineNum">     168 </span><span class="lineNoCov">              0 :                 if ((*right)-&gt;buf) {</span>
+<span class="lineNum">     169 </span><span class="lineNoCov">              0 :                         pefree((*right)-&gt;buf, in-&gt;is_persistent);</span>
+<span class="lineNum">     170 </span>                :                 }
+<span class="lineNum">     171 </span><span class="lineNoCov">              0 :                 pefree(*right, in-&gt;is_persistent);</span>
+<span class="lineNum">     172 </span>                :         }
+<span class="lineNum">     173 </span><span class="lineNoCov">              0 :         if (*left) {</span>
+<span class="lineNum">     174 </span><span class="lineNoCov">              0 :                 if ((*left)-&gt;buf) {</span>
+<span class="lineNum">     175 </span><span class="lineNoCov">              0 :                         pefree((*left)-&gt;buf, in-&gt;is_persistent);</span>
+<span class="lineNum">     176 </span>                :                 }
+<span class="lineNum">     177 </span><span class="lineNoCov">              0 :                 pefree(*left, in-&gt;is_persistent);</span>
+<span class="lineNum">     178 </span>                :         }
+<span class="lineNum">     179 </span><span class="lineNoCov">              0 :         return FAILURE;</span>
+<a name="180"><span class="lineNum">     180 </span>                : }</a>
+<span class="lineNum">     181 </span>                : 
+<span class="lineNum">     182 </span><span class="lineNoCov">              0 : PHPAPI void php_stream_bucket_delref(php_stream_bucket *bucket TSRMLS_DC)</span>
+<span class="lineNum">     183 </span>                : {
+<span class="lineNum">     184 </span><span class="lineNoCov">              0 :         if (--bucket-&gt;refcount == 0) {</span>
+<span class="lineNum">     185 </span><span class="lineNoCov">              0 :                 if (bucket-&gt;own_buf) {</span>
+<span class="lineNum">     186 </span><span class="lineNoCov">              0 :                         pefree(bucket-&gt;buf, bucket-&gt;is_persistent);</span>
+<span class="lineNum">     187 </span>                :                 }
+<span class="lineNum">     188 </span><span class="lineNoCov">              0 :                 pefree(bucket, bucket-&gt;is_persistent);</span>
+<span class="lineNum">     189 </span>                :         }
+<a name="190"><span class="lineNum">     190 </span><span class="lineNoCov">              0 : }</span></a>
+<span class="lineNum">     191 </span>                : 
+<span class="lineNum">     192 </span><span class="lineNoCov">              0 : PHPAPI void php_stream_bucket_prepend(php_stream_bucket_brigade *brigade, php_stream_bucket *bucket TSRMLS_DC)</span>
+<span class="lineNum">     193 </span>                : {
+<span class="lineNum">     194 </span><span class="lineNoCov">              0 :         bucket-&gt;next = brigade-&gt;head;</span>
+<span class="lineNum">     195 </span><span class="lineNoCov">              0 :         bucket-&gt;prev = NULL;</span>
+<span class="lineNum">     196 </span>                : 
+<span class="lineNum">     197 </span><span class="lineNoCov">              0 :         if (brigade-&gt;head) {</span>
+<span class="lineNum">     198 </span><span class="lineNoCov">              0 :                 brigade-&gt;head-&gt;prev = bucket;</span>
+<span class="lineNum">     199 </span>                :         } else {
+<span class="lineNum">     200 </span><span class="lineNoCov">              0 :                 brigade-&gt;tail = bucket;</span>
+<span class="lineNum">     201 </span>                :         }
+<span class="lineNum">     202 </span><span class="lineNoCov">              0 :         brigade-&gt;head = bucket;</span>
+<span class="lineNum">     203 </span><span class="lineNoCov">              0 :         bucket-&gt;brigade = brigade;</span>
+<a name="204"><span class="lineNum">     204 </span><span class="lineNoCov">              0 : }</span></a>
+<span class="lineNum">     205 </span>                : 
+<span class="lineNum">     206 </span><span class="lineNoCov">              0 : PHPAPI void php_stream_bucket_append(php_stream_bucket_brigade *brigade, php_stream_bucket *bucket TSRMLS_DC)</span>
+<span class="lineNum">     207 </span>                : {
+<span class="lineNum">     208 </span><span class="lineNoCov">              0 :         if (brigade-&gt;tail == bucket) {</span>
+<span class="lineNum">     209 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     210 </span>                :         }
+<span class="lineNum">     211 </span>                : 
+<span class="lineNum">     212 </span><span class="lineNoCov">              0 :         bucket-&gt;prev = brigade-&gt;tail;</span>
+<span class="lineNum">     213 </span><span class="lineNoCov">              0 :         bucket-&gt;next = NULL;</span>
+<span class="lineNum">     214 </span>                : 
+<span class="lineNum">     215 </span><span class="lineNoCov">              0 :         if (brigade-&gt;tail) {</span>
+<span class="lineNum">     216 </span><span class="lineNoCov">              0 :                 brigade-&gt;tail-&gt;next = bucket;</span>
+<span class="lineNum">     217 </span>                :         } else {
+<span class="lineNum">     218 </span><span class="lineNoCov">              0 :                 brigade-&gt;head = bucket;</span>
+<span class="lineNum">     219 </span>                :         }
+<span class="lineNum">     220 </span><span class="lineNoCov">              0 :         brigade-&gt;tail = bucket;</span>
+<span class="lineNum">     221 </span><span class="lineNoCov">              0 :         bucket-&gt;brigade = brigade;</span>
+<a name="222"><span class="lineNum">     222 </span>                : }</a>
+<span class="lineNum">     223 </span>                : 
+<span class="lineNum">     224 </span><span class="lineNoCov">              0 : PHPAPI void php_stream_bucket_unlink(php_stream_bucket *bucket TSRMLS_DC)</span>
+<span class="lineNum">     225 </span>                : {
+<span class="lineNum">     226 </span><span class="lineNoCov">              0 :         if (bucket-&gt;prev) {</span>
+<span class="lineNum">     227 </span><span class="lineNoCov">              0 :                 bucket-&gt;prev-&gt;next = bucket-&gt;next;</span>
+<span class="lineNum">     228 </span><span class="lineNoCov">              0 :         } else if (bucket-&gt;brigade) {</span>
+<span class="lineNum">     229 </span><span class="lineNoCov">              0 :                 bucket-&gt;brigade-&gt;head = bucket-&gt;next;</span>
+<span class="lineNum">     230 </span>                :         }
+<span class="lineNum">     231 </span><span class="lineNoCov">              0 :         if (bucket-&gt;next) {</span>
+<span class="lineNum">     232 </span><span class="lineNoCov">              0 :                 bucket-&gt;next-&gt;prev = bucket-&gt;prev;</span>
+<span class="lineNum">     233 </span><span class="lineNoCov">              0 :         } else if (bucket-&gt;brigade) {</span>
+<span class="lineNum">     234 </span><span class="lineNoCov">              0 :                 bucket-&gt;brigade-&gt;tail = bucket-&gt;prev;</span>
+<span class="lineNum">     235 </span>                :         }
+<span class="lineNum">     236 </span><span class="lineNoCov">              0 :         bucket-&gt;brigade = NULL;</span>
+<span class="lineNum">     237 </span><span class="lineNoCov">              0 :         bucket-&gt;next = bucket-&gt;prev = NULL;</span>
+<span class="lineNum">     238 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     239 </span>                :         
+<span class="lineNum">     240 </span>                : 
+<span class="lineNum">     241 </span>                : 
+<span class="lineNum">     242 </span>                : 
+<span class="lineNum">     243 </span>                : 
+<span class="lineNum">     244 </span>                : 
+<span class="lineNum">     245 </span>                : 
+<span class="lineNum">     246 </span>                : 
+<span class="lineNum">     247 </span>                : /* We allow very simple pattern matching for filter factories:
+<span class="lineNum">     248 </span>                :  * if &quot;convert.charset.utf-8/sjis&quot; is requested, we search first for an exact
+<span class="lineNum">     249 </span>                :  * match. If that fails, we try &quot;convert.charset.*&quot;, then &quot;convert.*&quot;
+<a name="250"><span class="lineNum">     250 </span>                :  * This means that we don't need to clog up the hashtable with a zillion</a>
+<span class="lineNum">     251 </span>                :  * charsets (for example) but still be able to provide them all as filters */
+<span class="lineNum">     252 </span><span class="lineNoCov">              0 : PHPAPI php_stream_filter *php_stream_filter_create(const char *filtername, zval *filterparams, int persistent TSRMLS_DC)</span>
+<span class="lineNum">     253 </span>                : {
+<span class="lineNum">     254 </span><span class="lineNoCov">              0 :         HashTable *filter_hash = (FG(stream_filters) ? FG(stream_filters) : &amp;stream_filters_hash);</span>
+<span class="lineNum">     255 </span><span class="lineNoCov">              0 :         php_stream_filter_factory *factory = NULL;</span>
+<span class="lineNum">     256 </span><span class="lineNoCov">              0 :         php_stream_filter *filter = NULL;</span>
+<span class="lineNum">     257 </span>                :         int n;
+<span class="lineNum">     258 </span>                :         char *period;
+<span class="lineNum">     259 </span>                : 
+<span class="lineNum">     260 </span><span class="lineNoCov">              0 :         n = strlen(filtername);</span>
+<span class="lineNum">     261 </span>                :         
+<span class="lineNum">     262 </span><span class="lineNoCov">              0 :         if (SUCCESS == zend_hash_find(filter_hash, (char*)filtername, n + 1, (void**)&amp;factory)) {</span>
+<span class="lineNum">     263 </span><span class="lineNoCov">              0 :                 filter = factory-&gt;create_filter(filtername, filterparams, persistent TSRMLS_CC);</span>
+<span class="lineNum">     264 </span><span class="lineNoCov">              0 :         } else if ((period = strrchr(filtername, '.'))) {</span>
+<span class="lineNum">     265 </span>                :                 /* try a wildcard */
+<span class="lineNum">     266 </span>                :                 char *wildname;
+<span class="lineNum">     267 </span>                : 
+<span class="lineNum">     268 </span><span class="lineNoCov">              0 :                 wildname = emalloc(n+3);</span>
+<span class="lineNum">     269 </span><span class="lineNoCov">              0 :                 memcpy(wildname, filtername, n+1);</span>
+<span class="lineNum">     270 </span><span class="lineNoCov">              0 :                 period = wildname + (period - filtername);</span>
+<span class="lineNum">     271 </span><span class="lineNoCov">              0 :                 while (period &amp;&amp; !filter) {</span>
+<span class="lineNum">     272 </span><span class="lineNoCov">              0 :                         *period = '\0';</span>
+<span class="lineNum">     273 </span><span class="lineNoCov">              0 :                         strncat(wildname, &quot;.*&quot;, 2);</span>
+<span class="lineNum">     274 </span><span class="lineNoCov">              0 :                         if (SUCCESS == zend_hash_find(filter_hash, wildname, strlen(wildname) + 1, (void**)&amp;factory)) {</span>
+<span class="lineNum">     275 </span><span class="lineNoCov">              0 :                                 filter = factory-&gt;create_filter(filtername, filterparams, persistent TSRMLS_CC);</span>
+<span class="lineNum">     276 </span>                :                         }
+<span class="lineNum">     277 </span>                : 
+<span class="lineNum">     278 </span><span class="lineNoCov">              0 :                         *period = '\0';</span>
+<span class="lineNum">     279 </span><span class="lineNoCov">              0 :                         period = strrchr(wildname, '.');</span>
+<span class="lineNum">     280 </span>                :                 }
+<span class="lineNum">     281 </span><span class="lineNoCov">              0 :                 efree(wildname);</span>
+<span class="lineNum">     282 </span>                :         }
+<span class="lineNum">     283 </span>                : 
+<span class="lineNum">     284 </span><span class="lineNoCov">              0 :         if (filter == NULL) {</span>
+<span class="lineNum">     285 </span>                :                 /* TODO: these need correct docrefs */
+<span class="lineNum">     286 </span><span class="lineNoCov">              0 :                 if (factory == NULL)</span>
+<span class="lineNum">     287 </span><span class="lineNoCov">              0 :                         php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;unable to locate filter \&quot;%s\&quot;&quot;, filtername);</span>
+<span class="lineNum">     288 </span>                :                 else
+<span class="lineNum">     289 </span><span class="lineNoCov">              0 :                         php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;unable to create or locate filter \&quot;%s\&quot;&quot;, filtername);</span>
+<span class="lineNum">     290 </span>                :         }
+<span class="lineNum">     291 </span>                :         
+<span class="lineNum">     292 </span><span class="lineNoCov">              0 :         return filter;</span>
+<a name="293"><span class="lineNum">     293 </span>                : }</a>
+<span class="lineNum">     294 </span>                : 
+<span class="lineNum">     295 </span><span class="lineNoCov">              0 : PHPAPI php_stream_filter *_php_stream_filter_alloc(php_stream_filter_ops *fops, void *abstract, int persistent STREAMS_DC TSRMLS_DC)</span>
+<span class="lineNum">     296 </span>                : {
+<span class="lineNum">     297 </span>                :         php_stream_filter *filter;
+<span class="lineNum">     298 </span>                : 
+<span class="lineNum">     299 </span><span class="lineNoCov">              0 :         filter = (php_stream_filter*) pemalloc_rel_orig(sizeof(php_stream_filter), persistent);</span>
+<span class="lineNum">     300 </span><span class="lineNoCov">              0 :         memset(filter, 0, sizeof(php_stream_filter));</span>
+<span class="lineNum">     301 </span>                : 
+<span class="lineNum">     302 </span><span class="lineNoCov">              0 :         filter-&gt;fops = fops;</span>
+<span class="lineNum">     303 </span><span class="lineNoCov">              0 :         filter-&gt;abstract = abstract;</span>
+<span class="lineNum">     304 </span><span class="lineNoCov">              0 :         filter-&gt;is_persistent = persistent;</span>
+<span class="lineNum">     305 </span>                :         
+<span class="lineNum">     306 </span><span class="lineNoCov">              0 :         return filter;</span>
+<a name="307"><span class="lineNum">     307 </span>                : }</a>
+<span class="lineNum">     308 </span>                : 
+<span class="lineNum">     309 </span><span class="lineNoCov">              0 : PHPAPI void php_stream_filter_free(php_stream_filter *filter TSRMLS_DC)</span>
+<span class="lineNum">     310 </span>                : {
+<span class="lineNum">     311 </span><span class="lineNoCov">              0 :         if (filter-&gt;fops-&gt;dtor)</span>
+<span class="lineNum">     312 </span><span class="lineNoCov">              0 :                 filter-&gt;fops-&gt;dtor(filter TSRMLS_CC);</span>
+<span class="lineNum">     313 </span><span class="lineNoCov">              0 :         pefree(filter, filter-&gt;is_persistent);</span>
+<a name="314"><span class="lineNum">     314 </span><span class="lineNoCov">              0 : }</span></a>
+<span class="lineNum">     315 </span>                : 
+<span class="lineNum">     316 </span><span class="lineNoCov">              0 : PHPAPI int php_stream_filter_prepend_ex(php_stream_filter_chain *chain, php_stream_filter *filter TSRMLS_DC)</span>
+<span class="lineNum">     317 </span>                : {
+<span class="lineNum">     318 </span><span class="lineNoCov">              0 :         filter-&gt;next = chain-&gt;head;</span>
+<span class="lineNum">     319 </span><span class="lineNoCov">              0 :         filter-&gt;prev = NULL;</span>
+<span class="lineNum">     320 </span>                : 
+<span class="lineNum">     321 </span><span class="lineNoCov">              0 :         if (chain-&gt;head) {</span>
+<span class="lineNum">     322 </span><span class="lineNoCov">              0 :                 chain-&gt;head-&gt;prev = filter;</span>
+<span class="lineNum">     323 </span>                :         } else {
+<span class="lineNum">     324 </span><span class="lineNoCov">              0 :                 chain-&gt;tail = filter;</span>
+<span class="lineNum">     325 </span>                :         }
+<span class="lineNum">     326 </span><span class="lineNoCov">              0 :         chain-&gt;head = filter;</span>
+<span class="lineNum">     327 </span><span class="lineNoCov">              0 :         filter-&gt;chain = chain;</span>
+<span class="lineNum">     328 </span>                : 
+<span class="lineNum">     329 </span><span class="lineNoCov">              0 :         return SUCCESS;</span>
+<a name="330"><span class="lineNum">     330 </span>                : }</a>
+<span class="lineNum">     331 </span>                : 
+<span class="lineNum">     332 </span><span class="lineNoCov">              0 : PHPAPI void _php_stream_filter_prepend(php_stream_filter_chain *chain, php_stream_filter *filter TSRMLS_DC)</span>
+<span class="lineNum">     333 </span>                : {
+<span class="lineNum">     334 </span><span class="lineNoCov">              0 :         php_stream_filter_prepend_ex(chain, filter TSRMLS_CC);</span>
+<a name="335"><span class="lineNum">     335 </span><span class="lineNoCov">              0 : }</span></a>
+<span class="lineNum">     336 </span>                : 
+<span class="lineNum">     337 </span><span class="lineNoCov">              0 : PHPAPI int php_stream_filter_append_ex(php_stream_filter_chain *chain, php_stream_filter *filter TSRMLS_DC)</span>
+<span class="lineNum">     338 </span>                : {
+<span class="lineNum">     339 </span><span class="lineNoCov">              0 :         php_stream *stream = chain-&gt;stream;</span>
+<span class="lineNum">     340 </span>                : 
+<span class="lineNum">     341 </span><span class="lineNoCov">              0 :         filter-&gt;prev = chain-&gt;tail;</span>
+<span class="lineNum">     342 </span><span class="lineNoCov">              0 :         filter-&gt;next = NULL;</span>
+<span class="lineNum">     343 </span><span class="lineNoCov">              0 :         if (chain-&gt;tail) {</span>
+<span class="lineNum">     344 </span><span class="lineNoCov">              0 :                 chain-&gt;tail-&gt;next = filter;</span>
+<span class="lineNum">     345 </span>                :         } else {
+<span class="lineNum">     346 </span><span class="lineNoCov">              0 :                 chain-&gt;head = filter;</span>
+<span class="lineNum">     347 </span>                :         }
+<span class="lineNum">     348 </span><span class="lineNoCov">              0 :         chain-&gt;tail = filter;</span>
+<span class="lineNum">     349 </span><span class="lineNoCov">              0 :         filter-&gt;chain = chain;</span>
+<span class="lineNum">     350 </span>                : 
+<span class="lineNum">     351 </span><span class="lineNoCov">              0 :         if (&amp;(stream-&gt;readfilters) == chain &amp;&amp; (stream-&gt;writepos - stream-&gt;readpos) &gt; 0) {</span>
+<span class="lineNum">     352 </span>                :                 /* Let's going ahead and wind anything in the buffer through this filter */
+<span class="lineNum">     353 </span><span class="lineNoCov">              0 :                 php_stream_bucket_brigade brig_in = { NULL, NULL }, brig_out = { NULL, NULL };</span>
+<span class="lineNum">     354 </span><span class="lineNoCov">              0 :                 php_stream_bucket_brigade *brig_inp = &amp;brig_in, *brig_outp = &amp;brig_out;</span>
+<span class="lineNum">     355 </span>                :                 php_stream_filter_status_t status;
+<span class="lineNum">     356 </span>                :                 php_stream_bucket *bucket;
+<span class="lineNum">     357 </span><span class="lineNoCov">              0 :                 size_t consumed = 0;</span>
+<span class="lineNum">     358 </span>                : 
+<span class="lineNum">     359 </span><span class="lineNoCov">              0 :                 bucket = php_stream_bucket_new(stream, (char*) stream-&gt;readbuf + stream-&gt;readpos, stream-&gt;writepos - stream-&gt;readpos, 0, 0 TSRMLS_CC);</span>
+<span class="lineNum">     360 </span><span class="lineNoCov">              0 :                 php_stream_bucket_append(brig_inp, bucket TSRMLS_CC);</span>
+<span class="lineNum">     361 </span><span class="lineNoCov">              0 :                 status = filter-&gt;fops-&gt;filter(stream, filter, brig_inp, brig_outp, &amp;consumed, PSFS_FLAG_NORMAL TSRMLS_CC);</span>
+<span class="lineNum">     362 </span>                : 
+<span class="lineNum">     363 </span><span class="lineNoCov">              0 :                 if (stream-&gt;readpos + consumed &gt; (uint)stream-&gt;writepos) {</span>
+<span class="lineNum">     364 </span>                :                         /* No behaving filter should cause this. */
+<span class="lineNum">     365 </span><span class="lineNoCov">              0 :                         status = PSFS_ERR_FATAL;</span>
+<span class="lineNum">     366 </span>                :                 }
+<span class="lineNum">     367 </span>                : 
+<span class="lineNum">     368 </span><span class="lineNoCov">              0 :                 switch (status) {</span>
+<span class="lineNum">     369 </span>                :                         case PSFS_ERR_FATAL:
+<span class="lineNum">     370 </span><span class="lineNoCov">              0 :                                 while (brig_in.head) {</span>
+<span class="lineNum">     371 </span><span class="lineNoCov">              0 :                                         bucket = brig_in.head;</span>
+<span class="lineNum">     372 </span><span class="lineNoCov">              0 :                                         php_stream_bucket_unlink(bucket TSRMLS_CC);</span>
+<span class="lineNum">     373 </span><span class="lineNoCov">              0 :                                         php_stream_bucket_delref(bucket TSRMLS_CC);</span>
+<span class="lineNum">     374 </span>                :                                 }
+<span class="lineNum">     375 </span><span class="lineNoCov">              0 :                                 while (brig_out.head) {</span>
+<span class="lineNum">     376 </span><span class="lineNoCov">              0 :                                         bucket = brig_out.head;</span>
+<span class="lineNum">     377 </span><span class="lineNoCov">              0 :                                         php_stream_bucket_unlink(bucket TSRMLS_CC);</span>
+<span class="lineNum">     378 </span><span class="lineNoCov">              0 :                                         php_stream_bucket_delref(bucket TSRMLS_CC);</span>
+<span class="lineNum">     379 </span>                :                                 }
+<span class="lineNum">     380 </span><span class="lineNoCov">              0 :                                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Filter failed to process pre-buffered data&quot;);</span>
+<span class="lineNum">     381 </span><span class="lineNoCov">              0 :                                 return FAILURE;</span>
+<span class="lineNum">     382 </span>                :                         case PSFS_FEED_ME:
+<span class="lineNum">     383 </span>                :                                 /* We don't actually need data yet,
+<span class="lineNum">     384 </span>                :                                    leave this filter in a feed me state until data is needed. 
+<span class="lineNum">     385 </span>                :                                    Reset stream's internal read buffer since the filter is &quot;holding&quot; it. */
+<span class="lineNum">     386 </span><span class="lineNoCov">              0 :                                 stream-&gt;readpos = 0;</span>
+<span class="lineNum">     387 </span><span class="lineNoCov">              0 :                                 stream-&gt;writepos = 0;</span>
+<span class="lineNum">     388 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     389 </span>                :                         case PSFS_PASS_ON:
+<span class="lineNum">     390 </span>                :                                 /* If any data is consumed, we cannot rely upon the existing read buffer,
+<span class="lineNum">     391 </span>                :                                    as the filtered data must replace the existing data, so invalidate the cache */
+<span class="lineNum">     392 </span>                :                                 /* note that changes here should be reflected in
+<span class="lineNum">     393 </span>                :                                    main/streams/streams.c::php_stream_fill_read_buffer */
+<span class="lineNum">     394 </span><span class="lineNoCov">              0 :                                 stream-&gt;writepos = 0;</span>
+<span class="lineNum">     395 </span><span class="lineNoCov">              0 :                                 stream-&gt;readpos = 0;</span>
+<span class="lineNum">     396 </span>                : 
+<span class="lineNum">     397 </span><span class="lineNoCov">              0 :                                 while (brig_outp-&gt;head) {</span>
+<span class="lineNum">     398 </span><span class="lineNoCov">              0 :                                         bucket = brig_outp-&gt;head;</span>
+<span class="lineNum">     399 </span>                :                                         /* Grow buffer to hold this bucket if need be.
+<span class="lineNum">     400 </span>                :                                            TODO: See warning in main/stream/streams.c::php_stream_fill_read_buffer */
+<span class="lineNum">     401 </span><span class="lineNoCov">              0 :                                         if (stream-&gt;readbuflen - stream-&gt;writepos &lt; bucket-&gt;buflen) {</span>
+<span class="lineNum">     402 </span><span class="lineNoCov">              0 :                                                 stream-&gt;readbuflen += bucket-&gt;buflen;</span>
+<span class="lineNum">     403 </span><span class="lineNoCov">              0 :                                                 stream-&gt;readbuf = perealloc(stream-&gt;readbuf, stream-&gt;readbuflen, stream-&gt;is_persistent);</span>
+<span class="lineNum">     404 </span>                :                                         }
+<span class="lineNum">     405 </span><span class="lineNoCov">              0 :                                         memcpy(stream-&gt;readbuf + stream-&gt;writepos, bucket-&gt;buf, bucket-&gt;buflen);</span>
+<span class="lineNum">     406 </span><span class="lineNoCov">              0 :                                         stream-&gt;writepos += bucket-&gt;buflen;</span>
+<span class="lineNum">     407 </span>                : 
+<span class="lineNum">     408 </span><span class="lineNoCov">              0 :                                         php_stream_bucket_unlink(bucket TSRMLS_CC);</span>
+<span class="lineNum">     409 </span><span class="lineNoCov">              0 :                                         php_stream_bucket_delref(bucket TSRMLS_CC);</span>
+<span class="lineNum">     410 </span>                :                                 }
+<span class="lineNum">     411 </span>                :                                 break;
+<span class="lineNum">     412 </span>                :                 }
+<span class="lineNum">     413 </span>                :         }
+<span class="lineNum">     414 </span>                : 
+<span class="lineNum">     415 </span><span class="lineNoCov">              0 :         return SUCCESS;</span>
+<a name="416"><span class="lineNum">     416 </span>                : }</a>
+<span class="lineNum">     417 </span>                : 
+<span class="lineNum">     418 </span><span class="lineNoCov">              0 : PHPAPI void _php_stream_filter_append(php_stream_filter_chain *chain, php_stream_filter *filter TSRMLS_DC)</span>
+<span class="lineNum">     419 </span>                : {
+<span class="lineNum">     420 </span><span class="lineNoCov">              0 :         if (php_stream_filter_append_ex(chain, filter TSRMLS_CC) != SUCCESS) {</span>
+<span class="lineNum">     421 </span><span class="lineNoCov">              0 :                 if (chain-&gt;head == filter) {</span>
+<span class="lineNum">     422 </span><span class="lineNoCov">              0 :                         chain-&gt;head = NULL;</span>
+<span class="lineNum">     423 </span><span class="lineNoCov">              0 :                         chain-&gt;tail = NULL;</span>
+<span class="lineNum">     424 </span>                :                 } else {
+<span class="lineNum">     425 </span><span class="lineNoCov">              0 :                         filter-&gt;prev-&gt;next = NULL;</span>
+<span class="lineNum">     426 </span><span class="lineNoCov">              0 :                         chain-&gt;tail = filter-&gt;prev;</span>
+<span class="lineNum">     427 </span>                :                 }
+<span class="lineNum">     428 </span>                :         }
+<a name="429"><span class="lineNum">     429 </span><span class="lineNoCov">              0 : }</span></a>
+<span class="lineNum">     430 </span>                : 
+<span class="lineNum">     431 </span><span class="lineNoCov">              0 : PHPAPI int _php_stream_filter_flush(php_stream_filter *filter, int finish TSRMLS_DC)</span>
+<span class="lineNum">     432 </span>                : {
+<span class="lineNum">     433 </span><span class="lineNoCov">              0 :         php_stream_bucket_brigade brig_a = { NULL, NULL }, brig_b = { NULL, NULL }, *inp = &amp;brig_a, *outp = &amp;brig_b, *brig_temp;</span>
+<span class="lineNum">     434 </span>                :         php_stream_bucket *bucket;
+<span class="lineNum">     435 </span>                :         php_stream_filter_chain *chain;
+<span class="lineNum">     436 </span>                :         php_stream_filter *current;
+<span class="lineNum">     437 </span>                :         php_stream *stream;
+<span class="lineNum">     438 </span><span class="lineNoCov">              0 :         size_t flushed_size = 0;</span>
+<span class="lineNum">     439 </span><span class="lineNoCov">              0 :         long flags = (finish ? PSFS_FLAG_FLUSH_CLOSE : PSFS_FLAG_FLUSH_INC);</span>
+<span class="lineNum">     440 </span>                : 
+<span class="lineNum">     441 </span><span class="lineNoCov">              0 :         if (!filter-&gt;chain || !filter-&gt;chain-&gt;stream) {</span>
+<span class="lineNum">     442 </span>                :                 /* Filter is not attached to a chain, or chain is somehow not part of a stream */
+<span class="lineNum">     443 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">     444 </span>                :         }
+<span class="lineNum">     445 </span>                : 
+<span class="lineNum">     446 </span><span class="lineNoCov">              0 :         chain = filter-&gt;chain;</span>
+<span class="lineNum">     447 </span><span class="lineNoCov">              0 :         stream = chain-&gt;stream;</span>
+<span class="lineNum">     448 </span>                : 
+<span class="lineNum">     449 </span><span class="lineNoCov">              0 :         for(current = filter; current; current = current-&gt;next) {</span>
+<span class="lineNum">     450 </span>                :                 php_stream_filter_status_t status;
+<span class="lineNum">     451 </span>                : 
+<span class="lineNum">     452 </span><span class="lineNoCov">              0 :                 status = filter-&gt;fops-&gt;filter(stream, filter, inp, outp, NULL, flags TSRMLS_CC);</span>
+<span class="lineNum">     453 </span><span class="lineNoCov">              0 :                 if (status == PSFS_FEED_ME) {</span>
+<span class="lineNum">     454 </span>                :                         /* We've flushed the data far enough */
+<span class="lineNum">     455 </span><span class="lineNoCov">              0 :                         return SUCCESS;</span>
+<span class="lineNum">     456 </span>                :                 }
+<span class="lineNum">     457 </span><span class="lineNoCov">              0 :                 if (status == PSFS_ERR_FATAL) {</span>
+<span class="lineNum">     458 </span><span class="lineNoCov">              0 :                         return FAILURE;</span>
+<span class="lineNum">     459 </span>                :                 }
+<span class="lineNum">     460 </span>                :                 /* Otherwise we have data available to PASS_ON
+<span class="lineNum">     461 </span>                :                         Swap the brigades and continue */
+<span class="lineNum">     462 </span><span class="lineNoCov">              0 :                 brig_temp = inp;</span>
+<span class="lineNum">     463 </span><span class="lineNoCov">              0 :                 inp = outp;</span>
+<span class="lineNum">     464 </span><span class="lineNoCov">              0 :                 outp = brig_temp;</span>
+<span class="lineNum">     465 </span><span class="lineNoCov">              0 :                 outp-&gt;head = NULL;</span>
+<span class="lineNum">     466 </span><span class="lineNoCov">              0 :                 outp-&gt;tail = NULL;</span>
+<span class="lineNum">     467 </span>                : 
+<span class="lineNum">     468 </span><span class="lineNoCov">              0 :                 flags = PSFS_FLAG_NORMAL;</span>
+<span class="lineNum">     469 </span>                :         }
+<span class="lineNum">     470 </span>                : 
+<span class="lineNum">     471 </span>                :         /* Last filter returned data via PSFS_PASS_ON
+<span class="lineNum">     472 </span>                :                 Do something with it */
+<span class="lineNum">     473 </span>                : 
+<span class="lineNum">     474 </span><span class="lineNoCov">              0 :         for(bucket = inp-&gt;head; bucket; bucket = bucket-&gt;next) {</span>
+<span class="lineNum">     475 </span><span class="lineNoCov">              0 :                 flushed_size += bucket-&gt;buflen;</span>
+<span class="lineNum">     476 </span>                :         }
+<span class="lineNum">     477 </span>                : 
+<span class="lineNum">     478 </span><span class="lineNoCov">              0 :         if (flushed_size == 0) {</span>
+<span class="lineNum">     479 </span>                :                 /* Unlikely, but possible */
+<span class="lineNum">     480 </span><span class="lineNoCov">              0 :                 return SUCCESS;</span>
+<span class="lineNum">     481 </span>                :         }
+<span class="lineNum">     482 </span>                : 
+<span class="lineNum">     483 </span><span class="lineNoCov">              0 :         if (chain == &amp;(stream-&gt;readfilters)) {</span>
+<span class="lineNum">     484 </span>                :                 /* Dump any newly flushed data to the read buffer */
+<span class="lineNum">     485 </span><span class="lineNoCov">              0 :                 if (stream-&gt;readpos &gt; 0) {</span>
+<span class="lineNum">     486 </span>                :                         /* Back the buffer up */
+<span class="lineNum">     487 </span><span class="lineNoCov">              0 :                         memcpy(stream-&gt;readbuf, stream-&gt;readbuf + stream-&gt;readpos, stream-&gt;writepos - stream-&gt;readpos);</span>
+<span class="lineNum">     488 </span><span class="lineNoCov">              0 :                         stream-&gt;readpos = 0;</span>
+<span class="lineNum">     489 </span><span class="lineNoCov">              0 :                         stream-&gt;writepos -= stream-&gt;readpos;</span>
+<span class="lineNum">     490 </span>                :                 }
+<span class="lineNum">     491 </span><span class="lineNoCov">              0 :                 if (flushed_size &gt; (stream-&gt;readbuflen - stream-&gt;writepos)) {</span>
+<span class="lineNum">     492 </span>                :                         /* Grow the buffer */
+<span class="lineNum">     493 </span><span class="lineNoCov">              0 :                         stream-&gt;readbuf = perealloc(stream-&gt;readbuf, stream-&gt;writepos + flushed_size + stream-&gt;chunk_size, stream-&gt;is_persistent);</span>
+<span class="lineNum">     494 </span>                :                 }
+<span class="lineNum">     495 </span><span class="lineNoCov">              0 :                 while ((bucket = inp-&gt;head)) {</span>
+<span class="lineNum">     496 </span><span class="lineNoCov">              0 :                         memcpy(stream-&gt;readbuf + stream-&gt;writepos, bucket-&gt;buf, bucket-&gt;buflen);</span>
+<span class="lineNum">     497 </span><span class="lineNoCov">              0 :                         stream-&gt;writepos += bucket-&gt;buflen;</span>
+<span class="lineNum">     498 </span><span class="lineNoCov">              0 :                         php_stream_bucket_unlink(bucket TSRMLS_CC);</span>
+<span class="lineNum">     499 </span><span class="lineNoCov">              0 :                         php_stream_bucket_delref(bucket TSRMLS_CC);</span>
+<span class="lineNum">     500 </span>                :                 }
+<span class="lineNum">     501 </span><span class="lineNoCov">              0 :         } else if (chain == &amp;(stream-&gt;writefilters)) {</span>
+<span class="lineNum">     502 </span>                :                 /* Send flushed data to the stream */
+<span class="lineNum">     503 </span><span class="lineNoCov">              0 :                 while ((bucket = inp-&gt;head)) {</span>
+<span class="lineNum">     504 </span><span class="lineNoCov">              0 :                         stream-&gt;ops-&gt;write(stream, bucket-&gt;buf, bucket-&gt;buflen TSRMLS_CC);</span>
+<span class="lineNum">     505 </span><span class="lineNoCov">              0 :                         php_stream_bucket_unlink(bucket TSRMLS_CC);</span>
+<span class="lineNum">     506 </span><span class="lineNoCov">              0 :                         php_stream_bucket_delref(bucket TSRMLS_CC);</span>
+<span class="lineNum">     507 </span>                :                 }
+<span class="lineNum">     508 </span>                :         }
+<span class="lineNum">     509 </span>                : 
+<span class="lineNum">     510 </span><span class="lineNoCov">              0 :         return SUCCESS;</span>
+<a name="511"><span class="lineNum">     511 </span>                : }</a>
+<span class="lineNum">     512 </span>                : 
+<span class="lineNum">     513 </span><span class="lineNoCov">              0 : PHPAPI php_stream_filter *php_stream_filter_remove(php_stream_filter *filter, int call_dtor TSRMLS_DC)</span>
+<span class="lineNum">     514 </span>                : {
+<span class="lineNum">     515 </span><span class="lineNoCov">              0 :         if (filter-&gt;prev) {</span>
+<span class="lineNum">     516 </span><span class="lineNoCov">              0 :                 filter-&gt;prev-&gt;next = filter-&gt;next;</span>
+<span class="lineNum">     517 </span>                :         } else {
+<span class="lineNum">     518 </span><span class="lineNoCov">              0 :                 filter-&gt;chain-&gt;head = filter-&gt;next;</span>
+<span class="lineNum">     519 </span>                :         }
+<span class="lineNum">     520 </span><span class="lineNoCov">              0 :         if (filter-&gt;next) {</span>
+<span class="lineNum">     521 </span><span class="lineNoCov">              0 :                 filter-&gt;next-&gt;prev = filter-&gt;prev;</span>
+<span class="lineNum">     522 </span>                :         } else {
+<span class="lineNum">     523 </span><span class="lineNoCov">              0 :                 filter-&gt;chain-&gt;tail = filter-&gt;prev;</span>
+<span class="lineNum">     524 </span>                :         }
+<span class="lineNum">     525 </span>                : 
+<span class="lineNum">     526 </span><span class="lineNoCov">              0 :         if (filter-&gt;rsrc_id &gt; 0) {</span>
+<span class="lineNum">     527 </span><span class="lineNoCov">              0 :                 zend_list_delete(filter-&gt;rsrc_id);</span>
+<span class="lineNum">     528 </span>                :         }
+<span class="lineNum">     529 </span>                : 
+<span class="lineNum">     530 </span><span class="lineNoCov">              0 :         if (call_dtor) {</span>
+<span class="lineNum">     531 </span><span class="lineNoCov">              0 :                 php_stream_filter_free(filter TSRMLS_CC);</span>
+<span class="lineNum">     532 </span><span class="lineNoCov">              0 :                 return NULL;</span>
+<span class="lineNum">     533 </span>                :         }
+<span class="lineNum">     534 </span><span class="lineNoCov">              0 :         return filter;</span>
+<span class="lineNum">     535 </span>                : }
+<span class="lineNum">     536 </span>                : 
+<span class="lineNum">     537 </span>                : /*
+<span class="lineNum">     538 </span>                :  * Local variables:
+<span class="lineNum">     539 </span>                :  * tab-width: 4
+<span class="lineNum">     540 </span>                :  * c-basic-offset: 4
+<span class="lineNum">     541 </span>                :  * End:
+<span class="lineNum">     542 </span>                :  * vim600: noet sw=4 ts=4 fdm=marker
+<span class="lineNum">     543 </span>                :  * vim&lt;600: noet sw=4 ts=4
+<span class="lineNum">     544 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

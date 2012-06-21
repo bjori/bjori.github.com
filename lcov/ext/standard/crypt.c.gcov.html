@@ -1,0 +1,400 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - ext/standard/crypt.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../index.html">directory</a> - <a href="index.html">ext/standard</a> - crypt.c (source / <a href="crypt.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">88</td>
+          <td class="headerCovTableEntry">13</td>
+          <td class="headerCovTableEntryLo">14.8 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">4</td>
+          <td class="headerCovTableEntry">2</td>
+          <td class="headerCovTableEntryLo">50.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Authors: Stig Bakken &lt;ssb@php.net&gt;                                   |
+<span class="lineNum">      16 </span>                :    |          Zeev Suraski &lt;zeev@zend.com&gt;                                |
+<span class="lineNum">      17 </span>                :    |          Rasmus Lerdorf &lt;rasmus@php.net&gt;                             |
+<span class="lineNum">      18 </span>                :    |          Pierre Joye &lt;pierre@php.net&gt;                                |
+<span class="lineNum">      19 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      20 </span>                : */
+<span class="lineNum">      21 </span>                : 
+<span class="lineNum">      22 </span>                : /* $Id$ */
+<span class="lineNum">      23 </span>                : 
+<span class="lineNum">      24 </span>                : #include &lt;stdlib.h&gt;
+<span class="lineNum">      25 </span>                : 
+<span class="lineNum">      26 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">      27 </span>                : #if HAVE_CRYPT
+<span class="lineNum">      28 </span>                : 
+<span class="lineNum">      29 </span>                : #if HAVE_UNISTD_H
+<span class="lineNum">      30 </span>                : #include &lt;unistd.h&gt;
+<span class="lineNum">      31 </span>                : #endif
+<span class="lineNum">      32 </span>                : #if PHP_USE_PHP_CRYPT_R
+<span class="lineNum">      33 </span>                : # include &quot;php_crypt_r.h&quot;
+<span class="lineNum">      34 </span>                : # include &quot;crypt_freesec.h&quot;
+<span class="lineNum">      35 </span>                : #else
+<span class="lineNum">      36 </span>                : # if HAVE_CRYPT_H
+<span class="lineNum">      37 </span>                : #  if defined(CRYPT_R_GNU_SOURCE) &amp;&amp; !defined(_GNU_SOURCE)
+<span class="lineNum">      38 </span>                : #   define _GNU_SOURCE
+<span class="lineNum">      39 </span>                : #  endif
+<span class="lineNum">      40 </span>                : #  include &lt;crypt.h&gt;
+<span class="lineNum">      41 </span>                : # endif
+<span class="lineNum">      42 </span>                : #endif
+<span class="lineNum">      43 </span>                : #if TM_IN_SYS_TIME
+<span class="lineNum">      44 </span>                : #include &lt;sys/time.h&gt;
+<span class="lineNum">      45 </span>                : #else
+<span class="lineNum">      46 </span>                : #include &lt;time.h&gt;
+<span class="lineNum">      47 </span>                : #endif
+<span class="lineNum">      48 </span>                : #if HAVE_STRING_H
+<span class="lineNum">      49 </span>                : #include &lt;string.h&gt;
+<span class="lineNum">      50 </span>                : #else
+<span class="lineNum">      51 </span>                : #include &lt;strings.h&gt;
+<span class="lineNum">      52 </span>                : #endif
+<span class="lineNum">      53 </span>                : 
+<span class="lineNum">      54 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">      55 </span>                : #include &lt;process.h&gt;
+<span class="lineNum">      56 </span>                : #endif
+<span class="lineNum">      57 </span>                : 
+<span class="lineNum">      58 </span>                : #include &quot;php_lcg.h&quot;
+<span class="lineNum">      59 </span>                : #include &quot;php_crypt.h&quot;
+<span class="lineNum">      60 </span>                : #include &quot;php_rand.h&quot;
+<span class="lineNum">      61 </span>                : 
+<span class="lineNum">      62 </span>                : /* The capabilities of the crypt() function is determined by the test programs
+<span class="lineNum">      63 </span>                :  * run by configure from aclocal.m4.  They will set PHP_STD_DES_CRYPT,
+<span class="lineNum">      64 </span>                :  * PHP_EXT_DES_CRYPT, PHP_MD5_CRYPT and PHP_BLOWFISH_CRYPT as appropriate
+<span class="lineNum">      65 </span>                :  * for the target platform. */
+<span class="lineNum">      66 </span>                : 
+<span class="lineNum">      67 </span>                : #if PHP_STD_DES_CRYPT
+<span class="lineNum">      68 </span>                : #define PHP_MAX_SALT_LEN 2
+<span class="lineNum">      69 </span>                : #endif
+<span class="lineNum">      70 </span>                : 
+<span class="lineNum">      71 </span>                : #if PHP_EXT_DES_CRYPT
+<span class="lineNum">      72 </span>                : #undef PHP_MAX_SALT_LEN
+<span class="lineNum">      73 </span>                : #define PHP_MAX_SALT_LEN 9
+<span class="lineNum">      74 </span>                : #endif
+<span class="lineNum">      75 </span>                : 
+<span class="lineNum">      76 </span>                : #if PHP_MD5_CRYPT
+<span class="lineNum">      77 </span>                : #undef PHP_MAX_SALT_LEN
+<span class="lineNum">      78 </span>                : #define PHP_MAX_SALT_LEN 12
+<span class="lineNum">      79 </span>                : #endif
+<span class="lineNum">      80 </span>                : 
+<span class="lineNum">      81 </span>                : #if PHP_BLOWFISH_CRYPT
+<span class="lineNum">      82 </span>                : #undef PHP_MAX_SALT_LEN
+<span class="lineNum">      83 </span>                : #define PHP_MAX_SALT_LEN 60
+<span class="lineNum">      84 </span>                : #endif
+<span class="lineNum">      85 </span>                : 
+<span class="lineNum">      86 </span>                : #if PHP_SHA512_CRYPT
+<span class="lineNum">      87 </span>                : #undef PHP_MAX_SALT_LEN
+<span class="lineNum">      88 </span>                : #define PHP_MAX_SALT_LEN 123
+<span class="lineNum">      89 </span>                : #endif
+<span class="lineNum">      90 </span>                : 
+<span class="lineNum">      91 </span>                : 
+<span class="lineNum">      92 </span>                : /* If the configure-time checks fail, we provide DES.
+<span class="lineNum">      93 </span>                :  * XXX: This is a hack. Fix the real problem! */
+<span class="lineNum">      94 </span>                : 
+<span class="lineNum">      95 </span>                : #ifndef PHP_MAX_SALT_LEN
+<span class="lineNum">      96 </span>                : #define PHP_MAX_SALT_LEN 2
+<span class="lineNum">      97 </span>                : #undef PHP_STD_DES_CRYPT
+<span class="lineNum">      98 </span>                : #define PHP_STD_DES_CRYPT 1
+<span class="lineNum">      99 </span>                : #endif
+<span class="lineNum">     100 </span>                : 
+<a name="101"><span class="lineNum">     101 </span>                : #define PHP_CRYPT_RAND php_rand(TSRMLS_C)</a>
+<span class="lineNum">     102 </span>                : 
+<span class="lineNum">     103 </span><span class="lineCov">             48 : PHP_MINIT_FUNCTION(crypt) /* {{{ */</span>
+<span class="lineNum">     104 </span>                : {
+<span class="lineNum">     105 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;CRYPT_SALT_LENGTH&quot;, PHP_MAX_SALT_LEN, CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">     106 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;CRYPT_STD_DES&quot;, PHP_STD_DES_CRYPT, CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">     107 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;CRYPT_EXT_DES&quot;, PHP_EXT_DES_CRYPT, CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">     108 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;CRYPT_MD5&quot;, PHP_MD5_CRYPT, CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">     109 </span><span class="lineCov">             48 :         REGISTER_LONG_CONSTANT(&quot;CRYPT_BLOWFISH&quot;, PHP_BLOWFISH_CRYPT, CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">     110 </span>                : 
+<span class="lineNum">     111 </span>                : #ifdef PHP_SHA256_CRYPT
+<span class="lineNum">     112 </span><span class="lineCov">             48 :    REGISTER_LONG_CONSTANT(&quot;CRYPT_SHA256&quot;, PHP_SHA256_CRYPT, CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">     113 </span>                : #endif
+<span class="lineNum">     114 </span>                : 
+<span class="lineNum">     115 </span>                : #ifdef PHP_SHA512_CRYPT
+<span class="lineNum">     116 </span><span class="lineCov">             48 :    REGISTER_LONG_CONSTANT(&quot;CRYPT_SHA512&quot;, PHP_SHA512_CRYPT, CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">     117 </span>                : #endif
+<span class="lineNum">     118 </span>                : 
+<span class="lineNum">     119 </span>                : #if PHP_USE_PHP_CRYPT_R
+<span class="lineNum">     120 </span><span class="lineCov">             48 :         php_init_crypt_r();</span>
+<span class="lineNum">     121 </span>                : #endif
+<span class="lineNum">     122 </span>                : 
+<span class="lineNum">     123 </span><span class="lineCov">             48 :         return SUCCESS;</span>
+<span class="lineNum">     124 </span>                : }
+<a name="125"><span class="lineNum">     125 </span>                : /* }}} */</a>
+<span class="lineNum">     126 </span>                : 
+<span class="lineNum">     127 </span><span class="lineCov">             48 : PHP_MSHUTDOWN_FUNCTION(crypt) /* {{{ */</span>
+<span class="lineNum">     128 </span>                : {
+<span class="lineNum">     129 </span>                : #if PHP_USE_PHP_CRYPT_R
+<span class="lineNum">     130 </span><span class="lineCov">             48 :         php_shutdown_crypt_r();</span>
+<span class="lineNum">     131 </span>                : #endif
+<span class="lineNum">     132 </span>                : 
+<span class="lineNum">     133 </span><span class="lineCov">             48 :         return SUCCESS;</span>
+<span class="lineNum">     134 </span>                : }
+<span class="lineNum">     135 </span>                : /* }}} */
+<span class="lineNum">     136 </span>                : 
+<a name="137"><span class="lineNum">     137 </span>                : static unsigned char itoa64[] = &quot;./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz&quot;;</a>
+<span class="lineNum">     138 </span>                : 
+<span class="lineNum">     139 </span><span class="lineNoCov">              0 : static void php_to64(char *s, long v, int n) /* {{{ */</span>
+<span class="lineNum">     140 </span>                : {
+<span class="lineNum">     141 </span><span class="lineNoCov">              0 :         while (--n &gt;= 0) {</span>
+<span class="lineNum">     142 </span><span class="lineNoCov">              0 :                 *s++ = itoa64[v&amp;0x3f];</span>
+<span class="lineNum">     143 </span><span class="lineNoCov">              0 :                 v &gt;&gt;= 6;</span>
+<span class="lineNum">     144 </span>                :         }
+<span class="lineNum">     145 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     146 </span>                : /* }}} */
+<span class="lineNum">     147 </span>                : 
+<a name="148"><span class="lineNum">     148 </span>                : /* {{{ proto string crypt(string str [, string salt])</a>
+<span class="lineNum">     149 </span>                :    Hash a string */
+<span class="lineNum">     150 </span><span class="lineNoCov">              0 : PHP_FUNCTION(crypt)</span>
+<span class="lineNum">     151 </span>                : {
+<span class="lineNum">     152 </span>                :         char salt[PHP_MAX_SALT_LEN + 1];
+<span class="lineNum">     153 </span><span class="lineNoCov">              0 :         char *str, *salt_in = NULL;</span>
+<span class="lineNum">     154 </span><span class="lineNoCov">              0 :         int str_len, salt_in_len = 0;</span>
+<span class="lineNum">     155 </span>                :         char *crypt_res;
+<span class="lineNum">     156 </span><span class="lineNoCov">              0 :         salt[0] = salt[PHP_MAX_SALT_LEN] = '\0';</span>
+<span class="lineNum">     157 </span>                : 
+<span class="lineNum">     158 </span>                :         /* This will produce suitable results if people depend on DES-encryption
+<span class="lineNum">     159 </span>                :          * available (passing always 2-character salt). At least for glibc6.1 */
+<span class="lineNum">     160 </span><span class="lineNoCov">              0 :         memset(&amp;salt[1], '$', PHP_MAX_SALT_LEN - 1);</span>
+<span class="lineNum">     161 </span>                : 
+<span class="lineNum">     162 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;s|s&quot;, &amp;str, &amp;str_len, &amp;salt_in, &amp;salt_in_len) == FAILURE) {</span>
+<span class="lineNum">     163 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     164 </span>                :         }
+<span class="lineNum">     165 </span>                : 
+<span class="lineNum">     166 </span><span class="lineNoCov">              0 :         if (salt_in) {</span>
+<span class="lineNum">     167 </span><span class="lineNoCov">              0 :                 memcpy(salt, salt_in, MIN(PHP_MAX_SALT_LEN, salt_in_len));</span>
+<span class="lineNum">     168 </span>                :         }
+<span class="lineNum">     169 </span>                : 
+<span class="lineNum">     170 </span>                :         /* The automatic salt generation covers standard DES, md5-crypt and Blowfish (simple) */
+<span class="lineNum">     171 </span><span class="lineNoCov">              0 :         if (!*salt) {</span>
+<span class="lineNum">     172 </span>                : #if PHP_MD5_CRYPT
+<span class="lineNum">     173 </span><span class="lineNoCov">              0 :                 strncpy(salt, &quot;$1$&quot;, PHP_MAX_SALT_LEN);</span>
+<span class="lineNum">     174 </span><span class="lineNoCov">              0 :                 php_to64(&amp;salt[3], PHP_CRYPT_RAND, 4);</span>
+<span class="lineNum">     175 </span><span class="lineNoCov">              0 :                 php_to64(&amp;salt[7], PHP_CRYPT_RAND, 4);</span>
+<span class="lineNum">     176 </span><span class="lineNoCov">              0 :                 strncpy(&amp;salt[11], &quot;$&quot;, PHP_MAX_SALT_LEN - 11);</span>
+<span class="lineNum">     177 </span>                : #elif PHP_STD_DES_CRYPT
+<span class="lineNum">     178 </span>                :                 php_to64(&amp;salt[0], PHP_CRYPT_RAND, 2);
+<span class="lineNum">     179 </span>                :                 salt[2] = '\0';
+<span class="lineNum">     180 </span>                : #endif
+<span class="lineNum">     181 </span><span class="lineNoCov">              0 :                 salt_in_len = strlen(salt);</span>
+<span class="lineNum">     182 </span>                :         } else {
+<span class="lineNum">     183 </span><span class="lineNoCov">              0 :                 salt_in_len = MIN(PHP_MAX_SALT_LEN, salt_in_len);</span>
+<span class="lineNum">     184 </span>                :         }
+<span class="lineNum">     185 </span>                : 
+<span class="lineNum">     186 </span>                : /* Windows (win32/crypt) has a stripped down version of libxcrypt and 
+<span class="lineNum">     187 </span>                :         a CryptoApi md5_crypt implementation */
+<span class="lineNum">     188 </span>                : #if PHP_USE_PHP_CRYPT_R
+<span class="lineNum">     189 </span>                :         {
+<span class="lineNum">     190 </span>                :                 struct php_crypt_extended_data buffer;
+<span class="lineNum">     191 </span>                : 
+<span class="lineNum">     192 </span><span class="lineNoCov">              0 :                 if (salt[0]=='$' &amp;&amp; salt[1]=='1' &amp;&amp; salt[2]=='$') {</span>
+<span class="lineNum">     193 </span>                :                         char output[MD5_HASH_MAX_LEN];
+<span class="lineNum">     194 </span>                : 
+<span class="lineNum">     195 </span><span class="lineNoCov">              0 :                         RETURN_STRING(php_md5_crypt_r(str, salt, output), 1);</span>
+<span class="lineNum">     196 </span><span class="lineNoCov">              0 :                 } else if (salt[0]=='$' &amp;&amp; salt[1]=='6' &amp;&amp; salt[2]=='$') {</span>
+<span class="lineNum">     197 </span><span class="lineNoCov">              0 :                         const char sha512_salt_prefix[] = &quot;$6$&quot;;</span>
+<span class="lineNum">     198 </span><span class="lineNoCov">              0 :                         const char sha512_rounds_prefix[] = &quot;rounds=&quot;;</span>
+<span class="lineNum">     199 </span>                :                         char *output;
+<span class="lineNum">     200 </span>                :                         int needed = (sizeof(sha512_salt_prefix) - 1
+<span class="lineNum">     201 </span>                :                                                 + sizeof(sha512_rounds_prefix) + 9 + 1
+<span class="lineNum">     202 </span><span class="lineNoCov">              0 :                                                 + strlen(salt) + 1 + 43 + 1);</span>
+<span class="lineNum">     203 </span><span class="lineNoCov">              0 :                         output = emalloc(needed);</span>
+<span class="lineNum">     204 </span><span class="lineNoCov">              0 :                         salt[salt_in_len] = '\0';</span>
+<span class="lineNum">     205 </span>                : 
+<span class="lineNum">     206 </span><span class="lineNoCov">              0 :                         crypt_res = php_sha512_crypt_r(str, salt, output, needed);</span>
+<span class="lineNum">     207 </span><span class="lineNoCov">              0 :                         if (!crypt_res) {</span>
+<span class="lineNum">     208 </span><span class="lineNoCov">              0 :                                 if (salt[0]=='*' &amp;&amp; salt[1]=='0') {</span>
+<span class="lineNum">     209 </span><span class="lineNoCov">              0 :                                         RETVAL_STRING(&quot;*1&quot;, 1);</span>
+<span class="lineNum">     210 </span>                :                                 } else {
+<span class="lineNum">     211 </span><span class="lineNoCov">              0 :                                         RETVAL_STRING(&quot;*0&quot;, 1);</span>
+<span class="lineNum">     212 </span>                :                                 }
+<span class="lineNum">     213 </span>                :                         } else {
+<span class="lineNum">     214 </span><span class="lineNoCov">              0 :                                 RETVAL_STRING(output, 1);</span>
+<span class="lineNum">     215 </span>                :                         }
+<span class="lineNum">     216 </span>                : 
+<span class="lineNum">     217 </span><span class="lineNoCov">              0 :                         memset(output, 0, PHP_MAX_SALT_LEN + 1);</span>
+<span class="lineNum">     218 </span><span class="lineNoCov">              0 :                         efree(output);</span>
+<span class="lineNum">     219 </span><span class="lineNoCov">              0 :                 } else if (salt[0]=='$' &amp;&amp; salt[1]=='5' &amp;&amp; salt[2]=='$') {</span>
+<span class="lineNum">     220 </span><span class="lineNoCov">              0 :                         const char sha256_salt_prefix[] = &quot;$5$&quot;;</span>
+<span class="lineNum">     221 </span><span class="lineNoCov">              0 :                         const char sha256_rounds_prefix[] = &quot;rounds=&quot;;</span>
+<span class="lineNum">     222 </span>                :                         char *output;
+<span class="lineNum">     223 </span>                :                         int needed = (sizeof(sha256_salt_prefix) - 1
+<span class="lineNum">     224 </span>                :                                                 + sizeof(sha256_rounds_prefix) + 9 + 1
+<span class="lineNum">     225 </span><span class="lineNoCov">              0 :                                                 + strlen(salt) + 1 + 43 + 1);</span>
+<span class="lineNum">     226 </span><span class="lineNoCov">              0 :                         output = emalloc(needed);</span>
+<span class="lineNum">     227 </span><span class="lineNoCov">              0 :                         salt[salt_in_len] = '\0';</span>
+<span class="lineNum">     228 </span>                : 
+<span class="lineNum">     229 </span><span class="lineNoCov">              0 :                         crypt_res = php_sha256_crypt_r(str, salt, output, needed);</span>
+<span class="lineNum">     230 </span><span class="lineNoCov">              0 :                         if (!crypt_res) {</span>
+<span class="lineNum">     231 </span><span class="lineNoCov">              0 :                                 if (salt[0]=='*' &amp;&amp; salt[1]=='0') {</span>
+<span class="lineNum">     232 </span><span class="lineNoCov">              0 :                                         RETVAL_STRING(&quot;*1&quot;, 1);</span>
+<span class="lineNum">     233 </span>                :                                 } else {
+<span class="lineNum">     234 </span><span class="lineNoCov">              0 :                                         RETVAL_STRING(&quot;*0&quot;, 1);</span>
+<span class="lineNum">     235 </span>                :                                 }
+<span class="lineNum">     236 </span>                :                         } else {
+<span class="lineNum">     237 </span><span class="lineNoCov">              0 :                                 RETVAL_STRING(output, 1);</span>
+<span class="lineNum">     238 </span>                :                         }
+<span class="lineNum">     239 </span>                : 
+<span class="lineNum">     240 </span><span class="lineNoCov">              0 :                         memset(output, 0, PHP_MAX_SALT_LEN + 1);</span>
+<span class="lineNum">     241 </span><span class="lineNoCov">              0 :                         efree(output);</span>
+<span class="lineNum">     242 </span><span class="lineNoCov">              0 :                 } else if (</span>
+<span class="lineNum">     243 </span><span class="lineNoCov">              0 :                                 salt[0] == '$' &amp;&amp;</span>
+<span class="lineNum">     244 </span><span class="lineNoCov">              0 :                                 salt[1] == '2' &amp;&amp;</span>
+<span class="lineNum">     245 </span><span class="lineNoCov">              0 :                                 salt[2] &gt;= 'a' &amp;&amp; salt[2] &lt;= 'z' &amp;&amp;</span>
+<span class="lineNum">     246 </span><span class="lineNoCov">              0 :                                 salt[3] == '$' &amp;&amp;</span>
+<span class="lineNum">     247 </span><span class="lineNoCov">              0 :                                 salt[4] &gt;= '0' &amp;&amp; salt[4] &lt;= '3' &amp;&amp;</span>
+<span class="lineNum">     248 </span><span class="lineNoCov">              0 :                                 salt[5] &gt;= '0' &amp;&amp; salt[5] &lt;= '9' &amp;&amp;</span>
+<span class="lineNum">     249 </span><span class="lineNoCov">              0 :                                 salt[6] == '$') {</span>
+<span class="lineNum">     250 </span>                :                         char output[PHP_MAX_SALT_LEN + 1];
+<span class="lineNum">     251 </span>                : 
+<span class="lineNum">     252 </span><span class="lineNoCov">              0 :                         memset(output, 0, PHP_MAX_SALT_LEN + 1);</span>
+<span class="lineNum">     253 </span>                : 
+<span class="lineNum">     254 </span><span class="lineNoCov">              0 :                         crypt_res = php_crypt_blowfish_rn(str, salt, output, sizeof(output));</span>
+<span class="lineNum">     255 </span><span class="lineNoCov">              0 :                         if (!crypt_res) {</span>
+<span class="lineNum">     256 </span><span class="lineNoCov">              0 :                                 if (salt[0]=='*' &amp;&amp; salt[1]=='0') {</span>
+<span class="lineNum">     257 </span><span class="lineNoCov">              0 :                                         RETVAL_STRING(&quot;*1&quot;, 1);</span>
+<span class="lineNum">     258 </span>                :                                 } else {
+<span class="lineNum">     259 </span><span class="lineNoCov">              0 :                                         RETVAL_STRING(&quot;*0&quot;, 1);</span>
+<span class="lineNum">     260 </span>                :                                 }
+<span class="lineNum">     261 </span>                :                         } else {
+<span class="lineNum">     262 </span><span class="lineNoCov">              0 :                                 RETVAL_STRING(output, 1);</span>
+<span class="lineNum">     263 </span>                :                         }
+<span class="lineNum">     264 </span>                : 
+<span class="lineNum">     265 </span><span class="lineNoCov">              0 :                         memset(output, 0, PHP_MAX_SALT_LEN + 1);</span>
+<span class="lineNum">     266 </span>                :                 } else {
+<span class="lineNum">     267 </span><span class="lineNoCov">              0 :                         memset(&amp;buffer, 0, sizeof(buffer));</span>
+<span class="lineNum">     268 </span><span class="lineNoCov">              0 :                         _crypt_extended_init_r();</span>
+<span class="lineNum">     269 </span>                : 
+<span class="lineNum">     270 </span><span class="lineNoCov">              0 :                         crypt_res = _crypt_extended_r(str, salt, &amp;buffer);</span>
+<span class="lineNum">     271 </span><span class="lineNoCov">              0 :                         if (!crypt_res) {</span>
+<span class="lineNum">     272 </span><span class="lineNoCov">              0 :                                 if (salt[0]=='*' &amp;&amp; salt[1]=='0') {</span>
+<span class="lineNum">     273 </span><span class="lineNoCov">              0 :                                         RETURN_STRING(&quot;*1&quot;, 1);</span>
+<span class="lineNum">     274 </span>                :                                 } else {
+<span class="lineNum">     275 </span><span class="lineNoCov">              0 :                                         RETURN_STRING(&quot;*0&quot;, 1);</span>
+<span class="lineNum">     276 </span>                :                                 }
+<span class="lineNum">     277 </span>                :                         } else {
+<span class="lineNum">     278 </span><span class="lineNoCov">              0 :                                 RETURN_STRING(crypt_res, 1);</span>
+<span class="lineNum">     279 </span>                :                         }
+<span class="lineNum">     280 </span>                :                 }
+<span class="lineNum">     281 </span>                :         }
+<span class="lineNum">     282 </span>                : #else
+<span class="lineNum">     283 </span>                : 
+<span class="lineNum">     284 </span>                : # if defined(HAVE_CRYPT_R) &amp;&amp; (defined(_REENTRANT) || defined(_THREAD_SAFE))
+<span class="lineNum">     285 </span>                :         {
+<span class="lineNum">     286 </span>                : #  if defined(CRYPT_R_STRUCT_CRYPT_DATA)
+<span class="lineNum">     287 </span>                :                 struct crypt_data buffer;
+<span class="lineNum">     288 </span>                :                 memset(&amp;buffer, 0, sizeof(buffer));
+<span class="lineNum">     289 </span>                : #  elif defined(CRYPT_R_CRYPTD)
+<span class="lineNum">     290 </span>                :                 CRYPTD buffer;
+<span class="lineNum">     291 </span>                : #  else
+<span class="lineNum">     292 </span>                : #    error Data struct used by crypt_r() is unknown. Please report.
+<span class="lineNum">     293 </span>                : #  endif
+<span class="lineNum">     294 </span>                :                 crypt_res = crypt_r(str, salt, &amp;buffer);
+<span class="lineNum">     295 </span>                :                 if (!crypt_res) {
+<span class="lineNum">     296 </span>                :                                 if (salt[0]=='*' &amp;&amp; salt[1]=='0') {
+<span class="lineNum">     297 </span>                :                                         RETURN_STRING(&quot;*1&quot;, 1);
+<span class="lineNum">     298 </span>                :                                 } else {
+<span class="lineNum">     299 </span>                :                                         RETURN_STRING(&quot;*0&quot;, 1);
+<span class="lineNum">     300 </span>                :                                 }
+<span class="lineNum">     301 </span>                :                 } else {
+<span class="lineNum">     302 </span>                :                         RETURN_STRING(crypt_res, 1);
+<span class="lineNum">     303 </span>                :                 }
+<span class="lineNum">     304 </span>                :         }
+<span class="lineNum">     305 </span>                : # endif
+<span class="lineNum">     306 </span>                : #endif
+<span class="lineNum">     307 </span>                : }
+<span class="lineNum">     308 </span>                : /* }}} */
+<span class="lineNum">     309 </span>                : #endif
+<span class="lineNum">     310 </span>                : 
+<span class="lineNum">     311 </span>                : /*
+<span class="lineNum">     312 </span>                :  * Local variables:
+<span class="lineNum">     313 </span>                :  * tab-width: 4
+<span class="lineNum">     314 </span>                :  * c-basic-offset: 4
+<span class="lineNum">     315 </span>                :  * End:
+<span class="lineNum">     316 </span>                :  * vim600: sw=4 ts=4 fdm=marker
+<span class="lineNum">     317 </span>                :  * vim&lt;600: sw=4 ts=4
+<span class="lineNum">     318 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

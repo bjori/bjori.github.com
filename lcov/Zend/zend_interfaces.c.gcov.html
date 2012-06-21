@@ -1,0 +1,682 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - Zend/zend_interfaces.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../index.html">directory</a> - <a href="index.html">Zend</a> - zend_interfaces.c (source / <a href="zend_interfaces.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">237</td>
+          <td class="headerCovTableEntry">133</td>
+          <td class="headerCovTableEntryHi">56.1 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">21</td>
+          <td class="headerCovTableEntry">15</td>
+          <td class="headerCovTableEntryLo">71.4 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | Zend Engine                                                          |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1998-2012 Zend Technologies Ltd. (http://www.zend.com) |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 2.00 of the Zend license,     |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        | 
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.zend.com/license/2_00.txt.                                |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the Zend license and are unable to  |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@zend.com so we can mail you a copy immediately.              |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Authors: Marcus Boerger &lt;helly@php.net&gt;                              |
+<span class="lineNum">      16 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      17 </span>                : */
+<span class="lineNum">      18 </span>                : 
+<span class="lineNum">      19 </span>                : /* $Id$ */
+<span class="lineNum">      20 </span>                : 
+<span class="lineNum">      21 </span>                : #include &quot;zend.h&quot;
+<span class="lineNum">      22 </span>                : #include &quot;zend_API.h&quot;
+<span class="lineNum">      23 </span>                : #include &quot;zend_interfaces.h&quot;
+<span class="lineNum">      24 </span>                : #include &quot;zend_exceptions.h&quot;
+<span class="lineNum">      25 </span>                : 
+<span class="lineNum">      26 </span>                : ZEND_API zend_class_entry *zend_ce_traversable;
+<span class="lineNum">      27 </span>                : ZEND_API zend_class_entry *zend_ce_aggregate;
+<span class="lineNum">      28 </span>                : ZEND_API zend_class_entry *zend_ce_iterator;
+<span class="lineNum">      29 </span>                : ZEND_API zend_class_entry *zend_ce_arrayaccess;
+<span class="lineNum">      30 </span>                : ZEND_API zend_class_entry *zend_ce_serializable;
+<span class="lineNum">      31 </span>                : 
+<a name="32"><span class="lineNum">      32 </span>                : /* {{{ zend_call_method</a>
+<span class="lineNum">      33 </span>                :  Only returns the returned zval if retval_ptr != NULL */
+<span class="lineNum">      34 </span><span class="lineCov">           1125 : ZEND_API zval* zend_call_method(zval **object_pp, zend_class_entry *obj_ce, zend_function **fn_proxy, const char *function_name, int function_name_len, zval **retval_ptr_ptr, int param_count, zval* arg1, zval* arg2 TSRMLS_DC)</span>
+<span class="lineNum">      35 </span>                : {
+<span class="lineNum">      36 </span>                :         int result;
+<span class="lineNum">      37 </span>                :         zend_fcall_info fci;
+<span class="lineNum">      38 </span>                :         zval z_fname;
+<span class="lineNum">      39 </span>                :         zval *retval;
+<span class="lineNum">      40 </span>                :         HashTable *function_table;
+<span class="lineNum">      41 </span>                : 
+<span class="lineNum">      42 </span>                :         zval **params[2];
+<span class="lineNum">      43 </span>                : 
+<span class="lineNum">      44 </span><span class="lineCov">           1125 :         params[0] = &amp;arg1;</span>
+<span class="lineNum">      45 </span><span class="lineCov">           1125 :         params[1] = &amp;arg2;</span>
+<span class="lineNum">      46 </span>                : 
+<span class="lineNum">      47 </span><span class="lineCov">           1125 :         fci.size = sizeof(fci);</span>
+<span class="lineNum">      48 </span>                :         /*fci.function_table = NULL; will be read form zend_class_entry of object if needed */
+<span class="lineNum">      49 </span><span class="lineCov">           1125 :         fci.object_ptr = object_pp ? *object_pp : NULL;</span>
+<span class="lineNum">      50 </span><span class="lineCov">           1125 :         fci.function_name = &amp;z_fname;</span>
+<span class="lineNum">      51 </span><span class="lineCov">           1125 :         fci.retval_ptr_ptr = retval_ptr_ptr ? retval_ptr_ptr : &amp;retval;</span>
+<span class="lineNum">      52 </span><span class="lineCov">           1125 :         fci.param_count = param_count;</span>
+<span class="lineNum">      53 </span><span class="lineCov">           1125 :         fci.params = params;</span>
+<span class="lineNum">      54 </span><span class="lineCov">           1125 :         fci.no_separation = 1;</span>
+<span class="lineNum">      55 </span><span class="lineCov">           1125 :         fci.symbol_table = NULL;</span>
+<span class="lineNum">      56 </span>                : 
+<span class="lineNum">      57 </span><span class="lineCov">           1125 :         if (!fn_proxy &amp;&amp; !obj_ce) {</span>
+<span class="lineNum">      58 </span>                :                 /* no interest in caching and no information already present that is
+<span class="lineNum">      59 </span>                :                  * needed later inside zend_call_function. */
+<span class="lineNum">      60 </span><span class="lineNoCov">              0 :                 ZVAL_STRINGL(&amp;z_fname, function_name, function_name_len, 0);</span>
+<span class="lineNum">      61 </span><span class="lineNoCov">              0 :                 fci.function_table = !object_pp ? EG(function_table) : NULL;</span>
+<span class="lineNum">      62 </span><span class="lineNoCov">              0 :                 result = zend_call_function(&amp;fci, NULL TSRMLS_CC);</span>
+<span class="lineNum">      63 </span>                :         } else {
+<span class="lineNum">      64 </span>                :                 zend_fcall_info_cache fcic;
+<span class="lineNum">      65 </span>                : 
+<span class="lineNum">      66 </span><span class="lineCov">           1125 :                 fcic.initialized = 1;</span>
+<span class="lineNum">      67 </span><span class="lineCov">           1125 :                 if (!obj_ce) {</span>
+<span class="lineNum">      68 </span><span class="lineNoCov">              0 :                         obj_ce = object_pp ? Z_OBJCE_PP(object_pp) : NULL;</span>
+<span class="lineNum">      69 </span>                :                 }
+<span class="lineNum">      70 </span><span class="lineCov">           1125 :                 if (obj_ce) {</span>
+<span class="lineNum">      71 </span><span class="lineCov">           1125 :                         function_table = &amp;obj_ce-&gt;function_table;</span>
+<span class="lineNum">      72 </span>                :                 } else {
+<span class="lineNum">      73 </span><span class="lineNoCov">              0 :                         function_table = EG(function_table);</span>
+<span class="lineNum">      74 </span>                :                 }
+<span class="lineNum">      75 </span><span class="lineCov">           1153 :                 if (!fn_proxy || !*fn_proxy) {</span>
+<span class="lineNum">      76 </span><span class="lineCov">             28 :                         if (zend_hash_find(function_table, function_name, function_name_len+1, (void **) &amp;fcic.function_handler) == FAILURE) {</span>
+<span class="lineNum">      77 </span>                :                                 /* error at c-level */
+<span class="lineNum">      78 </span><span class="lineNoCov">              0 :                                 zend_error(E_CORE_ERROR, &quot;Couldn't find implementation for method %s%s%s&quot;, obj_ce ? obj_ce-&gt;name : &quot;&quot;, obj_ce ? &quot;::&quot; : &quot;&quot;, function_name);</span>
+<span class="lineNum">      79 </span>                :                         }
+<span class="lineNum">      80 </span><span class="lineCov">             28 :                         if (fn_proxy) {</span>
+<span class="lineNum">      81 </span><span class="lineCov">             26 :                                 *fn_proxy = fcic.function_handler;</span>
+<span class="lineNum">      82 </span>                :                         }
+<span class="lineNum">      83 </span>                :                 } else {
+<span class="lineNum">      84 </span><span class="lineCov">           1097 :                         fcic.function_handler = *fn_proxy;</span>
+<span class="lineNum">      85 </span>                :                 }
+<span class="lineNum">      86 </span><span class="lineCov">           1125 :                 fcic.calling_scope = obj_ce;</span>
+<span class="lineNum">      87 </span><span class="lineCov">           1125 :                 if (object_pp) {</span>
+<span class="lineNum">      88 </span><span class="lineCov">           1125 :                         fcic.called_scope = Z_OBJCE_PP(object_pp);</span>
+<span class="lineNum">      89 </span><span class="lineNoCov">              0 :                 } else if (obj_ce &amp;&amp;</span>
+<span class="lineNum">      90 </span><span class="lineNoCov">              0 :                            !(EG(called_scope) &amp;&amp;</span>
+<span class="lineNum">      91 </span><span class="lineNoCov">              0 :                              instanceof_function(EG(called_scope), obj_ce TSRMLS_CC))) {</span>
+<span class="lineNum">      92 </span><span class="lineNoCov">              0 :                         fcic.called_scope = obj_ce;</span>
+<span class="lineNum">      93 </span>                :                 } else {
+<span class="lineNum">      94 </span><span class="lineNoCov">              0 :                         fcic.called_scope = EG(called_scope);</span>
+<span class="lineNum">      95 </span>                :                 }
+<span class="lineNum">      96 </span><span class="lineCov">           1125 :                 fcic.object_ptr = object_pp ? *object_pp : NULL;</span>
+<span class="lineNum">      97 </span><span class="lineCov">           1125 :                 result = zend_call_function(&amp;fci, &amp;fcic TSRMLS_CC);</span>
+<span class="lineNum">      98 </span>                :         }
+<span class="lineNum">      99 </span><span class="lineCov">           1125 :         if (result == FAILURE) {</span>
+<span class="lineNum">     100 </span>                :                 /* error at c-level */
+<span class="lineNum">     101 </span><span class="lineNoCov">              0 :                 if (!obj_ce) {</span>
+<span class="lineNum">     102 </span><span class="lineNoCov">              0 :                         obj_ce = object_pp ? Z_OBJCE_PP(object_pp) : NULL;</span>
+<span class="lineNum">     103 </span>                :                 }
+<span class="lineNum">     104 </span><span class="lineNoCov">              0 :                 if (!EG(exception)) {</span>
+<span class="lineNum">     105 </span><span class="lineNoCov">              0 :                         zend_error(E_CORE_ERROR, &quot;Couldn't execute method %s%s%s&quot;, obj_ce ? obj_ce-&gt;name : &quot;&quot;, obj_ce ? &quot;::&quot; : &quot;&quot;, function_name);</span>
+<span class="lineNum">     106 </span>                :                 }
+<span class="lineNum">     107 </span>                :         }
+<span class="lineNum">     108 </span><span class="lineCov">           1125 :         if (!retval_ptr_ptr) {</span>
+<span class="lineNum">     109 </span><span class="lineCov">             38 :                 if (retval) {</span>
+<span class="lineNum">     110 </span><span class="lineCov">             36 :                         zval_ptr_dtor(&amp;retval);</span>
+<span class="lineNum">     111 </span>                :                 }
+<span class="lineNum">     112 </span><span class="lineCov">             38 :                 return NULL;</span>
+<span class="lineNum">     113 </span>                :         }
+<span class="lineNum">     114 </span><span class="lineCov">           1087 :         return *retval_ptr_ptr;</span>
+<span class="lineNum">     115 </span>                : }
+<span class="lineNum">     116 </span>                : /* }}} */
+<span class="lineNum">     117 </span>                : 
+<span class="lineNum">     118 </span>                : /* iterator interface, c-level functions used by engine */
+<a name="119"><span class="lineNum">     119 </span>                : </a>
+<span class="lineNum">     120 </span>                : /* {{{ zend_user_it_new_iterator */
+<span class="lineNum">     121 </span><span class="lineNoCov">              0 : ZEND_API zval *zend_user_it_new_iterator(zend_class_entry *ce, zval *object TSRMLS_DC)</span>
+<span class="lineNum">     122 </span>                : {
+<span class="lineNum">     123 </span>                :         zval *retval;
+<span class="lineNum">     124 </span>                : 
+<span class="lineNum">     125 </span><span class="lineNoCov">              0 :         return zend_call_method_with_0_params(&amp;object, ce, &amp;ce-&gt;iterator_funcs.zf_new_iterator, &quot;getiterator&quot;, &amp;retval);</span>
+<span class="lineNum">     126 </span>                : 
+<span class="lineNum">     127 </span>                : }
+<span class="lineNum">     128 </span>                : /* }}} */
+<a name="129"><span class="lineNum">     129 </span>                : </a>
+<span class="lineNum">     130 </span>                : /* {{{ zend_user_it_invalidate_current */
+<span class="lineNum">     131 </span><span class="lineCov">             59 : ZEND_API void zend_user_it_invalidate_current(zend_object_iterator *_iter TSRMLS_DC)</span>
+<span class="lineNum">     132 </span>                : {
+<span class="lineNum">     133 </span><span class="lineCov">             59 :         zend_user_iterator *iter = (zend_user_iterator*)_iter;</span>
+<span class="lineNum">     134 </span>                : 
+<span class="lineNum">     135 </span><span class="lineCov">             59 :         if (iter-&gt;value) {</span>
+<span class="lineNum">     136 </span><span class="lineCov">             17 :                 zval_ptr_dtor(&amp;iter-&gt;value);</span>
+<span class="lineNum">     137 </span><span class="lineCov">             17 :                 iter-&gt;value = NULL;</span>
+<span class="lineNum">     138 </span>                :         }
+<span class="lineNum">     139 </span><span class="lineCov">             59 : }</span>
+<span class="lineNum">     140 </span>                : /* }}} */
+<a name="141"><span class="lineNum">     141 </span>                : </a>
+<span class="lineNum">     142 </span>                : /* {{{ zend_user_it_dtor */
+<span class="lineNum">     143 </span><span class="lineCov">             21 : static void zend_user_it_dtor(zend_object_iterator *_iter TSRMLS_DC)</span>
+<span class="lineNum">     144 </span>                : {
+<span class="lineNum">     145 </span><span class="lineCov">             21 :         zend_user_iterator *iter = (zend_user_iterator*)_iter;</span>
+<span class="lineNum">     146 </span><span class="lineCov">             21 :         zval *object = (zval*)iter-&gt;it.data;</span>
+<span class="lineNum">     147 </span>                : 
+<span class="lineNum">     148 </span><span class="lineCov">             21 :         zend_user_it_invalidate_current(_iter TSRMLS_CC);</span>
+<span class="lineNum">     149 </span><span class="lineCov">             21 :         zval_ptr_dtor(&amp;object);</span>
+<span class="lineNum">     150 </span><span class="lineCov">             21 :         efree(iter);</span>
+<span class="lineNum">     151 </span><span class="lineCov">             21 : }</span>
+<span class="lineNum">     152 </span>                : /* }}} */
+<a name="153"><span class="lineNum">     153 </span>                : </a>
+<span class="lineNum">     154 </span>                : /* {{{ zend_user_it_valid */
+<span class="lineNum">     155 </span><span class="lineCov">             36 : ZEND_API int zend_user_it_valid(zend_object_iterator *_iter TSRMLS_DC)</span>
+<span class="lineNum">     156 </span>                : {
+<span class="lineNum">     157 </span><span class="lineCov">             36 :         if (_iter) {</span>
+<span class="lineNum">     158 </span><span class="lineCov">             36 :                 zend_user_iterator *iter = (zend_user_iterator*)_iter;</span>
+<span class="lineNum">     159 </span><span class="lineCov">             36 :                 zval *object = (zval*)iter-&gt;it.data;</span>
+<span class="lineNum">     160 </span>                :                 zval *more;
+<span class="lineNum">     161 </span>                :                 int result;
+<span class="lineNum">     162 </span>                : 
+<span class="lineNum">     163 </span><span class="lineCov">             36 :                 zend_call_method_with_0_params(&amp;object, iter-&gt;ce, &amp;iter-&gt;ce-&gt;iterator_funcs.zf_valid, &quot;valid&quot;, &amp;more);</span>
+<span class="lineNum">     164 </span><span class="lineCov">             36 :                 if (more) {</span>
+<span class="lineNum">     165 </span><span class="lineCov">             72 :                         result = i_zend_is_true(more);</span>
+<span class="lineNum">     166 </span><span class="lineCov">             36 :                         zval_ptr_dtor(&amp;more);</span>
+<span class="lineNum">     167 </span><span class="lineCov">             36 :                         return result ? SUCCESS : FAILURE;</span>
+<span class="lineNum">     168 </span>                :                 }
+<span class="lineNum">     169 </span>                :         }
+<span class="lineNum">     170 </span><span class="lineNoCov">              0 :         return FAILURE;</span>
+<span class="lineNum">     171 </span>                : }
+<span class="lineNum">     172 </span>                : /* }}} */
+<a name="173"><span class="lineNum">     173 </span>                : </a>
+<span class="lineNum">     174 </span>                : /* {{{ zend_user_it_get_current_data */
+<span class="lineNum">     175 </span><span class="lineCov">             17 : ZEND_API void zend_user_it_get_current_data(zend_object_iterator *_iter, zval ***data TSRMLS_DC)</span>
+<span class="lineNum">     176 </span>                : {
+<span class="lineNum">     177 </span><span class="lineCov">             17 :         zend_user_iterator *iter = (zend_user_iterator*)_iter;</span>
+<span class="lineNum">     178 </span><span class="lineCov">             17 :         zval *object = (zval*)iter-&gt;it.data;</span>
+<span class="lineNum">     179 </span>                : 
+<span class="lineNum">     180 </span><span class="lineCov">             17 :         if (!iter-&gt;value) {</span>
+<span class="lineNum">     181 </span><span class="lineCov">             17 :                 zend_call_method_with_0_params(&amp;object, iter-&gt;ce, &amp;iter-&gt;ce-&gt;iterator_funcs.zf_current, &quot;current&quot;, &amp;iter-&gt;value);</span>
+<span class="lineNum">     182 </span>                :         }
+<span class="lineNum">     183 </span><span class="lineCov">             17 :         *data = &amp;iter-&gt;value;</span>
+<span class="lineNum">     184 </span><span class="lineCov">             17 : }</span>
+<span class="lineNum">     185 </span>                : /* }}} */
+<span class="lineNum">     186 </span>                : 
+<span class="lineNum">     187 </span>                : /* {{{ zend_user_it_get_current_key_default */
+<span class="lineNum">     188 </span>                : #if 0
+<span class="lineNum">     189 </span>                : static int zend_user_it_get_current_key_default(zend_object_iterator *_iter, char **str_key, uint *str_key_len, ulong *int_key TSRMLS_DC)
+<span class="lineNum">     190 </span>                : {
+<span class="lineNum">     191 </span>                :         *int_key = _iter-&gt;index;
+<span class="lineNum">     192 </span>                :         return HASH_KEY_IS_LONG;
+<span class="lineNum">     193 </span>                : }
+<span class="lineNum">     194 </span>                : #endif
+<span class="lineNum">     195 </span>                : /* }}} */
+<a name="196"><span class="lineNum">     196 </span>                : </a>
+<span class="lineNum">     197 </span>                : /* {{{ zend_user_it_get_current_key */
+<span class="lineNum">     198 </span><span class="lineCov">             12 : ZEND_API int zend_user_it_get_current_key(zend_object_iterator *_iter, char **str_key, uint *str_key_len, ulong *int_key TSRMLS_DC)</span>
+<span class="lineNum">     199 </span>                : {
+<span class="lineNum">     200 </span><span class="lineCov">             12 :         zend_user_iterator *iter = (zend_user_iterator*)_iter;</span>
+<span class="lineNum">     201 </span><span class="lineCov">             12 :         zval *object = (zval*)iter-&gt;it.data;</span>
+<span class="lineNum">     202 </span>                :         zval *retval;
+<span class="lineNum">     203 </span>                : 
+<span class="lineNum">     204 </span><span class="lineCov">             12 :         zend_call_method_with_0_params(&amp;object, iter-&gt;ce, &amp;iter-&gt;ce-&gt;iterator_funcs.zf_key, &quot;key&quot;, &amp;retval);</span>
+<span class="lineNum">     205 </span>                : 
+<span class="lineNum">     206 </span><span class="lineCov">             12 :         if (!retval) {</span>
+<span class="lineNum">     207 </span><span class="lineNoCov">              0 :                 *int_key = 0;</span>
+<span class="lineNum">     208 </span><span class="lineNoCov">              0 :                 if (!EG(exception))</span>
+<span class="lineNum">     209 </span>                :                 {
+<span class="lineNum">     210 </span><span class="lineNoCov">              0 :                         zend_error(E_WARNING, &quot;Nothing returned from %s::key()&quot;, iter-&gt;ce-&gt;name);</span>
+<span class="lineNum">     211 </span>                :                 }
+<span class="lineNum">     212 </span><span class="lineNoCov">              0 :                 return HASH_KEY_IS_LONG;</span>
+<span class="lineNum">     213 </span>                :         }
+<span class="lineNum">     214 </span><span class="lineCov">             12 :         switch (Z_TYPE_P(retval)) {</span>
+<span class="lineNum">     215 </span>                :                 default:
+<span class="lineNum">     216 </span><span class="lineNoCov">              0 :                         zend_error(E_WARNING, &quot;Illegal type returned from %s::key()&quot;, iter-&gt;ce-&gt;name);</span>
+<span class="lineNum">     217 </span>                :                 case IS_NULL:
+<span class="lineNum">     218 </span><span class="lineNoCov">              0 :                         *int_key = 0;</span>
+<span class="lineNum">     219 </span><span class="lineNoCov">              0 :                         zval_ptr_dtor(&amp;retval);</span>
+<span class="lineNum">     220 </span><span class="lineNoCov">              0 :                         return HASH_KEY_IS_LONG;</span>
+<span class="lineNum">     221 </span>                : 
+<span class="lineNum">     222 </span>                :                 case IS_STRING:
+<span class="lineNum">     223 </span><span class="lineNoCov">              0 :                         *str_key = estrndup(Z_STRVAL_P(retval), Z_STRLEN_P(retval));</span>
+<span class="lineNum">     224 </span><span class="lineNoCov">              0 :                         *str_key_len = Z_STRLEN_P(retval)+1;</span>
+<span class="lineNum">     225 </span><span class="lineNoCov">              0 :                         zval_ptr_dtor(&amp;retval);</span>
+<span class="lineNum">     226 </span><span class="lineNoCov">              0 :                         return HASH_KEY_IS_STRING;</span>
+<span class="lineNum">     227 </span>                : 
+<span class="lineNum">     228 </span>                :                 case IS_DOUBLE:
+<span class="lineNum">     229 </span><span class="lineNoCov">              0 :                         *int_key = (long)Z_DVAL_P(retval);</span>
+<span class="lineNum">     230 </span><span class="lineNoCov">              0 :                         zval_ptr_dtor(&amp;retval);</span>
+<span class="lineNum">     231 </span><span class="lineNoCov">              0 :                         return HASH_KEY_IS_LONG;</span>
+<span class="lineNum">     232 </span>                : 
+<span class="lineNum">     233 </span>                :                 case IS_RESOURCE:
+<span class="lineNum">     234 </span>                :                 case IS_BOOL:
+<span class="lineNum">     235 </span>                :                 case IS_LONG:
+<span class="lineNum">     236 </span><span class="lineCov">             12 :                         *int_key = (long)Z_LVAL_P(retval);</span>
+<span class="lineNum">     237 </span><span class="lineCov">             12 :                         zval_ptr_dtor(&amp;retval);</span>
+<span class="lineNum">     238 </span><span class="lineCov">             12 :                         return HASH_KEY_IS_LONG;</span>
+<span class="lineNum">     239 </span>                :         }
+<span class="lineNum">     240 </span>                : }
+<span class="lineNum">     241 </span>                : /* }}} */
+<a name="242"><span class="lineNum">     242 </span>                : </a>
+<span class="lineNum">     243 </span>                : /* {{{ zend_user_it_move_forward */
+<span class="lineNum">     244 </span><span class="lineCov">             17 : ZEND_API void zend_user_it_move_forward(zend_object_iterator *_iter TSRMLS_DC)</span>
+<span class="lineNum">     245 </span>                : {
+<span class="lineNum">     246 </span><span class="lineCov">             17 :         zend_user_iterator *iter = (zend_user_iterator*)_iter;</span>
+<span class="lineNum">     247 </span><span class="lineCov">             17 :         zval *object = (zval*)iter-&gt;it.data;</span>
+<span class="lineNum">     248 </span>                : 
+<span class="lineNum">     249 </span><span class="lineCov">             17 :         zend_user_it_invalidate_current(_iter TSRMLS_CC);</span>
+<span class="lineNum">     250 </span><span class="lineCov">             17 :         zend_call_method_with_0_params(&amp;object, iter-&gt;ce, &amp;iter-&gt;ce-&gt;iterator_funcs.zf_next, &quot;next&quot;, NULL);</span>
+<span class="lineNum">     251 </span><span class="lineCov">             17 : }</span>
+<span class="lineNum">     252 </span>                : /* }}} */
+<a name="253"><span class="lineNum">     253 </span>                : </a>
+<span class="lineNum">     254 </span>                : /* {{{ zend_user_it_rewind */
+<span class="lineNum">     255 </span><span class="lineCov">             21 : ZEND_API void zend_user_it_rewind(zend_object_iterator *_iter TSRMLS_DC)</span>
+<span class="lineNum">     256 </span>                : {
+<span class="lineNum">     257 </span><span class="lineCov">             21 :         zend_user_iterator *iter = (zend_user_iterator*)_iter;</span>
+<span class="lineNum">     258 </span><span class="lineCov">             21 :         zval *object = (zval*)iter-&gt;it.data;</span>
+<span class="lineNum">     259 </span>                : 
+<span class="lineNum">     260 </span><span class="lineCov">             21 :         zend_user_it_invalidate_current(_iter TSRMLS_CC);</span>
+<span class="lineNum">     261 </span><span class="lineCov">             21 :         zend_call_method_with_0_params(&amp;object, iter-&gt;ce, &amp;iter-&gt;ce-&gt;iterator_funcs.zf_rewind, &quot;rewind&quot;, NULL);</span>
+<span class="lineNum">     262 </span><span class="lineCov">             21 : }</span>
+<span class="lineNum">     263 </span>                : /* }}} */
+<span class="lineNum">     264 </span>                : 
+<span class="lineNum">     265 </span>                : zend_object_iterator_funcs zend_interface_iterator_funcs_iterator = {
+<span class="lineNum">     266 </span>                :         zend_user_it_dtor,
+<span class="lineNum">     267 </span>                :         zend_user_it_valid,
+<span class="lineNum">     268 </span>                :         zend_user_it_get_current_data,
+<span class="lineNum">     269 </span>                :         zend_user_it_get_current_key,
+<span class="lineNum">     270 </span>                :         zend_user_it_move_forward,
+<span class="lineNum">     271 </span>                :         zend_user_it_rewind,
+<span class="lineNum">     272 </span>                :         zend_user_it_invalidate_current
+<span class="lineNum">     273 </span>                : };
+<a name="274"><span class="lineNum">     274 </span>                : </a>
+<span class="lineNum">     275 </span>                : /* {{{ zend_user_it_get_iterator */
+<span class="lineNum">     276 </span><span class="lineCov">             21 : static zend_object_iterator *zend_user_it_get_iterator(zend_class_entry *ce, zval *object, int by_ref TSRMLS_DC)</span>
+<span class="lineNum">     277 </span>                : {
+<span class="lineNum">     278 </span>                :         zend_user_iterator *iterator;
+<span class="lineNum">     279 </span>                : 
+<span class="lineNum">     280 </span><span class="lineCov">             21 :         if (by_ref) {</span>
+<span class="lineNum">     281 </span><span class="lineNoCov">              0 :                 zend_error(E_ERROR, &quot;An iterator cannot be used with foreach by reference&quot;);</span>
+<span class="lineNum">     282 </span>                :         }
+<span class="lineNum">     283 </span>                : 
+<span class="lineNum">     284 </span><span class="lineCov">             21 :         iterator = emalloc(sizeof(zend_user_iterator));</span>
+<span class="lineNum">     285 </span>                : 
+<span class="lineNum">     286 </span>                :         Z_ADDREF_P(object);
+<span class="lineNum">     287 </span><span class="lineCov">             21 :         iterator-&gt;it.data = (void*)object;</span>
+<span class="lineNum">     288 </span><span class="lineCov">             21 :         iterator-&gt;it.funcs = ce-&gt;iterator_funcs.funcs;</span>
+<span class="lineNum">     289 </span><span class="lineCov">             21 :         iterator-&gt;ce = Z_OBJCE_P(object);</span>
+<span class="lineNum">     290 </span><span class="lineCov">             21 :         iterator-&gt;value = NULL;</span>
+<span class="lineNum">     291 </span><span class="lineCov">             21 :         return (zend_object_iterator*)iterator;</span>
+<span class="lineNum">     292 </span>                : }
+<span class="lineNum">     293 </span>                : /* }}} */
+<a name="294"><span class="lineNum">     294 </span>                : </a>
+<span class="lineNum">     295 </span>                : /* {{{ zend_user_it_get_new_iterator */
+<span class="lineNum">     296 </span><span class="lineNoCov">              0 : ZEND_API zend_object_iterator *zend_user_it_get_new_iterator(zend_class_entry *ce, zval *object, int by_ref TSRMLS_DC)</span>
+<span class="lineNum">     297 </span>                : {
+<span class="lineNum">     298 </span><span class="lineNoCov">              0 :         zval *iterator = zend_user_it_new_iterator(ce, object TSRMLS_CC);</span>
+<span class="lineNum">     299 </span>                :         zend_object_iterator *new_iterator;
+<span class="lineNum">     300 </span>                : 
+<span class="lineNum">     301 </span><span class="lineNoCov">              0 :         zend_class_entry *ce_it = iterator &amp;&amp; Z_TYPE_P(iterator) == IS_OBJECT ? Z_OBJCE_P(iterator) : NULL;</span>
+<span class="lineNum">     302 </span>                : 
+<span class="lineNum">     303 </span><span class="lineNoCov">              0 :         if (!ce_it || !ce_it-&gt;get_iterator || (ce_it-&gt;get_iterator == zend_user_it_get_new_iterator &amp;&amp; iterator == object)) {</span>
+<span class="lineNum">     304 </span><span class="lineNoCov">              0 :                 if (!EG(exception)) {</span>
+<span class="lineNum">     305 </span><span class="lineNoCov">              0 :                         zend_throw_exception_ex(NULL, 0 TSRMLS_CC, &quot;Objects returned by %s::getIterator() must be traversable or implement interface Iterator&quot;, ce ? ce-&gt;name : Z_OBJCE_P(object)-&gt;name);</span>
+<span class="lineNum">     306 </span>                :                 }
+<span class="lineNum">     307 </span><span class="lineNoCov">              0 :                 if (iterator) {</span>
+<span class="lineNum">     308 </span><span class="lineNoCov">              0 :                         zval_ptr_dtor(&amp;iterator);</span>
+<span class="lineNum">     309 </span>                :                 }
+<span class="lineNum">     310 </span><span class="lineNoCov">              0 :                 return NULL;</span>
+<span class="lineNum">     311 </span>                :         }
+<span class="lineNum">     312 </span>                : 
+<span class="lineNum">     313 </span><span class="lineNoCov">              0 :         new_iterator = ce_it-&gt;get_iterator(ce_it, iterator, by_ref TSRMLS_CC);</span>
+<span class="lineNum">     314 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;iterator);</span>
+<span class="lineNum">     315 </span><span class="lineNoCov">              0 :         return new_iterator;</span>
+<span class="lineNum">     316 </span>                : }
+<span class="lineNum">     317 </span>                : /* }}} */
+<a name="318"><span class="lineNum">     318 </span>                : </a>
+<span class="lineNum">     319 </span>                : /* {{{ zend_implement_traversable */
+<span class="lineNum">     320 </span><span class="lineCov">           1873 : static int zend_implement_traversable(zend_class_entry *interface, zend_class_entry *class_type TSRMLS_DC)</span>
+<span class="lineNum">     321 </span>                : {
+<span class="lineNum">     322 </span>                :         /* check that class_type is traversable at c-level or implements at least one of 'aggregate' and 'Iterator' */
+<span class="lineNum">     323 </span>                :         zend_uint i;
+<span class="lineNum">     324 </span>                : 
+<span class="lineNum">     325 </span><span class="lineCov">           1873 :         if (class_type-&gt;get_iterator || (class_type-&gt;parent &amp;&amp; class_type-&gt;parent-&gt;get_iterator)) {</span>
+<span class="lineNum">     326 </span><span class="lineCov">           1825 :                 return SUCCESS;</span>
+<span class="lineNum">     327 </span>                :         }
+<span class="lineNum">     328 </span><span class="lineCov">            144 :         for (i = 0; i &lt; class_type-&gt;num_interfaces; i++) {</span>
+<span class="lineNum">     329 </span><span class="lineCov">            144 :                 if (class_type-&gt;interfaces[i] == zend_ce_aggregate || class_type-&gt;interfaces[i] == zend_ce_iterator) {</span>
+<span class="lineNum">     330 </span><span class="lineCov">             48 :                         return SUCCESS;</span>
+<span class="lineNum">     331 </span>                :                 }
+<span class="lineNum">     332 </span>                :         }
+<span class="lineNum">     333 </span><span class="lineNoCov">              0 :         zend_error(E_CORE_ERROR, &quot;Class %s must implement interface %s as part of either %s or %s&quot;,</span>
+<span class="lineNum">     334 </span>                :                 class_type-&gt;name,
+<span class="lineNum">     335 </span><span class="lineNoCov">              0 :                 zend_ce_traversable-&gt;name,</span>
+<span class="lineNum">     336 </span><span class="lineNoCov">              0 :                 zend_ce_iterator-&gt;name,</span>
+<span class="lineNum">     337 </span><span class="lineNoCov">              0 :                 zend_ce_aggregate-&gt;name);</span>
+<span class="lineNum">     338 </span><span class="lineNoCov">              0 :         return FAILURE;</span>
+<span class="lineNum">     339 </span>                : }
+<span class="lineNum">     340 </span>                : /* }}} */
+<a name="341"><span class="lineNum">     341 </span>                : </a>
+<span class="lineNum">     342 </span>                : /* {{{ zend_implement_aggregate */
+<span class="lineNum">     343 </span><span class="lineCov">             48 : static int zend_implement_aggregate(zend_class_entry *interface, zend_class_entry *class_type TSRMLS_DC)</span>
+<span class="lineNum">     344 </span>                : {
+<span class="lineNum">     345 </span><span class="lineCov">             48 :         int i, t = -1;</span>
+<span class="lineNum">     346 </span>                : 
+<span class="lineNum">     347 </span><span class="lineCov">             48 :         if (class_type-&gt;get_iterator) {</span>
+<span class="lineNum">     348 </span><span class="lineNoCov">              0 :                 if (class_type-&gt;type == ZEND_INTERNAL_CLASS) {</span>
+<span class="lineNum">     349 </span>                :                         /* inheritance ensures the class has necessary userland methods */
+<span class="lineNum">     350 </span><span class="lineNoCov">              0 :                         return SUCCESS;</span>
+<span class="lineNum">     351 </span><span class="lineNoCov">              0 :                 } else if (class_type-&gt;get_iterator != zend_user_it_get_new_iterator) {</span>
+<span class="lineNum">     352 </span>                :                         /* c-level get_iterator cannot be changed (exception being only Traversable is implmented) */
+<span class="lineNum">     353 </span><span class="lineNoCov">              0 :                         if (class_type-&gt;num_interfaces) {</span>
+<span class="lineNum">     354 </span><span class="lineNoCov">              0 :                                 for (i = 0; i &lt; class_type-&gt;num_interfaces; i++) {</span>
+<span class="lineNum">     355 </span><span class="lineNoCov">              0 :                                         if (class_type-&gt;interfaces[i] == zend_ce_iterator) {</span>
+<span class="lineNum">     356 </span><span class="lineNoCov">              0 :                                                 zend_error(E_ERROR, &quot;Class %s cannot implement both %s and %s at the same time&quot;,</span>
+<span class="lineNum">     357 </span>                :                                                                         class_type-&gt;name,
+<span class="lineNum">     358 </span>                :                                                                         interface-&gt;name,
+<span class="lineNum">     359 </span><span class="lineNoCov">              0 :                                                                         zend_ce_iterator-&gt;name);</span>
+<span class="lineNum">     360 </span><span class="lineNoCov">              0 :                                                 return FAILURE;</span>
+<span class="lineNum">     361 </span>                :                                         }
+<span class="lineNum">     362 </span><span class="lineNoCov">              0 :                                         if (class_type-&gt;interfaces[i] == zend_ce_traversable) {</span>
+<span class="lineNum">     363 </span><span class="lineNoCov">              0 :                                                 t = i;</span>
+<span class="lineNum">     364 </span>                :                                         }
+<span class="lineNum">     365 </span>                :                                 }
+<span class="lineNum">     366 </span>                :                         }
+<span class="lineNum">     367 </span><span class="lineNoCov">              0 :                         if (t == -1) {</span>
+<span class="lineNum">     368 </span><span class="lineNoCov">              0 :                                 return FAILURE;</span>
+<span class="lineNum">     369 </span>                :                         }
+<span class="lineNum">     370 </span>                :                 }
+<span class="lineNum">     371 </span>                :         }
+<span class="lineNum">     372 </span><span class="lineCov">             48 :         class_type-&gt;iterator_funcs.zf_new_iterator = NULL;</span>
+<span class="lineNum">     373 </span><span class="lineCov">             48 :         class_type-&gt;get_iterator = zend_user_it_get_new_iterator;</span>
+<span class="lineNum">     374 </span><span class="lineCov">             48 :         return SUCCESS;</span>
+<span class="lineNum">     375 </span>                : }
+<span class="lineNum">     376 </span>                : /* }}} */
+<a name="377"><span class="lineNum">     377 </span>                : </a>
+<span class="lineNum">     378 </span>                : /* {{{ zend_implement_iterator */
+<span class="lineNum">     379 </span><span class="lineCov">           1777 : static int zend_implement_iterator(zend_class_entry *interface, zend_class_entry *class_type TSRMLS_DC)</span>
+<span class="lineNum">     380 </span>                : {
+<span class="lineNum">     381 </span><span class="lineCov">           1777 :         if (class_type-&gt;get_iterator &amp;&amp; class_type-&gt;get_iterator != zend_user_it_get_iterator) {</span>
+<span class="lineNum">     382 </span><span class="lineNoCov">              0 :                 if (class_type-&gt;type == ZEND_INTERNAL_CLASS) {</span>
+<span class="lineNum">     383 </span>                :                         /* inheritance ensures the class has the necessary userland methods */
+<span class="lineNum">     384 </span><span class="lineNoCov">              0 :                         return SUCCESS;</span>
+<span class="lineNum">     385 </span>                :                 } else {
+<span class="lineNum">     386 </span>                :                         /* c-level get_iterator cannot be changed */
+<span class="lineNum">     387 </span><span class="lineNoCov">              0 :                         if (class_type-&gt;get_iterator == zend_user_it_get_new_iterator) {</span>
+<span class="lineNum">     388 </span><span class="lineNoCov">              0 :                                 zend_error(E_ERROR, &quot;Class %s cannot implement both %s and %s at the same time&quot;,</span>
+<span class="lineNum">     389 </span>                :                                                         class_type-&gt;name,
+<span class="lineNum">     390 </span>                :                                                         interface-&gt;name,
+<span class="lineNum">     391 </span><span class="lineNoCov">              0 :                                                         zend_ce_aggregate-&gt;name);</span>
+<span class="lineNum">     392 </span>                :                         }
+<span class="lineNum">     393 </span><span class="lineNoCov">              0 :                         return FAILURE;</span>
+<span class="lineNum">     394 </span>                :                 }
+<span class="lineNum">     395 </span>                :         }
+<span class="lineNum">     396 </span><span class="lineCov">           1777 :         class_type-&gt;get_iterator = zend_user_it_get_iterator;</span>
+<span class="lineNum">     397 </span><span class="lineCov">           1777 :         class_type-&gt;iterator_funcs.zf_valid = NULL;</span>
+<span class="lineNum">     398 </span><span class="lineCov">           1777 :         class_type-&gt;iterator_funcs.zf_current = NULL;</span>
+<span class="lineNum">     399 </span><span class="lineCov">           1777 :         class_type-&gt;iterator_funcs.zf_key = NULL;</span>
+<span class="lineNum">     400 </span><span class="lineCov">           1777 :         class_type-&gt;iterator_funcs.zf_next = NULL;</span>
+<span class="lineNum">     401 </span><span class="lineCov">           1777 :         class_type-&gt;iterator_funcs.zf_rewind = NULL;</span>
+<span class="lineNum">     402 </span><span class="lineCov">           1777 :         if (!class_type-&gt;iterator_funcs.funcs) {</span>
+<span class="lineNum">     403 </span><span class="lineCov">           1777 :                 class_type-&gt;iterator_funcs.funcs = &amp;zend_interface_iterator_funcs_iterator;</span>
+<span class="lineNum">     404 </span>                :         }
+<span class="lineNum">     405 </span><span class="lineCov">           1777 :         return SUCCESS;</span>
+<span class="lineNum">     406 </span>                : }
+<span class="lineNum">     407 </span>                : /* }}} */
+<a name="408"><span class="lineNum">     408 </span>                : </a>
+<span class="lineNum">     409 </span>                : /* {{{ zend_implement_arrayaccess */
+<span class="lineNum">     410 </span><span class="lineCov">            480 : static int zend_implement_arrayaccess(zend_class_entry *interface, zend_class_entry *class_type TSRMLS_DC)</span>
+<span class="lineNum">     411 </span>                : {
+<span class="lineNum">     412 </span>                : #if 0
+<span class="lineNum">     413 </span>                :         /* get ht from ce */
+<span class="lineNum">     414 </span>                :         if (ht-&gt;read_dimension != zend_std_read_dimension
+<span class="lineNum">     415 </span>                :         ||  ht-&gt;write_dimension != zend_std_write_dimension
+<span class="lineNum">     416 </span>                :         ||  ht-&gt;has_dimension != zend_std_has_dimension
+<span class="lineNum">     417 </span>                :         ||  ht-&gt;unset_dimension != zend_std_unset_dimension) {
+<span class="lineNum">     418 </span>                :                 return FAILURE;
+<span class="lineNum">     419 </span>                :         }
+<span class="lineNum">     420 </span>                : #endif
+<span class="lineNum">     421 </span><span class="lineCov">            480 :         return SUCCESS;</span>
+<span class="lineNum">     422 </span>                : }
+<span class="lineNum">     423 </span>                : /* }}}*/
+<a name="424"><span class="lineNum">     424 </span>                : </a>
+<span class="lineNum">     425 </span>                : /* {{{ zend_user_serialize */
+<span class="lineNum">     426 </span><span class="lineNoCov">              0 : ZEND_API int zend_user_serialize(zval *object, unsigned char **buffer, zend_uint *buf_len, zend_serialize_data *data TSRMLS_DC)</span>
+<span class="lineNum">     427 </span>                : {
+<span class="lineNum">     428 </span><span class="lineNoCov">              0 :         zend_class_entry * ce = Z_OBJCE_P(object);</span>
+<span class="lineNum">     429 </span>                :         zval *retval;
+<span class="lineNum">     430 </span>                :         int result;
+<span class="lineNum">     431 </span>                : 
+<span class="lineNum">     432 </span><span class="lineNoCov">              0 :         zend_call_method_with_0_params(&amp;object, ce, &amp;ce-&gt;serialize_func, &quot;serialize&quot;, &amp;retval);</span>
+<span class="lineNum">     433 </span>                : 
+<span class="lineNum">     434 </span>                : 
+<span class="lineNum">     435 </span><span class="lineNoCov">              0 :         if (!retval || EG(exception)) {</span>
+<span class="lineNum">     436 </span><span class="lineNoCov">              0 :                 result = FAILURE;</span>
+<span class="lineNum">     437 </span>                :         } else {
+<span class="lineNum">     438 </span><span class="lineNoCov">              0 :                 switch(Z_TYPE_P(retval)) {</span>
+<span class="lineNum">     439 </span>                :                 case IS_NULL:
+<span class="lineNum">     440 </span>                :                         /* we could also make this '*buf_len = 0' but this allows to skip variables */
+<span class="lineNum">     441 </span><span class="lineNoCov">              0 :                         zval_ptr_dtor(&amp;retval);</span>
+<span class="lineNum">     442 </span><span class="lineNoCov">              0 :                         return FAILURE;</span>
+<span class="lineNum">     443 </span>                :                 case IS_STRING:
+<span class="lineNum">     444 </span><span class="lineNoCov">              0 :                         *buffer = (unsigned char*)estrndup(Z_STRVAL_P(retval), Z_STRLEN_P(retval));</span>
+<span class="lineNum">     445 </span><span class="lineNoCov">              0 :                         *buf_len = Z_STRLEN_P(retval);</span>
+<span class="lineNum">     446 </span><span class="lineNoCov">              0 :                         result = SUCCESS;</span>
+<span class="lineNum">     447 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     448 </span>                :                 default: /* failure */
+<span class="lineNum">     449 </span><span class="lineNoCov">              0 :                         result = FAILURE;</span>
+<span class="lineNum">     450 </span>                :                         break;
+<span class="lineNum">     451 </span>                :                 }
+<span class="lineNum">     452 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;retval);</span>
+<span class="lineNum">     453 </span>                :         }
+<span class="lineNum">     454 </span>                : 
+<span class="lineNum">     455 </span><span class="lineNoCov">              0 :         if (result == FAILURE) {</span>
+<span class="lineNum">     456 </span><span class="lineNoCov">              0 :                 zend_throw_exception_ex(NULL, 0 TSRMLS_CC, &quot;%s::serialize() must return a string or NULL&quot;, ce-&gt;name);</span>
+<span class="lineNum">     457 </span>                :         }
+<span class="lineNum">     458 </span><span class="lineNoCov">              0 :         return result;</span>
+<span class="lineNum">     459 </span>                : }
+<span class="lineNum">     460 </span>                : /* }}} */
+<a name="461"><span class="lineNum">     461 </span>                : </a>
+<span class="lineNum">     462 </span>                : /* {{{ zend_user_unserialize */
+<span class="lineNum">     463 </span><span class="lineNoCov">              0 : ZEND_API int zend_user_unserialize(zval **object, zend_class_entry *ce, const unsigned char *buf, zend_uint buf_len, zend_unserialize_data *data TSRMLS_DC)</span>
+<span class="lineNum">     464 </span>                : {
+<span class="lineNum">     465 </span>                :         zval * zdata;
+<span class="lineNum">     466 </span>                : 
+<span class="lineNum">     467 </span><span class="lineNoCov">              0 :         object_init_ex(*object, ce);</span>
+<span class="lineNum">     468 </span>                : 
+<span class="lineNum">     469 </span><span class="lineNoCov">              0 :         MAKE_STD_ZVAL(zdata);</span>
+<span class="lineNum">     470 </span><span class="lineNoCov">              0 :         ZVAL_STRINGL(zdata, (char*)buf, buf_len, 1);</span>
+<span class="lineNum">     471 </span>                : 
+<span class="lineNum">     472 </span><span class="lineNoCov">              0 :         zend_call_method_with_1_params(object, ce, &amp;ce-&gt;unserialize_func, &quot;unserialize&quot;, NULL, zdata);</span>
+<span class="lineNum">     473 </span>                : 
+<span class="lineNum">     474 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;zdata);</span>
+<span class="lineNum">     475 </span>                : 
+<span class="lineNum">     476 </span><span class="lineNoCov">              0 :         if (EG(exception)) {</span>
+<span class="lineNum">     477 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">     478 </span>                :         } else {
+<span class="lineNum">     479 </span><span class="lineNoCov">              0 :                 return SUCCESS;</span>
+<span class="lineNum">     480 </span>                :         }
+<span class="lineNum">     481 </span>                : }
+<a name="482"><span class="lineNum">     482 </span>                : /* }}} */</a>
+<span class="lineNum">     483 </span>                : 
+<span class="lineNum">     484 </span><span class="lineNoCov">              0 : ZEND_API int zend_class_serialize_deny(zval *object, unsigned char **buffer, zend_uint *buf_len, zend_serialize_data *data TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     485 </span>                : {
+<span class="lineNum">     486 </span><span class="lineNoCov">              0 :         zend_class_entry *ce = Z_OBJCE_P(object);</span>
+<span class="lineNum">     487 </span><span class="lineNoCov">              0 :         zend_throw_exception_ex(NULL, 0 TSRMLS_CC, &quot;Serialization of '%s' is not allowed&quot;, ce-&gt;name);</span>
+<span class="lineNum">     488 </span><span class="lineNoCov">              0 :         return FAILURE;</span>
+<span class="lineNum">     489 </span>                : }
+<a name="490"><span class="lineNum">     490 </span>                : /* }}} */</a>
+<span class="lineNum">     491 </span>                : 
+<span class="lineNum">     492 </span><span class="lineNoCov">              0 : ZEND_API int zend_class_unserialize_deny(zval **object, zend_class_entry *ce, const unsigned char *buf, zend_uint buf_len, zend_unserialize_data *data TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     493 </span>                : {
+<span class="lineNum">     494 </span><span class="lineNoCov">              0 :         zend_throw_exception_ex(NULL, 0 TSRMLS_CC, &quot;Unserialization of '%s' is not allowed&quot;, ce-&gt;name);</span>
+<span class="lineNum">     495 </span><span class="lineNoCov">              0 :         return FAILURE;</span>
+<span class="lineNum">     496 </span>                : }
+<span class="lineNum">     497 </span>                : /* }}} */
+<a name="498"><span class="lineNum">     498 </span>                : </a>
+<span class="lineNum">     499 </span>                : /* {{{ zend_implement_serializable */
+<span class="lineNum">     500 </span><span class="lineCov">            336 : static int zend_implement_serializable(zend_class_entry *interface, zend_class_entry *class_type TSRMLS_DC)</span>
+<span class="lineNum">     501 </span>                : {
+<span class="lineNum">     502 </span><span class="lineCov">            624 :         if (class_type-&gt;parent</span>
+<span class="lineNum">     503 </span><span class="lineCov">            480 :                 &amp;&amp; (class_type-&gt;parent-&gt;serialize || class_type-&gt;parent-&gt;unserialize)</span>
+<span class="lineNum">     504 </span><span class="lineCov">            144 :                 &amp;&amp; !instanceof_function_ex(class_type-&gt;parent, zend_ce_serializable, 1 TSRMLS_CC)) {</span>
+<span class="lineNum">     505 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">     506 </span>                :         }
+<span class="lineNum">     507 </span><span class="lineCov">            336 :         if (!class_type-&gt;serialize) {</span>
+<span class="lineNum">     508 </span><span class="lineCov">            192 :                 class_type-&gt;serialize = zend_user_serialize;</span>
+<span class="lineNum">     509 </span>                :         }
+<span class="lineNum">     510 </span><span class="lineCov">            336 :         if (!class_type-&gt;unserialize) {</span>
+<span class="lineNum">     511 </span><span class="lineCov">            192 :                 class_type-&gt;unserialize = zend_user_unserialize;</span>
+<span class="lineNum">     512 </span>                :         }
+<span class="lineNum">     513 </span><span class="lineCov">            336 :         return SUCCESS;</span>
+<span class="lineNum">     514 </span>                : }
+<span class="lineNum">     515 </span>                : /* }}}*/
+<span class="lineNum">     516 </span>                : 
+<span class="lineNum">     517 </span>                : /* {{{ function tables */
+<span class="lineNum">     518 </span>                : const zend_function_entry zend_funcs_aggregate[] = {
+<span class="lineNum">     519 </span>                :         ZEND_ABSTRACT_ME(iterator, getIterator, NULL)
+<span class="lineNum">     520 </span>                :         {NULL, NULL, NULL}
+<span class="lineNum">     521 </span>                : };
+<span class="lineNum">     522 </span>                : 
+<span class="lineNum">     523 </span>                : const zend_function_entry zend_funcs_iterator[] = {
+<span class="lineNum">     524 </span>                :         ZEND_ABSTRACT_ME(iterator, current,  NULL)
+<span class="lineNum">     525 </span>                :         ZEND_ABSTRACT_ME(iterator, next,     NULL)
+<span class="lineNum">     526 </span>                :         ZEND_ABSTRACT_ME(iterator, key,      NULL)
+<span class="lineNum">     527 </span>                :         ZEND_ABSTRACT_ME(iterator, valid,    NULL)
+<span class="lineNum">     528 </span>                :         ZEND_ABSTRACT_ME(iterator, rewind,   NULL)
+<span class="lineNum">     529 </span>                :         {NULL, NULL, NULL}
+<span class="lineNum">     530 </span>                : };
+<span class="lineNum">     531 </span>                : 
+<span class="lineNum">     532 </span>                : const zend_function_entry *zend_funcs_traversable    = NULL;
+<span class="lineNum">     533 </span>                : 
+<span class="lineNum">     534 </span>                : ZEND_BEGIN_ARG_INFO_EX(arginfo_arrayaccess_offset, 0, 0, 1)
+<span class="lineNum">     535 </span>                :         ZEND_ARG_INFO(0, offset)
+<span class="lineNum">     536 </span>                : ZEND_END_ARG_INFO()
+<span class="lineNum">     537 </span>                : 
+<span class="lineNum">     538 </span>                : ZEND_BEGIN_ARG_INFO_EX(arginfo_arrayaccess_offset_get, 0, 0, 1) /* actually this should be return by ref but atm cannot be */
+<span class="lineNum">     539 </span>                :         ZEND_ARG_INFO(0, offset)
+<span class="lineNum">     540 </span>                : ZEND_END_ARG_INFO()
+<span class="lineNum">     541 </span>                : 
+<span class="lineNum">     542 </span>                : ZEND_BEGIN_ARG_INFO_EX(arginfo_arrayaccess_offset_value, 0, 0, 2)
+<span class="lineNum">     543 </span>                :         ZEND_ARG_INFO(0, offset)
+<span class="lineNum">     544 </span>                :         ZEND_ARG_INFO(0, value)
+<span class="lineNum">     545 </span>                : ZEND_END_ARG_INFO()
+<span class="lineNum">     546 </span>                : 
+<span class="lineNum">     547 </span>                : const zend_function_entry zend_funcs_arrayaccess[] = {
+<span class="lineNum">     548 </span>                :         ZEND_ABSTRACT_ME(arrayaccess, offsetExists, arginfo_arrayaccess_offset)
+<span class="lineNum">     549 </span>                :         ZEND_ABSTRACT_ME(arrayaccess, offsetGet,    arginfo_arrayaccess_offset_get)
+<span class="lineNum">     550 </span>                :         ZEND_ABSTRACT_ME(arrayaccess, offsetSet,    arginfo_arrayaccess_offset_value)
+<span class="lineNum">     551 </span>                :         ZEND_ABSTRACT_ME(arrayaccess, offsetUnset,  arginfo_arrayaccess_offset)
+<span class="lineNum">     552 </span>                :         {NULL, NULL, NULL}
+<span class="lineNum">     553 </span>                : };
+<span class="lineNum">     554 </span>                : 
+<span class="lineNum">     555 </span>                : ZEND_BEGIN_ARG_INFO(arginfo_serializable_serialize, 0)
+<span class="lineNum">     556 </span>                :         ZEND_ARG_INFO(0, serialized)
+<span class="lineNum">     557 </span>                : ZEND_END_ARG_INFO()
+<span class="lineNum">     558 </span>                : 
+<span class="lineNum">     559 </span>                : const zend_function_entry zend_funcs_serializable[] = {
+<span class="lineNum">     560 </span>                :         ZEND_ABSTRACT_ME(serializable, serialize,   NULL)
+<span class="lineNum">     561 </span>                :         ZEND_FENTRY(unserialize, NULL, arginfo_serializable_serialize, ZEND_ACC_PUBLIC|ZEND_ACC_ABSTRACT|ZEND_ACC_CTOR)
+<span class="lineNum">     562 </span>                :         {NULL, NULL, NULL}
+<span class="lineNum">     563 </span>                : };
+<span class="lineNum">     564 </span>                : /* }}} */
+<span class="lineNum">     565 </span>                : 
+<span class="lineNum">     566 </span>                : #define REGISTER_ITERATOR_INTERFACE(class_name, class_name_str) \
+<span class="lineNum">     567 </span>                :         {\
+<span class="lineNum">     568 </span>                :                 zend_class_entry ce;\
+<span class="lineNum">     569 </span>                :                 INIT_CLASS_ENTRY(ce, # class_name_str, zend_funcs_ ## class_name) \
+<span class="lineNum">     570 </span>                :                 zend_ce_ ## class_name = zend_register_internal_interface(&amp;ce TSRMLS_CC);\
+<span class="lineNum">     571 </span>                :                 zend_ce_ ## class_name-&gt;interface_gets_implemented = zend_implement_ ## class_name;\
+<span class="lineNum">     572 </span>                :         }
+<span class="lineNum">     573 </span>                : 
+<span class="lineNum">     574 </span>                : #define REGISTER_ITERATOR_IMPLEMENT(class_name, interface_name) \
+<span class="lineNum">     575 </span>                :         zend_class_implements(zend_ce_ ## class_name TSRMLS_CC, 1, zend_ce_ ## interface_name)
+<a name="576"><span class="lineNum">     576 </span>                : </a>
+<span class="lineNum">     577 </span>                : /* {{{ zend_register_interfaces */
+<span class="lineNum">     578 </span><span class="lineCov">             48 : ZEND_API void zend_register_interfaces(TSRMLS_D)</span>
+<span class="lineNum">     579 </span>                : {
+<span class="lineNum">     580 </span><span class="lineCov">             48 :         REGISTER_ITERATOR_INTERFACE(traversable, Traversable);</span>
+<span class="lineNum">     581 </span>                : 
+<span class="lineNum">     582 </span><span class="lineCov">             48 :         REGISTER_ITERATOR_INTERFACE(aggregate, IteratorAggregate);</span>
+<span class="lineNum">     583 </span><span class="lineCov">             48 :         REGISTER_ITERATOR_IMPLEMENT(aggregate, traversable);</span>
+<span class="lineNum">     584 </span>                : 
+<span class="lineNum">     585 </span><span class="lineCov">             48 :         REGISTER_ITERATOR_INTERFACE(iterator, Iterator);</span>
+<span class="lineNum">     586 </span><span class="lineCov">             48 :         REGISTER_ITERATOR_IMPLEMENT(iterator, traversable);</span>
+<span class="lineNum">     587 </span>                : 
+<span class="lineNum">     588 </span><span class="lineCov">             48 :         REGISTER_ITERATOR_INTERFACE(arrayaccess, ArrayAccess);</span>
+<span class="lineNum">     589 </span>                : 
+<span class="lineNum">     590 </span><span class="lineCov">             48 :         REGISTER_ITERATOR_INTERFACE(serializable, Serializable)</span>
+<span class="lineNum">     591 </span><span class="lineCov">             48 : }</span>
+<span class="lineNum">     592 </span>                : /* }}} */
+<span class="lineNum">     593 </span>                : 
+<span class="lineNum">     594 </span>                : /*
+<span class="lineNum">     595 </span>                :  * Local variables:
+<span class="lineNum">     596 </span>                :  * tab-width: 4
+<span class="lineNum">     597 </span>                :  * c-basic-offset: 4
+<span class="lineNum">     598 </span>                :  * indent-tabs-mode: t
+<span class="lineNum">     599 </span>                :  * End:
+<span class="lineNum">     600 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

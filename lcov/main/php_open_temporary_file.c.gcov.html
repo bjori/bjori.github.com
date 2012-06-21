@@ -1,0 +1,396 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - main/php_open_temporary_file.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../index.html">directory</a> - <a href="index.html">main</a> - php_open_temporary_file.c (source / <a href="php_open_temporary_file.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">65</td>
+          <td class="headerCovTableEntry">3</td>
+          <td class="headerCovTableEntryLo">4.6 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">6</td>
+          <td class="headerCovTableEntry">1</td>
+          <td class="headerCovTableEntryLo">16.7 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Author: Zeev Suraski &lt;zeev@zend.com&gt;                                 |
+<span class="lineNum">      16 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      17 </span>                :  */
+<span class="lineNum">      18 </span>                : 
+<span class="lineNum">      19 </span>                : /* $Id$ */
+<span class="lineNum">      20 </span>                : 
+<span class="lineNum">      21 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">      22 </span>                : 
+<span class="lineNum">      23 </span>                : #include &lt;errno.h&gt;
+<span class="lineNum">      24 </span>                : #include &lt;sys/types.h&gt;
+<span class="lineNum">      25 </span>                : #include &lt;sys/stat.h&gt;
+<span class="lineNum">      26 </span>                : #include &lt;fcntl.h&gt;
+<span class="lineNum">      27 </span>                : 
+<span class="lineNum">      28 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">      29 </span>                : #define O_RDONLY _O_RDONLY
+<span class="lineNum">      30 </span>                : #include &quot;win32/param.h&quot;
+<span class="lineNum">      31 </span>                : #include &quot;win32/winutil.h&quot;
+<span class="lineNum">      32 </span>                : #elif defined(NETWARE)
+<span class="lineNum">      33 </span>                : #ifdef USE_WINSOCK
+<span class="lineNum">      34 </span>                : #include &lt;novsock2.h&gt;
+<span class="lineNum">      35 </span>                : #else
+<span class="lineNum">      36 </span>                : #include &lt;sys/socket.h&gt;
+<span class="lineNum">      37 </span>                : #endif
+<span class="lineNum">      38 </span>                : #include &lt;sys/param.h&gt;
+<span class="lineNum">      39 </span>                : #else
+<span class="lineNum">      40 </span>                : #include &lt;sys/param.h&gt;
+<span class="lineNum">      41 </span>                : #include &lt;sys/socket.h&gt;
+<span class="lineNum">      42 </span>                : #include &lt;netinet/in.h&gt;
+<span class="lineNum">      43 </span>                : #include &lt;netdb.h&gt;
+<span class="lineNum">      44 </span>                : #if HAVE_ARPA_INET_H
+<span class="lineNum">      45 </span>                : #include &lt;arpa/inet.h&gt;
+<span class="lineNum">      46 </span>                : #endif
+<span class="lineNum">      47 </span>                : #endif
+<span class="lineNum">      48 </span>                : #ifdef HAVE_SYS_TIME_H
+<span class="lineNum">      49 </span>                : #include &lt;sys/time.h&gt;
+<span class="lineNum">      50 </span>                : #endif
+<span class="lineNum">      51 </span>                : 
+<span class="lineNum">      52 </span>                : #ifdef HAVE_SYS_FILE_H
+<span class="lineNum">      53 </span>                : #include &lt;sys/file.h&gt;
+<span class="lineNum">      54 </span>                : #endif
+<span class="lineNum">      55 </span>                : 
+<span class="lineNum">      56 </span>                : #if !defined(P_tmpdir)
+<span class="lineNum">      57 </span>                : #define P_tmpdir &quot;&quot;
+<span class="lineNum">      58 </span>                : #endif
+<span class="lineNum">      59 </span>                : 
+<span class="lineNum">      60 </span>                : /* {{{ php_do_open_temporary_file */
+<span class="lineNum">      61 </span>                : 
+<span class="lineNum">      62 </span>                : /* Loosely based on a tempnam() implementation by UCLA */
+<span class="lineNum">      63 </span>                : 
+<span class="lineNum">      64 </span>                : /*
+<span class="lineNum">      65 </span>                :  * Copyright (c) 1988, 1993
+<span class="lineNum">      66 </span>                :  *      The Regents of the University of California.  All rights reserved.
+<span class="lineNum">      67 </span>                :  *
+<span class="lineNum">      68 </span>                :  * Redistribution and use in source and binary forms, with or without
+<span class="lineNum">      69 </span>                :  * modification, are permitted provided that the following conditions
+<span class="lineNum">      70 </span>                :  * are met:
+<span class="lineNum">      71 </span>                :  * 1. Redistributions of source code must retain the above copyright
+<span class="lineNum">      72 </span>                :  *    notice, this list of conditions and the following disclaimer.
+<span class="lineNum">      73 </span>                :  * 2. Redistributions in binary form must reproduce the above copyright
+<span class="lineNum">      74 </span>                :  *    notice, this list of conditions and the following disclaimer in the
+<span class="lineNum">      75 </span>                :  *    documentation and/or other materials provided with the distribution.
+<span class="lineNum">      76 </span>                :  * 3. All advertising materials mentioning features or use of this software
+<span class="lineNum">      77 </span>                :  *    must display the following acknowledgement:
+<span class="lineNum">      78 </span>                :  *      This product includes software developed by the University of
+<span class="lineNum">      79 </span>                :  *      California, Berkeley and its contributors.
+<span class="lineNum">      80 </span>                :  * 4. Neither the name of the University nor the names of its contributors
+<span class="lineNum">      81 </span>                :  *    may be used to endorse or promote products derived from this software
+<span class="lineNum">      82 </span>                :  *    without specific prior written permission.
+<span class="lineNum">      83 </span>                :  *
+<span class="lineNum">      84 </span>                :  * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+<span class="lineNum">      85 </span>                :  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+<span class="lineNum">      86 </span>                :  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+<span class="lineNum">      87 </span>                :  * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+<span class="lineNum">      88 </span>                :  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+<span class="lineNum">      89 </span>                :  * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+<span class="lineNum">      90 </span>                :  * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+<span class="lineNum">      91 </span>                :  * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+<span class="lineNum">      92 </span>                :  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+<span class="lineNum">      93 </span>                :  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+<span class="lineNum">      94 </span>                :  * SUCH DAMAGE.
+<a name="95"><span class="lineNum">      95 </span>                :  */</a>
+<span class="lineNum">      96 </span>                : 
+<span class="lineNum">      97 </span><span class="lineNoCov">              0 : static int php_do_open_temporary_file(const char *path, const char *pfx, char **opened_path_p TSRMLS_DC)</span>
+<span class="lineNum">      98 </span>                : {
+<span class="lineNum">      99 </span>                :         char *trailing_slash;
+<span class="lineNum">     100 </span>                :         char *opened_path;
+<span class="lineNum">     101 </span>                :         char cwd[MAXPATHLEN];
+<span class="lineNum">     102 </span>                :         cwd_state new_state;
+<span class="lineNum">     103 </span><span class="lineNoCov">              0 :         int fd = -1;</span>
+<span class="lineNum">     104 </span>                : #ifndef HAVE_MKSTEMP
+<span class="lineNum">     105 </span>                :         int open_flags = O_CREAT | O_TRUNC | O_RDWR
+<span class="lineNum">     106 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">     107 </span>                :                 | _O_BINARY
+<span class="lineNum">     108 </span>                : #endif
+<span class="lineNum">     109 </span>                :                 ;
+<span class="lineNum">     110 </span>                : #endif
+<span class="lineNum">     111 </span>                : 
+<span class="lineNum">     112 </span><span class="lineNoCov">              0 :         if (!path || !path[0]) {</span>
+<span class="lineNum">     113 </span><span class="lineNoCov">              0 :                 return -1;</span>
+<span class="lineNum">     114 </span>                :         }
+<span class="lineNum">     115 </span>                : 
+<span class="lineNum">     116 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">     117 </span>                :         if (!php_win32_check_trailing_space(pfx, (const int)strlen(pfx))) {
+<span class="lineNum">     118 </span>                :                 SetLastError(ERROR_INVALID_NAME);
+<span class="lineNum">     119 </span>                :                 return -1;
+<span class="lineNum">     120 </span>                :         }
+<span class="lineNum">     121 </span>                : #endif
+<span class="lineNum">     122 </span>                : 
+<span class="lineNum">     123 </span><span class="lineNoCov">              0 :         if (!VCWD_GETCWD(cwd, MAXPATHLEN)) {</span>
+<span class="lineNum">     124 </span><span class="lineNoCov">              0 :                 cwd[0] = '\0';</span>
+<span class="lineNum">     125 </span>                :         }
+<span class="lineNum">     126 </span>                : 
+<span class="lineNum">     127 </span><span class="lineNoCov">              0 :         new_state.cwd = strdup(cwd);</span>
+<span class="lineNum">     128 </span><span class="lineNoCov">              0 :         new_state.cwd_length = strlen(cwd);</span>
+<span class="lineNum">     129 </span>                : 
+<span class="lineNum">     130 </span><span class="lineNoCov">              0 :         if (virtual_file_ex(&amp;new_state, path, NULL, CWD_REALPATH TSRMLS_CC)) {</span>
+<span class="lineNum">     131 </span><span class="lineNoCov">              0 :                 free(new_state.cwd);</span>
+<span class="lineNum">     132 </span><span class="lineNoCov">              0 :                 return -1;</span>
+<span class="lineNum">     133 </span>                :         }
+<span class="lineNum">     134 </span>                : 
+<span class="lineNum">     135 </span><span class="lineNoCov">              0 :         if (IS_SLASH(new_state.cwd[new_state.cwd_length - 1])) {</span>
+<span class="lineNum">     136 </span><span class="lineNoCov">              0 :                 trailing_slash = &quot;&quot;;</span>
+<span class="lineNum">     137 </span>                :         } else {
+<span class="lineNum">     138 </span><span class="lineNoCov">              0 :                 trailing_slash = &quot;/&quot;;</span>
+<span class="lineNum">     139 </span>                :         }
+<span class="lineNum">     140 </span>                : 
+<span class="lineNum">     141 </span><span class="lineNoCov">              0 :         if (spprintf(&amp;opened_path, 0, &quot;%s%s%sXXXXXX&quot;, new_state.cwd, trailing_slash, pfx) &gt;= MAXPATHLEN) {</span>
+<span class="lineNum">     142 </span><span class="lineNoCov">              0 :                 efree(opened_path);</span>
+<span class="lineNum">     143 </span><span class="lineNoCov">              0 :                 free(new_state.cwd);</span>
+<span class="lineNum">     144 </span><span class="lineNoCov">              0 :                 return -1;</span>
+<span class="lineNum">     145 </span>                :         }
+<span class="lineNum">     146 </span>                : 
+<span class="lineNum">     147 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">     148 </span>                : 
+<span class="lineNum">     149 </span>                :         if (GetTempFileName(new_state.cwd, pfx, 0, opened_path)) {
+<span class="lineNum">     150 </span>                :                 /* Some versions of windows set the temp file to be read-only,
+<span class="lineNum">     151 </span>                :                  * which means that opening it will fail... */
+<span class="lineNum">     152 </span>                :                 if (VCWD_CHMOD(opened_path, 0600)) {
+<span class="lineNum">     153 </span>                :                         efree(opened_path);
+<span class="lineNum">     154 </span>                :                         free(new_state.cwd);
+<span class="lineNum">     155 </span>                :                         return -1;
+<span class="lineNum">     156 </span>                :                 }
+<span class="lineNum">     157 </span>                :                 fd = VCWD_OPEN_MODE(opened_path, open_flags, 0600);
+<span class="lineNum">     158 </span>                :         }
+<span class="lineNum">     159 </span>                : 
+<span class="lineNum">     160 </span>                : #elif defined(HAVE_MKSTEMP)
+<span class="lineNum">     161 </span><span class="lineNoCov">              0 :         fd = mkstemp(opened_path);</span>
+<span class="lineNum">     162 </span>                : #else
+<span class="lineNum">     163 </span>                :         if (mktemp(opened_path)) {
+<span class="lineNum">     164 </span>                :                 fd = VCWD_OPEN(opened_path, open_flags);
+<span class="lineNum">     165 </span>                :         }
+<span class="lineNum">     166 </span>                : #endif
+<span class="lineNum">     167 </span>                : 
+<span class="lineNum">     168 </span><span class="lineNoCov">              0 :         if (fd == -1 || !opened_path_p) {</span>
+<span class="lineNum">     169 </span><span class="lineNoCov">              0 :                 efree(opened_path);</span>
+<span class="lineNum">     170 </span>                :         } else {
+<span class="lineNum">     171 </span><span class="lineNoCov">              0 :                 *opened_path_p = opened_path;</span>
+<span class="lineNum">     172 </span>                :         }
+<span class="lineNum">     173 </span><span class="lineNoCov">              0 :         free(new_state.cwd);</span>
+<span class="lineNum">     174 </span><span class="lineNoCov">              0 :         return fd;</span>
+<span class="lineNum">     175 </span>                : }
+<span class="lineNum">     176 </span>                : /* }}} */
+<span class="lineNum">     177 </span>                : 
+<span class="lineNum">     178 </span>                : /* Cache the chosen temporary directory. */
+<a name="179"><span class="lineNum">     179 </span>                : static char* temporary_directory;</a>
+<span class="lineNum">     180 </span>                : 
+<span class="lineNum">     181 </span><span class="lineCov">             48 : PHPAPI void php_shutdown_temporary_directory(void)</span>
+<span class="lineNum">     182 </span>                : {
+<span class="lineNum">     183 </span><span class="lineCov">             48 :         if (temporary_directory) {</span>
+<span class="lineNum">     184 </span><span class="lineNoCov">              0 :                 free(temporary_directory);</span>
+<span class="lineNum">     185 </span><span class="lineNoCov">              0 :                 temporary_directory = NULL;</span>
+<span class="lineNum">     186 </span>                :         }
+<span class="lineNum">     187 </span><span class="lineCov">             48 : }</span>
+<span class="lineNum">     188 </span>                : 
+<span class="lineNum">     189 </span>                : /*
+<a name="190"><span class="lineNum">     190 </span>                :  *  Determine where to place temporary files.</a>
+<span class="lineNum">     191 </span>                :  */
+<span class="lineNum">     192 </span><span class="lineNoCov">              0 : PHPAPI const char* php_get_temporary_directory(void)</span>
+<span class="lineNum">     193 </span>                : {
+<span class="lineNum">     194 </span>                :         /* Did we determine the temporary directory already? */
+<span class="lineNum">     195 </span><span class="lineNoCov">              0 :         if (temporary_directory) {</span>
+<span class="lineNum">     196 </span><span class="lineNoCov">              0 :                 return temporary_directory;</span>
+<span class="lineNum">     197 </span>                :         }
+<span class="lineNum">     198 </span>                : 
+<span class="lineNum">     199 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">     200 </span>                :         /* We can't count on the environment variables TEMP or TMP,
+<span class="lineNum">     201 </span>                :          * and so must make the Win32 API call to get the default
+<span class="lineNum">     202 </span>                :          * directory for temporary files.  Note this call checks
+<span class="lineNum">     203 </span>                :          * the environment values TMP and TEMP (in order) first.
+<span class="lineNum">     204 </span>                :          */
+<span class="lineNum">     205 </span>                :         {
+<span class="lineNum">     206 </span>                :                 char sTemp[MAX_PATH];
+<span class="lineNum">     207 </span>                :                 DWORD len = GetTempPath(sizeof(sTemp),sTemp);
+<span class="lineNum">     208 </span>                :                 assert(0 &lt; len);  /* should *never* fail! */
+<span class="lineNum">     209 </span>                :                 if (sTemp[len - 1] == DEFAULT_SLASH) {
+<span class="lineNum">     210 </span>                :                         temporary_directory = zend_strndup(sTemp, len - 1);
+<span class="lineNum">     211 </span>                :                 } else {
+<span class="lineNum">     212 </span>                :                         temporary_directory = zend_strndup(sTemp, len);
+<span class="lineNum">     213 </span>                :                 }
+<span class="lineNum">     214 </span>                :                 return temporary_directory;
+<span class="lineNum">     215 </span>                :         }
+<span class="lineNum">     216 </span>                : #else
+<span class="lineNum">     217 </span>                :         /* On Unix use the (usual) TMPDIR environment variable. */
+<span class="lineNum">     218 </span>                :         {
+<span class="lineNum">     219 </span><span class="lineNoCov">              0 :                 char* s = getenv(&quot;TMPDIR&quot;);</span>
+<span class="lineNum">     220 </span><span class="lineNoCov">              0 :                 if (s &amp;&amp; *s) {</span>
+<span class="lineNum">     221 </span><span class="lineNoCov">              0 :                         int len = strlen(s);</span>
+<span class="lineNum">     222 </span>                : 
+<span class="lineNum">     223 </span><span class="lineNoCov">              0 :                         if (s[len - 1] == DEFAULT_SLASH) {</span>
+<span class="lineNum">     224 </span><span class="lineNoCov">              0 :                                 temporary_directory = zend_strndup(s, len - 1);</span>
+<span class="lineNum">     225 </span>                :                         } else {
+<span class="lineNum">     226 </span><span class="lineNoCov">              0 :                                 temporary_directory = zend_strndup(s, len);</span>
+<span class="lineNum">     227 </span>                :                         }
+<span class="lineNum">     228 </span>                : 
+<span class="lineNum">     229 </span><span class="lineNoCov">              0 :                         return temporary_directory;</span>
+<span class="lineNum">     230 </span>                :                 }
+<span class="lineNum">     231 </span>                :         }
+<span class="lineNum">     232 </span>                : #ifdef P_tmpdir
+<span class="lineNum">     233 </span>                :         /* Use the standard default temporary directory. */
+<span class="lineNum">     234 </span>                :         if (P_tmpdir) {
+<span class="lineNum">     235 </span><span class="lineNoCov">              0 :                 temporary_directory = strdup(P_tmpdir);</span>
+<span class="lineNum">     236 </span><span class="lineNoCov">              0 :                 return temporary_directory;</span>
+<span class="lineNum">     237 </span>                :         }
+<span class="lineNum">     238 </span>                : #endif
+<span class="lineNum">     239 </span>                :         /* Shouldn't ever(!) end up here ... last ditch default. */
+<span class="lineNum">     240 </span>                :         temporary_directory = strdup(&quot;/tmp&quot;);
+<span class="lineNum">     241 </span>                :         return temporary_directory;
+<span class="lineNum">     242 </span>                : #endif
+<span class="lineNum">     243 </span>                : }
+<span class="lineNum">     244 </span>                : 
+<span class="lineNum">     245 </span>                : /* {{{ php_open_temporary_file
+<span class="lineNum">     246 </span>                :  *
+<span class="lineNum">     247 </span>                :  * Unlike tempnam(), the supplied dir argument takes precedence
+<span class="lineNum">     248 </span>                :  * over the TMPDIR environment variable
+<span class="lineNum">     249 </span>                :  * This function should do its best to return a file pointer to a newly created
+<a name="250"><span class="lineNum">     250 </span>                :  * unique file, on every platform.</a>
+<span class="lineNum">     251 </span>                :  */
+<span class="lineNum">     252 </span><span class="lineNoCov">              0 : PHPAPI int php_open_temporary_fd_ex(const char *dir, const char *pfx, char **opened_path_p, zend_bool open_basedir_check TSRMLS_DC)</span>
+<span class="lineNum">     253 </span>                : {
+<span class="lineNum">     254 </span>                :         int fd;
+<span class="lineNum">     255 </span>                :         const char *temp_dir;
+<span class="lineNum">     256 </span>                : 
+<span class="lineNum">     257 </span><span class="lineNoCov">              0 :         if (!pfx) {</span>
+<span class="lineNum">     258 </span><span class="lineNoCov">              0 :                 pfx = &quot;tmp.&quot;;</span>
+<span class="lineNum">     259 </span>                :         }
+<span class="lineNum">     260 </span><span class="lineNoCov">              0 :         if (opened_path_p) {</span>
+<span class="lineNum">     261 </span><span class="lineNoCov">              0 :                 *opened_path_p = NULL;</span>
+<span class="lineNum">     262 </span>                :         }
+<span class="lineNum">     263 </span>                : 
+<span class="lineNum">     264 </span><span class="lineNoCov">              0 :         if (!dir || *dir == '\0') {</span>
+<span class="lineNum">     265 </span>                : def_tmp:
+<span class="lineNum">     266 </span><span class="lineNoCov">              0 :                 temp_dir = php_get_temporary_directory();</span>
+<span class="lineNum">     267 </span>                : 
+<span class="lineNum">     268 </span><span class="lineNoCov">              0 :                 if (temp_dir &amp;&amp; *temp_dir != '\0' &amp;&amp; (!open_basedir_check || !php_check_open_basedir(temp_dir TSRMLS_CC))) {</span>
+<span class="lineNum">     269 </span><span class="lineNoCov">              0 :                         return php_do_open_temporary_file(temp_dir, pfx, opened_path_p TSRMLS_CC);</span>
+<span class="lineNum">     270 </span>                :                 } else {
+<span class="lineNum">     271 </span><span class="lineNoCov">              0 :                         return -1;</span>
+<span class="lineNum">     272 </span>                :                 }
+<span class="lineNum">     273 </span>                :         }
+<span class="lineNum">     274 </span>                : 
+<span class="lineNum">     275 </span>                :         /* Try the directory given as parameter. */
+<span class="lineNum">     276 </span><span class="lineNoCov">              0 :         fd = php_do_open_temporary_file(dir, pfx, opened_path_p TSRMLS_CC);</span>
+<span class="lineNum">     277 </span><span class="lineNoCov">              0 :         if (fd == -1) {</span>
+<span class="lineNum">     278 </span>                :                 /* Use default temporary directory. */
+<span class="lineNum">     279 </span><span class="lineNoCov">              0 :                 goto def_tmp;</span>
+<span class="lineNum">     280 </span>                :         }
+<span class="lineNum">     281 </span><span class="lineNoCov">              0 :         return fd;</span>
+<a name="282"><span class="lineNum">     282 </span>                : }</a>
+<span class="lineNum">     283 </span>                : 
+<span class="lineNum">     284 </span><span class="lineNoCov">              0 : PHPAPI int php_open_temporary_fd(const char *dir, const char *pfx, char **opened_path_p TSRMLS_DC)</span>
+<span class="lineNum">     285 </span>                : {
+<span class="lineNum">     286 </span><span class="lineNoCov">              0 :         return php_open_temporary_fd_ex(dir, pfx, opened_path_p, 0 TSRMLS_CC);</span>
+<a name="287"><span class="lineNum">     287 </span>                : }</a>
+<span class="lineNum">     288 </span>                : 
+<span class="lineNum">     289 </span><span class="lineNoCov">              0 : PHPAPI FILE *php_open_temporary_file(const char *dir, const char *pfx, char **opened_path_p TSRMLS_DC)</span>
+<span class="lineNum">     290 </span>                : {
+<span class="lineNum">     291 </span>                :         FILE *fp;
+<span class="lineNum">     292 </span><span class="lineNoCov">              0 :         int fd = php_open_temporary_fd(dir, pfx, opened_path_p TSRMLS_CC);</span>
+<span class="lineNum">     293 </span>                : 
+<span class="lineNum">     294 </span><span class="lineNoCov">              0 :         if (fd == -1) {</span>
+<span class="lineNum">     295 </span><span class="lineNoCov">              0 :                 return NULL;</span>
+<span class="lineNum">     296 </span>                :         }
+<span class="lineNum">     297 </span>                :         
+<span class="lineNum">     298 </span><span class="lineNoCov">              0 :         fp = fdopen(fd, &quot;r+b&quot;);</span>
+<span class="lineNum">     299 </span><span class="lineNoCov">              0 :         if (fp == NULL) {</span>
+<span class="lineNum">     300 </span><span class="lineNoCov">              0 :                 close(fd);</span>
+<span class="lineNum">     301 </span>                :         }
+<span class="lineNum">     302 </span>                :         
+<span class="lineNum">     303 </span><span class="lineNoCov">              0 :         return fp;</span>
+<span class="lineNum">     304 </span>                : }
+<span class="lineNum">     305 </span>                : /* }}} */
+<span class="lineNum">     306 </span>                : 
+<span class="lineNum">     307 </span>                : /*
+<span class="lineNum">     308 </span>                :  * Local variables:
+<span class="lineNum">     309 </span>                :  * tab-width: 4
+<span class="lineNum">     310 </span>                :  * c-basic-offset: 4
+<span class="lineNum">     311 </span>                :  * End:
+<span class="lineNum">     312 </span>                :  * vim600: sw=4 ts=4 fdm=marker
+<span class="lineNum">     313 </span>                :  * vim&lt;600: sw=4 ts=4
+<span class="lineNum">     314 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

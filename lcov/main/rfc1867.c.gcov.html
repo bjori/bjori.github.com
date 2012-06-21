@@ -1,0 +1,1381 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - main/rfc1867.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../index.html">directory</a> - <a href="index.html">main</a> - rfc1867.c (source / <a href="rfc1867.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">596</td>
+          <td class="headerCovTableEntry">10</td>
+          <td class="headerCovTableEntryLo">1.7 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">29</td>
+          <td class="headerCovTableEntry">1</td>
+          <td class="headerCovTableEntryLo">3.4 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Authors: Rasmus Lerdorf &lt;rasmus@php.net&gt;                             |
+<span class="lineNum">      16 </span>                :    |          Jani Taskinen &lt;jani@php.net&gt;                                |
+<span class="lineNum">      17 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      18 </span>                :  */
+<span class="lineNum">      19 </span>                : 
+<span class="lineNum">      20 </span>                : /* $Id$ */
+<span class="lineNum">      21 </span>                : 
+<span class="lineNum">      22 </span>                : /*
+<span class="lineNum">      23 </span>                :  *  This product includes software developed by the Apache Group
+<span class="lineNum">      24 </span>                :  *  for use in the Apache HTTP server project (http://www.apache.org/).
+<span class="lineNum">      25 </span>                :  *
+<span class="lineNum">      26 </span>                :  */
+<span class="lineNum">      27 </span>                : 
+<span class="lineNum">      28 </span>                : #include &lt;stdio.h&gt;
+<span class="lineNum">      29 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">      30 </span>                : #include &quot;php_open_temporary_file.h&quot;
+<span class="lineNum">      31 </span>                : #include &quot;zend_globals.h&quot;
+<span class="lineNum">      32 </span>                : #include &quot;php_globals.h&quot;
+<span class="lineNum">      33 </span>                : #include &quot;php_variables.h&quot;
+<span class="lineNum">      34 </span>                : #include &quot;rfc1867.h&quot;
+<span class="lineNum">      35 </span>                : #include &quot;ext/standard/php_string.h&quot;
+<span class="lineNum">      36 </span>                : 
+<a name="37"><span class="lineNum">      37 </span>                : #define DEBUG_FILE_UPLOAD ZEND_DEBUG</a>
+<span class="lineNum">      38 </span>                : 
+<span class="lineNum">      39 </span><span class="lineNoCov">              0 : static int dummy_encoding_translation(TSRMLS_D)</span>
+<span class="lineNum">      40 </span>                : {
+<span class="lineNum">      41 </span><span class="lineNoCov">              0 :         return 0;</span>
+<span class="lineNum">      42 </span>                : }
+<span class="lineNum">      43 </span>                : 
+<span class="lineNum">      44 </span>                : static char *php_ap_getword(const zend_encoding *encoding, char **line, char stop TSRMLS_DC);
+<span class="lineNum">      45 </span>                : static char *php_ap_getword_conf(const zend_encoding *encoding, char *str TSRMLS_DC);
+<span class="lineNum">      46 </span>                : 
+<span class="lineNum">      47 </span>                : static php_rfc1867_encoding_translation_t php_rfc1867_encoding_translation = dummy_encoding_translation;
+<span class="lineNum">      48 </span>                : static php_rfc1867_get_detect_order_t php_rfc1867_get_detect_order = NULL;
+<span class="lineNum">      49 </span>                : static php_rfc1867_set_input_encoding_t php_rfc1867_set_input_encoding = NULL;
+<span class="lineNum">      50 </span>                : static php_rfc1867_getword_t php_rfc1867_getword = php_ap_getword;
+<span class="lineNum">      51 </span>                : static php_rfc1867_getword_conf_t php_rfc1867_getword_conf = php_ap_getword_conf;
+<span class="lineNum">      52 </span>                : static php_rfc1867_basename_t php_rfc1867_basename = NULL;
+<span class="lineNum">      53 </span>                : 
+<span class="lineNum">      54 </span>                : PHPAPI int (*php_rfc1867_callback)(unsigned int event, void *event_data, void **extra TSRMLS_DC) = NULL;
+<span class="lineNum">      55 </span>                : 
+<span class="lineNum">      56 </span>                : static void safe_php_register_variable(char *var, char *strval, int val_len, zval *track_vars_array, zend_bool override_protection TSRMLS_DC);
+<span class="lineNum">      57 </span>                : 
+<span class="lineNum">      58 </span>                : /* The longest property name we use in an uploaded file array */
+<span class="lineNum">      59 </span>                : #define MAX_SIZE_OF_INDEX sizeof(&quot;[tmp_name]&quot;)
+<span class="lineNum">      60 </span>                : 
+<span class="lineNum">      61 </span>                : /* The longest anonymous name */
+<span class="lineNum">      62 </span>                : #define MAX_SIZE_ANONNAME 33
+<span class="lineNum">      63 </span>                : 
+<span class="lineNum">      64 </span>                : /* Errors */
+<span class="lineNum">      65 </span>                : #define UPLOAD_ERROR_OK   0  /* File upload succesful */
+<span class="lineNum">      66 </span>                : #define UPLOAD_ERROR_A    1  /* Uploaded file exceeded upload_max_filesize */
+<span class="lineNum">      67 </span>                : #define UPLOAD_ERROR_B    2  /* Uploaded file exceeded MAX_FILE_SIZE */
+<span class="lineNum">      68 </span>                : #define UPLOAD_ERROR_C    3  /* Partially uploaded */
+<span class="lineNum">      69 </span>                : #define UPLOAD_ERROR_D    4  /* No file uploaded */
+<span class="lineNum">      70 </span>                : #define UPLOAD_ERROR_E    6  /* Missing /tmp or similar directory */
+<span class="lineNum">      71 </span>                : #define UPLOAD_ERROR_F    7  /* Failed to write file to disk */
+<a name="72"><span class="lineNum">      72 </span>                : #define UPLOAD_ERROR_X    8  /* File upload stopped by extension */</a>
+<span class="lineNum">      73 </span>                : 
+<span class="lineNum">      74 </span><span class="lineCov">             48 : void php_rfc1867_register_constants(TSRMLS_D) /* {{{ */</span>
+<span class="lineNum">      75 </span>                : {
+<span class="lineNum">      76 </span><span class="lineCov">             48 :         REGISTER_MAIN_LONG_CONSTANT(&quot;UPLOAD_ERR_OK&quot;,         UPLOAD_ERROR_OK, CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">      77 </span><span class="lineCov">             48 :         REGISTER_MAIN_LONG_CONSTANT(&quot;UPLOAD_ERR_INI_SIZE&quot;,   UPLOAD_ERROR_A,  CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">      78 </span><span class="lineCov">             48 :         REGISTER_MAIN_LONG_CONSTANT(&quot;UPLOAD_ERR_FORM_SIZE&quot;,  UPLOAD_ERROR_B,  CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">      79 </span><span class="lineCov">             48 :         REGISTER_MAIN_LONG_CONSTANT(&quot;UPLOAD_ERR_PARTIAL&quot;,    UPLOAD_ERROR_C,  CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">      80 </span><span class="lineCov">             48 :         REGISTER_MAIN_LONG_CONSTANT(&quot;UPLOAD_ERR_NO_FILE&quot;,    UPLOAD_ERROR_D,  CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">      81 </span><span class="lineCov">             48 :         REGISTER_MAIN_LONG_CONSTANT(&quot;UPLOAD_ERR_NO_TMP_DIR&quot;, UPLOAD_ERROR_E,  CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">      82 </span><span class="lineCov">             48 :         REGISTER_MAIN_LONG_CONSTANT(&quot;UPLOAD_ERR_CANT_WRITE&quot;, UPLOAD_ERROR_F,  CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">      83 </span><span class="lineCov">             48 :         REGISTER_MAIN_LONG_CONSTANT(&quot;UPLOAD_ERR_EXTENSION&quot;,  UPLOAD_ERROR_X,  CONST_CS | CONST_PERSISTENT);</span>
+<span class="lineNum">      84 </span><span class="lineCov">             48 : }</span>
+<a name="85"><span class="lineNum">      85 </span>                : /* }}} */</a>
+<span class="lineNum">      86 </span>                : 
+<span class="lineNum">      87 </span><span class="lineNoCov">              0 : static void normalize_protected_variable(char *varname TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">      88 </span>                : {
+<span class="lineNum">      89 </span><span class="lineNoCov">              0 :         char *s = varname, *index = NULL, *indexend = NULL, *p;</span>
+<span class="lineNum">      90 </span>                : 
+<span class="lineNum">      91 </span>                :         /* overjump leading space */
+<span class="lineNum">      92 </span><span class="lineNoCov">              0 :         while (*s == ' ') {</span>
+<span class="lineNum">      93 </span><span class="lineNoCov">              0 :                 s++;</span>
+<span class="lineNum">      94 </span>                :         }
+<span class="lineNum">      95 </span>                : 
+<span class="lineNum">      96 </span>                :         /* and remove it */
+<span class="lineNum">      97 </span><span class="lineNoCov">              0 :         if (s != varname) {</span>
+<span class="lineNum">      98 </span><span class="lineNoCov">              0 :                 memmove(varname, s, strlen(s)+1);</span>
+<span class="lineNum">      99 </span>                :         }
+<span class="lineNum">     100 </span>                : 
+<span class="lineNum">     101 </span><span class="lineNoCov">              0 :         for (p = varname; *p &amp;&amp; *p != '['; p++) {</span>
+<span class="lineNum">     102 </span><span class="lineNoCov">              0 :                 switch(*p) {</span>
+<span class="lineNum">     103 </span>                :                         case ' ':
+<span class="lineNum">     104 </span>                :                         case '.':
+<span class="lineNum">     105 </span><span class="lineNoCov">              0 :                                 *p = '_';</span>
+<span class="lineNum">     106 </span>                :                                 break;
+<span class="lineNum">     107 </span>                :                 }
+<span class="lineNum">     108 </span>                :         }
+<span class="lineNum">     109 </span>                : 
+<span class="lineNum">     110 </span>                :         /* find index */
+<span class="lineNum">     111 </span><span class="lineNoCov">              0 :         index = strchr(varname, '[');</span>
+<span class="lineNum">     112 </span><span class="lineNoCov">              0 :         if (index) {</span>
+<span class="lineNum">     113 </span><span class="lineNoCov">              0 :                 index++;</span>
+<span class="lineNum">     114 </span><span class="lineNoCov">              0 :                 s = index;</span>
+<span class="lineNum">     115 </span>                :         } else {
+<span class="lineNum">     116 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     117 </span>                :         }
+<span class="lineNum">     118 </span>                : 
+<span class="lineNum">     119 </span>                :         /* done? */
+<span class="lineNum">     120 </span><span class="lineNoCov">              0 :         while (index) {</span>
+<span class="lineNum">     121 </span><span class="lineNoCov">              0 :                 while (*index == ' ' || *index == '\r' || *index == '\n' || *index=='\t') {</span>
+<span class="lineNum">     122 </span><span class="lineNoCov">              0 :                         index++;</span>
+<span class="lineNum">     123 </span>                :                 }
+<span class="lineNum">     124 </span><span class="lineNoCov">              0 :                 indexend = strchr(index, ']');</span>
+<span class="lineNum">     125 </span><span class="lineNoCov">              0 :                 indexend = indexend ? indexend + 1 : index + strlen(index);</span>
+<span class="lineNum">     126 </span>                : 
+<span class="lineNum">     127 </span><span class="lineNoCov">              0 :                 if (s != index) {</span>
+<span class="lineNum">     128 </span><span class="lineNoCov">              0 :                         memmove(s, index, strlen(index)+1);</span>
+<span class="lineNum">     129 </span><span class="lineNoCov">              0 :                         s += indexend-index;</span>
+<span class="lineNum">     130 </span>                :                 } else {
+<span class="lineNum">     131 </span><span class="lineNoCov">              0 :                         s = indexend;</span>
+<span class="lineNum">     132 </span>                :                 }
+<span class="lineNum">     133 </span>                : 
+<span class="lineNum">     134 </span><span class="lineNoCov">              0 :                 if (*s == '[') {</span>
+<span class="lineNum">     135 </span><span class="lineNoCov">              0 :                         s++;</span>
+<span class="lineNum">     136 </span><span class="lineNoCov">              0 :                         index = s;</span>
+<span class="lineNum">     137 </span>                :                 } else {
+<span class="lineNum">     138 </span><span class="lineNoCov">              0 :                         index = NULL;</span>
+<span class="lineNum">     139 </span>                :                 }
+<span class="lineNum">     140 </span>                :         }
+<span class="lineNum">     141 </span><span class="lineNoCov">              0 :         *s = '\0';</span>
+<span class="lineNum">     142 </span>                : }
+<a name="143"><span class="lineNum">     143 </span>                : /* }}} */</a>
+<span class="lineNum">     144 </span>                : 
+<span class="lineNum">     145 </span><span class="lineNoCov">              0 : static void add_protected_variable(char *varname TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     146 </span>                : {
+<span class="lineNum">     147 </span><span class="lineNoCov">              0 :         int dummy = 1;</span>
+<span class="lineNum">     148 </span>                : 
+<span class="lineNum">     149 </span><span class="lineNoCov">              0 :         normalize_protected_variable(varname TSRMLS_CC);</span>
+<span class="lineNum">     150 </span><span class="lineNoCov">              0 :         zend_hash_add(&amp;PG(rfc1867_protected_variables), varname, strlen(varname)+1, &amp;dummy, sizeof(int), NULL);</span>
+<span class="lineNum">     151 </span><span class="lineNoCov">              0 : }</span>
+<a name="152"><span class="lineNum">     152 </span>                : /* }}} */</a>
+<span class="lineNum">     153 </span>                : 
+<span class="lineNum">     154 </span><span class="lineNoCov">              0 : static zend_bool is_protected_variable(char *varname TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     155 </span>                : {
+<span class="lineNum">     156 </span><span class="lineNoCov">              0 :         normalize_protected_variable(varname TSRMLS_CC);</span>
+<span class="lineNum">     157 </span><span class="lineNoCov">              0 :         return zend_hash_exists(&amp;PG(rfc1867_protected_variables), varname, strlen(varname)+1);</span>
+<span class="lineNum">     158 </span>                : }
+<a name="159"><span class="lineNum">     159 </span>                : /* }}} */</a>
+<span class="lineNum">     160 </span>                : 
+<span class="lineNum">     161 </span><span class="lineNoCov">              0 : static void safe_php_register_variable(char *var, char *strval, int val_len, zval *track_vars_array, zend_bool override_protection TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     162 </span>                : {
+<span class="lineNum">     163 </span><span class="lineNoCov">              0 :         if (override_protection || !is_protected_variable(var TSRMLS_CC)) {</span>
+<span class="lineNum">     164 </span><span class="lineNoCov">              0 :                 php_register_variable_safe(var, strval, val_len, track_vars_array TSRMLS_CC);</span>
+<span class="lineNum">     165 </span>                :         }
+<span class="lineNum">     166 </span><span class="lineNoCov">              0 : }</span>
+<a name="167"><span class="lineNum">     167 </span>                : /* }}} */</a>
+<span class="lineNum">     168 </span>                : 
+<span class="lineNum">     169 </span><span class="lineNoCov">              0 : static void safe_php_register_variable_ex(char *var, zval *val, zval *track_vars_array, zend_bool override_protection TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     170 </span>                : {
+<span class="lineNum">     171 </span><span class="lineNoCov">              0 :         if (override_protection || !is_protected_variable(var TSRMLS_CC)) {</span>
+<span class="lineNum">     172 </span><span class="lineNoCov">              0 :                 php_register_variable_ex(var, val, track_vars_array TSRMLS_CC);</span>
+<span class="lineNum">     173 </span>                :         }
+<span class="lineNum">     174 </span><span class="lineNoCov">              0 : }</span>
+<a name="175"><span class="lineNum">     175 </span>                : /* }}} */</a>
+<span class="lineNum">     176 </span>                : 
+<span class="lineNum">     177 </span><span class="lineNoCov">              0 : static void register_http_post_files_variable(char *strvar, char *val, zval *http_post_files, zend_bool override_protection TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     178 </span>                : {
+<span class="lineNum">     179 </span><span class="lineNoCov">              0 :         safe_php_register_variable(strvar, val, strlen(val), http_post_files, override_protection TSRMLS_CC);</span>
+<span class="lineNum">     180 </span><span class="lineNoCov">              0 : }</span>
+<a name="181"><span class="lineNum">     181 </span>                : /* }}} */</a>
+<span class="lineNum">     182 </span>                : 
+<span class="lineNum">     183 </span><span class="lineNoCov">              0 : static void register_http_post_files_variable_ex(char *var, zval *val, zval *http_post_files, zend_bool override_protection TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     184 </span>                : {
+<span class="lineNum">     185 </span><span class="lineNoCov">              0 :         safe_php_register_variable_ex(var, val, http_post_files, override_protection TSRMLS_CC);</span>
+<span class="lineNum">     186 </span><span class="lineNoCov">              0 : }</span>
+<a name="187"><span class="lineNum">     187 </span>                : /* }}} */</a>
+<span class="lineNum">     188 </span>                : 
+<span class="lineNum">     189 </span><span class="lineNoCov">              0 : static int unlink_filename(char **filename TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     190 </span>                : {
+<span class="lineNum">     191 </span><span class="lineNoCov">              0 :         VCWD_UNLINK(*filename);</span>
+<span class="lineNum">     192 </span><span class="lineNoCov">              0 :         return 0;</span>
+<span class="lineNum">     193 </span>                : }
+<a name="194"><span class="lineNum">     194 </span>                : /* }}} */</a>
+<span class="lineNum">     195 </span>                : 
+<span class="lineNum">     196 </span><span class="lineNoCov">              0 : void destroy_uploaded_files_hash(TSRMLS_D) /* {{{ */</span>
+<span class="lineNum">     197 </span>                : {
+<span class="lineNum">     198 </span><span class="lineNoCov">              0 :         zend_hash_apply(SG(rfc1867_uploaded_files), (apply_func_t) unlink_filename TSRMLS_CC);</span>
+<span class="lineNum">     199 </span><span class="lineNoCov">              0 :         zend_hash_destroy(SG(rfc1867_uploaded_files));</span>
+<span class="lineNum">     200 </span><span class="lineNoCov">              0 :         FREE_HASHTABLE(SG(rfc1867_uploaded_files));</span>
+<span class="lineNum">     201 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     202 </span>                : /* }}} */
+<span class="lineNum">     203 </span>                : 
+<span class="lineNum">     204 </span>                : /* {{{ Following code is based on apache_multipart_buffer.c from libapreq-0.33 package. */
+<span class="lineNum">     205 </span>                : 
+<span class="lineNum">     206 </span>                : #define FILLUNIT (1024 * 5)
+<span class="lineNum">     207 </span>                : 
+<span class="lineNum">     208 </span>                : typedef struct {
+<span class="lineNum">     209 </span>                : 
+<span class="lineNum">     210 </span>                :         /* read buffer */
+<span class="lineNum">     211 </span>                :         char *buffer;
+<span class="lineNum">     212 </span>                :         char *buf_begin;
+<span class="lineNum">     213 </span>                :         int  bufsize;
+<span class="lineNum">     214 </span>                :         int  bytes_in_buffer;
+<span class="lineNum">     215 </span>                : 
+<span class="lineNum">     216 </span>                :         /* boundary info */
+<span class="lineNum">     217 </span>                :         char *boundary;
+<span class="lineNum">     218 </span>                :         char *boundary_next;
+<span class="lineNum">     219 </span>                :         int  boundary_next_len;
+<span class="lineNum">     220 </span>                : 
+<span class="lineNum">     221 </span>                :         const zend_encoding *input_encoding;
+<span class="lineNum">     222 </span>                :         const zend_encoding **detect_order;
+<span class="lineNum">     223 </span>                :         size_t detect_order_size;
+<span class="lineNum">     224 </span>                : } multipart_buffer;
+<span class="lineNum">     225 </span>                : 
+<span class="lineNum">     226 </span>                : typedef struct {
+<span class="lineNum">     227 </span>                :         char *key;
+<span class="lineNum">     228 </span>                :         char *value;
+<span class="lineNum">     229 </span>                : } mime_header_entry;
+<span class="lineNum">     230 </span>                : 
+<span class="lineNum">     231 </span>                : /*
+<span class="lineNum">     232 </span>                :  * Fill up the buffer with client data.
+<a name="233"><span class="lineNum">     233 </span>                :  * Returns number of bytes added to buffer.</a>
+<span class="lineNum">     234 </span>                :  */
+<span class="lineNum">     235 </span><span class="lineNoCov">              0 : static int fill_buffer(multipart_buffer *self TSRMLS_DC)</span>
+<span class="lineNum">     236 </span>                : {
+<span class="lineNum">     237 </span><span class="lineNoCov">              0 :         int bytes_to_read, total_read = 0, actual_read = 0;</span>
+<span class="lineNum">     238 </span>                : 
+<span class="lineNum">     239 </span>                :         /* shift the existing data if necessary */
+<span class="lineNum">     240 </span><span class="lineNoCov">              0 :         if (self-&gt;bytes_in_buffer &gt; 0 &amp;&amp; self-&gt;buf_begin != self-&gt;buffer) {</span>
+<span class="lineNum">     241 </span><span class="lineNoCov">              0 :                 memmove(self-&gt;buffer, self-&gt;buf_begin, self-&gt;bytes_in_buffer);</span>
+<span class="lineNum">     242 </span>                :         }
+<span class="lineNum">     243 </span>                : 
+<span class="lineNum">     244 </span><span class="lineNoCov">              0 :         self-&gt;buf_begin = self-&gt;buffer;</span>
+<span class="lineNum">     245 </span>                : 
+<span class="lineNum">     246 </span>                :         /* calculate the free space in the buffer */
+<span class="lineNum">     247 </span><span class="lineNoCov">              0 :         bytes_to_read = self-&gt;bufsize - self-&gt;bytes_in_buffer;</span>
+<span class="lineNum">     248 </span>                : 
+<span class="lineNum">     249 </span>                :         /* read the required number of bytes */
+<span class="lineNum">     250 </span><span class="lineNoCov">              0 :         while (bytes_to_read &gt; 0) {</span>
+<span class="lineNum">     251 </span>                : 
+<span class="lineNum">     252 </span><span class="lineNoCov">              0 :                 char *buf = self-&gt;buffer + self-&gt;bytes_in_buffer;</span>
+<span class="lineNum">     253 </span>                : 
+<span class="lineNum">     254 </span><span class="lineNoCov">              0 :                 actual_read = sapi_module.read_post(buf, bytes_to_read TSRMLS_CC);</span>
+<span class="lineNum">     255 </span>                : 
+<span class="lineNum">     256 </span>                :                 /* update the buffer length */
+<span class="lineNum">     257 </span><span class="lineNoCov">              0 :                 if (actual_read &gt; 0) {</span>
+<span class="lineNum">     258 </span><span class="lineNoCov">              0 :                         self-&gt;bytes_in_buffer += actual_read;</span>
+<span class="lineNum">     259 </span><span class="lineNoCov">              0 :                         SG(read_post_bytes) += actual_read;</span>
+<span class="lineNum">     260 </span><span class="lineNoCov">              0 :                         total_read += actual_read;</span>
+<span class="lineNum">     261 </span><span class="lineNoCov">              0 :                         bytes_to_read -= actual_read;</span>
+<span class="lineNum">     262 </span>                :                 } else {
+<span class="lineNum">     263 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     264 </span>                :                 }
+<span class="lineNum">     265 </span>                :         }
+<span class="lineNum">     266 </span>                : 
+<span class="lineNum">     267 </span><span class="lineNoCov">              0 :         return total_read;</span>
+<span class="lineNum">     268 </span>                : }
+<a name="269"><span class="lineNum">     269 </span>                : </a>
+<span class="lineNum">     270 </span>                : /* eof if we are out of bytes, or if we hit the final boundary */
+<span class="lineNum">     271 </span><span class="lineNoCov">              0 : static int multipart_buffer_eof(multipart_buffer *self TSRMLS_DC)</span>
+<span class="lineNum">     272 </span>                : {
+<span class="lineNum">     273 </span><span class="lineNoCov">              0 :         if ( (self-&gt;bytes_in_buffer == 0 &amp;&amp; fill_buffer(self TSRMLS_CC) &lt; 1) ) {</span>
+<span class="lineNum">     274 </span><span class="lineNoCov">              0 :                 return 1;</span>
+<span class="lineNum">     275 </span>                :         } else {
+<span class="lineNum">     276 </span><span class="lineNoCov">              0 :                 return 0;</span>
+<span class="lineNum">     277 </span>                :         }
+<span class="lineNum">     278 </span>                : }
+<a name="279"><span class="lineNum">     279 </span>                : </a>
+<span class="lineNum">     280 </span>                : /* create new multipart_buffer structure */
+<span class="lineNum">     281 </span><span class="lineNoCov">              0 : static multipart_buffer *multipart_buffer_new(char *boundary, int boundary_len TSRMLS_DC)</span>
+<span class="lineNum">     282 </span>                : {
+<span class="lineNum">     283 </span><span class="lineNoCov">              0 :         multipart_buffer *self = (multipart_buffer *) ecalloc(1, sizeof(multipart_buffer));</span>
+<span class="lineNum">     284 </span>                : 
+<span class="lineNum">     285 </span><span class="lineNoCov">              0 :         int minsize = boundary_len + 6;</span>
+<span class="lineNum">     286 </span><span class="lineNoCov">              0 :         if (minsize &lt; FILLUNIT) minsize = FILLUNIT;</span>
+<span class="lineNum">     287 </span>                : 
+<span class="lineNum">     288 </span><span class="lineNoCov">              0 :         self-&gt;buffer = (char *) ecalloc(1, minsize + 1);</span>
+<span class="lineNum">     289 </span><span class="lineNoCov">              0 :         self-&gt;bufsize = minsize;</span>
+<span class="lineNum">     290 </span>                : 
+<span class="lineNum">     291 </span><span class="lineNoCov">              0 :         spprintf(&amp;self-&gt;boundary, 0, &quot;--%s&quot;, boundary);</span>
+<span class="lineNum">     292 </span>                : 
+<span class="lineNum">     293 </span><span class="lineNoCov">              0 :         self-&gt;boundary_next_len = spprintf(&amp;self-&gt;boundary_next, 0, &quot;\n--%s&quot;, boundary);</span>
+<span class="lineNum">     294 </span>                : 
+<span class="lineNum">     295 </span><span class="lineNoCov">              0 :         self-&gt;buf_begin = self-&gt;buffer;</span>
+<span class="lineNum">     296 </span><span class="lineNoCov">              0 :         self-&gt;bytes_in_buffer = 0;</span>
+<span class="lineNum">     297 </span>                : 
+<span class="lineNum">     298 </span><span class="lineNoCov">              0 :         if (php_rfc1867_encoding_translation(TSRMLS_C)) {</span>
+<span class="lineNum">     299 </span><span class="lineNoCov">              0 :                 php_rfc1867_get_detect_order(&amp;self-&gt;detect_order, &amp;self-&gt;detect_order_size TSRMLS_CC);</span>
+<span class="lineNum">     300 </span>                :         } else {
+<span class="lineNum">     301 </span><span class="lineNoCov">              0 :                 self-&gt;detect_order = NULL;</span>
+<span class="lineNum">     302 </span><span class="lineNoCov">              0 :                 self-&gt;detect_order_size = 0;</span>
+<span class="lineNum">     303 </span>                :         }
+<span class="lineNum">     304 </span>                : 
+<span class="lineNum">     305 </span><span class="lineNoCov">              0 :         self-&gt;input_encoding = NULL;</span>
+<span class="lineNum">     306 </span>                : 
+<span class="lineNum">     307 </span><span class="lineNoCov">              0 :         return self;</span>
+<span class="lineNum">     308 </span>                : }
+<span class="lineNum">     309 </span>                : 
+<span class="lineNum">     310 </span>                : /*
+<span class="lineNum">     311 </span>                :  * Gets the next CRLF terminated line from the input buffer.
+<span class="lineNum">     312 </span>                :  * If it doesn't find a CRLF, and the buffer isn't completely full, returns
+<span class="lineNum">     313 </span>                :  * NULL; otherwise, returns the beginning of the null-terminated line,
+<span class="lineNum">     314 </span>                :  * minus the CRLF.
+<span class="lineNum">     315 </span>                :  *
+<span class="lineNum">     316 </span>                :  * Note that we really just look for LF terminated lines. This works
+<span class="lineNum">     317 </span>                :  * around a bug in internet explorer for the macintosh which sends mime
+<span class="lineNum">     318 </span>                :  * boundaries that are only LF terminated when you use an image submit
+<a name="319"><span class="lineNum">     319 </span>                :  * button in a multipart/form-data form.</a>
+<span class="lineNum">     320 </span>                :  */
+<span class="lineNum">     321 </span><span class="lineNoCov">              0 : static char *next_line(multipart_buffer *self)</span>
+<span class="lineNum">     322 </span>                : {
+<span class="lineNum">     323 </span>                :         /* look for LF in the data */
+<span class="lineNum">     324 </span><span class="lineNoCov">              0 :         char* line = self-&gt;buf_begin;</span>
+<span class="lineNum">     325 </span><span class="lineNoCov">              0 :         char* ptr = memchr(self-&gt;buf_begin, '\n', self-&gt;bytes_in_buffer);</span>
+<span class="lineNum">     326 </span>                : 
+<span class="lineNum">     327 </span><span class="lineNoCov">              0 :         if (ptr) {      /* LF found */</span>
+<span class="lineNum">     328 </span>                : 
+<span class="lineNum">     329 </span>                :                 /* terminate the string, remove CRLF */
+<span class="lineNum">     330 </span><span class="lineNoCov">              0 :                 if ((ptr - line) &gt; 0 &amp;&amp; *(ptr-1) == '\r') {</span>
+<span class="lineNum">     331 </span><span class="lineNoCov">              0 :                         *(ptr-1) = 0;</span>
+<span class="lineNum">     332 </span>                :                 } else {
+<span class="lineNum">     333 </span><span class="lineNoCov">              0 :                         *ptr = 0;</span>
+<span class="lineNum">     334 </span>                :                 }
+<span class="lineNum">     335 </span>                : 
+<span class="lineNum">     336 </span>                :                 /* bump the pointer */
+<span class="lineNum">     337 </span><span class="lineNoCov">              0 :                 self-&gt;buf_begin = ptr + 1;</span>
+<span class="lineNum">     338 </span><span class="lineNoCov">              0 :                 self-&gt;bytes_in_buffer -= (self-&gt;buf_begin - line);</span>
+<span class="lineNum">     339 </span>                : 
+<span class="lineNum">     340 </span>                :         } else {        /* no LF found */
+<span class="lineNum">     341 </span>                : 
+<span class="lineNum">     342 </span>                :                 /* buffer isn't completely full, fail */
+<span class="lineNum">     343 </span><span class="lineNoCov">              0 :                 if (self-&gt;bytes_in_buffer &lt; self-&gt;bufsize) {</span>
+<span class="lineNum">     344 </span><span class="lineNoCov">              0 :                         return NULL;</span>
+<span class="lineNum">     345 </span>                :                 }
+<span class="lineNum">     346 </span>                :                 /* return entire buffer as a partial line */
+<span class="lineNum">     347 </span><span class="lineNoCov">              0 :                 line[self-&gt;bufsize] = 0;</span>
+<span class="lineNum">     348 </span><span class="lineNoCov">              0 :                 self-&gt;buf_begin = ptr;</span>
+<span class="lineNum">     349 </span><span class="lineNoCov">              0 :                 self-&gt;bytes_in_buffer = 0;</span>
+<span class="lineNum">     350 </span>                :         }
+<span class="lineNum">     351 </span>                : 
+<span class="lineNum">     352 </span><span class="lineNoCov">              0 :         return line;</span>
+<span class="lineNum">     353 </span>                : }
+<a name="354"><span class="lineNum">     354 </span>                : </a>
+<span class="lineNum">     355 </span>                : /* Returns the next CRLF terminated line from the client */
+<span class="lineNum">     356 </span><span class="lineNoCov">              0 : static char *get_line(multipart_buffer *self TSRMLS_DC)</span>
+<span class="lineNum">     357 </span>                : {
+<span class="lineNum">     358 </span><span class="lineNoCov">              0 :         char* ptr = next_line(self);</span>
+<span class="lineNum">     359 </span>                : 
+<span class="lineNum">     360 </span><span class="lineNoCov">              0 :         if (!ptr) {</span>
+<span class="lineNum">     361 </span><span class="lineNoCov">              0 :                 fill_buffer(self TSRMLS_CC);</span>
+<span class="lineNum">     362 </span><span class="lineNoCov">              0 :                 ptr = next_line(self);</span>
+<span class="lineNum">     363 </span>                :         }
+<span class="lineNum">     364 </span>                : 
+<span class="lineNum">     365 </span><span class="lineNoCov">              0 :         return ptr;</span>
+<span class="lineNum">     366 </span>                : }
+<a name="367"><span class="lineNum">     367 </span>                : </a>
+<span class="lineNum">     368 </span>                : /* Free header entry */
+<span class="lineNum">     369 </span><span class="lineNoCov">              0 : static void php_free_hdr_entry(mime_header_entry *h)</span>
+<span class="lineNum">     370 </span>                : {
+<span class="lineNum">     371 </span><span class="lineNoCov">              0 :         if (h-&gt;key) {</span>
+<span class="lineNum">     372 </span><span class="lineNoCov">              0 :                 efree(h-&gt;key);</span>
+<span class="lineNum">     373 </span>                :         }
+<span class="lineNum">     374 </span><span class="lineNoCov">              0 :         if (h-&gt;value) {</span>
+<span class="lineNum">     375 </span><span class="lineNoCov">              0 :                 efree(h-&gt;value);</span>
+<span class="lineNum">     376 </span>                :         }
+<span class="lineNum">     377 </span><span class="lineNoCov">              0 : }</span>
+<a name="378"><span class="lineNum">     378 </span>                : </a>
+<span class="lineNum">     379 </span>                : /* finds a boundary */
+<span class="lineNum">     380 </span><span class="lineNoCov">              0 : static int find_boundary(multipart_buffer *self, char *boundary TSRMLS_DC)</span>
+<span class="lineNum">     381 </span>                : {
+<span class="lineNum">     382 </span>                :         char *line;
+<span class="lineNum">     383 </span>                : 
+<span class="lineNum">     384 </span>                :         /* loop thru lines */
+<span class="lineNum">     385 </span><span class="lineNoCov">              0 :         while( (line = get_line(self TSRMLS_CC)) )</span>
+<span class="lineNum">     386 </span>                :         {
+<span class="lineNum">     387 </span>                :                 /* finished if we found the boundary */
+<span class="lineNum">     388 </span><span class="lineNoCov">              0 :                 if (!strcmp(line, boundary)) {</span>
+<span class="lineNum">     389 </span><span class="lineNoCov">              0 :                         return 1;</span>
+<span class="lineNum">     390 </span>                :                 }
+<span class="lineNum">     391 </span>                :         }
+<span class="lineNum">     392 </span>                : 
+<span class="lineNum">     393 </span>                :         /* didn't find the boundary */
+<span class="lineNum">     394 </span><span class="lineNoCov">              0 :         return 0;</span>
+<span class="lineNum">     395 </span>                : }
+<a name="396"><span class="lineNum">     396 </span>                : </a>
+<span class="lineNum">     397 </span>                : /* parse headers */
+<span class="lineNum">     398 </span><span class="lineNoCov">              0 : static int multipart_buffer_headers(multipart_buffer *self, zend_llist *header TSRMLS_DC)</span>
+<span class="lineNum">     399 </span>                : {
+<span class="lineNum">     400 </span>                :         char *line;
+<span class="lineNum">     401 </span>                :         mime_header_entry prev_entry, entry;
+<span class="lineNum">     402 </span>                :         int prev_len, cur_len;
+<span class="lineNum">     403 </span>                : 
+<span class="lineNum">     404 </span>                :         /* didn't find boundary, abort */
+<span class="lineNum">     405 </span><span class="lineNoCov">              0 :         if (!find_boundary(self, self-&gt;boundary TSRMLS_CC)) {</span>
+<span class="lineNum">     406 </span><span class="lineNoCov">              0 :                 return 0;</span>
+<span class="lineNum">     407 </span>                :         }
+<span class="lineNum">     408 </span>                : 
+<span class="lineNum">     409 </span>                :         /* get lines of text, or CRLF_CRLF */
+<span class="lineNum">     410 </span>                : 
+<span class="lineNum">     411 </span><span class="lineNoCov">              0 :         while( (line = get_line(self TSRMLS_CC)) &amp;&amp; strlen(line) &gt; 0 )</span>
+<span class="lineNum">     412 </span>                :         {
+<span class="lineNum">     413 </span>                :                 /* add header to table */
+<span class="lineNum">     414 </span><span class="lineNoCov">              0 :                 char *key = line;</span>
+<span class="lineNum">     415 </span><span class="lineNoCov">              0 :                 char *value = NULL;</span>
+<span class="lineNum">     416 </span>                : 
+<span class="lineNum">     417 </span><span class="lineNoCov">              0 :                 if (php_rfc1867_encoding_translation(TSRMLS_C)) {</span>
+<span class="lineNum">     418 </span><span class="lineNoCov">              0 :                         self-&gt;input_encoding = zend_multibyte_encoding_detector(line, strlen(line), self-&gt;detect_order, self-&gt;detect_order_size TSRMLS_CC);</span>
+<span class="lineNum">     419 </span>                :                 }
+<span class="lineNum">     420 </span>                : 
+<span class="lineNum">     421 </span>                :                 /* space in the beginning means same header */
+<span class="lineNum">     422 </span><span class="lineNoCov">              0 :                 if (!isspace(line[0])) {</span>
+<span class="lineNum">     423 </span><span class="lineNoCov">              0 :                         value = strchr(line, ':');</span>
+<span class="lineNum">     424 </span>                :                 }
+<span class="lineNum">     425 </span>                : 
+<span class="lineNum">     426 </span><span class="lineNoCov">              0 :                 if (value) {</span>
+<span class="lineNum">     427 </span><span class="lineNoCov">              0 :                         *value = 0;</span>
+<span class="lineNum">     428 </span><span class="lineNoCov">              0 :                         do { value++; } while(isspace(*value));</span>
+<span class="lineNum">     429 </span>                : 
+<span class="lineNum">     430 </span><span class="lineNoCov">              0 :                         entry.value = estrdup(value);</span>
+<span class="lineNum">     431 </span><span class="lineNoCov">              0 :                         entry.key = estrdup(key);</span>
+<span class="lineNum">     432 </span>                : 
+<span class="lineNum">     433 </span><span class="lineNoCov">              0 :                 } else if (zend_llist_count(header)) { /* If no ':' on the line, add to previous line */</span>
+<span class="lineNum">     434 </span>                : 
+<span class="lineNum">     435 </span><span class="lineNoCov">              0 :                         prev_len = strlen(prev_entry.value);</span>
+<span class="lineNum">     436 </span><span class="lineNoCov">              0 :                         cur_len = strlen(line);</span>
+<span class="lineNum">     437 </span>                : 
+<span class="lineNum">     438 </span><span class="lineNoCov">              0 :                         entry.value = emalloc(prev_len + cur_len + 1);</span>
+<span class="lineNum">     439 </span><span class="lineNoCov">              0 :                         memcpy(entry.value, prev_entry.value, prev_len);</span>
+<span class="lineNum">     440 </span><span class="lineNoCov">              0 :                         memcpy(entry.value + prev_len, line, cur_len);</span>
+<span class="lineNum">     441 </span><span class="lineNoCov">              0 :                         entry.value[cur_len + prev_len] = '\0';</span>
+<span class="lineNum">     442 </span>                : 
+<span class="lineNum">     443 </span><span class="lineNoCov">              0 :                         entry.key = estrdup(prev_entry.key);</span>
+<span class="lineNum">     444 </span>                : 
+<span class="lineNum">     445 </span><span class="lineNoCov">              0 :                         zend_llist_remove_tail(header);</span>
+<span class="lineNum">     446 </span>                :                 } else {
+<span class="lineNum">     447 </span><span class="lineNoCov">              0 :                         continue;</span>
+<span class="lineNum">     448 </span>                :                 }
+<span class="lineNum">     449 </span>                : 
+<span class="lineNum">     450 </span><span class="lineNoCov">              0 :                 zend_llist_add_element(header, &amp;entry);</span>
+<span class="lineNum">     451 </span><span class="lineNoCov">              0 :                 prev_entry = entry;</span>
+<span class="lineNum">     452 </span>                :         }
+<span class="lineNum">     453 </span>                : 
+<span class="lineNum">     454 </span><span class="lineNoCov">              0 :         return 1;</span>
+<a name="455"><span class="lineNum">     455 </span>                : }</a>
+<span class="lineNum">     456 </span>                : 
+<span class="lineNum">     457 </span><span class="lineNoCov">              0 : static char *php_mime_get_hdr_value(zend_llist header, char *key)</span>
+<span class="lineNum">     458 </span>                : {
+<span class="lineNum">     459 </span>                :         mime_header_entry *entry;
+<span class="lineNum">     460 </span>                : 
+<span class="lineNum">     461 </span><span class="lineNoCov">              0 :         if (key == NULL) {</span>
+<span class="lineNum">     462 </span><span class="lineNoCov">              0 :                 return NULL;</span>
+<span class="lineNum">     463 </span>                :         }
+<span class="lineNum">     464 </span>                : 
+<span class="lineNum">     465 </span><span class="lineNoCov">              0 :         entry = zend_llist_get_first(&amp;header);</span>
+<span class="lineNum">     466 </span><span class="lineNoCov">              0 :         while (entry) {</span>
+<span class="lineNum">     467 </span><span class="lineNoCov">              0 :                 if (!strcasecmp(entry-&gt;key, key)) {</span>
+<span class="lineNum">     468 </span><span class="lineNoCov">              0 :                         return entry-&gt;value;</span>
+<span class="lineNum">     469 </span>                :                 }
+<span class="lineNum">     470 </span><span class="lineNoCov">              0 :                 entry = zend_llist_get_next(&amp;header);</span>
+<span class="lineNum">     471 </span>                :         }
+<span class="lineNum">     472 </span>                : 
+<span class="lineNum">     473 </span><span class="lineNoCov">              0 :         return NULL;</span>
+<a name="474"><span class="lineNum">     474 </span>                : }</a>
+<span class="lineNum">     475 </span>                : 
+<span class="lineNum">     476 </span><span class="lineNoCov">              0 : static char *php_ap_getword(const zend_encoding *encoding, char **line, char stop TSRMLS_DC)</span>
+<span class="lineNum">     477 </span>                : {
+<span class="lineNum">     478 </span><span class="lineNoCov">              0 :         char *pos = *line, quote;</span>
+<span class="lineNum">     479 </span>                :         char *res;
+<span class="lineNum">     480 </span>                : 
+<span class="lineNum">     481 </span><span class="lineNoCov">              0 :         while (*pos &amp;&amp; *pos != stop) {</span>
+<span class="lineNum">     482 </span><span class="lineNoCov">              0 :                 if ((quote = *pos) == '&quot;' || quote == '\'') {</span>
+<span class="lineNum">     483 </span><span class="lineNoCov">              0 :                         ++pos;</span>
+<span class="lineNum">     484 </span><span class="lineNoCov">              0 :                         while (*pos &amp;&amp; *pos != quote) {</span>
+<span class="lineNum">     485 </span><span class="lineNoCov">              0 :                                 if (*pos == '\\' &amp;&amp; pos[1] &amp;&amp; pos[1] == quote) {</span>
+<span class="lineNum">     486 </span><span class="lineNoCov">              0 :                                         pos += 2;</span>
+<span class="lineNum">     487 </span>                :                                 } else {
+<span class="lineNum">     488 </span><span class="lineNoCov">              0 :                                         ++pos;</span>
+<span class="lineNum">     489 </span>                :                                 }
+<span class="lineNum">     490 </span>                :                         }
+<span class="lineNum">     491 </span><span class="lineNoCov">              0 :                         if (*pos) {</span>
+<span class="lineNum">     492 </span><span class="lineNoCov">              0 :                                 ++pos;</span>
+<span class="lineNum">     493 </span>                :                         }
+<span class="lineNum">     494 </span><span class="lineNoCov">              0 :                 } else ++pos;</span>
+<span class="lineNum">     495 </span>                :         }
+<span class="lineNum">     496 </span><span class="lineNoCov">              0 :         if (*pos == '\0') {</span>
+<span class="lineNum">     497 </span><span class="lineNoCov">              0 :                 res = estrdup(*line);</span>
+<span class="lineNum">     498 </span><span class="lineNoCov">              0 :                 *line += strlen(*line);</span>
+<span class="lineNum">     499 </span><span class="lineNoCov">              0 :                 return res;</span>
+<span class="lineNum">     500 </span>                :         }
+<span class="lineNum">     501 </span>                : 
+<span class="lineNum">     502 </span><span class="lineNoCov">              0 :         res = estrndup(*line, pos - *line);</span>
+<span class="lineNum">     503 </span>                : 
+<span class="lineNum">     504 </span><span class="lineNoCov">              0 :         while (*pos == stop) {</span>
+<span class="lineNum">     505 </span><span class="lineNoCov">              0 :                 ++pos;</span>
+<span class="lineNum">     506 </span>                :         }
+<span class="lineNum">     507 </span>                : 
+<span class="lineNum">     508 </span><span class="lineNoCov">              0 :         *line = pos;</span>
+<span class="lineNum">     509 </span><span class="lineNoCov">              0 :         return res;</span>
+<a name="510"><span class="lineNum">     510 </span>                : }</a>
+<span class="lineNum">     511 </span>                : 
+<span class="lineNum">     512 </span><span class="lineNoCov">              0 : static char *substring_conf(char *start, int len, char quote)</span>
+<span class="lineNum">     513 </span>                : {
+<span class="lineNum">     514 </span><span class="lineNoCov">              0 :         char *result = emalloc(len + 1);</span>
+<span class="lineNum">     515 </span><span class="lineNoCov">              0 :         char *resp = result;</span>
+<span class="lineNum">     516 </span>                :         int i;
+<span class="lineNum">     517 </span>                : 
+<span class="lineNum">     518 </span><span class="lineNoCov">              0 :         for (i = 0; i &lt; len &amp;&amp; start[i] != quote; ++i) {</span>
+<span class="lineNum">     519 </span><span class="lineNoCov">              0 :                 if (start[i] == '\\' &amp;&amp; (start[i + 1] == '\\' || (quote &amp;&amp; start[i + 1] == quote))) {</span>
+<span class="lineNum">     520 </span><span class="lineNoCov">              0 :                         *resp++ = start[++i];</span>
+<span class="lineNum">     521 </span>                :                 } else {
+<span class="lineNum">     522 </span><span class="lineNoCov">              0 :                         *resp++ = start[i];</span>
+<span class="lineNum">     523 </span>                :                 }
+<span class="lineNum">     524 </span>                :         }
+<span class="lineNum">     525 </span>                : 
+<span class="lineNum">     526 </span><span class="lineNoCov">              0 :         *resp = '\0';</span>
+<span class="lineNum">     527 </span><span class="lineNoCov">              0 :         return result;</span>
+<a name="528"><span class="lineNum">     528 </span>                : }</a>
+<span class="lineNum">     529 </span>                : 
+<span class="lineNum">     530 </span><span class="lineNoCov">              0 : static char *php_ap_getword_conf(const zend_encoding *encoding, char *str TSRMLS_DC)</span>
+<span class="lineNum">     531 </span>                : {
+<span class="lineNum">     532 </span><span class="lineNoCov">              0 :         while (*str &amp;&amp; isspace(*str)) {</span>
+<span class="lineNum">     533 </span><span class="lineNoCov">              0 :                 ++str;</span>
+<span class="lineNum">     534 </span>                :         }
+<span class="lineNum">     535 </span>                : 
+<span class="lineNum">     536 </span><span class="lineNoCov">              0 :         if (!*str) {</span>
+<span class="lineNum">     537 </span><span class="lineNoCov">              0 :                 return estrdup(&quot;&quot;);</span>
+<span class="lineNum">     538 </span>                :         }
+<span class="lineNum">     539 </span>                : 
+<span class="lineNum">     540 </span><span class="lineNoCov">              0 :         if (*str == '&quot;' || *str == '\'') {</span>
+<span class="lineNum">     541 </span><span class="lineNoCov">              0 :                 char quote = *str;</span>
+<span class="lineNum">     542 </span>                : 
+<span class="lineNum">     543 </span><span class="lineNoCov">              0 :                 str++;</span>
+<span class="lineNum">     544 </span><span class="lineNoCov">              0 :                 return substring_conf(str, strlen(str), quote);</span>
+<span class="lineNum">     545 </span>                :         } else {
+<span class="lineNum">     546 </span><span class="lineNoCov">              0 :                 char *strend = str;</span>
+<span class="lineNum">     547 </span>                : 
+<span class="lineNum">     548 </span><span class="lineNoCov">              0 :                 while (*strend &amp;&amp; !isspace(*strend)) {</span>
+<span class="lineNum">     549 </span><span class="lineNoCov">              0 :                         ++strend;</span>
+<span class="lineNum">     550 </span>                :                 }
+<span class="lineNum">     551 </span><span class="lineNoCov">              0 :                 return substring_conf(str, strend - str, 0);</span>
+<span class="lineNum">     552 </span>                :         }
+<a name="553"><span class="lineNum">     553 </span>                : }</a>
+<span class="lineNum">     554 </span>                : 
+<span class="lineNum">     555 </span><span class="lineNoCov">              0 : static char *php_ap_basename(const zend_encoding *encoding, char *path TSRMLS_DC)</span>
+<span class="lineNum">     556 </span>                : {
+<span class="lineNum">     557 </span><span class="lineNoCov">              0 :         char *s = strrchr(path, '\\');</span>
+<span class="lineNum">     558 </span><span class="lineNoCov">              0 :         char *s2 = strrchr(path, '/');</span>
+<span class="lineNum">     559 </span>                : 
+<span class="lineNum">     560 </span><span class="lineNoCov">              0 :         if (s &amp;&amp; s2) {</span>
+<span class="lineNum">     561 </span><span class="lineNoCov">              0 :                 if (s &gt; s2) {</span>
+<span class="lineNum">     562 </span><span class="lineNoCov">              0 :                         ++s;</span>
+<span class="lineNum">     563 </span>                :                 } else {
+<span class="lineNum">     564 </span><span class="lineNoCov">              0 :                         s = ++s2;</span>
+<span class="lineNum">     565 </span>                :                 }
+<span class="lineNum">     566 </span><span class="lineNoCov">              0 :                 return s;</span>
+<span class="lineNum">     567 </span><span class="lineNoCov">              0 :         } else if (s) {</span>
+<span class="lineNum">     568 </span><span class="lineNoCov">              0 :                 return ++s;</span>
+<span class="lineNum">     569 </span><span class="lineNoCov">              0 :         } else if (s2) {</span>
+<span class="lineNum">     570 </span><span class="lineNoCov">              0 :                 return ++s2;</span>
+<span class="lineNum">     571 </span>                :         }
+<span class="lineNum">     572 </span><span class="lineNoCov">              0 :         return path;</span>
+<span class="lineNum">     573 </span>                : }
+<span class="lineNum">     574 </span>                : 
+<span class="lineNum">     575 </span>                : /*
+<span class="lineNum">     576 </span>                :  * Search for a string in a fixed-length byte string.
+<span class="lineNum">     577 </span>                :  * If partial is true, partial matches are allowed at the end of the buffer.
+<a name="578"><span class="lineNum">     578 </span>                :  * Returns NULL if not found, or a pointer to the start of the first match.</a>
+<span class="lineNum">     579 </span>                :  */
+<span class="lineNum">     580 </span><span class="lineNoCov">              0 : static void *php_ap_memstr(char *haystack, int haystacklen, char *needle, int needlen, int partial)</span>
+<span class="lineNum">     581 </span>                : {
+<span class="lineNum">     582 </span><span class="lineNoCov">              0 :         int len = haystacklen;</span>
+<span class="lineNum">     583 </span><span class="lineNoCov">              0 :         char *ptr = haystack;</span>
+<span class="lineNum">     584 </span>                : 
+<span class="lineNum">     585 </span>                :         /* iterate through first character matches */
+<span class="lineNum">     586 </span><span class="lineNoCov">              0 :         while( (ptr = memchr(ptr, needle[0], len)) ) {</span>
+<span class="lineNum">     587 </span>                : 
+<span class="lineNum">     588 </span>                :                 /* calculate length after match */
+<span class="lineNum">     589 </span><span class="lineNoCov">              0 :                 len = haystacklen - (ptr - (char *)haystack);</span>
+<span class="lineNum">     590 </span>                : 
+<span class="lineNum">     591 </span>                :                 /* done if matches up to capacity of buffer */
+<span class="lineNum">     592 </span><span class="lineNoCov">              0 :                 if (memcmp(needle, ptr, needlen &lt; len ? needlen : len) == 0 &amp;&amp; (partial || len &gt;= needlen)) {</span>
+<span class="lineNum">     593 </span>                :                         break;
+<span class="lineNum">     594 </span>                :                 }
+<span class="lineNum">     595 </span>                : 
+<span class="lineNum">     596 </span>                :                 /* next character */
+<span class="lineNum">     597 </span><span class="lineNoCov">              0 :                 ptr++; len--;</span>
+<span class="lineNum">     598 </span>                :         }
+<span class="lineNum">     599 </span>                : 
+<span class="lineNum">     600 </span><span class="lineNoCov">              0 :         return ptr;</span>
+<span class="lineNum">     601 </span>                : }
+<a name="602"><span class="lineNum">     602 </span>                : </a>
+<span class="lineNum">     603 </span>                : /* read until a boundary condition */
+<span class="lineNum">     604 </span><span class="lineNoCov">              0 : static int multipart_buffer_read(multipart_buffer *self, char *buf, int bytes, int *end TSRMLS_DC)</span>
+<span class="lineNum">     605 </span>                : {
+<span class="lineNum">     606 </span>                :         int len, max;
+<span class="lineNum">     607 </span>                :         char *bound;
+<span class="lineNum">     608 </span>                : 
+<span class="lineNum">     609 </span>                :         /* fill buffer if needed */
+<span class="lineNum">     610 </span><span class="lineNoCov">              0 :         if (bytes &gt; self-&gt;bytes_in_buffer) {</span>
+<span class="lineNum">     611 </span><span class="lineNoCov">              0 :                 fill_buffer(self TSRMLS_CC);</span>
+<span class="lineNum">     612 </span>                :         }
+<span class="lineNum">     613 </span>                : 
+<span class="lineNum">     614 </span>                :         /* look for a potential boundary match, only read data up to that point */
+<span class="lineNum">     615 </span><span class="lineNoCov">              0 :         if ((bound = php_ap_memstr(self-&gt;buf_begin, self-&gt;bytes_in_buffer, self-&gt;boundary_next, self-&gt;boundary_next_len, 1))) {</span>
+<span class="lineNum">     616 </span><span class="lineNoCov">              0 :                 max = bound - self-&gt;buf_begin;</span>
+<span class="lineNum">     617 </span><span class="lineNoCov">              0 :                 if (end &amp;&amp; php_ap_memstr(self-&gt;buf_begin, self-&gt;bytes_in_buffer, self-&gt;boundary_next, self-&gt;boundary_next_len, 0)) {</span>
+<span class="lineNum">     618 </span><span class="lineNoCov">              0 :                         *end = 1;</span>
+<span class="lineNum">     619 </span>                :                 }
+<span class="lineNum">     620 </span>                :         } else {
+<span class="lineNum">     621 </span><span class="lineNoCov">              0 :                 max = self-&gt;bytes_in_buffer;</span>
+<span class="lineNum">     622 </span>                :         }
+<span class="lineNum">     623 </span>                : 
+<span class="lineNum">     624 </span>                :         /* maximum number of bytes we are reading */
+<span class="lineNum">     625 </span><span class="lineNoCov">              0 :         len = max &lt; bytes-1 ? max : bytes-1;</span>
+<span class="lineNum">     626 </span>                : 
+<span class="lineNum">     627 </span>                :         /* if we read any data... */
+<span class="lineNum">     628 </span><span class="lineNoCov">              0 :         if (len &gt; 0) {</span>
+<span class="lineNum">     629 </span>                : 
+<span class="lineNum">     630 </span>                :                 /* copy the data */
+<span class="lineNum">     631 </span><span class="lineNoCov">              0 :                 memcpy(buf, self-&gt;buf_begin, len);</span>
+<span class="lineNum">     632 </span><span class="lineNoCov">              0 :                 buf[len] = 0;</span>
+<span class="lineNum">     633 </span>                : 
+<span class="lineNum">     634 </span><span class="lineNoCov">              0 :                 if (bound &amp;&amp; len &gt; 0 &amp;&amp; buf[len-1] == '\r') {</span>
+<span class="lineNum">     635 </span><span class="lineNoCov">              0 :                         buf[--len] = 0;</span>
+<span class="lineNum">     636 </span>                :                 }
+<span class="lineNum">     637 </span>                : 
+<span class="lineNum">     638 </span>                :                 /* update the buffer */
+<span class="lineNum">     639 </span><span class="lineNoCov">              0 :                 self-&gt;bytes_in_buffer -= len;</span>
+<span class="lineNum">     640 </span><span class="lineNoCov">              0 :                 self-&gt;buf_begin += len;</span>
+<span class="lineNum">     641 </span>                :         }
+<span class="lineNum">     642 </span>                : 
+<span class="lineNum">     643 </span><span class="lineNoCov">              0 :         return len;</span>
+<span class="lineNum">     644 </span>                : }
+<span class="lineNum">     645 </span>                : 
+<span class="lineNum">     646 </span>                : /*
+<span class="lineNum">     647 </span>                :   XXX: this is horrible memory-usage-wise, but we only expect
+<a name="648"><span class="lineNum">     648 </span>                :   to do this on small pieces of form data.</a>
+<span class="lineNum">     649 </span>                : */
+<span class="lineNum">     650 </span><span class="lineNoCov">              0 : static char *multipart_buffer_read_body(multipart_buffer *self, unsigned int *len TSRMLS_DC)</span>
+<span class="lineNum">     651 </span>                : {
+<span class="lineNum">     652 </span><span class="lineNoCov">              0 :         char buf[FILLUNIT], *out=NULL;</span>
+<span class="lineNum">     653 </span><span class="lineNoCov">              0 :         int total_bytes=0, read_bytes=0;</span>
+<span class="lineNum">     654 </span>                : 
+<span class="lineNum">     655 </span><span class="lineNoCov">              0 :         while((read_bytes = multipart_buffer_read(self, buf, sizeof(buf), NULL TSRMLS_CC))) {</span>
+<span class="lineNum">     656 </span><span class="lineNoCov">              0 :                 out = erealloc(out, total_bytes + read_bytes + 1);</span>
+<span class="lineNum">     657 </span><span class="lineNoCov">              0 :                 memcpy(out + total_bytes, buf, read_bytes);</span>
+<span class="lineNum">     658 </span><span class="lineNoCov">              0 :                 total_bytes += read_bytes;</span>
+<span class="lineNum">     659 </span>                :         }
+<span class="lineNum">     660 </span>                : 
+<span class="lineNum">     661 </span><span class="lineNoCov">              0 :         if (out) {</span>
+<span class="lineNum">     662 </span><span class="lineNoCov">              0 :                 out[total_bytes] = '\0';</span>
+<span class="lineNum">     663 </span>                :         }
+<span class="lineNum">     664 </span><span class="lineNoCov">              0 :         *len = total_bytes;</span>
+<span class="lineNum">     665 </span>                : 
+<span class="lineNum">     666 </span><span class="lineNoCov">              0 :         return out;</span>
+<span class="lineNum">     667 </span>                : }
+<span class="lineNum">     668 </span>                : /* }}} */
+<span class="lineNum">     669 </span>                : 
+<span class="lineNum">     670 </span>                : /*
+<span class="lineNum">     671 </span>                :  * The combined READER/HANDLER
+<span class="lineNum">     672 </span>                :  *
+<a name="673"><span class="lineNum">     673 </span>                :  */</a>
+<span class="lineNum">     674 </span>                : 
+<span class="lineNum">     675 </span><span class="lineNoCov">              0 : SAPI_API SAPI_POST_HANDLER_FUNC(rfc1867_post_handler) /* {{{ */</span>
+<span class="lineNum">     676 </span>                : {
+<span class="lineNum">     677 </span><span class="lineNoCov">              0 :         char *boundary, *s = NULL, *boundary_end = NULL, *start_arr = NULL, *array_index = NULL;</span>
+<span class="lineNum">     678 </span><span class="lineNoCov">              0 :         char *temp_filename = NULL, *lbuf = NULL, *abuf = NULL;</span>
+<span class="lineNum">     679 </span><span class="lineNoCov">              0 :         int boundary_len = 0, total_bytes = 0, cancel_upload = 0, is_arr_upload = 0, array_len = 0;</span>
+<span class="lineNum">     680 </span><span class="lineNoCov">              0 :         int max_file_size = 0, skip_upload = 0, anonindex = 0, is_anonymous;</span>
+<span class="lineNum">     681 </span><span class="lineNoCov">              0 :         zval *http_post_files = NULL;</span>
+<span class="lineNum">     682 </span><span class="lineNoCov">              0 :         HashTable *uploaded_files = NULL;</span>
+<span class="lineNum">     683 </span>                :         multipart_buffer *mbuff;
+<span class="lineNum">     684 </span><span class="lineNoCov">              0 :         zval *array_ptr = (zval *) arg;</span>
+<span class="lineNum">     685 </span><span class="lineNoCov">              0 :         int fd = -1;</span>
+<span class="lineNum">     686 </span>                :         zend_llist header;
+<span class="lineNum">     687 </span><span class="lineNoCov">              0 :         void *event_extra_data = NULL;</span>
+<span class="lineNum">     688 </span><span class="lineNoCov">              0 :         unsigned int llen = 0;</span>
+<span class="lineNum">     689 </span><span class="lineNoCov">              0 :         int upload_cnt = INI_INT(&quot;max_file_uploads&quot;);</span>
+<span class="lineNum">     690 </span><span class="lineNoCov">              0 :         const zend_encoding *internal_encoding = zend_multibyte_get_internal_encoding(TSRMLS_C);</span>
+<span class="lineNum">     691 </span>                :         php_rfc1867_getword_t getword;
+<span class="lineNum">     692 </span>                :         php_rfc1867_getword_conf_t getword_conf;
+<span class="lineNum">     693 </span>                :         php_rfc1867_basename_t _basename;
+<span class="lineNum">     694 </span><span class="lineNoCov">              0 :         long count = 0;</span>
+<span class="lineNum">     695 </span>                : 
+<span class="lineNum">     696 </span><span class="lineNoCov">              0 :         if (php_rfc1867_encoding_translation(TSRMLS_C) &amp;&amp; internal_encoding) {</span>
+<span class="lineNum">     697 </span><span class="lineNoCov">              0 :                 getword = php_rfc1867_getword;</span>
+<span class="lineNum">     698 </span><span class="lineNoCov">              0 :                 getword_conf = php_rfc1867_getword_conf;</span>
+<span class="lineNum">     699 </span><span class="lineNoCov">              0 :                 _basename = php_rfc1867_basename;</span>
+<span class="lineNum">     700 </span>                :         } else {
+<span class="lineNum">     701 </span><span class="lineNoCov">              0 :                 getword = php_ap_getword;</span>
+<span class="lineNum">     702 </span><span class="lineNoCov">              0 :                 getword_conf = php_ap_getword_conf;</span>
+<span class="lineNum">     703 </span><span class="lineNoCov">              0 :                 _basename = php_ap_basename;</span>
+<span class="lineNum">     704 </span>                :         }
+<span class="lineNum">     705 </span>                : 
+<span class="lineNum">     706 </span><span class="lineNoCov">              0 :         if (SG(post_max_size) &gt; 0 &amp;&amp; SG(request_info).content_length &gt; SG(post_max_size)) {</span>
+<span class="lineNum">     707 </span><span class="lineNoCov">              0 :                 sapi_module.sapi_error(E_WARNING, &quot;POST Content-Length of %ld bytes exceeds the limit of %ld bytes&quot;, SG(request_info).content_length, SG(post_max_size));</span>
+<span class="lineNum">     708 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     709 </span>                :         }
+<span class="lineNum">     710 </span>                : 
+<span class="lineNum">     711 </span>                :         /* Get the boundary */
+<span class="lineNum">     712 </span><span class="lineNoCov">              0 :         boundary = strstr(content_type_dup, &quot;boundary&quot;);</span>
+<span class="lineNum">     713 </span><span class="lineNoCov">              0 :         if (!boundary) {</span>
+<span class="lineNum">     714 </span><span class="lineNoCov">              0 :                 int content_type_len = strlen(content_type_dup);</span>
+<span class="lineNum">     715 </span><span class="lineNoCov">              0 :                 char *content_type_lcase = estrndup(content_type_dup, content_type_len);</span>
+<span class="lineNum">     716 </span>                : 
+<span class="lineNum">     717 </span><span class="lineNoCov">              0 :                 php_strtolower(content_type_lcase, content_type_len);</span>
+<span class="lineNum">     718 </span><span class="lineNoCov">              0 :                 boundary = strstr(content_type_lcase, &quot;boundary&quot;);</span>
+<span class="lineNum">     719 </span><span class="lineNoCov">              0 :                 if (boundary) {</span>
+<span class="lineNum">     720 </span><span class="lineNoCov">              0 :                         boundary = content_type_dup + (boundary - content_type_lcase);</span>
+<span class="lineNum">     721 </span>                :                 }
+<span class="lineNum">     722 </span><span class="lineNoCov">              0 :                 efree(content_type_lcase);</span>
+<span class="lineNum">     723 </span>                :         }
+<span class="lineNum">     724 </span>                : 
+<span class="lineNum">     725 </span><span class="lineNoCov">              0 :         if (!boundary || !(boundary = strchr(boundary, '='))) {</span>
+<span class="lineNum">     726 </span><span class="lineNoCov">              0 :                 sapi_module.sapi_error(E_WARNING, &quot;Missing boundary in multipart/form-data POST data&quot;);</span>
+<span class="lineNum">     727 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     728 </span>                :         }
+<span class="lineNum">     729 </span>                : 
+<span class="lineNum">     730 </span><span class="lineNoCov">              0 :         boundary++;</span>
+<span class="lineNum">     731 </span><span class="lineNoCov">              0 :         boundary_len = strlen(boundary);</span>
+<span class="lineNum">     732 </span>                : 
+<span class="lineNum">     733 </span><span class="lineNoCov">              0 :         if (boundary[0] == '&quot;') {</span>
+<span class="lineNum">     734 </span><span class="lineNoCov">              0 :                 boundary++;</span>
+<span class="lineNum">     735 </span><span class="lineNoCov">              0 :                 boundary_end = strchr(boundary, '&quot;');</span>
+<span class="lineNum">     736 </span><span class="lineNoCov">              0 :                 if (!boundary_end) {</span>
+<span class="lineNum">     737 </span><span class="lineNoCov">              0 :                         sapi_module.sapi_error(E_WARNING, &quot;Invalid boundary in multipart/form-data POST data&quot;);</span>
+<span class="lineNum">     738 </span><span class="lineNoCov">              0 :                         return;</span>
+<span class="lineNum">     739 </span>                :                 }
+<span class="lineNum">     740 </span>                :         } else {
+<span class="lineNum">     741 </span>                :                 /* search for the end of the boundary */
+<span class="lineNum">     742 </span><span class="lineNoCov">              0 :                 boundary_end = strpbrk(boundary, &quot;,;&quot;);</span>
+<span class="lineNum">     743 </span>                :         }
+<span class="lineNum">     744 </span><span class="lineNoCov">              0 :         if (boundary_end) {</span>
+<span class="lineNum">     745 </span><span class="lineNoCov">              0 :                 boundary_end[0] = '\0';</span>
+<span class="lineNum">     746 </span><span class="lineNoCov">              0 :                 boundary_len = boundary_end-boundary;</span>
+<span class="lineNum">     747 </span>                :         }
+<span class="lineNum">     748 </span>                : 
+<span class="lineNum">     749 </span>                :         /* Initialize the buffer */
+<span class="lineNum">     750 </span><span class="lineNoCov">              0 :         if (!(mbuff = multipart_buffer_new(boundary, boundary_len TSRMLS_CC))) {</span>
+<span class="lineNum">     751 </span><span class="lineNoCov">              0 :                 sapi_module.sapi_error(E_WARNING, &quot;Unable to initialize the input buffer&quot;);</span>
+<span class="lineNum">     752 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     753 </span>                :         }
+<span class="lineNum">     754 </span>                : 
+<span class="lineNum">     755 </span>                :         /* Initialize $_FILES[] */
+<span class="lineNum">     756 </span><span class="lineNoCov">              0 :         zend_hash_init(&amp;PG(rfc1867_protected_variables), 5, NULL, NULL, 0);</span>
+<span class="lineNum">     757 </span>                : 
+<span class="lineNum">     758 </span><span class="lineNoCov">              0 :         ALLOC_HASHTABLE(uploaded_files);</span>
+<span class="lineNum">     759 </span><span class="lineNoCov">              0 :         zend_hash_init(uploaded_files, 5, NULL, (dtor_func_t) free_estring, 0);</span>
+<span class="lineNum">     760 </span><span class="lineNoCov">              0 :         SG(rfc1867_uploaded_files) = uploaded_files;</span>
+<span class="lineNum">     761 </span>                : 
+<span class="lineNum">     762 </span><span class="lineNoCov">              0 :         ALLOC_ZVAL(http_post_files);</span>
+<span class="lineNum">     763 </span><span class="lineNoCov">              0 :         array_init(http_post_files);</span>
+<span class="lineNum">     764 </span><span class="lineNoCov">              0 :         INIT_PZVAL(http_post_files);</span>
+<span class="lineNum">     765 </span><span class="lineNoCov">              0 :         PG(http_globals)[TRACK_VARS_FILES] = http_post_files;</span>
+<span class="lineNum">     766 </span>                : 
+<span class="lineNum">     767 </span><span class="lineNoCov">              0 :         zend_llist_init(&amp;header, sizeof(mime_header_entry), (llist_dtor_func_t) php_free_hdr_entry, 0);</span>
+<span class="lineNum">     768 </span>                : 
+<span class="lineNum">     769 </span><span class="lineNoCov">              0 :         if (php_rfc1867_callback != NULL) {</span>
+<span class="lineNum">     770 </span>                :                 multipart_event_start event_start;
+<span class="lineNum">     771 </span>                : 
+<span class="lineNum">     772 </span><span class="lineNoCov">              0 :                 event_start.content_length = SG(request_info).content_length;</span>
+<span class="lineNum">     773 </span><span class="lineNoCov">              0 :                 if (php_rfc1867_callback(MULTIPART_EVENT_START, &amp;event_start, &amp;event_extra_data TSRMLS_CC) == FAILURE) {</span>
+<span class="lineNum">     774 </span><span class="lineNoCov">              0 :                         goto fileupload_done;</span>
+<span class="lineNum">     775 </span>                :                 }
+<span class="lineNum">     776 </span>                :         }
+<span class="lineNum">     777 </span>                : 
+<span class="lineNum">     778 </span><span class="lineNoCov">              0 :         while (!multipart_buffer_eof(mbuff TSRMLS_CC))</span>
+<span class="lineNum">     779 </span>                :         {
+<span class="lineNum">     780 </span>                :                 char buff[FILLUNIT];
+<span class="lineNum">     781 </span><span class="lineNoCov">              0 :                 char *cd = NULL, *param = NULL, *filename = NULL, *tmp = NULL;</span>
+<span class="lineNum">     782 </span><span class="lineNoCov">              0 :                 size_t blen = 0, wlen = 0;</span>
+<span class="lineNum">     783 </span>                :                 off_t offset;
+<span class="lineNum">     784 </span>                : 
+<span class="lineNum">     785 </span><span class="lineNoCov">              0 :                 zend_llist_clean(&amp;header);</span>
+<span class="lineNum">     786 </span>                : 
+<span class="lineNum">     787 </span><span class="lineNoCov">              0 :                 if (!multipart_buffer_headers(mbuff, &amp;header TSRMLS_CC)) {</span>
+<span class="lineNum">     788 </span><span class="lineNoCov">              0 :                         goto fileupload_done;</span>
+<span class="lineNum">     789 </span>                :                 }
+<span class="lineNum">     790 </span>                : 
+<span class="lineNum">     791 </span><span class="lineNoCov">              0 :                 if ((cd = php_mime_get_hdr_value(header, &quot;Content-Disposition&quot;))) {</span>
+<span class="lineNum">     792 </span><span class="lineNoCov">              0 :                         char *pair = NULL;</span>
+<span class="lineNum">     793 </span><span class="lineNoCov">              0 :                         int end = 0;</span>
+<span class="lineNum">     794 </span>                : 
+<span class="lineNum">     795 </span><span class="lineNoCov">              0 :                         while (isspace(*cd)) {</span>
+<span class="lineNum">     796 </span><span class="lineNoCov">              0 :                                 ++cd;</span>
+<span class="lineNum">     797 </span>                :                         }
+<span class="lineNum">     798 </span>                : 
+<span class="lineNum">     799 </span><span class="lineNoCov">              0 :                         while (*cd &amp;&amp; (pair = getword(mbuff-&gt;input_encoding, &amp;cd, ';' TSRMLS_CC)))</span>
+<span class="lineNum">     800 </span>                :                         {
+<span class="lineNum">     801 </span><span class="lineNoCov">              0 :                                 char *key = NULL, *word = pair;</span>
+<span class="lineNum">     802 </span>                : 
+<span class="lineNum">     803 </span><span class="lineNoCov">              0 :                                 while (isspace(*cd)) {</span>
+<span class="lineNum">     804 </span><span class="lineNoCov">              0 :                                         ++cd;</span>
+<span class="lineNum">     805 </span>                :                                 }
+<span class="lineNum">     806 </span>                : 
+<span class="lineNum">     807 </span><span class="lineNoCov">              0 :                                 if (strchr(pair, '=')) {</span>
+<span class="lineNum">     808 </span><span class="lineNoCov">              0 :                                         key = getword(mbuff-&gt;input_encoding, &amp;pair, '=' TSRMLS_CC);</span>
+<span class="lineNum">     809 </span>                : 
+<span class="lineNum">     810 </span><span class="lineNoCov">              0 :                                         if (!strcasecmp(key, &quot;name&quot;)) {</span>
+<span class="lineNum">     811 </span><span class="lineNoCov">              0 :                                                 if (param) {</span>
+<span class="lineNum">     812 </span><span class="lineNoCov">              0 :                                                         efree(param);</span>
+<span class="lineNum">     813 </span>                :                                                 }
+<span class="lineNum">     814 </span><span class="lineNoCov">              0 :                                                 param = getword_conf(mbuff-&gt;input_encoding, pair TSRMLS_CC);</span>
+<span class="lineNum">     815 </span><span class="lineNoCov">              0 :                                                 if (mbuff-&gt;input_encoding &amp;&amp; internal_encoding) {</span>
+<span class="lineNum">     816 </span>                :                                                         unsigned char *new_param;
+<span class="lineNum">     817 </span>                :                                                         size_t new_param_len;
+<span class="lineNum">     818 </span><span class="lineNoCov">              0 :                                                         if ((size_t)-1 != zend_multibyte_encoding_converter(&amp;new_param, &amp;new_param_len, (unsigned char *)param, strlen(param), internal_encoding, mbuff-&gt;input_encoding TSRMLS_CC)) {</span>
+<span class="lineNum">     819 </span><span class="lineNoCov">              0 :                                                                 efree(param);</span>
+<span class="lineNum">     820 </span><span class="lineNoCov">              0 :                                                                 param = (char *)new_param;</span>
+<span class="lineNum">     821 </span>                :                                                         }
+<span class="lineNum">     822 </span>                :                                                 }
+<span class="lineNum">     823 </span><span class="lineNoCov">              0 :                                         } else if (!strcasecmp(key, &quot;filename&quot;)) {</span>
+<span class="lineNum">     824 </span><span class="lineNoCov">              0 :                                                 if (filename) {</span>
+<span class="lineNum">     825 </span><span class="lineNoCov">              0 :                                                         efree(filename);</span>
+<span class="lineNum">     826 </span>                :                                                 }
+<span class="lineNum">     827 </span><span class="lineNoCov">              0 :                                                 filename = getword_conf(mbuff-&gt;input_encoding, pair TSRMLS_CC);</span>
+<span class="lineNum">     828 </span><span class="lineNoCov">              0 :                                                 if (mbuff-&gt;input_encoding &amp;&amp; internal_encoding) {</span>
+<span class="lineNum">     829 </span>                :                                                         unsigned char *new_filename;
+<span class="lineNum">     830 </span>                :                                                         size_t new_filename_len;
+<span class="lineNum">     831 </span><span class="lineNoCov">              0 :                                                         if ((size_t)-1 != zend_multibyte_encoding_converter(&amp;new_filename, &amp;new_filename_len, (unsigned char *)filename, strlen(filename), internal_encoding, mbuff-&gt;input_encoding TSRMLS_CC)) {</span>
+<span class="lineNum">     832 </span><span class="lineNoCov">              0 :                                                                 efree(filename);</span>
+<span class="lineNum">     833 </span><span class="lineNoCov">              0 :                                                                 filename = (char *)new_filename;</span>
+<span class="lineNum">     834 </span>                :                                                         }
+<span class="lineNum">     835 </span>                :                                                 }
+<span class="lineNum">     836 </span>                :                                         }
+<span class="lineNum">     837 </span>                :                                 }
+<span class="lineNum">     838 </span><span class="lineNoCov">              0 :                                 if (key) {</span>
+<span class="lineNum">     839 </span><span class="lineNoCov">              0 :                                         efree(key);</span>
+<span class="lineNum">     840 </span>                :                                 }
+<span class="lineNum">     841 </span><span class="lineNoCov">              0 :                                 efree(word);</span>
+<span class="lineNum">     842 </span>                :                         }
+<span class="lineNum">     843 </span>                : 
+<span class="lineNum">     844 </span>                :                         /* Normal form variable, safe to read all data into memory */
+<span class="lineNum">     845 </span><span class="lineNoCov">              0 :                         if (!filename &amp;&amp; param) {</span>
+<span class="lineNum">     846 </span>                :                                 unsigned int value_len;
+<span class="lineNum">     847 </span><span class="lineNoCov">              0 :                                 char *value = multipart_buffer_read_body(mbuff, &amp;value_len TSRMLS_CC);</span>
+<span class="lineNum">     848 </span>                :                                 unsigned int new_val_len; /* Dummy variable */
+<span class="lineNum">     849 </span>                : 
+<span class="lineNum">     850 </span><span class="lineNoCov">              0 :                                 if (!value) {</span>
+<span class="lineNum">     851 </span><span class="lineNoCov">              0 :                                         value = estrdup(&quot;&quot;);</span>
+<span class="lineNum">     852 </span><span class="lineNoCov">              0 :                                         value_len = 0;</span>
+<span class="lineNum">     853 </span>                :                                 }
+<span class="lineNum">     854 </span>                : 
+<span class="lineNum">     855 </span><span class="lineNoCov">              0 :                                 if (mbuff-&gt;input_encoding &amp;&amp; internal_encoding) {</span>
+<span class="lineNum">     856 </span>                :                                         unsigned char *new_value;
+<span class="lineNum">     857 </span>                :                                         size_t new_value_len;
+<span class="lineNum">     858 </span><span class="lineNoCov">              0 :                                         if ((size_t)-1 != zend_multibyte_encoding_converter(&amp;new_value, &amp;new_value_len, (unsigned char *)value, value_len, internal_encoding, mbuff-&gt;input_encoding TSRMLS_CC)) {</span>
+<span class="lineNum">     859 </span><span class="lineNoCov">              0 :                                                 efree(value);</span>
+<span class="lineNum">     860 </span><span class="lineNoCov">              0 :                                                 value = (char *)new_value;</span>
+<span class="lineNum">     861 </span><span class="lineNoCov">              0 :                                                 value_len = new_value_len;</span>
+<span class="lineNum">     862 </span>                :                                         }
+<span class="lineNum">     863 </span>                :                                 }
+<span class="lineNum">     864 </span>                : 
+<span class="lineNum">     865 </span><span class="lineNoCov">              0 :                                 if (++count &lt;= PG(max_input_vars) &amp;&amp; sapi_module.input_filter(PARSE_POST, param, &amp;value, value_len, &amp;new_val_len TSRMLS_CC)) {</span>
+<span class="lineNum">     866 </span><span class="lineNoCov">              0 :                                         if (php_rfc1867_callback != NULL) {</span>
+<span class="lineNum">     867 </span>                :                                                 multipart_event_formdata event_formdata;
+<span class="lineNum">     868 </span><span class="lineNoCov">              0 :                                                 size_t newlength = new_val_len;</span>
+<span class="lineNum">     869 </span>                : 
+<span class="lineNum">     870 </span><span class="lineNoCov">              0 :                                                 event_formdata.post_bytes_processed = SG(read_post_bytes);</span>
+<span class="lineNum">     871 </span><span class="lineNoCov">              0 :                                                 event_formdata.name = param;</span>
+<span class="lineNum">     872 </span><span class="lineNoCov">              0 :                                                 event_formdata.value = &amp;value;</span>
+<span class="lineNum">     873 </span><span class="lineNoCov">              0 :                                                 event_formdata.length = new_val_len;</span>
+<span class="lineNum">     874 </span><span class="lineNoCov">              0 :                                                 event_formdata.newlength = &amp;newlength;</span>
+<span class="lineNum">     875 </span><span class="lineNoCov">              0 :                                                 if (php_rfc1867_callback(MULTIPART_EVENT_FORMDATA, &amp;event_formdata, &amp;event_extra_data TSRMLS_CC) == FAILURE) {</span>
+<span class="lineNum">     876 </span><span class="lineNoCov">              0 :                                                         efree(param);</span>
+<span class="lineNum">     877 </span><span class="lineNoCov">              0 :                                                         efree(value);</span>
+<span class="lineNum">     878 </span><span class="lineNoCov">              0 :                                                         continue;</span>
+<span class="lineNum">     879 </span>                :                                                 }
+<span class="lineNum">     880 </span><span class="lineNoCov">              0 :                                                 new_val_len = newlength;</span>
+<span class="lineNum">     881 </span>                :                                         }
+<span class="lineNum">     882 </span><span class="lineNoCov">              0 :                                         safe_php_register_variable(param, value, new_val_len, array_ptr, 0 TSRMLS_CC);</span>
+<span class="lineNum">     883 </span>                :                                 } else {
+<span class="lineNum">     884 </span><span class="lineNoCov">              0 :                                         if (count == PG(max_input_vars) + 1) {</span>
+<span class="lineNum">     885 </span><span class="lineNoCov">              0 :                                                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Input variables exceeded %ld. To increase the limit change max_input_vars in php.ini.&quot;, PG(max_input_vars));</span>
+<span class="lineNum">     886 </span>                :                                         }
+<span class="lineNum">     887 </span>                :                                 
+<span class="lineNum">     888 </span><span class="lineNoCov">              0 :                                         if (php_rfc1867_callback != NULL) {</span>
+<span class="lineNum">     889 </span>                :                                                 multipart_event_formdata event_formdata;
+<span class="lineNum">     890 </span>                : 
+<span class="lineNum">     891 </span><span class="lineNoCov">              0 :                                                 event_formdata.post_bytes_processed = SG(read_post_bytes);</span>
+<span class="lineNum">     892 </span><span class="lineNoCov">              0 :                                                 event_formdata.name = param;</span>
+<span class="lineNum">     893 </span><span class="lineNoCov">              0 :                                                 event_formdata.value = &amp;value;</span>
+<span class="lineNum">     894 </span><span class="lineNoCov">              0 :                                                 event_formdata.length = value_len;</span>
+<span class="lineNum">     895 </span><span class="lineNoCov">              0 :                                                 event_formdata.newlength = NULL;</span>
+<span class="lineNum">     896 </span><span class="lineNoCov">              0 :                                                 php_rfc1867_callback(MULTIPART_EVENT_FORMDATA, &amp;event_formdata, &amp;event_extra_data TSRMLS_CC);</span>
+<span class="lineNum">     897 </span>                :                                         }
+<span class="lineNum">     898 </span>                :                                 }
+<span class="lineNum">     899 </span>                : 
+<span class="lineNum">     900 </span><span class="lineNoCov">              0 :                                 if (!strcasecmp(param, &quot;MAX_FILE_SIZE&quot;)) {</span>
+<span class="lineNum">     901 </span><span class="lineNoCov">              0 :                                         max_file_size = atol(value);</span>
+<span class="lineNum">     902 </span>                :                                 }
+<span class="lineNum">     903 </span>                : 
+<span class="lineNum">     904 </span><span class="lineNoCov">              0 :                                 efree(param);</span>
+<span class="lineNum">     905 </span><span class="lineNoCov">              0 :                                 efree(value);</span>
+<span class="lineNum">     906 </span><span class="lineNoCov">              0 :                                 continue;</span>
+<span class="lineNum">     907 </span>                :                         }
+<span class="lineNum">     908 </span>                : 
+<span class="lineNum">     909 </span>                :                         /* If file_uploads=off, skip the file part */
+<span class="lineNum">     910 </span><span class="lineNoCov">              0 :                         if (!PG(file_uploads)) {</span>
+<span class="lineNum">     911 </span><span class="lineNoCov">              0 :                                 skip_upload = 1;</span>
+<span class="lineNum">     912 </span><span class="lineNoCov">              0 :                         } else if (upload_cnt &lt;= 0) {</span>
+<span class="lineNum">     913 </span><span class="lineNoCov">              0 :                                 skip_upload = 1;</span>
+<span class="lineNum">     914 </span><span class="lineNoCov">              0 :                                 sapi_module.sapi_error(E_WARNING, &quot;Maximum number of allowable file uploads has been exceeded&quot;);</span>
+<span class="lineNum">     915 </span>                :                         }
+<span class="lineNum">     916 </span>                : 
+<span class="lineNum">     917 </span>                :                         /* Return with an error if the posted data is garbled */
+<span class="lineNum">     918 </span><span class="lineNoCov">              0 :                         if (!param &amp;&amp; !filename) {</span>
+<span class="lineNum">     919 </span><span class="lineNoCov">              0 :                                 sapi_module.sapi_error(E_WARNING, &quot;File Upload Mime headers garbled&quot;);</span>
+<span class="lineNum">     920 </span><span class="lineNoCov">              0 :                                 goto fileupload_done;</span>
+<span class="lineNum">     921 </span>                :                         }
+<span class="lineNum">     922 </span>                : 
+<span class="lineNum">     923 </span><span class="lineNoCov">              0 :                         if (!param) {</span>
+<span class="lineNum">     924 </span><span class="lineNoCov">              0 :                                 is_anonymous = 1;</span>
+<span class="lineNum">     925 </span><span class="lineNoCov">              0 :                                 param = emalloc(MAX_SIZE_ANONNAME);</span>
+<span class="lineNum">     926 </span><span class="lineNoCov">              0 :                                 snprintf(param, MAX_SIZE_ANONNAME, &quot;%u&quot;, anonindex++);</span>
+<span class="lineNum">     927 </span>                :                         } else {
+<span class="lineNum">     928 </span><span class="lineNoCov">              0 :                                 is_anonymous = 0;</span>
+<span class="lineNum">     929 </span>                :                         }
+<span class="lineNum">     930 </span>                : 
+<span class="lineNum">     931 </span>                :                         /* New Rule: never repair potential malicious user input */
+<span class="lineNum">     932 </span><span class="lineNoCov">              0 :                         if (!skip_upload) {</span>
+<span class="lineNum">     933 </span><span class="lineNoCov">              0 :                                 long c = 0;</span>
+<span class="lineNum">     934 </span><span class="lineNoCov">              0 :                                 tmp = param;</span>
+<span class="lineNum">     935 </span>                : 
+<span class="lineNum">     936 </span><span class="lineNoCov">              0 :                                 while (*tmp) {</span>
+<span class="lineNum">     937 </span><span class="lineNoCov">              0 :                                         if (*tmp == '[') {</span>
+<span class="lineNum">     938 </span><span class="lineNoCov">              0 :                                                 c++;</span>
+<span class="lineNum">     939 </span><span class="lineNoCov">              0 :                                         } else if (*tmp == ']') {</span>
+<span class="lineNum">     940 </span><span class="lineNoCov">              0 :                                                 c--;</span>
+<span class="lineNum">     941 </span><span class="lineNoCov">              0 :                                                 if (tmp[1] &amp;&amp; tmp[1] != '[') {</span>
+<span class="lineNum">     942 </span><span class="lineNoCov">              0 :                                                         skip_upload = 1;</span>
+<span class="lineNum">     943 </span><span class="lineNoCov">              0 :                                                         break;</span>
+<span class="lineNum">     944 </span>                :                                                 }
+<span class="lineNum">     945 </span>                :                                         }
+<span class="lineNum">     946 </span><span class="lineNoCov">              0 :                                         if (c &lt; 0) {</span>
+<span class="lineNum">     947 </span><span class="lineNoCov">              0 :                                                 skip_upload = 1;</span>
+<span class="lineNum">     948 </span><span class="lineNoCov">              0 :                                                 break;</span>
+<span class="lineNum">     949 </span>                :                                         }
+<span class="lineNum">     950 </span><span class="lineNoCov">              0 :                                         tmp++;</span>
+<span class="lineNum">     951 </span>                :                                 }
+<span class="lineNum">     952 </span>                :                                 /* Brackets should always be closed */
+<span class="lineNum">     953 </span><span class="lineNoCov">              0 :                                 if(c != 0) {</span>
+<span class="lineNum">     954 </span><span class="lineNoCov">              0 :                                         skip_upload = 1;</span>
+<span class="lineNum">     955 </span>                :                                 }
+<span class="lineNum">     956 </span>                :                         }
+<span class="lineNum">     957 </span>                : 
+<span class="lineNum">     958 </span><span class="lineNoCov">              0 :                         total_bytes = cancel_upload = 0;</span>
+<span class="lineNum">     959 </span><span class="lineNoCov">              0 :                         temp_filename = NULL;</span>
+<span class="lineNum">     960 </span><span class="lineNoCov">              0 :                         fd = -1;</span>
+<span class="lineNum">     961 </span>                : 
+<span class="lineNum">     962 </span><span class="lineNoCov">              0 :                         if (!skip_upload &amp;&amp; php_rfc1867_callback != NULL) {</span>
+<span class="lineNum">     963 </span>                :                                 multipart_event_file_start event_file_start;
+<span class="lineNum">     964 </span>                : 
+<span class="lineNum">     965 </span><span class="lineNoCov">              0 :                                 event_file_start.post_bytes_processed = SG(read_post_bytes);</span>
+<span class="lineNum">     966 </span><span class="lineNoCov">              0 :                                 event_file_start.name = param;</span>
+<span class="lineNum">     967 </span><span class="lineNoCov">              0 :                                 event_file_start.filename = &amp;filename;</span>
+<span class="lineNum">     968 </span><span class="lineNoCov">              0 :                                 if (php_rfc1867_callback(MULTIPART_EVENT_FILE_START, &amp;event_file_start, &amp;event_extra_data TSRMLS_CC) == FAILURE) {</span>
+<span class="lineNum">     969 </span><span class="lineNoCov">              0 :                                         temp_filename = &quot;&quot;;</span>
+<span class="lineNum">     970 </span><span class="lineNoCov">              0 :                                         efree(param);</span>
+<span class="lineNum">     971 </span><span class="lineNoCov">              0 :                                         efree(filename);</span>
+<span class="lineNum">     972 </span><span class="lineNoCov">              0 :                                         continue;</span>
+<span class="lineNum">     973 </span>                :                                 }
+<span class="lineNum">     974 </span>                :                         }
+<span class="lineNum">     975 </span>                : 
+<span class="lineNum">     976 </span><span class="lineNoCov">              0 :                         if (skip_upload) {</span>
+<span class="lineNum">     977 </span><span class="lineNoCov">              0 :                                 efree(param);</span>
+<span class="lineNum">     978 </span><span class="lineNoCov">              0 :                                 efree(filename);</span>
+<span class="lineNum">     979 </span><span class="lineNoCov">              0 :                                 continue;</span>
+<span class="lineNum">     980 </span>                :                         }
+<span class="lineNum">     981 </span>                : 
+<span class="lineNum">     982 </span><span class="lineNoCov">              0 :                         if (strlen(filename) == 0) {</span>
+<span class="lineNum">     983 </span>                : #if DEBUG_FILE_UPLOAD
+<span class="lineNum">     984 </span>                :                                 sapi_module.sapi_error(E_NOTICE, &quot;No file uploaded&quot;);
+<span class="lineNum">     985 </span>                : #endif
+<span class="lineNum">     986 </span><span class="lineNoCov">              0 :                                 cancel_upload = UPLOAD_ERROR_D;</span>
+<span class="lineNum">     987 </span>                :                         }
+<span class="lineNum">     988 </span>                : 
+<span class="lineNum">     989 </span><span class="lineNoCov">              0 :                         offset = 0;</span>
+<span class="lineNum">     990 </span><span class="lineNoCov">              0 :                         end = 0;</span>
+<span class="lineNum">     991 </span>                : 
+<span class="lineNum">     992 </span><span class="lineNoCov">              0 :                         if (!cancel_upload) {</span>
+<span class="lineNum">     993 </span>                :                                 /* only bother to open temp file if we have data */
+<span class="lineNum">     994 </span><span class="lineNoCov">              0 :                                 blen = multipart_buffer_read(mbuff, buff, sizeof(buff), &amp;end TSRMLS_CC);</span>
+<span class="lineNum">     995 </span>                : #if DEBUG_FILE_UPLOAD
+<span class="lineNum">     996 </span>                :                                 if (blen &gt; 0) {
+<span class="lineNum">     997 </span>                : #else
+<span class="lineNum">     998 </span>                :                                 /* in non-debug mode we have no problem with 0-length files */
+<span class="lineNum">     999 </span>                :                                 {
+<span class="lineNum">    1000 </span>                : #endif
+<span class="lineNum">    1001 </span><span class="lineNoCov">              0 :                                         fd = php_open_temporary_fd_ex(PG(upload_tmp_dir), &quot;php&quot;, &amp;temp_filename, 1 TSRMLS_CC);</span>
+<span class="lineNum">    1002 </span><span class="lineNoCov">              0 :                                         upload_cnt--;</span>
+<span class="lineNum">    1003 </span><span class="lineNoCov">              0 :                                         if (fd == -1) {</span>
+<span class="lineNum">    1004 </span><span class="lineNoCov">              0 :                                                 sapi_module.sapi_error(E_WARNING, &quot;File upload error - unable to create a temporary file&quot;);</span>
+<span class="lineNum">    1005 </span><span class="lineNoCov">              0 :                                                 cancel_upload = UPLOAD_ERROR_E;</span>
+<span class="lineNum">    1006 </span>                :                                         }
+<span class="lineNum">    1007 </span>                :                                 }
+<span class="lineNum">    1008 </span>                :                         }
+<span class="lineNum">    1009 </span>                : 
+<span class="lineNum">    1010 </span><span class="lineNoCov">              0 :                         while (!cancel_upload &amp;&amp; (blen &gt; 0))</span>
+<span class="lineNum">    1011 </span>                :                         {
+<span class="lineNum">    1012 </span><span class="lineNoCov">              0 :                                 if (php_rfc1867_callback != NULL) {</span>
+<span class="lineNum">    1013 </span>                :                                         multipart_event_file_data event_file_data;
+<span class="lineNum">    1014 </span>                : 
+<span class="lineNum">    1015 </span><span class="lineNoCov">              0 :                                         event_file_data.post_bytes_processed = SG(read_post_bytes);</span>
+<span class="lineNum">    1016 </span><span class="lineNoCov">              0 :                                         event_file_data.offset = offset;</span>
+<span class="lineNum">    1017 </span><span class="lineNoCov">              0 :                                         event_file_data.data = buff;</span>
+<span class="lineNum">    1018 </span><span class="lineNoCov">              0 :                                         event_file_data.length = blen;</span>
+<span class="lineNum">    1019 </span><span class="lineNoCov">              0 :                                         event_file_data.newlength = &amp;blen;</span>
+<span class="lineNum">    1020 </span><span class="lineNoCov">              0 :                                         if (php_rfc1867_callback(MULTIPART_EVENT_FILE_DATA, &amp;event_file_data, &amp;event_extra_data TSRMLS_CC) == FAILURE) {</span>
+<span class="lineNum">    1021 </span><span class="lineNoCov">              0 :                                                 cancel_upload = UPLOAD_ERROR_X;</span>
+<span class="lineNum">    1022 </span><span class="lineNoCov">              0 :                                                 continue;</span>
+<span class="lineNum">    1023 </span>                :                                         }
+<span class="lineNum">    1024 </span>                :                                 }
+<span class="lineNum">    1025 </span>                : 
+<span class="lineNum">    1026 </span><span class="lineNoCov">              0 :                                 if (PG(upload_max_filesize) &gt; 0 &amp;&amp; (long)(total_bytes+blen) &gt; PG(upload_max_filesize)) {</span>
+<span class="lineNum">    1027 </span>                : #if DEBUG_FILE_UPLOAD
+<span class="lineNum">    1028 </span>                :                                         sapi_module.sapi_error(E_NOTICE, &quot;upload_max_filesize of %ld bytes exceeded - file [%s=%s] not saved&quot;, PG(upload_max_filesize), param, filename);
+<span class="lineNum">    1029 </span>                : #endif
+<span class="lineNum">    1030 </span><span class="lineNoCov">              0 :                                         cancel_upload = UPLOAD_ERROR_A;</span>
+<span class="lineNum">    1031 </span><span class="lineNoCov">              0 :                                 } else if (max_file_size &amp;&amp; ((long)(total_bytes+blen) &gt; max_file_size)) {</span>
+<span class="lineNum">    1032 </span>                : #if DEBUG_FILE_UPLOAD
+<span class="lineNum">    1033 </span>                :                                         sapi_module.sapi_error(E_NOTICE, &quot;MAX_FILE_SIZE of %ld bytes exceeded - file [%s=%s] not saved&quot;, max_file_size, param, filename);
+<span class="lineNum">    1034 </span>                : #endif
+<span class="lineNum">    1035 </span><span class="lineNoCov">              0 :                                         cancel_upload = UPLOAD_ERROR_B;</span>
+<span class="lineNum">    1036 </span><span class="lineNoCov">              0 :                                 } else if (blen &gt; 0) {</span>
+<span class="lineNum">    1037 </span><span class="lineNoCov">              0 :                                         wlen = write(fd, buff, blen);</span>
+<span class="lineNum">    1038 </span>                : 
+<span class="lineNum">    1039 </span><span class="lineNoCov">              0 :                                         if (wlen == -1) {</span>
+<span class="lineNum">    1040 </span>                :                                                 /* write failed */
+<span class="lineNum">    1041 </span>                : #if DEBUG_FILE_UPLOAD
+<span class="lineNum">    1042 </span>                :                                                 sapi_module.sapi_error(E_NOTICE, &quot;write() failed - %s&quot;, strerror(errno));
+<span class="lineNum">    1043 </span>                : #endif
+<span class="lineNum">    1044 </span><span class="lineNoCov">              0 :                                                 cancel_upload = UPLOAD_ERROR_F;</span>
+<span class="lineNum">    1045 </span><span class="lineNoCov">              0 :                                         } else if (wlen &lt; blen) {</span>
+<span class="lineNum">    1046 </span>                : #if DEBUG_FILE_UPLOAD
+<span class="lineNum">    1047 </span>                :                                                 sapi_module.sapi_error(E_NOTICE, &quot;Only %d bytes were written, expected to write %d&quot;, wlen, blen);
+<span class="lineNum">    1048 </span>                : #endif
+<span class="lineNum">    1049 </span><span class="lineNoCov">              0 :                                                 cancel_upload = UPLOAD_ERROR_F;</span>
+<span class="lineNum">    1050 </span>                :                                         } else {
+<span class="lineNum">    1051 </span><span class="lineNoCov">              0 :                                                 total_bytes += wlen;</span>
+<span class="lineNum">    1052 </span>                :                                         }
+<span class="lineNum">    1053 </span><span class="lineNoCov">              0 :                                         offset += wlen;</span>
+<span class="lineNum">    1054 </span>                :                                 }
+<span class="lineNum">    1055 </span>                : 
+<span class="lineNum">    1056 </span>                :                                 /* read data for next iteration */
+<span class="lineNum">    1057 </span><span class="lineNoCov">              0 :                                 blen = multipart_buffer_read(mbuff, buff, sizeof(buff), &amp;end TSRMLS_CC);</span>
+<span class="lineNum">    1058 </span>                :                         }
+<span class="lineNum">    1059 </span>                : 
+<span class="lineNum">    1060 </span><span class="lineNoCov">              0 :                         if (fd != -1) { /* may not be initialized if file could not be created */</span>
+<span class="lineNum">    1061 </span><span class="lineNoCov">              0 :                                 close(fd);</span>
+<span class="lineNum">    1062 </span>                :                         }
+<span class="lineNum">    1063 </span>                : 
+<span class="lineNum">    1064 </span><span class="lineNoCov">              0 :                         if (!cancel_upload &amp;&amp; !end) {</span>
+<span class="lineNum">    1065 </span>                : #if DEBUG_FILE_UPLOAD
+<span class="lineNum">    1066 </span>                :                                 sapi_module.sapi_error(E_NOTICE, &quot;Missing mime boundary at the end of the data for file %s&quot;, strlen(filename) &gt; 0 ? filename : &quot;&quot;);
+<span class="lineNum">    1067 </span>                : #endif
+<span class="lineNum">    1068 </span><span class="lineNoCov">              0 :                                 cancel_upload = UPLOAD_ERROR_C;</span>
+<span class="lineNum">    1069 </span>                :                         }
+<span class="lineNum">    1070 </span>                : #if DEBUG_FILE_UPLOAD
+<span class="lineNum">    1071 </span>                :                         if (strlen(filename) &gt; 0 &amp;&amp; total_bytes == 0 &amp;&amp; !cancel_upload) {
+<span class="lineNum">    1072 </span>                :                                 sapi_module.sapi_error(E_WARNING, &quot;Uploaded file size 0 - file [%s=%s] not saved&quot;, param, filename);
+<span class="lineNum">    1073 </span>                :                                 cancel_upload = 5;
+<span class="lineNum">    1074 </span>                :                         }
+<span class="lineNum">    1075 </span>                : #endif
+<span class="lineNum">    1076 </span><span class="lineNoCov">              0 :                         if (php_rfc1867_callback != NULL) {</span>
+<span class="lineNum">    1077 </span>                :                                 multipart_event_file_end event_file_end;
+<span class="lineNum">    1078 </span>                : 
+<span class="lineNum">    1079 </span><span class="lineNoCov">              0 :                                 event_file_end.post_bytes_processed = SG(read_post_bytes);</span>
+<span class="lineNum">    1080 </span><span class="lineNoCov">              0 :                                 event_file_end.temp_filename = temp_filename;</span>
+<span class="lineNum">    1081 </span><span class="lineNoCov">              0 :                                 event_file_end.cancel_upload = cancel_upload;</span>
+<span class="lineNum">    1082 </span><span class="lineNoCov">              0 :                                 if (php_rfc1867_callback(MULTIPART_EVENT_FILE_END, &amp;event_file_end, &amp;event_extra_data TSRMLS_CC) == FAILURE) {</span>
+<span class="lineNum">    1083 </span><span class="lineNoCov">              0 :                                         cancel_upload = UPLOAD_ERROR_X;</span>
+<span class="lineNum">    1084 </span>                :                                 }
+<span class="lineNum">    1085 </span>                :                         }
+<span class="lineNum">    1086 </span>                : 
+<span class="lineNum">    1087 </span><span class="lineNoCov">              0 :                         if (cancel_upload) {</span>
+<span class="lineNum">    1088 </span><span class="lineNoCov">              0 :                                 if (temp_filename) {</span>
+<span class="lineNum">    1089 </span><span class="lineNoCov">              0 :                                         if (cancel_upload != UPLOAD_ERROR_E) { /* file creation failed */</span>
+<span class="lineNum">    1090 </span><span class="lineNoCov">              0 :                                                 unlink(temp_filename);</span>
+<span class="lineNum">    1091 </span>                :                                         }
+<span class="lineNum">    1092 </span><span class="lineNoCov">              0 :                                         efree(temp_filename);</span>
+<span class="lineNum">    1093 </span>                :                                 }
+<span class="lineNum">    1094 </span><span class="lineNoCov">              0 :                                 temp_filename = &quot;&quot;;</span>
+<span class="lineNum">    1095 </span>                :                         } else {
+<span class="lineNum">    1096 </span><span class="lineNoCov">              0 :                                 zend_hash_add(SG(rfc1867_uploaded_files), temp_filename, strlen(temp_filename) + 1, &amp;temp_filename, sizeof(char *), NULL);</span>
+<span class="lineNum">    1097 </span>                :                         }
+<span class="lineNum">    1098 </span>                : 
+<span class="lineNum">    1099 </span>                :                         /* is_arr_upload is true when name of file upload field
+<span class="lineNum">    1100 </span>                :                          * ends in [.*]
+<span class="lineNum">    1101 </span>                :                          * start_arr is set to point to 1st [ */
+<span class="lineNum">    1102 </span><span class="lineNoCov">              0 :                         is_arr_upload = (start_arr = strchr(param,'[')) &amp;&amp; (param[strlen(param)-1] == ']');</span>
+<span class="lineNum">    1103 </span>                : 
+<span class="lineNum">    1104 </span><span class="lineNoCov">              0 :                         if (is_arr_upload) {</span>
+<span class="lineNum">    1105 </span><span class="lineNoCov">              0 :                                 array_len = strlen(start_arr);</span>
+<span class="lineNum">    1106 </span><span class="lineNoCov">              0 :                                 if (array_index) {</span>
+<span class="lineNum">    1107 </span><span class="lineNoCov">              0 :                                         efree(array_index);</span>
+<span class="lineNum">    1108 </span>                :                                 }
+<span class="lineNum">    1109 </span><span class="lineNoCov">              0 :                                 array_index = estrndup(start_arr + 1, array_len - 2);</span>
+<span class="lineNum">    1110 </span>                :                         }
+<span class="lineNum">    1111 </span>                : 
+<span class="lineNum">    1112 </span>                :                         /* Add $foo_name */
+<span class="lineNum">    1113 </span><span class="lineNoCov">              0 :                         if (llen &lt; strlen(param) + MAX_SIZE_OF_INDEX + 1) {</span>
+<span class="lineNum">    1114 </span><span class="lineNoCov">              0 :                                 llen = strlen(param);</span>
+<span class="lineNum">    1115 </span><span class="lineNoCov">              0 :                                 lbuf = (char *) safe_erealloc(lbuf, llen, 1, MAX_SIZE_OF_INDEX + 1);</span>
+<span class="lineNum">    1116 </span><span class="lineNoCov">              0 :                                 llen += MAX_SIZE_OF_INDEX + 1;</span>
+<span class="lineNum">    1117 </span>                :                         }
+<span class="lineNum">    1118 </span>                : 
+<span class="lineNum">    1119 </span><span class="lineNoCov">              0 :                         if (is_arr_upload) {</span>
+<span class="lineNum">    1120 </span><span class="lineNoCov">              0 :                                 if (abuf) efree(abuf);</span>
+<span class="lineNum">    1121 </span><span class="lineNoCov">              0 :                                 abuf = estrndup(param, strlen(param)-array_len);</span>
+<span class="lineNum">    1122 </span><span class="lineNoCov">              0 :                                 snprintf(lbuf, llen, &quot;%s_name[%s]&quot;, abuf, array_index);</span>
+<span class="lineNum">    1123 </span>                :                         } else {
+<span class="lineNum">    1124 </span><span class="lineNoCov">              0 :                                 snprintf(lbuf, llen, &quot;%s_name&quot;, param);</span>
+<span class="lineNum">    1125 </span>                :                         }
+<span class="lineNum">    1126 </span>                : 
+<span class="lineNum">    1127 </span>                :                         /* The \ check should technically be needed for win32 systems only where
+<span class="lineNum">    1128 </span>                :                          * it is a valid path separator. However, IE in all it's wisdom always sends
+<span class="lineNum">    1129 </span>                :                          * the full path of the file on the user's filesystem, which means that unless
+<span class="lineNum">    1130 </span>                :                          * the user does basename() they get a bogus file name. Until IE's user base drops
+<span class="lineNum">    1131 </span>                :                          * to nill or problem is fixed this code must remain enabled for all systems. */
+<span class="lineNum">    1132 </span><span class="lineNoCov">              0 :                         s = _basename(internal_encoding, filename TSRMLS_CC);</span>
+<span class="lineNum">    1133 </span><span class="lineNoCov">              0 :                         if (!s) {</span>
+<span class="lineNum">    1134 </span><span class="lineNoCov">              0 :                                 s = filename;</span>
+<span class="lineNum">    1135 </span>                :                         }
+<span class="lineNum">    1136 </span>                : 
+<span class="lineNum">    1137 </span><span class="lineNoCov">              0 :                         if (!is_anonymous) {</span>
+<span class="lineNum">    1138 </span><span class="lineNoCov">              0 :                                 safe_php_register_variable(lbuf, s, strlen(s), NULL, 0 TSRMLS_CC);</span>
+<span class="lineNum">    1139 </span>                :                         }
+<span class="lineNum">    1140 </span>                : 
+<span class="lineNum">    1141 </span>                :                         /* Add $foo[name] */
+<span class="lineNum">    1142 </span><span class="lineNoCov">              0 :                         if (is_arr_upload) {</span>
+<span class="lineNum">    1143 </span><span class="lineNoCov">              0 :                                 snprintf(lbuf, llen, &quot;%s[name][%s]&quot;, abuf, array_index);</span>
+<span class="lineNum">    1144 </span>                :                         } else {
+<span class="lineNum">    1145 </span><span class="lineNoCov">              0 :                                 snprintf(lbuf, llen, &quot;%s[name]&quot;, param);</span>
+<span class="lineNum">    1146 </span>                :                         }
+<span class="lineNum">    1147 </span><span class="lineNoCov">              0 :                         register_http_post_files_variable(lbuf, s, http_post_files, 0 TSRMLS_CC);</span>
+<span class="lineNum">    1148 </span><span class="lineNoCov">              0 :                         efree(filename);</span>
+<span class="lineNum">    1149 </span><span class="lineNoCov">              0 :                         s = NULL;</span>
+<span class="lineNum">    1150 </span>                : 
+<span class="lineNum">    1151 </span>                :                         /* Possible Content-Type: */
+<span class="lineNum">    1152 </span><span class="lineNoCov">              0 :                         if (cancel_upload || !(cd = php_mime_get_hdr_value(header, &quot;Content-Type&quot;))) {</span>
+<span class="lineNum">    1153 </span><span class="lineNoCov">              0 :                                 cd = &quot;&quot;;</span>
+<span class="lineNum">    1154 </span>                :                         } else {
+<span class="lineNum">    1155 </span>                :                                 /* fix for Opera 6.01 */
+<span class="lineNum">    1156 </span><span class="lineNoCov">              0 :                                 s = strchr(cd, ';');</span>
+<span class="lineNum">    1157 </span><span class="lineNoCov">              0 :                                 if (s != NULL) {</span>
+<span class="lineNum">    1158 </span><span class="lineNoCov">              0 :                                         *s = '\0';</span>
+<span class="lineNum">    1159 </span>                :                                 }
+<span class="lineNum">    1160 </span>                :                         }
+<span class="lineNum">    1161 </span>                : 
+<span class="lineNum">    1162 </span>                :                         /* Add $foo_type */
+<span class="lineNum">    1163 </span><span class="lineNoCov">              0 :                         if (is_arr_upload) {</span>
+<span class="lineNum">    1164 </span><span class="lineNoCov">              0 :                                 snprintf(lbuf, llen, &quot;%s_type[%s]&quot;, abuf, array_index);</span>
+<span class="lineNum">    1165 </span>                :                         } else {
+<span class="lineNum">    1166 </span><span class="lineNoCov">              0 :                                 snprintf(lbuf, llen, &quot;%s_type&quot;, param);</span>
+<span class="lineNum">    1167 </span>                :                         }
+<span class="lineNum">    1168 </span><span class="lineNoCov">              0 :                         if (!is_anonymous) {</span>
+<span class="lineNum">    1169 </span><span class="lineNoCov">              0 :                                 safe_php_register_variable(lbuf, cd, strlen(cd), NULL, 0 TSRMLS_CC);</span>
+<span class="lineNum">    1170 </span>                :                         }
+<span class="lineNum">    1171 </span>                : 
+<span class="lineNum">    1172 </span>                :                         /* Add $foo[type] */
+<span class="lineNum">    1173 </span><span class="lineNoCov">              0 :                         if (is_arr_upload) {</span>
+<span class="lineNum">    1174 </span><span class="lineNoCov">              0 :                                 snprintf(lbuf, llen, &quot;%s[type][%s]&quot;, abuf, array_index);</span>
+<span class="lineNum">    1175 </span>                :                         } else {
+<span class="lineNum">    1176 </span><span class="lineNoCov">              0 :                                 snprintf(lbuf, llen, &quot;%s[type]&quot;, param);</span>
+<span class="lineNum">    1177 </span>                :                         }
+<span class="lineNum">    1178 </span><span class="lineNoCov">              0 :                         register_http_post_files_variable(lbuf, cd, http_post_files, 0 TSRMLS_CC);</span>
+<span class="lineNum">    1179 </span>                : 
+<span class="lineNum">    1180 </span>                :                         /* Restore Content-Type Header */
+<span class="lineNum">    1181 </span><span class="lineNoCov">              0 :                         if (s != NULL) {</span>
+<span class="lineNum">    1182 </span><span class="lineNoCov">              0 :                                 *s = ';';</span>
+<span class="lineNum">    1183 </span>                :                         }
+<span class="lineNum">    1184 </span><span class="lineNoCov">              0 :                         s = &quot;&quot;;</span>
+<span class="lineNum">    1185 </span>                : 
+<span class="lineNum">    1186 </span>                :                         {
+<span class="lineNum">    1187 </span>                :                                 /* store temp_filename as-is (in case upload_tmp_dir
+<span class="lineNum">    1188 </span>                :                                  * contains escapeable characters. escape only the variable name.) */
+<span class="lineNum">    1189 </span>                :                                 zval zfilename;
+<span class="lineNum">    1190 </span>                : 
+<span class="lineNum">    1191 </span>                :                                 /* Initialize variables */
+<span class="lineNum">    1192 </span><span class="lineNoCov">              0 :                                 add_protected_variable(param TSRMLS_CC);</span>
+<span class="lineNum">    1193 </span>                : 
+<span class="lineNum">    1194 </span>                :                                 /* if param is of form xxx[.*] this will cut it to xxx */
+<span class="lineNum">    1195 </span><span class="lineNoCov">              0 :                                 if (!is_anonymous) {</span>
+<span class="lineNum">    1196 </span><span class="lineNoCov">              0 :                                         ZVAL_STRING(&amp;zfilename, temp_filename, 1);</span>
+<span class="lineNum">    1197 </span><span class="lineNoCov">              0 :                                         safe_php_register_variable_ex(param, &amp;zfilename, NULL, 1 TSRMLS_CC);</span>
+<span class="lineNum">    1198 </span>                :                                 }
+<span class="lineNum">    1199 </span>                : 
+<span class="lineNum">    1200 </span>                :                                 /* Add $foo[tmp_name] */
+<span class="lineNum">    1201 </span><span class="lineNoCov">              0 :                                 if (is_arr_upload) {</span>
+<span class="lineNum">    1202 </span><span class="lineNoCov">              0 :                                         snprintf(lbuf, llen, &quot;%s[tmp_name][%s]&quot;, abuf, array_index);</span>
+<span class="lineNum">    1203 </span>                :                                 } else {
+<span class="lineNum">    1204 </span><span class="lineNoCov">              0 :                                         snprintf(lbuf, llen, &quot;%s[tmp_name]&quot;, param);</span>
+<span class="lineNum">    1205 </span>                :                                 }
+<span class="lineNum">    1206 </span><span class="lineNoCov">              0 :                                 add_protected_variable(lbuf TSRMLS_CC);</span>
+<span class="lineNum">    1207 </span><span class="lineNoCov">              0 :                                 ZVAL_STRING(&amp;zfilename, temp_filename, 1);</span>
+<span class="lineNum">    1208 </span><span class="lineNoCov">              0 :                                 register_http_post_files_variable_ex(lbuf, &amp;zfilename, http_post_files, 1 TSRMLS_CC);</span>
+<span class="lineNum">    1209 </span>                :                         }
+<span class="lineNum">    1210 </span>                : 
+<span class="lineNum">    1211 </span>                :                         {
+<span class="lineNum">    1212 </span>                :                                 zval file_size, error_type;
+<span class="lineNum">    1213 </span>                : 
+<span class="lineNum">    1214 </span><span class="lineNoCov">              0 :                                 error_type.value.lval = cancel_upload;</span>
+<span class="lineNum">    1215 </span><span class="lineNoCov">              0 :                                 error_type.type = IS_LONG;</span>
+<span class="lineNum">    1216 </span>                : 
+<span class="lineNum">    1217 </span>                :                                 /* Add $foo[error] */
+<span class="lineNum">    1218 </span><span class="lineNoCov">              0 :                                 if (cancel_upload) {</span>
+<span class="lineNum">    1219 </span><span class="lineNoCov">              0 :                                         file_size.value.lval = 0;</span>
+<span class="lineNum">    1220 </span><span class="lineNoCov">              0 :                                         file_size.type = IS_LONG;</span>
+<span class="lineNum">    1221 </span>                :                                 } else {
+<span class="lineNum">    1222 </span><span class="lineNoCov">              0 :                                         file_size.value.lval = total_bytes;</span>
+<span class="lineNum">    1223 </span><span class="lineNoCov">              0 :                                         file_size.type = IS_LONG;</span>
+<span class="lineNum">    1224 </span>                :                                 }
+<span class="lineNum">    1225 </span>                : 
+<span class="lineNum">    1226 </span><span class="lineNoCov">              0 :                                 if (is_arr_upload) {</span>
+<span class="lineNum">    1227 </span><span class="lineNoCov">              0 :                                         snprintf(lbuf, llen, &quot;%s[error][%s]&quot;, abuf, array_index);</span>
+<span class="lineNum">    1228 </span>                :                                 } else {
+<span class="lineNum">    1229 </span><span class="lineNoCov">              0 :                                         snprintf(lbuf, llen, &quot;%s[error]&quot;, param);</span>
+<span class="lineNum">    1230 </span>                :                                 }
+<span class="lineNum">    1231 </span><span class="lineNoCov">              0 :                                 register_http_post_files_variable_ex(lbuf, &amp;error_type, http_post_files, 0 TSRMLS_CC);</span>
+<span class="lineNum">    1232 </span>                : 
+<span class="lineNum">    1233 </span>                :                                 /* Add $foo_size */
+<span class="lineNum">    1234 </span><span class="lineNoCov">              0 :                                 if (is_arr_upload) {</span>
+<span class="lineNum">    1235 </span><span class="lineNoCov">              0 :                                         snprintf(lbuf, llen, &quot;%s_size[%s]&quot;, abuf, array_index);</span>
+<span class="lineNum">    1236 </span>                :                                 } else {
+<span class="lineNum">    1237 </span><span class="lineNoCov">              0 :                                         snprintf(lbuf, llen, &quot;%s_size&quot;, param);</span>
+<span class="lineNum">    1238 </span>                :                                 }
+<span class="lineNum">    1239 </span><span class="lineNoCov">              0 :                                 if (!is_anonymous) {</span>
+<span class="lineNum">    1240 </span><span class="lineNoCov">              0 :                                         safe_php_register_variable_ex(lbuf, &amp;file_size, NULL, 0 TSRMLS_CC);</span>
+<span class="lineNum">    1241 </span>                :                                 }
+<span class="lineNum">    1242 </span>                : 
+<span class="lineNum">    1243 </span>                :                                 /* Add $foo[size] */
+<span class="lineNum">    1244 </span><span class="lineNoCov">              0 :                                 if (is_arr_upload) {</span>
+<span class="lineNum">    1245 </span><span class="lineNoCov">              0 :                                         snprintf(lbuf, llen, &quot;%s[size][%s]&quot;, abuf, array_index);</span>
+<span class="lineNum">    1246 </span>                :                                 } else {
+<span class="lineNum">    1247 </span><span class="lineNoCov">              0 :                                         snprintf(lbuf, llen, &quot;%s[size]&quot;, param);</span>
+<span class="lineNum">    1248 </span>                :                                 }
+<span class="lineNum">    1249 </span><span class="lineNoCov">              0 :                                 register_http_post_files_variable_ex(lbuf, &amp;file_size, http_post_files, 0 TSRMLS_CC);</span>
+<span class="lineNum">    1250 </span>                :                         }
+<span class="lineNum">    1251 </span><span class="lineNoCov">              0 :                         efree(param);</span>
+<span class="lineNum">    1252 </span>                :                 }
+<span class="lineNum">    1253 </span>                :         }
+<span class="lineNum">    1254 </span>                : 
+<span class="lineNum">    1255 </span>                : fileupload_done:
+<span class="lineNum">    1256 </span><span class="lineNoCov">              0 :         if (php_rfc1867_callback != NULL) {</span>
+<span class="lineNum">    1257 </span>                :                 multipart_event_end event_end;
+<span class="lineNum">    1258 </span>                : 
+<span class="lineNum">    1259 </span><span class="lineNoCov">              0 :                 event_end.post_bytes_processed = SG(read_post_bytes);</span>
+<span class="lineNum">    1260 </span><span class="lineNoCov">              0 :                 php_rfc1867_callback(MULTIPART_EVENT_END, &amp;event_end, &amp;event_extra_data TSRMLS_CC);</span>
+<span class="lineNum">    1261 </span>                :         }
+<span class="lineNum">    1262 </span>                : 
+<span class="lineNum">    1263 </span><span class="lineNoCov">              0 :         if (lbuf) efree(lbuf);</span>
+<span class="lineNum">    1264 </span><span class="lineNoCov">              0 :         if (abuf) efree(abuf);</span>
+<span class="lineNum">    1265 </span><span class="lineNoCov">              0 :         if (array_index) efree(array_index);</span>
+<span class="lineNum">    1266 </span><span class="lineNoCov">              0 :         zend_hash_destroy(&amp;PG(rfc1867_protected_variables));</span>
+<span class="lineNum">    1267 </span><span class="lineNoCov">              0 :         zend_llist_destroy(&amp;header);</span>
+<span class="lineNum">    1268 </span><span class="lineNoCov">              0 :         if (mbuff-&gt;boundary_next) efree(mbuff-&gt;boundary_next);</span>
+<span class="lineNum">    1269 </span><span class="lineNoCov">              0 :         if (mbuff-&gt;boundary) efree(mbuff-&gt;boundary);</span>
+<span class="lineNum">    1270 </span><span class="lineNoCov">              0 :         if (mbuff-&gt;buffer) efree(mbuff-&gt;buffer);</span>
+<span class="lineNum">    1271 </span><span class="lineNoCov">              0 :         if (mbuff) efree(mbuff);</span>
+<span class="lineNum">    1272 </span>                : }
+<a name="1273"><span class="lineNum">    1273 </span>                : /* }}} */</a>
+<span class="lineNum">    1274 </span>                : 
+<span class="lineNum">    1275 </span><span class="lineNoCov">              0 : SAPI_API void php_rfc1867_set_multibyte_callbacks(</span>
+<span class="lineNum">    1276 </span>                :                                         php_rfc1867_encoding_translation_t encoding_translation,
+<span class="lineNum">    1277 </span>                :                                         php_rfc1867_get_detect_order_t get_detect_order,
+<span class="lineNum">    1278 </span>                :                                         php_rfc1867_set_input_encoding_t set_input_encoding,
+<span class="lineNum">    1279 </span>                :                                         php_rfc1867_getword_t getword,
+<span class="lineNum">    1280 </span>                :                                         php_rfc1867_getword_conf_t getword_conf,
+<span class="lineNum">    1281 </span>                :                                         php_rfc1867_basename_t basename) /* {{{ */
+<span class="lineNum">    1282 </span>                : {
+<span class="lineNum">    1283 </span><span class="lineNoCov">              0 :         php_rfc1867_encoding_translation = encoding_translation;</span>
+<span class="lineNum">    1284 </span><span class="lineNoCov">              0 :         php_rfc1867_get_detect_order = get_detect_order;</span>
+<span class="lineNum">    1285 </span><span class="lineNoCov">              0 :         php_rfc1867_set_input_encoding = set_input_encoding;</span>
+<span class="lineNum">    1286 </span><span class="lineNoCov">              0 :         php_rfc1867_getword = getword;</span>
+<span class="lineNum">    1287 </span><span class="lineNoCov">              0 :         php_rfc1867_getword_conf = getword_conf;</span>
+<span class="lineNum">    1288 </span><span class="lineNoCov">              0 :         php_rfc1867_basename = basename;</span>
+<span class="lineNum">    1289 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">    1290 </span>                : /* }}} */
+<span class="lineNum">    1291 </span>                : 
+<span class="lineNum">    1292 </span>                : /*
+<span class="lineNum">    1293 </span>                :  * Local variables:
+<span class="lineNum">    1294 </span>                :  * tab-width: 4
+<span class="lineNum">    1295 </span>                :  * c-basic-offset: 4
+<span class="lineNum">    1296 </span>                :  * End:
+<span class="lineNum">    1297 </span>                :  * vim600: sw=4 ts=4 fdm=marker
+<span class="lineNum">    1298 </span>                :  * vim&lt;600: sw=4 ts=4
+<span class="lineNum">    1299 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

@@ -1,0 +1,181 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - main/php_logos.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../index.html">directory</a> - <a href="index.html">main</a> - php_logos.c (source / <a href="php_logos.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">29</td>
+          <td class="headerCovTableEntry">15</td>
+          <td class="headerCovTableEntryHi">51.7 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">5</td>
+          <td class="headerCovTableEntry">3</td>
+          <td class="headerCovTableEntryLo">60.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Author: Hartmut Holzgraefe &lt;hholzgra@php.net&gt;                        |
+<span class="lineNum">      16 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      17 </span>                : */
+<span class="lineNum">      18 </span>                : 
+<span class="lineNum">      19 </span>                : /* $Id$ */
+<span class="lineNum">      20 </span>                : 
+<span class="lineNum">      21 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">      22 </span>                : #include &quot;logos.h&quot;
+<span class="lineNum">      23 </span>                : #include &quot;php_logos.h&quot;
+<span class="lineNum">      24 </span>                : #include &quot;ext/standard/info.h&quot;
+<span class="lineNum">      25 </span>                : #include &quot;SAPI.h&quot;
+<span class="lineNum">      26 </span>                : 
+<span class="lineNum">      27 </span>                : typedef struct _php_info_logo { 
+<span class="lineNum">      28 </span>                :         const char *mimetype;
+<span class="lineNum">      29 </span>                :         int mimelen;
+<span class="lineNum">      30 </span>                :         const unsigned char *data; 
+<span class="lineNum">      31 </span>                :         int size; 
+<span class="lineNum">      32 </span>                : } php_info_logo;
+<span class="lineNum">      33 </span>                : 
+<a name="34"><span class="lineNum">      34 </span>                : static HashTable phpinfo_logo_hash;</a>
+<span class="lineNum">      35 </span>                : 
+<span class="lineNum">      36 </span><span class="lineCov">            144 : PHPAPI int php_register_info_logo(char *logo_string, const char *mimetype, const unsigned char *data, int size)</span>
+<span class="lineNum">      37 </span>                : {
+<span class="lineNum">      38 </span>                :         php_info_logo info_logo;
+<span class="lineNum">      39 </span>                : 
+<span class="lineNum">      40 </span><span class="lineCov">            144 :         info_logo.mimetype = mimetype;</span>
+<span class="lineNum">      41 </span><span class="lineCov">            144 :         info_logo.mimelen  = strlen(mimetype);</span>
+<span class="lineNum">      42 </span><span class="lineCov">            144 :         info_logo.data     = data;</span>
+<span class="lineNum">      43 </span><span class="lineCov">            144 :         info_logo.size     = size;</span>
+<span class="lineNum">      44 </span>                : 
+<span class="lineNum">      45 </span><span class="lineCov">            144 :         return zend_hash_add(&amp;phpinfo_logo_hash, logo_string, strlen(logo_string), &amp;info_logo, sizeof(php_info_logo), NULL);</span>
+<a name="46"><span class="lineNum">      46 </span>                : }</a>
+<span class="lineNum">      47 </span>                : 
+<span class="lineNum">      48 </span><span class="lineNoCov">              0 : PHPAPI int php_unregister_info_logo(char *logo_string)</span>
+<span class="lineNum">      49 </span>                : {
+<span class="lineNum">      50 </span><span class="lineNoCov">              0 :         return zend_hash_del(&amp;phpinfo_logo_hash, logo_string, strlen(logo_string));</span>
+<a name="51"><span class="lineNum">      51 </span>                : }</a>
+<span class="lineNum">      52 </span>                : 
+<span class="lineNum">      53 </span><span class="lineCov">             48 : int php_init_info_logos(void)</span>
+<span class="lineNum">      54 </span>                : {
+<span class="lineNum">      55 </span><span class="lineCov">             48 :         if(zend_hash_init(&amp;phpinfo_logo_hash, 0, NULL, NULL, 1)==FAILURE) </span>
+<span class="lineNum">      56 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">      57 </span>                : 
+<span class="lineNum">      58 </span><span class="lineCov">             48 :         php_register_info_logo(PHP_LOGO_GUID    , &quot;image/gif&quot;, php_logo    , sizeof(php_logo));</span>
+<span class="lineNum">      59 </span><span class="lineCov">             48 :         php_register_info_logo(PHP_EGG_LOGO_GUID, &quot;image/gif&quot;, php_egg_logo, sizeof(php_egg_logo));</span>
+<span class="lineNum">      60 </span><span class="lineCov">             48 :         php_register_info_logo(ZEND_LOGO_GUID   , &quot;image/gif&quot;, zend_logo   , sizeof(zend_logo));</span>
+<span class="lineNum">      61 </span>                : 
+<span class="lineNum">      62 </span><span class="lineCov">             48 :         return SUCCESS;</span>
+<a name="63"><span class="lineNum">      63 </span>                : }</a>
+<span class="lineNum">      64 </span>                : 
+<span class="lineNum">      65 </span><span class="lineCov">             48 : int php_shutdown_info_logos(void)</span>
+<span class="lineNum">      66 </span>                : {
+<span class="lineNum">      67 </span><span class="lineCov">             48 :         zend_hash_destroy(&amp;phpinfo_logo_hash);</span>
+<span class="lineNum">      68 </span><span class="lineCov">             48 :         return SUCCESS;</span>
+<span class="lineNum">      69 </span>                : }
+<a name="70"><span class="lineNum">      70 </span>                : </a>
+<span class="lineNum">      71 </span>                : #define CONTENT_TYPE_HEADER &quot;Content-Type: &quot;
+<span class="lineNum">      72 </span><span class="lineNoCov">              0 : int php_info_logos(const char *logo_string TSRMLS_DC)</span>
+<span class="lineNum">      73 </span>                : {
+<span class="lineNum">      74 </span>                :         php_info_logo *logo_image;
+<span class="lineNum">      75 </span>                :         char *content_header;
+<span class="lineNum">      76 </span>                :         int len;
+<span class="lineNum">      77 </span>                : 
+<span class="lineNum">      78 </span><span class="lineNoCov">              0 :         if(FAILURE==zend_hash_find(&amp;phpinfo_logo_hash, (char *) logo_string, strlen(logo_string), (void **)&amp;logo_image))</span>
+<span class="lineNum">      79 </span><span class="lineNoCov">              0 :                 return 0;</span>
+<span class="lineNum">      80 </span>                : 
+<span class="lineNum">      81 </span><span class="lineNoCov">              0 :         len = sizeof(CONTENT_TYPE_HEADER) - 1 + logo_image-&gt;mimelen;</span>
+<span class="lineNum">      82 </span><span class="lineNoCov">              0 :         content_header = emalloc(len + 1);</span>
+<span class="lineNum">      83 </span><span class="lineNoCov">              0 :         memcpy(content_header, CONTENT_TYPE_HEADER, sizeof(CONTENT_TYPE_HEADER) - 1);</span>
+<span class="lineNum">      84 </span><span class="lineNoCov">              0 :         memcpy(content_header + sizeof(CONTENT_TYPE_HEADER) - 1 , logo_image-&gt;mimetype, logo_image-&gt;mimelen);</span>
+<span class="lineNum">      85 </span><span class="lineNoCov">              0 :         content_header[len] = '\0';</span>
+<span class="lineNum">      86 </span><span class="lineNoCov">              0 :         sapi_add_header(content_header, len, 0);</span>
+<span class="lineNum">      87 </span>                : 
+<span class="lineNum">      88 </span><span class="lineNoCov">              0 :         PHPWRITE((char*)logo_image-&gt;data, logo_image-&gt;size);</span>
+<span class="lineNum">      89 </span><span class="lineNoCov">              0 :         return 1;</span>
+<span class="lineNum">      90 </span>                : }
+<span class="lineNum">      91 </span>                : 
+<span class="lineNum">      92 </span>                : /*
+<span class="lineNum">      93 </span>                :  * Local variables:
+<span class="lineNum">      94 </span>                :  * tab-width: 4
+<span class="lineNum">      95 </span>                :  * c-basic-offset: 4
+<span class="lineNum">      96 </span>                :  * End:
+<span class="lineNum">      97 </span>                :  * vim600: sw=4 ts=4 fdm=marker
+<span class="lineNum">      98 </span>                :  * vim&lt;600: sw=4 ts=4
+<span class="lineNum">      99 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

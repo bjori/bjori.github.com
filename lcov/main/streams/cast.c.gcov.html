@@ -1,0 +1,500 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - main/streams/cast.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../index.html">directory</a> - <a href="index.html">main/streams</a> - cast.c (source / <a href="cast.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">110</td>
+          <td class="headerCovTableEntry">12</td>
+          <td class="headerCovTableEntryLo">10.9 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">8</td>
+          <td class="headerCovTableEntry">1</td>
+          <td class="headerCovTableEntryLo">12.5 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Authors: Wez Furlong &lt;wez@thebrainroom.com&gt;                          |
+<span class="lineNum">      16 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      17 </span>                :  */
+<span class="lineNum">      18 </span>                : 
+<span class="lineNum">      19 </span>                : /* $Id$ */
+<span class="lineNum">      20 </span>                : 
+<span class="lineNum">      21 </span>                : #define _GNU_SOURCE
+<span class="lineNum">      22 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">      23 </span>                : #include &quot;php_globals.h&quot;
+<span class="lineNum">      24 </span>                : #include &quot;php_network.h&quot;
+<span class="lineNum">      25 </span>                : #include &quot;php_open_temporary_file.h&quot;
+<span class="lineNum">      26 </span>                : #include &quot;ext/standard/file.h&quot;
+<span class="lineNum">      27 </span>                : #include &lt;stddef.h&gt;
+<span class="lineNum">      28 </span>                : #include &lt;fcntl.h&gt;
+<span class="lineNum">      29 </span>                : 
+<span class="lineNum">      30 </span>                : #include &quot;php_streams_int.h&quot;
+<span class="lineNum">      31 </span>                : 
+<span class="lineNum">      32 </span>                : /* Under BSD, emulate fopencookie using funopen */
+<span class="lineNum">      33 </span>                : #if defined(HAVE_FUNOPEN) &amp;&amp; !defined(HAVE_FOPENCOOKIE)
+<span class="lineNum">      34 </span>                : typedef struct {
+<span class="lineNum">      35 </span>                :         int (*reader)(void *, char *, int);
+<span class="lineNum">      36 </span>                :         int (*writer)(void *, const char *, int);
+<span class="lineNum">      37 </span>                :         fpos_t (*seeker)(void *, fpos_t, int);
+<span class="lineNum">      38 </span>                :         int (*closer)(void *);
+<span class="lineNum">      39 </span>                : } COOKIE_IO_FUNCTIONS_T;
+<span class="lineNum">      40 </span>                : 
+<span class="lineNum">      41 </span>                : FILE *fopencookie(void *cookie, const char *mode, COOKIE_IO_FUNCTIONS_T *funcs)
+<span class="lineNum">      42 </span>                : {
+<span class="lineNum">      43 </span>                :         return funopen(cookie, funcs-&gt;reader, funcs-&gt;writer, funcs-&gt;seeker, funcs-&gt;closer);
+<span class="lineNum">      44 </span>                : }
+<span class="lineNum">      45 </span>                : # define HAVE_FOPENCOOKIE 1
+<span class="lineNum">      46 </span>                : # define PHP_EMULATE_FOPENCOOKIE 1
+<span class="lineNum">      47 </span>                : # define PHP_STREAM_COOKIE_FUNCTIONS    &amp;stream_cookie_functions
+<span class="lineNum">      48 </span>                : #elif defined(HAVE_FOPENCOOKIE)
+<span class="lineNum">      49 </span>                : # define PHP_STREAM_COOKIE_FUNCTIONS    stream_cookie_functions
+<span class="lineNum">      50 </span>                : #endif
+<span class="lineNum">      51 </span>                : 
+<span class="lineNum">      52 </span>                : /* {{{ STDIO with fopencookie */
+<span class="lineNum">      53 </span>                : #if defined(PHP_EMULATE_FOPENCOOKIE)
+<span class="lineNum">      54 </span>                : /* use our fopencookie emulation */
+<span class="lineNum">      55 </span>                : static int stream_cookie_reader(void *cookie, char *buffer, int size)
+<span class="lineNum">      56 </span>                : {
+<span class="lineNum">      57 </span>                :         int ret;
+<span class="lineNum">      58 </span>                :         TSRMLS_FETCH();
+<span class="lineNum">      59 </span>                : 
+<span class="lineNum">      60 </span>                :         ret = php_stream_read((php_stream*)cookie, buffer, size);
+<span class="lineNum">      61 </span>                :         return ret;
+<span class="lineNum">      62 </span>                : }
+<span class="lineNum">      63 </span>                : 
+<span class="lineNum">      64 </span>                : static int stream_cookie_writer(void *cookie, const char *buffer, int size)
+<span class="lineNum">      65 </span>                : {
+<span class="lineNum">      66 </span>                :         TSRMLS_FETCH();
+<span class="lineNum">      67 </span>                : 
+<span class="lineNum">      68 </span>                :         return php_stream_write((php_stream *)cookie, (char *)buffer, size);
+<span class="lineNum">      69 </span>                : }
+<span class="lineNum">      70 </span>                : 
+<span class="lineNum">      71 </span>                : static fpos_t stream_cookie_seeker(void *cookie, off_t position, int whence)
+<span class="lineNum">      72 </span>                : {
+<span class="lineNum">      73 </span>                :         TSRMLS_FETCH();
+<span class="lineNum">      74 </span>                : 
+<span class="lineNum">      75 </span>                :         return (fpos_t)php_stream_seek((php_stream *)cookie, position, whence);
+<span class="lineNum">      76 </span>                : }
+<span class="lineNum">      77 </span>                : 
+<span class="lineNum">      78 </span>                : static int stream_cookie_closer(void *cookie)
+<span class="lineNum">      79 </span>                : {
+<span class="lineNum">      80 </span>                :         php_stream *stream = (php_stream*)cookie;
+<span class="lineNum">      81 </span>                :         TSRMLS_FETCH();
+<span class="lineNum">      82 </span>                : 
+<span class="lineNum">      83 </span>                :         /* prevent recursion */
+<span class="lineNum">      84 </span>                :         stream-&gt;fclose_stdiocast = PHP_STREAM_FCLOSE_NONE;
+<span class="lineNum">      85 </span>                :         return php_stream_close(stream);
+<a name="86"><span class="lineNum">      86 </span>                : }</a>
+<span class="lineNum">      87 </span>                : #elif defined(HAVE_FOPENCOOKIE)
+<span class="lineNum">      88 </span><span class="lineNoCov">              0 : static ssize_t stream_cookie_reader(void *cookie, char *buffer, size_t size)</span>
+<span class="lineNum">      89 </span>                : {
+<span class="lineNum">      90 </span>                :         ssize_t ret;
+<span class="lineNum">      91 </span>                :         TSRMLS_FETCH();
+<span class="lineNum">      92 </span>                : 
+<span class="lineNum">      93 </span><span class="lineNoCov">              0 :         ret = php_stream_read(((php_stream *)cookie), buffer, size);</span>
+<span class="lineNum">      94 </span><span class="lineNoCov">              0 :         return ret;</span>
+<a name="95"><span class="lineNum">      95 </span>                : }</a>
+<span class="lineNum">      96 </span>                : 
+<span class="lineNum">      97 </span><span class="lineNoCov">              0 : static ssize_t stream_cookie_writer(void *cookie, const char *buffer, size_t size)</span>
+<span class="lineNum">      98 </span>                : {
+<span class="lineNum">      99 </span>                :         TSRMLS_FETCH();
+<span class="lineNum">     100 </span>                : 
+<span class="lineNum">     101 </span><span class="lineNoCov">              0 :         return php_stream_write(((php_stream *)cookie), (char *)buffer, size);</span>
+<span class="lineNum">     102 </span>                : }
+<a name="103"><span class="lineNum">     103 </span>                : </a>
+<span class="lineNum">     104 </span>                : # ifdef COOKIE_SEEKER_USES_OFF64_T
+<span class="lineNum">     105 </span><span class="lineNoCov">              0 : static int stream_cookie_seeker(void *cookie, __off64_t *position, int whence)</span>
+<span class="lineNum">     106 </span>                : {
+<span class="lineNum">     107 </span>                :         TSRMLS_FETCH();
+<span class="lineNum">     108 </span>                : 
+<span class="lineNum">     109 </span><span class="lineNoCov">              0 :         *position = php_stream_seek((php_stream *)cookie, (off_t)*position, whence);</span>
+<span class="lineNum">     110 </span>                : 
+<span class="lineNum">     111 </span><span class="lineNoCov">              0 :         if (*position == -1) {</span>
+<span class="lineNum">     112 </span><span class="lineNoCov">              0 :                 return -1;</span>
+<span class="lineNum">     113 </span>                :         }
+<span class="lineNum">     114 </span><span class="lineNoCov">              0 :         return 0;</span>
+<span class="lineNum">     115 </span>                : }
+<span class="lineNum">     116 </span>                : # else
+<span class="lineNum">     117 </span>                : static int stream_cookie_seeker(void *cookie, off_t position, int whence)
+<span class="lineNum">     118 </span>                : {
+<span class="lineNum">     119 </span>                :         TSRMLS_FETCH();
+<span class="lineNum">     120 </span>                : 
+<span class="lineNum">     121 </span>                :         return php_stream_seek((php_stream *)cookie, position, whence);
+<span class="lineNum">     122 </span>                : }
+<a name="123"><span class="lineNum">     123 </span>                : # endif</a>
+<span class="lineNum">     124 </span>                : 
+<span class="lineNum">     125 </span><span class="lineNoCov">              0 : static int stream_cookie_closer(void *cookie)</span>
+<span class="lineNum">     126 </span>                : {
+<span class="lineNum">     127 </span><span class="lineNoCov">              0 :         php_stream *stream = (php_stream*)cookie;</span>
+<span class="lineNum">     128 </span>                :         TSRMLS_FETCH();
+<span class="lineNum">     129 </span>                : 
+<span class="lineNum">     130 </span>                :         /* prevent recursion */
+<span class="lineNum">     131 </span><span class="lineNoCov">              0 :         stream-&gt;fclose_stdiocast = PHP_STREAM_FCLOSE_NONE;</span>
+<span class="lineNum">     132 </span><span class="lineNoCov">              0 :         return php_stream_close(stream);</span>
+<span class="lineNum">     133 </span>                : }
+<span class="lineNum">     134 </span>                : #endif /* elif defined(HAVE_FOPENCOOKIE) */
+<span class="lineNum">     135 </span>                : 
+<span class="lineNum">     136 </span>                : #if HAVE_FOPENCOOKIE
+<span class="lineNum">     137 </span>                : static COOKIE_IO_FUNCTIONS_T stream_cookie_functions =
+<span class="lineNum">     138 </span>                : {
+<span class="lineNum">     139 </span>                :         stream_cookie_reader, stream_cookie_writer,
+<span class="lineNum">     140 </span>                :         stream_cookie_seeker, stream_cookie_closer
+<span class="lineNum">     141 </span>                : };
+<span class="lineNum">     142 </span>                : #else
+<span class="lineNum">     143 </span>                : /* TODO: use socketpair() to emulate fopencookie, as suggested by Hartmut ? */
+<span class="lineNum">     144 </span>                : #endif
+<span class="lineNum">     145 </span>                : /* }}} */
+<span class="lineNum">     146 </span>                : 
+<a name="147"><span class="lineNum">     147 </span>                : /* {{{ php_stream_mode_sanitize_fdopen_fopencookie</a>
+<span class="lineNum">     148 </span>                :  * Result should have at least size 5, e.g. to write wbx+\0 */
+<span class="lineNum">     149 </span><span class="lineNoCov">              0 : void php_stream_mode_sanitize_fdopen_fopencookie(php_stream *stream, char *result)</span>
+<span class="lineNum">     150 </span>                : {
+<span class="lineNum">     151 </span>                :         /* replace modes not supported by fdopen and fopencookie, but supported 
+<span class="lineNum">     152 </span>                :          * by PHP's fread(), so that their calls won't fail */
+<span class="lineNum">     153 </span><span class="lineNoCov">              0 :         const char *cur_mode = stream-&gt;mode;</span>
+<span class="lineNum">     154 </span><span class="lineNoCov">              0 :         int         has_plus = 0,</span>
+<span class="lineNum">     155 </span><span class="lineNoCov">              0 :                         has_bin  = 0,</span>
+<span class="lineNum">     156 </span>                :                                 i,
+<span class="lineNum">     157 </span><span class="lineNoCov">              0 :                                 res_curs = 0;</span>
+<span class="lineNum">     158 </span>                : 
+<span class="lineNum">     159 </span><span class="lineNoCov">              0 :         if (cur_mode[0] == 'r' || cur_mode[0] == 'w' || cur_mode[0] == 'a') {</span>
+<span class="lineNum">     160 </span><span class="lineNoCov">              0 :                 result[res_curs++] = cur_mode[0];</span>
+<span class="lineNum">     161 </span>                :         } else {
+<span class="lineNum">     162 </span>                :                 /* assume cur_mode[0] is 'c' or 'x'; substitute by 'w', which should not
+<span class="lineNum">     163 </span>                :                  * truncate anything in fdopen/fopencookie */
+<span class="lineNum">     164 </span><span class="lineNoCov">              0 :                 result[res_curs++] = 'w';</span>
+<span class="lineNum">     165 </span>                : 
+<span class="lineNum">     166 </span>                :                 /* x is allowed (at least by glibc &amp; compat), but not as the 1st mode
+<span class="lineNum">     167 </span>                :                  * as in PHP and in any case is (at best) ignored by fdopen and fopencookie */
+<span class="lineNum">     168 </span>                :         }
+<span class="lineNum">     169 </span>                :         
+<span class="lineNum">     170 </span>                :         /* assume current mode has at most length 4 (e.g. wbn+) */
+<span class="lineNum">     171 </span><span class="lineNoCov">              0 :         for (i = 1; i &lt; 4 &amp;&amp; cur_mode[i] != '\0'; i++) {</span>
+<span class="lineNum">     172 </span><span class="lineNoCov">              0 :                 if (cur_mode[i] == 'b') {</span>
+<span class="lineNum">     173 </span><span class="lineNoCov">              0 :                         has_bin = 1;</span>
+<span class="lineNum">     174 </span><span class="lineNoCov">              0 :                 } else if (cur_mode[i] == '+') {</span>
+<span class="lineNum">     175 </span><span class="lineNoCov">              0 :                         has_plus = 1;</span>
+<span class="lineNum">     176 </span>                :                 }
+<span class="lineNum">     177 </span>                :                 /* ignore 'n', 't' or other stuff */
+<span class="lineNum">     178 </span>                :         }
+<span class="lineNum">     179 </span>                : 
+<span class="lineNum">     180 </span><span class="lineNoCov">              0 :         if (has_bin) {</span>
+<span class="lineNum">     181 </span><span class="lineNoCov">              0 :                 result[res_curs++] = 'b';</span>
+<span class="lineNum">     182 </span>                :         }
+<span class="lineNum">     183 </span><span class="lineNoCov">              0 :         if (has_plus) {</span>
+<span class="lineNum">     184 </span><span class="lineNoCov">              0 :                 result[res_curs++] = '+';</span>
+<span class="lineNum">     185 </span>                :         }
+<span class="lineNum">     186 </span>                : 
+<span class="lineNum">     187 </span><span class="lineNoCov">              0 :         result[res_curs] = '\0';</span>
+<span class="lineNum">     188 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     189 </span>                : /* }}} */
+<a name="190"><span class="lineNum">     190 </span>                : </a>
+<span class="lineNum">     191 </span>                : /* {{{ php_stream_cast */
+<span class="lineNum">     192 </span><span class="lineCov">            732 : PHPAPI int _php_stream_cast(php_stream *stream, int castas, void **ret, int show_err TSRMLS_DC)</span>
+<span class="lineNum">     193 </span>                : {
+<span class="lineNum">     194 </span><span class="lineCov">            732 :         int flags = castas &amp; PHP_STREAM_CAST_MASK;</span>
+<span class="lineNum">     195 </span><span class="lineCov">            732 :         castas &amp;= ~PHP_STREAM_CAST_MASK;</span>
+<span class="lineNum">     196 </span>                : 
+<span class="lineNum">     197 </span>                :         /* synchronize our buffer (if possible) */
+<span class="lineNum">     198 </span><span class="lineCov">            732 :         if (ret &amp;&amp; castas != PHP_STREAM_AS_FD_FOR_SELECT) {</span>
+<span class="lineNum">     199 </span><span class="lineNoCov">              0 :                 php_stream_flush(stream);</span>
+<span class="lineNum">     200 </span><span class="lineNoCov">              0 :                 if (stream-&gt;ops-&gt;seek &amp;&amp; (stream-&gt;flags &amp; PHP_STREAM_FLAG_NO_SEEK) == 0) {</span>
+<span class="lineNum">     201 </span>                :                         off_t dummy;
+<span class="lineNum">     202 </span>                : 
+<span class="lineNum">     203 </span><span class="lineNoCov">              0 :                         stream-&gt;ops-&gt;seek(stream, stream-&gt;position, SEEK_SET, &amp;dummy TSRMLS_CC);</span>
+<span class="lineNum">     204 </span><span class="lineNoCov">              0 :                         stream-&gt;readpos = stream-&gt;writepos = 0;</span>
+<span class="lineNum">     205 </span>                :                 }
+<span class="lineNum">     206 </span>                :         }
+<span class="lineNum">     207 </span>                : 
+<span class="lineNum">     208 </span>                :         /* filtered streams can only be cast as stdio, and only when fopencookie is present */
+<span class="lineNum">     209 </span>                : 
+<span class="lineNum">     210 </span><span class="lineCov">            732 :         if (castas == PHP_STREAM_AS_STDIO) {</span>
+<span class="lineNum">     211 </span><span class="lineNoCov">              0 :                 if (stream-&gt;stdiocast) {</span>
+<span class="lineNum">     212 </span><span class="lineNoCov">              0 :                         if (ret) {</span>
+<span class="lineNum">     213 </span><span class="lineNoCov">              0 :                                 *(FILE**)ret = stream-&gt;stdiocast;</span>
+<span class="lineNum">     214 </span>                :                         }
+<span class="lineNum">     215 </span><span class="lineNoCov">              0 :                         goto exit_success;</span>
+<span class="lineNum">     216 </span>                :                 }
+<span class="lineNum">     217 </span>                : 
+<span class="lineNum">     218 </span>                :                 /* if the stream is a stdio stream let's give it a chance to respond
+<span class="lineNum">     219 </span>                :                  * first, to avoid doubling up the layers of stdio with an fopencookie */
+<span class="lineNum">     220 </span><span class="lineNoCov">              0 :                 if (php_stream_is(stream, PHP_STREAM_IS_STDIO) &amp;&amp;</span>
+<span class="lineNum">     221 </span><span class="lineNoCov">              0 :                         stream-&gt;ops-&gt;cast &amp;&amp;</span>
+<span class="lineNum">     222 </span>                :                         !php_stream_is_filtered(stream) &amp;&amp;
+<span class="lineNum">     223 </span><span class="lineNoCov">              0 :                         stream-&gt;ops-&gt;cast(stream, castas, ret TSRMLS_CC) == SUCCESS</span>
+<span class="lineNum">     224 </span>                :                 ) {
+<span class="lineNum">     225 </span><span class="lineNoCov">              0 :                         goto exit_success;</span>
+<span class="lineNum">     226 </span>                :                 }
+<span class="lineNum">     227 </span>                : 
+<span class="lineNum">     228 </span>                : #if HAVE_FOPENCOOKIE
+<span class="lineNum">     229 </span>                :                 /* if just checking, say yes we can be a FILE*, but don't actually create it yet */
+<span class="lineNum">     230 </span><span class="lineNoCov">              0 :                 if (ret == NULL) {</span>
+<span class="lineNum">     231 </span><span class="lineNoCov">              0 :                         goto exit_success;</span>
+<span class="lineNum">     232 </span>                :                 }
+<span class="lineNum">     233 </span>                : 
+<span class="lineNum">     234 </span>                :                 {
+<span class="lineNum">     235 </span>                :                         char fixed_mode[5];
+<span class="lineNum">     236 </span><span class="lineNoCov">              0 :                         php_stream_mode_sanitize_fdopen_fopencookie(stream, fixed_mode);</span>
+<span class="lineNum">     237 </span><span class="lineNoCov">              0 :                         *(FILE**)ret = fopencookie(stream, fixed_mode, PHP_STREAM_COOKIE_FUNCTIONS);</span>
+<span class="lineNum">     238 </span>                :                 }
+<span class="lineNum">     239 </span>                : 
+<span class="lineNum">     240 </span><span class="lineNoCov">              0 :                 if (*ret != NULL) {</span>
+<span class="lineNum">     241 </span>                :                         off_t pos;
+<span class="lineNum">     242 </span>                : 
+<span class="lineNum">     243 </span><span class="lineNoCov">              0 :                         stream-&gt;fclose_stdiocast = PHP_STREAM_FCLOSE_FOPENCOOKIE;</span>
+<span class="lineNum">     244 </span>                : 
+<span class="lineNum">     245 </span>                :                         /* If the stream position is not at the start, we need to force
+<span class="lineNum">     246 </span>                :                          * the stdio layer to believe it's real location. */
+<span class="lineNum">     247 </span><span class="lineNoCov">              0 :                         pos = php_stream_tell(stream);</span>
+<span class="lineNum">     248 </span><span class="lineNoCov">              0 :                         if (pos &gt; 0) {</span>
+<span class="lineNum">     249 </span><span class="lineNoCov">              0 :                                 fseek(*ret, pos, SEEK_SET);</span>
+<span class="lineNum">     250 </span>                :                         }
+<span class="lineNum">     251 </span>                : 
+<span class="lineNum">     252 </span><span class="lineNoCov">              0 :                         goto exit_success;</span>
+<span class="lineNum">     253 </span>                :                 }
+<span class="lineNum">     254 </span>                : 
+<span class="lineNum">     255 </span>                :                 /* must be either:
+<span class="lineNum">     256 </span>                :                         a) programmer error
+<span class="lineNum">     257 </span>                :                         b) no memory
+<span class="lineNum">     258 </span>                :                         -&gt; lets bail
+<span class="lineNum">     259 </span>                :                 */
+<span class="lineNum">     260 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_ERROR, &quot;fopencookie failed&quot;);</span>
+<span class="lineNum">     261 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">     262 </span>                : #endif
+<span class="lineNum">     263 </span>                : 
+<span class="lineNum">     264 </span>                :                 if (!php_stream_is_filtered(stream) &amp;&amp; stream-&gt;ops-&gt;cast &amp;&amp; stream-&gt;ops-&gt;cast(stream, castas, NULL TSRMLS_CC) == SUCCESS) {
+<span class="lineNum">     265 </span>                :                         if (FAILURE == stream-&gt;ops-&gt;cast(stream, castas, ret TSRMLS_CC)) {
+<span class="lineNum">     266 </span>                :                                 return FAILURE;
+<span class="lineNum">     267 </span>                :                         }
+<span class="lineNum">     268 </span>                :                         goto exit_success;
+<span class="lineNum">     269 </span>                :                 } else if (flags &amp; PHP_STREAM_CAST_TRY_HARD) {
+<span class="lineNum">     270 </span>                :                         php_stream *newstream;
+<span class="lineNum">     271 </span>                : 
+<span class="lineNum">     272 </span>                :                         newstream = php_stream_fopen_tmpfile();
+<span class="lineNum">     273 </span>                :                         if (newstream) {
+<span class="lineNum">     274 </span>                :                                 int retcopy = php_stream_copy_to_stream_ex(stream, newstream, PHP_STREAM_COPY_ALL, NULL);
+<span class="lineNum">     275 </span>                : 
+<span class="lineNum">     276 </span>                :                                 if (retcopy != SUCCESS) {
+<span class="lineNum">     277 </span>                :                                         php_stream_close(newstream);
+<span class="lineNum">     278 </span>                :                                 } else {
+<span class="lineNum">     279 </span>                :                                         int retcast = php_stream_cast(newstream, castas | flags, (void **)ret, show_err);
+<span class="lineNum">     280 </span>                : 
+<span class="lineNum">     281 </span>                :                                         if (retcast == SUCCESS) {
+<span class="lineNum">     282 </span>                :                                                 rewind(*(FILE**)ret);
+<span class="lineNum">     283 </span>                :                                         }
+<span class="lineNum">     284 </span>                : 
+<span class="lineNum">     285 </span>                :                                         /* do some specialized cleanup */
+<span class="lineNum">     286 </span>                :                                         if ((flags &amp; PHP_STREAM_CAST_RELEASE)) {
+<span class="lineNum">     287 </span>                :                                                 php_stream_free(stream, PHP_STREAM_FREE_CLOSE_CASTED);
+<span class="lineNum">     288 </span>                :                                         }
+<span class="lineNum">     289 </span>                : 
+<span class="lineNum">     290 </span>                :                                         /* TODO: we probably should be setting .stdiocast and .fclose_stdiocast or
+<span class="lineNum">     291 </span>                :                                          * we may be leaking the FILE*. Needs investigation, though. */
+<span class="lineNum">     292 </span>                :                                         return retcast;
+<span class="lineNum">     293 </span>                :                                 }
+<span class="lineNum">     294 </span>                :                         }
+<span class="lineNum">     295 </span>                :                 }
+<span class="lineNum">     296 </span>                :         }
+<span class="lineNum">     297 </span>                : 
+<span class="lineNum">     298 </span><span class="lineCov">            732 :         if (php_stream_is_filtered(stream)) {</span>
+<span class="lineNum">     299 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;cannot cast a filtered stream on this system&quot;);</span>
+<span class="lineNum">     300 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">     301 </span><span class="lineCov">            732 :         } else if (stream-&gt;ops-&gt;cast &amp;&amp; stream-&gt;ops-&gt;cast(stream, castas, ret TSRMLS_CC) == SUCCESS) {</span>
+<span class="lineNum">     302 </span><span class="lineCov">            732 :                 goto exit_success;</span>
+<span class="lineNum">     303 </span>                :         }
+<span class="lineNum">     304 </span>                : 
+<span class="lineNum">     305 </span><span class="lineNoCov">              0 :         if (show_err) {</span>
+<span class="lineNum">     306 </span>                :                 /* these names depend on the values of the PHP_STREAM_AS_XXX defines in php_streams.h */
+<span class="lineNum">     307 </span>                :                 static const char *cast_names[4] = {
+<span class="lineNum">     308 </span>                :                         &quot;STDIO FILE*&quot;,
+<span class="lineNum">     309 </span>                :                         &quot;File Descriptor&quot;,
+<span class="lineNum">     310 </span>                :                         &quot;Socket Descriptor&quot;,
+<span class="lineNum">     311 </span>                :                         &quot;select()able descriptor&quot;
+<span class="lineNum">     312 </span>                :                 };
+<span class="lineNum">     313 </span>                : 
+<span class="lineNum">     314 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;cannot represent a stream of type %s as a %s&quot;, stream-&gt;ops-&gt;label, cast_names[castas]);</span>
+<span class="lineNum">     315 </span>                :         }
+<span class="lineNum">     316 </span>                : 
+<span class="lineNum">     317 </span><span class="lineNoCov">              0 :         return FAILURE;</span>
+<span class="lineNum">     318 </span>                : 
+<span class="lineNum">     319 </span>                : exit_success:
+<span class="lineNum">     320 </span>                : 
+<span class="lineNum">     321 </span><span class="lineCov">            732 :         if ((stream-&gt;writepos - stream-&gt;readpos) &gt; 0 &amp;&amp;</span>
+<span class="lineNum">     322 </span><span class="lineNoCov">              0 :                 stream-&gt;fclose_stdiocast != PHP_STREAM_FCLOSE_FOPENCOOKIE &amp;&amp;</span>
+<span class="lineNum">     323 </span><span class="lineNoCov">              0 :                 (flags &amp; PHP_STREAM_CAST_INTERNAL) == 0</span>
+<span class="lineNum">     324 </span>                :         ) {
+<span class="lineNum">     325 </span>                :                 /* the data we have buffered will be lost to the third party library that
+<span class="lineNum">     326 </span>                :                  * will be accessing the stream.  Emit a warning so that the end-user will
+<span class="lineNum">     327 </span>                :                  * know that they should try something else */
+<span class="lineNum">     328 </span>                : 
+<span class="lineNum">     329 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;%ld bytes of buffered data lost during stream conversion!&quot;, (long)(stream-&gt;writepos - stream-&gt;readpos));</span>
+<span class="lineNum">     330 </span>                :         }
+<span class="lineNum">     331 </span>                : 
+<span class="lineNum">     332 </span><span class="lineCov">            732 :         if (castas == PHP_STREAM_AS_STDIO &amp;&amp; ret) {</span>
+<span class="lineNum">     333 </span><span class="lineNoCov">              0 :                 stream-&gt;stdiocast = *(FILE**)ret;</span>
+<span class="lineNum">     334 </span>                :         }
+<span class="lineNum">     335 </span>                : 
+<span class="lineNum">     336 </span><span class="lineCov">            732 :         if (flags &amp; PHP_STREAM_CAST_RELEASE) {</span>
+<span class="lineNum">     337 </span><span class="lineNoCov">              0 :                 php_stream_free(stream, PHP_STREAM_FREE_CLOSE_CASTED);</span>
+<span class="lineNum">     338 </span>                :         }
+<span class="lineNum">     339 </span>                : 
+<span class="lineNum">     340 </span><span class="lineCov">            732 :         return SUCCESS;</span>
+<span class="lineNum">     341 </span>                : 
+<span class="lineNum">     342 </span>                : }
+<span class="lineNum">     343 </span>                : /* }}} */
+<a name="344"><span class="lineNum">     344 </span>                : </a>
+<span class="lineNum">     345 </span>                : /* {{{ php_stream_open_wrapper_as_file */
+<span class="lineNum">     346 </span><span class="lineNoCov">              0 : PHPAPI FILE * _php_stream_open_wrapper_as_file(char *path, char *mode, int options, char **opened_path STREAMS_DC TSRMLS_DC)</span>
+<span class="lineNum">     347 </span>                : {
+<span class="lineNum">     348 </span><span class="lineNoCov">              0 :         FILE *fp = NULL;</span>
+<span class="lineNum">     349 </span><span class="lineNoCov">              0 :         php_stream *stream = NULL;</span>
+<span class="lineNum">     350 </span>                : 
+<span class="lineNum">     351 </span><span class="lineNoCov">              0 :         stream = php_stream_open_wrapper_rel(path, mode, options|STREAM_WILL_CAST, opened_path);</span>
+<span class="lineNum">     352 </span>                : 
+<span class="lineNum">     353 </span><span class="lineNoCov">              0 :         if (stream == NULL) {</span>
+<span class="lineNum">     354 </span><span class="lineNoCov">              0 :                 return NULL;</span>
+<span class="lineNum">     355 </span>                :         }
+<span class="lineNum">     356 </span>                : 
+<span class="lineNum">     357 </span><span class="lineNoCov">              0 :         if (php_stream_cast(stream, PHP_STREAM_AS_STDIO|PHP_STREAM_CAST_TRY_HARD|PHP_STREAM_CAST_RELEASE, (void**)&amp;fp, REPORT_ERRORS) == FAILURE) {</span>
+<span class="lineNum">     358 </span><span class="lineNoCov">              0 :                 php_stream_close(stream);</span>
+<span class="lineNum">     359 </span><span class="lineNoCov">              0 :                 if (opened_path &amp;&amp; *opened_path) {</span>
+<span class="lineNum">     360 </span><span class="lineNoCov">              0 :                         efree(*opened_path);</span>
+<span class="lineNum">     361 </span>                :                 }
+<span class="lineNum">     362 </span><span class="lineNoCov">              0 :                 return NULL;</span>
+<span class="lineNum">     363 </span>                :         }
+<span class="lineNum">     364 </span><span class="lineNoCov">              0 :         return fp;</span>
+<span class="lineNum">     365 </span>                : }
+<span class="lineNum">     366 </span>                : /* }}} */
+<a name="367"><span class="lineNum">     367 </span>                : </a>
+<span class="lineNum">     368 </span>                : /* {{{ php_stream_make_seekable */
+<span class="lineNum">     369 </span><span class="lineNoCov">              0 : PHPAPI int _php_stream_make_seekable(php_stream *origstream, php_stream **newstream, int flags STREAMS_DC TSRMLS_DC)</span>
+<span class="lineNum">     370 </span>                : {
+<span class="lineNum">     371 </span><span class="lineNoCov">              0 :         if (newstream == NULL) {</span>
+<span class="lineNum">     372 </span><span class="lineNoCov">              0 :                 return PHP_STREAM_FAILED;</span>
+<span class="lineNum">     373 </span>                :         }
+<span class="lineNum">     374 </span><span class="lineNoCov">              0 :         *newstream = NULL;</span>
+<span class="lineNum">     375 </span>                : 
+<span class="lineNum">     376 </span><span class="lineNoCov">              0 :         if (((flags &amp; PHP_STREAM_FORCE_CONVERSION) == 0) &amp;&amp; origstream-&gt;ops-&gt;seek != NULL) {</span>
+<span class="lineNum">     377 </span><span class="lineNoCov">              0 :                 *newstream = origstream;</span>
+<span class="lineNum">     378 </span><span class="lineNoCov">              0 :                 return PHP_STREAM_UNCHANGED;</span>
+<span class="lineNum">     379 </span>                :         }
+<span class="lineNum">     380 </span>                : 
+<span class="lineNum">     381 </span>                :         /* Use a tmpfile and copy the old streams contents into it */
+<span class="lineNum">     382 </span>                : 
+<span class="lineNum">     383 </span><span class="lineNoCov">              0 :         if (flags &amp; PHP_STREAM_PREFER_STDIO) {</span>
+<span class="lineNum">     384 </span><span class="lineNoCov">              0 :                 *newstream = php_stream_fopen_tmpfile();</span>
+<span class="lineNum">     385 </span>                :         } else {
+<span class="lineNum">     386 </span><span class="lineNoCov">              0 :                 *newstream = php_stream_temp_new();</span>
+<span class="lineNum">     387 </span>                :         }
+<span class="lineNum">     388 </span>                : 
+<span class="lineNum">     389 </span><span class="lineNoCov">              0 :         if (*newstream == NULL) {</span>
+<span class="lineNum">     390 </span><span class="lineNoCov">              0 :                 return PHP_STREAM_FAILED;</span>
+<span class="lineNum">     391 </span>                :         }
+<span class="lineNum">     392 </span>                : 
+<span class="lineNum">     393 </span>                : #if ZEND_DEBUG
+<span class="lineNum">     394 </span>                :         (*newstream)-&gt;open_filename = origstream-&gt;open_filename;
+<span class="lineNum">     395 </span>                :         (*newstream)-&gt;open_lineno = origstream-&gt;open_lineno;
+<span class="lineNum">     396 </span>                : #endif
+<span class="lineNum">     397 </span>                : 
+<span class="lineNum">     398 </span><span class="lineNoCov">              0 :         if (php_stream_copy_to_stream_ex(origstream, *newstream, PHP_STREAM_COPY_ALL, NULL) != SUCCESS) {</span>
+<span class="lineNum">     399 </span><span class="lineNoCov">              0 :                 php_stream_close(*newstream);</span>
+<span class="lineNum">     400 </span><span class="lineNoCov">              0 :                 *newstream = NULL;</span>
+<span class="lineNum">     401 </span><span class="lineNoCov">              0 :                 return PHP_STREAM_CRITICAL;</span>
+<span class="lineNum">     402 </span>                :         }
+<span class="lineNum">     403 </span>                : 
+<span class="lineNum">     404 </span><span class="lineNoCov">              0 :         php_stream_close(origstream);</span>
+<span class="lineNum">     405 </span><span class="lineNoCov">              0 :         php_stream_seek(*newstream, 0, SEEK_SET);</span>
+<span class="lineNum">     406 </span>                : 
+<span class="lineNum">     407 </span><span class="lineNoCov">              0 :         return PHP_STREAM_RELEASED;</span>
+<span class="lineNum">     408 </span>                : }
+<span class="lineNum">     409 </span>                : /* }}} */
+<span class="lineNum">     410 </span>                : 
+<span class="lineNum">     411 </span>                : /*
+<span class="lineNum">     412 </span>                :  * Local variables:
+<span class="lineNum">     413 </span>                :  * tab-width: 4
+<span class="lineNum">     414 </span>                :  * c-basic-offset: 4
+<span class="lineNum">     415 </span>                :  * End:
+<span class="lineNum">     416 </span>                :  * vim600: noet sw=4 ts=4 fdm=marker
+<span class="lineNum">     417 </span>                :  * vim&lt;600: noet sw=4 ts=4
+<span class="lineNum">     418 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

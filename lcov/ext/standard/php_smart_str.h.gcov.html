@@ -1,0 +1,277 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - ext/standard/php_smart_str.h</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../index.html">directory</a> - <a href="index.html">ext/standard</a> - php_smart_str.h (source / <a href="php_smart_str.h.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">3</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">1</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Author: Sascha Schumann &lt;sascha@schumann.cx&gt;                         |
+<span class="lineNum">      16 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      17 </span>                :  */
+<span class="lineNum">      18 </span>                : 
+<span class="lineNum">      19 </span>                : /* $Id$ */
+<span class="lineNum">      20 </span>                : 
+<span class="lineNum">      21 </span>                : #ifndef PHP_SMART_STR_H
+<span class="lineNum">      22 </span>                : #define PHP_SMART_STR_H
+<span class="lineNum">      23 </span>                : 
+<span class="lineNum">      24 </span>                : #include &quot;php_smart_str_public.h&quot;
+<span class="lineNum">      25 </span>                : 
+<span class="lineNum">      26 </span>                : #include &lt;stdlib.h&gt;
+<span class="lineNum">      27 </span>                : #ifndef SMART_STR_USE_REALLOC
+<span class="lineNum">      28 </span>                : #include &lt;zend.h&gt;
+<span class="lineNum">      29 </span>                : #endif
+<span class="lineNum">      30 </span>                : 
+<span class="lineNum">      31 </span>                : #define smart_str_0(x) do {                                                                                     \
+<span class="lineNum">      32 </span>                :         if ((x)-&gt;c) {                                                                                                        \
+<span class="lineNum">      33 </span>                :                 (x)-&gt;c[(x)-&gt;len] = '\0';                                                                  \
+<span class="lineNum">      34 </span>                :         }                                                                                                                               \
+<span class="lineNum">      35 </span>                : } while (0)
+<span class="lineNum">      36 </span>                : 
+<span class="lineNum">      37 </span>                : #ifndef SMART_STR_PREALLOC
+<span class="lineNum">      38 </span>                : #define SMART_STR_PREALLOC 128
+<span class="lineNum">      39 </span>                : #endif
+<span class="lineNum">      40 </span>                : 
+<span class="lineNum">      41 </span>                : #ifndef SMART_STR_START_SIZE
+<span class="lineNum">      42 </span>                : #define SMART_STR_START_SIZE 78
+<span class="lineNum">      43 </span>                : #endif
+<span class="lineNum">      44 </span>                : 
+<span class="lineNum">      45 </span>                : #ifdef SMART_STR_USE_REALLOC
+<span class="lineNum">      46 </span>                : #define SMART_STR_REALLOC(a,b,c) realloc((a),(b))
+<span class="lineNum">      47 </span>                : #else
+<span class="lineNum">      48 </span>                : #define SMART_STR_REALLOC(a,b,c) perealloc((a),(b),(c))
+<span class="lineNum">      49 </span>                : #endif
+<span class="lineNum">      50 </span>                : 
+<span class="lineNum">      51 </span>                : #define SMART_STR_DO_REALLOC(d, what) \
+<span class="lineNum">      52 </span>                :         (d)-&gt;c = SMART_STR_REALLOC((d)-&gt;c, (d)-&gt;a + 1, (what))
+<span class="lineNum">      53 </span>                : 
+<span class="lineNum">      54 </span>                : #define smart_str_alloc4(d, n, what, newlen) do {                                       \
+<span class="lineNum">      55 </span>                :         if (!(d)-&gt;c) {                                                                                                       \
+<span class="lineNum">      56 </span>                :                 (d)-&gt;len = 0;                                                                                                \
+<span class="lineNum">      57 </span>                :                 newlen = (n);                                                                                           \
+<span class="lineNum">      58 </span>                :                 (d)-&gt;a = newlen &lt; SMART_STR_START_SIZE                                            \
+<span class="lineNum">      59 </span>                :                                 ? SMART_STR_START_SIZE                                                          \
+<span class="lineNum">      60 </span>                :                                 : newlen + SMART_STR_PREALLOC;                                          \
+<span class="lineNum">      61 </span>                :                 SMART_STR_DO_REALLOC(d, what);                                                          \
+<span class="lineNum">      62 </span>                :         } else {                                                                                                                \
+<span class="lineNum">      63 </span>                :                 newlen = (d)-&gt;len + (n);                                                                     \
+<span class="lineNum">      64 </span>                :                 if (newlen &gt;= (d)-&gt;a) {                                                                           \
+<span class="lineNum">      65 </span>                :                         (d)-&gt;a = newlen + SMART_STR_PREALLOC;                                        \
+<span class="lineNum">      66 </span>                :                         SMART_STR_DO_REALLOC(d, what);                                                  \
+<span class="lineNum">      67 </span>                :                 }                                                                                                                       \
+<span class="lineNum">      68 </span>                :         }                                                                                                                               \
+<span class="lineNum">      69 </span>                : } while (0)
+<span class="lineNum">      70 </span>                : 
+<span class="lineNum">      71 </span>                : #define smart_str_alloc(d, n, what) \
+<span class="lineNum">      72 </span>                :         smart_str_alloc4((d), (n), (what), newlen)
+<span class="lineNum">      73 </span>                : 
+<span class="lineNum">      74 </span>                : /* wrapper */
+<span class="lineNum">      75 </span>                : 
+<span class="lineNum">      76 </span>                : #define smart_str_appends_ex(dest, src, what) \
+<span class="lineNum">      77 </span>                :         smart_str_appendl_ex((dest), (src), strlen(src), (what))
+<span class="lineNum">      78 </span>                : #define smart_str_appends(dest, src) \
+<span class="lineNum">      79 </span>                :         smart_str_appendl((dest), (src), strlen(src))
+<span class="lineNum">      80 </span>                : 
+<span class="lineNum">      81 </span>                : #define smart_str_appendc(dest, c) \
+<span class="lineNum">      82 </span>                :         smart_str_appendc_ex((dest), (c), 0)
+<span class="lineNum">      83 </span>                : #define smart_str_free(s) \
+<span class="lineNum">      84 </span>                :         smart_str_free_ex((s), 0)
+<span class="lineNum">      85 </span>                : #define smart_str_appendl(dest, src, len) \
+<span class="lineNum">      86 </span>                :         smart_str_appendl_ex((dest), (src), (len), 0)
+<span class="lineNum">      87 </span>                : #define smart_str_append(dest, src) \
+<span class="lineNum">      88 </span>                :         smart_str_append_ex((dest), (src), 0)
+<span class="lineNum">      89 </span>                : #define smart_str_append_long(dest, val) \
+<span class="lineNum">      90 </span>                :         smart_str_append_long_ex((dest), (val), 0)
+<span class="lineNum">      91 </span>                : #define smart_str_append_off_t(dest, val) \
+<span class="lineNum">      92 </span>                :         smart_str_append_off_t_ex((dest), (val), 0)
+<span class="lineNum">      93 </span>                : #define smart_str_append_unsigned(dest, val) \
+<span class="lineNum">      94 </span>                :         smart_str_append_unsigned_ex((dest), (val), 0)
+<span class="lineNum">      95 </span>                : 
+<span class="lineNum">      96 </span>                : #define smart_str_appendc_ex(dest, ch, what) do {                                       \
+<span class="lineNum">      97 </span>                :         register size_t __nl;                                                                                   \
+<span class="lineNum">      98 </span>                :         smart_str_alloc4((dest), 1, (what), __nl);                                              \
+<span class="lineNum">      99 </span>                :         (dest)-&gt;len = __nl;                                                                                          \
+<span class="lineNum">     100 </span>                :         ((unsigned char *) (dest)-&gt;c)[(dest)-&gt;len - 1] = (ch);                    \
+<span class="lineNum">     101 </span>                : } while (0)
+<span class="lineNum">     102 </span>                : 
+<span class="lineNum">     103 </span>                : #define smart_str_free_ex(s, what) do {                                                         \
+<span class="lineNum">     104 </span>                :         smart_str *__s = (smart_str *) (s);                                                             \
+<span class="lineNum">     105 </span>                :         if (__s-&gt;c) {                                                                                                        \
+<span class="lineNum">     106 </span>                :                 pefree(__s-&gt;c, what);                                                                                \
+<span class="lineNum">     107 </span>                :                 __s-&gt;c = NULL;                                                                                               \
+<span class="lineNum">     108 </span>                :         }                                                                                                                               \
+<span class="lineNum">     109 </span>                :         __s-&gt;a = __s-&gt;len = 0;                                                                                    \
+<span class="lineNum">     110 </span>                : } while (0)
+<span class="lineNum">     111 </span>                : 
+<span class="lineNum">     112 </span>                : #define smart_str_appendl_ex(dest, src, nlen, what) do {                        \
+<span class="lineNum">     113 </span>                :         register size_t __nl;                                                                                   \
+<span class="lineNum">     114 </span>                :         smart_str *__dest = (smart_str *) (dest);                                               \
+<span class="lineNum">     115 </span>                :                                                                                                                                         \
+<span class="lineNum">     116 </span>                :         smart_str_alloc4(__dest, (nlen), (what), __nl);                                 \
+<span class="lineNum">     117 </span>                :         memcpy(__dest-&gt;c + __dest-&gt;len, (src), (nlen));                                   \
+<span class="lineNum">     118 </span>                :         __dest-&gt;len = __nl;                                                                                          \
+<span class="lineNum">     119 </span>                : } while (0)
+<span class="lineNum">     120 </span>                : 
+<span class="lineNum">     121 </span>                : /* input: buf points to the END of the buffer */
+<span class="lineNum">     122 </span>                : #define smart_str_print_unsigned4(buf, num, vartype, result) do {       \
+<span class="lineNum">     123 </span>                :         char *__p = (buf);                                                                                              \
+<span class="lineNum">     124 </span>                :         vartype __num = (num);                                                                                  \
+<span class="lineNum">     125 </span>                :         *__p = '\0';                                                                                                    \
+<span class="lineNum">     126 </span>                :         do {                                                                                                                    \
+<span class="lineNum">     127 </span>                :                 *--__p = (char) (__num % 10) + '0';                                                     \
+<span class="lineNum">     128 </span>                :                 __num /= 10;                                                                                            \
+<span class="lineNum">     129 </span>                :         } while (__num &gt; 0);                                                                                 \
+<span class="lineNum">     130 </span>                :         result = __p;                                                                                                   \
+<span class="lineNum">     131 </span>                : } while (0)
+<span class="lineNum">     132 </span>                : 
+<span class="lineNum">     133 </span>                : /* buf points to the END of the buffer */
+<span class="lineNum">     134 </span>                : #define smart_str_print_long4(buf, num, vartype, result) do {   \
+<span class="lineNum">     135 </span>                :         if (num &lt; 0) {                                                                                                       \
+<span class="lineNum">     136 </span>                :                 /* this might cause problems when dealing with LONG_MIN         \
+<span class="lineNum">     137 </span>                :                    and machines which don't support long long.  Works           \
+<span class="lineNum">     138 </span>                :                    flawlessly on 32bit x86 */                                                           \
+<span class="lineNum">     139 </span>                :                 smart_str_print_unsigned4((buf), -(num), vartype, (result));    \
+<span class="lineNum">     140 </span>                :                 *--(result) = '-';                                                                                      \
+<span class="lineNum">     141 </span>                :         } else {                                                                                                                \
+<span class="lineNum">     142 </span>                :                 smart_str_print_unsigned4((buf), (num), vartype, (result));     \
+<span class="lineNum">     143 </span>                :         }                                                                                                                               \
+<span class="lineNum">     144 </span>                : } while (0)
+<span class="lineNum">     145 </span>                : 
+<span class="lineNum">     146 </span>                : /*
+<span class="lineNum">     147 </span>                :  * these could be replaced using a braced-group inside an expression
+<span class="lineNum">     148 </span>                :  * for GCC compatible compilers, e.g.
+<span class="lineNum">     149 </span>                :  *
+<span class="lineNum">     150 </span>                :  * #define f(..) ({char *r;..;__r;})
+<a name="151"><span class="lineNum">     151 </span>                :  */  </a>
+<span class="lineNum">     152 </span>                :  
+<span class="lineNum">     153 </span><span class="lineNoCov">              0 : static inline char *smart_str_print_long(char *buf, long num) {</span>
+<span class="lineNum">     154 </span>                :         char *r; 
+<span class="lineNum">     155 </span><span class="lineNoCov">              0 :         smart_str_print_long4(buf, num, unsigned long, r); </span>
+<span class="lineNum">     156 </span><span class="lineNoCov">              0 :         return r;</span>
+<span class="lineNum">     157 </span>                : }
+<span class="lineNum">     158 </span>                : 
+<span class="lineNum">     159 </span>                : static inline char *smart_str_print_unsigned(char *buf, long num) {
+<span class="lineNum">     160 </span>                :         char *r; 
+<span class="lineNum">     161 </span>                :         smart_str_print_unsigned4(buf, num, unsigned long, r); 
+<span class="lineNum">     162 </span>                :         return r;
+<span class="lineNum">     163 </span>                : }
+<span class="lineNum">     164 </span>                : 
+<span class="lineNum">     165 </span>                : #define smart_str_append_generic_ex(dest, num, type, vartype, func) do {        \
+<span class="lineNum">     166 </span>                :         char __b[32];                                                                                                                   \
+<span class="lineNum">     167 </span>                :         char *__t;                                                                                                                              \
+<span class="lineNum">     168 </span>                :         smart_str_print##func##4 (__b + sizeof(__b) - 1, (num), vartype, __t);  \
+<span class="lineNum">     169 </span>                :         smart_str_appendl_ex((dest), __t, __b + sizeof(__b) - 1 - __t, (type)); \
+<span class="lineNum">     170 </span>                : } while (0)
+<span class="lineNum">     171 </span>                :         
+<span class="lineNum">     172 </span>                : #define smart_str_append_unsigned_ex(dest, num, type) \
+<span class="lineNum">     173 </span>                :         smart_str_append_generic_ex((dest), (num), (type), unsigned long, _unsigned)
+<span class="lineNum">     174 </span>                : 
+<span class="lineNum">     175 </span>                : #define smart_str_append_long_ex(dest, num, type) \
+<span class="lineNum">     176 </span>                :         smart_str_append_generic_ex((dest), (num), (type), unsigned long, _long)
+<span class="lineNum">     177 </span>                : 
+<span class="lineNum">     178 </span>                : #define smart_str_append_off_t_ex(dest, num, type) \
+<span class="lineNum">     179 </span>                :         smart_str_append_generic_ex((dest), (num), (type), off_t, _long)
+<span class="lineNum">     180 </span>                : 
+<span class="lineNum">     181 </span>                : #define smart_str_append_ex(dest, src, what) \
+<span class="lineNum">     182 </span>                :         smart_str_appendl_ex((dest), ((smart_str *)(src))-&gt;c, \
+<span class="lineNum">     183 </span>                :                 ((smart_str *)(src))-&gt;len, (what));
+<span class="lineNum">     184 </span>                : 
+<span class="lineNum">     185 </span>                : 
+<span class="lineNum">     186 </span>                : #define smart_str_setl(dest, src, nlen) do {                                            \
+<span class="lineNum">     187 </span>                :         (dest)-&gt;len = (nlen);                                                                                        \
+<span class="lineNum">     188 </span>                :         (dest)-&gt;a = (nlen) + 1;                                                                                      \
+<span class="lineNum">     189 </span>                :         (dest)-&gt;c = (char *) (src);                                                                          \
+<span class="lineNum">     190 </span>                : } while (0)
+<span class="lineNum">     191 </span>                : 
+<span class="lineNum">     192 </span>                : #define smart_str_sets(dest, src) \
+<span class="lineNum">     193 </span>                :         smart_str_setl((dest), (src), strlen(src));
+<span class="lineNum">     194 </span>                : 
+<span class="lineNum">     195 </span>                : #endif
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

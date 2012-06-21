@@ -1,0 +1,474 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - Zend/zend_hash.h</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../index.html">directory</a> - <a href="index.html">Zend</a> - zend_hash.h (source / <a href="zend_hash.h.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">35</td>
+          <td class="headerCovTableEntry">26</td>
+          <td class="headerCovTableEntryHi">74.3 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">6</td>
+          <td class="headerCovTableEntry">3</td>
+          <td class="headerCovTableEntryLo">50.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | Zend Engine                                                          |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1998-2012 Zend Technologies Ltd. (http://www.zend.com) |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 2.00 of the Zend license,     |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        | 
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.zend.com/license/2_00.txt.                                |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the Zend license and are unable to  |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@zend.com so we can mail you a copy immediately.              |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Authors: Andi Gutmans &lt;andi@zend.com&gt;                                |
+<span class="lineNum">      16 </span>                :    |          Zeev Suraski &lt;zeev@zend.com&gt;                                |
+<span class="lineNum">      17 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      18 </span>                : */
+<span class="lineNum">      19 </span>                : 
+<span class="lineNum">      20 </span>                : /* $Id$ */
+<span class="lineNum">      21 </span>                : 
+<span class="lineNum">      22 </span>                : #ifndef ZEND_HASH_H
+<span class="lineNum">      23 </span>                : #define ZEND_HASH_H
+<span class="lineNum">      24 </span>                : 
+<span class="lineNum">      25 </span>                : #include &lt;sys/types.h&gt;
+<span class="lineNum">      26 </span>                : #include &quot;zend.h&quot;
+<span class="lineNum">      27 </span>                : 
+<span class="lineNum">      28 </span>                : #define HASH_KEY_IS_STRING 1
+<span class="lineNum">      29 </span>                : #define HASH_KEY_IS_LONG 2
+<span class="lineNum">      30 </span>                : #define HASH_KEY_NON_EXISTANT 3
+<span class="lineNum">      31 </span>                : 
+<span class="lineNum">      32 </span>                : #define HASH_UPDATE             (1&lt;&lt;0)
+<span class="lineNum">      33 </span>                : #define HASH_ADD                        (1&lt;&lt;1)
+<span class="lineNum">      34 </span>                : #define HASH_NEXT_INSERT        (1&lt;&lt;2)
+<span class="lineNum">      35 </span>                : 
+<span class="lineNum">      36 </span>                : #define HASH_DEL_KEY 0
+<span class="lineNum">      37 </span>                : #define HASH_DEL_INDEX 1
+<span class="lineNum">      38 </span>                : #define HASH_DEL_KEY_QUICK 2
+<span class="lineNum">      39 </span>                : 
+<span class="lineNum">      40 </span>                : #define HASH_UPDATE_KEY_IF_NONE    0
+<span class="lineNum">      41 </span>                : #define HASH_UPDATE_KEY_IF_BEFORE  1
+<span class="lineNum">      42 </span>                : #define HASH_UPDATE_KEY_IF_AFTER   2
+<span class="lineNum">      43 </span>                : #define HASH_UPDATE_KEY_ANYWAY     3
+<span class="lineNum">      44 </span>                : 
+<span class="lineNum">      45 </span>                : typedef ulong (*hash_func_t)(const char *arKey, uint nKeyLength);
+<span class="lineNum">      46 </span>                : typedef int  (*compare_func_t)(const void *, const void * TSRMLS_DC);
+<span class="lineNum">      47 </span>                : typedef void (*sort_func_t)(void *, size_t, register size_t, compare_func_t TSRMLS_DC);
+<span class="lineNum">      48 </span>                : typedef void (*dtor_func_t)(void *pDest);
+<span class="lineNum">      49 </span>                : typedef void (*copy_ctor_func_t)(void *pElement);
+<span class="lineNum">      50 </span>                : typedef void (*copy_ctor_param_func_t)(void *pElement, void *pParam);
+<span class="lineNum">      51 </span>                : 
+<span class="lineNum">      52 </span>                : struct _hashtable;
+<span class="lineNum">      53 </span>                : 
+<span class="lineNum">      54 </span>                : typedef struct bucket {
+<span class="lineNum">      55 </span>                :         ulong h;                                                /* Used for numeric indexing */
+<span class="lineNum">      56 </span>                :         uint nKeyLength;
+<span class="lineNum">      57 </span>                :         void *pData;
+<span class="lineNum">      58 </span>                :         void *pDataPtr;
+<span class="lineNum">      59 </span>                :         struct bucket *pListNext;
+<span class="lineNum">      60 </span>                :         struct bucket *pListLast;
+<span class="lineNum">      61 </span>                :         struct bucket *pNext;
+<span class="lineNum">      62 </span>                :         struct bucket *pLast;
+<span class="lineNum">      63 </span>                :         const char *arKey;
+<span class="lineNum">      64 </span>                : } Bucket;
+<span class="lineNum">      65 </span>                : 
+<span class="lineNum">      66 </span>                : typedef struct _hashtable {
+<span class="lineNum">      67 </span>                :         uint nTableSize;
+<span class="lineNum">      68 </span>                :         uint nTableMask;
+<span class="lineNum">      69 </span>                :         uint nNumOfElements;
+<span class="lineNum">      70 </span>                :         ulong nNextFreeElement;
+<span class="lineNum">      71 </span>                :         Bucket *pInternalPointer;       /* Used for element traversal */
+<span class="lineNum">      72 </span>                :         Bucket *pListHead;
+<span class="lineNum">      73 </span>                :         Bucket *pListTail;
+<span class="lineNum">      74 </span>                :         Bucket **arBuckets;
+<span class="lineNum">      75 </span>                :         dtor_func_t pDestructor;
+<span class="lineNum">      76 </span>                :         zend_bool persistent;
+<span class="lineNum">      77 </span>                :         unsigned char nApplyCount;
+<span class="lineNum">      78 </span>                :         zend_bool bApplyProtection;
+<span class="lineNum">      79 </span>                : #if ZEND_DEBUG
+<span class="lineNum">      80 </span>                :         int inconsistent;
+<span class="lineNum">      81 </span>                : #endif
+<span class="lineNum">      82 </span>                : } HashTable;
+<span class="lineNum">      83 </span>                : 
+<span class="lineNum">      84 </span>                : 
+<span class="lineNum">      85 </span>                : typedef struct _zend_hash_key {
+<span class="lineNum">      86 </span>                :         const char *arKey;
+<span class="lineNum">      87 </span>                :         uint nKeyLength;
+<span class="lineNum">      88 </span>                :         ulong h;
+<span class="lineNum">      89 </span>                : } zend_hash_key;
+<span class="lineNum">      90 </span>                : 
+<span class="lineNum">      91 </span>                : 
+<span class="lineNum">      92 </span>                : typedef zend_bool (*merge_checker_func_t)(HashTable *target_ht, void *source_data, zend_hash_key *hash_key, void *pParam);
+<span class="lineNum">      93 </span>                : 
+<span class="lineNum">      94 </span>                : typedef Bucket* HashPosition;
+<span class="lineNum">      95 </span>                : 
+<span class="lineNum">      96 </span>                : BEGIN_EXTERN_C()
+<span class="lineNum">      97 </span>                : 
+<span class="lineNum">      98 </span>                : /* startup/shutdown */
+<span class="lineNum">      99 </span>                : ZEND_API int _zend_hash_init(HashTable *ht, uint nSize, hash_func_t pHashFunction, dtor_func_t pDestructor, zend_bool persistent ZEND_FILE_LINE_DC);
+<span class="lineNum">     100 </span>                : ZEND_API int _zend_hash_init_ex(HashTable *ht, uint nSize, hash_func_t pHashFunction, dtor_func_t pDestructor, zend_bool persistent, zend_bool bApplyProtection ZEND_FILE_LINE_DC);
+<span class="lineNum">     101 </span>                : ZEND_API void zend_hash_destroy(HashTable *ht);
+<span class="lineNum">     102 </span>                : ZEND_API void zend_hash_clean(HashTable *ht);
+<span class="lineNum">     103 </span>                : #define zend_hash_init(ht, nSize, pHashFunction, pDestructor, persistent)                                               _zend_hash_init((ht), (nSize), (pHashFunction), (pDestructor), (persistent) ZEND_FILE_LINE_CC)
+<span class="lineNum">     104 </span>                : #define zend_hash_init_ex(ht, nSize, pHashFunction, pDestructor, persistent, bApplyProtection)          _zend_hash_init_ex((ht), (nSize), (pHashFunction), (pDestructor), (persistent), (bApplyProtection) ZEND_FILE_LINE_CC)
+<span class="lineNum">     105 </span>                : 
+<span class="lineNum">     106 </span>                : /* additions/updates/changes */
+<span class="lineNum">     107 </span>                : ZEND_API int _zend_hash_add_or_update(HashTable *ht, const char *arKey, uint nKeyLength, void *pData, uint nDataSize, void **pDest, int flag ZEND_FILE_LINE_DC);
+<span class="lineNum">     108 </span>                : #define zend_hash_update(ht, arKey, nKeyLength, pData, nDataSize, pDest) \
+<span class="lineNum">     109 </span>                :                 _zend_hash_add_or_update(ht, arKey, nKeyLength, pData, nDataSize, pDest, HASH_UPDATE ZEND_FILE_LINE_CC)
+<span class="lineNum">     110 </span>                : #define zend_hash_add(ht, arKey, nKeyLength, pData, nDataSize, pDest) \
+<span class="lineNum">     111 </span>                :                 _zend_hash_add_or_update(ht, arKey, nKeyLength, pData, nDataSize, pDest, HASH_ADD ZEND_FILE_LINE_CC)
+<span class="lineNum">     112 </span>                : 
+<span class="lineNum">     113 </span>                : ZEND_API int _zend_hash_quick_add_or_update(HashTable *ht, const char *arKey, uint nKeyLength, ulong h, void *pData, uint nDataSize, void **pDest, int flag ZEND_FILE_LINE_DC);
+<span class="lineNum">     114 </span>                : #define zend_hash_quick_update(ht, arKey, nKeyLength, h, pData, nDataSize, pDest) \
+<span class="lineNum">     115 </span>                :                 _zend_hash_quick_add_or_update(ht, arKey, nKeyLength, h, pData, nDataSize, pDest, HASH_UPDATE ZEND_FILE_LINE_CC)
+<span class="lineNum">     116 </span>                : #define zend_hash_quick_add(ht, arKey, nKeyLength, h, pData, nDataSize, pDest) \
+<span class="lineNum">     117 </span>                :                 _zend_hash_quick_add_or_update(ht, arKey, nKeyLength, h, pData, nDataSize, pDest, HASH_ADD ZEND_FILE_LINE_CC)
+<span class="lineNum">     118 </span>                : 
+<span class="lineNum">     119 </span>                : ZEND_API int _zend_hash_index_update_or_next_insert(HashTable *ht, ulong h, void *pData, uint nDataSize, void **pDest, int flag ZEND_FILE_LINE_DC);
+<span class="lineNum">     120 </span>                : #define zend_hash_index_update(ht, h, pData, nDataSize, pDest) \
+<span class="lineNum">     121 </span>                :                 _zend_hash_index_update_or_next_insert(ht, h, pData, nDataSize, pDest, HASH_UPDATE ZEND_FILE_LINE_CC)
+<span class="lineNum">     122 </span>                : #define zend_hash_next_index_insert(ht, pData, nDataSize, pDest) \
+<span class="lineNum">     123 </span>                :                 _zend_hash_index_update_or_next_insert(ht, 0, pData, nDataSize, pDest, HASH_NEXT_INSERT ZEND_FILE_LINE_CC)
+<span class="lineNum">     124 </span>                : 
+<span class="lineNum">     125 </span>                : ZEND_API int zend_hash_add_empty_element(HashTable *ht, const char *arKey, uint nKeyLength);
+<span class="lineNum">     126 </span>                : 
+<span class="lineNum">     127 </span>                : 
+<span class="lineNum">     128 </span>                : #define ZEND_HASH_APPLY_KEEP                            0
+<span class="lineNum">     129 </span>                : #define ZEND_HASH_APPLY_REMOVE                          1&lt;&lt;0
+<span class="lineNum">     130 </span>                : #define ZEND_HASH_APPLY_STOP                            1&lt;&lt;1
+<span class="lineNum">     131 </span>                : 
+<span class="lineNum">     132 </span>                : typedef int (*apply_func_t)(void *pDest TSRMLS_DC);
+<span class="lineNum">     133 </span>                : typedef int (*apply_func_arg_t)(void *pDest, void *argument TSRMLS_DC);
+<span class="lineNum">     134 </span>                : typedef int (*apply_func_args_t)(void *pDest TSRMLS_DC, int num_args, va_list args, zend_hash_key *hash_key);
+<span class="lineNum">     135 </span>                : 
+<span class="lineNum">     136 </span>                : ZEND_API void zend_hash_graceful_destroy(HashTable *ht);
+<span class="lineNum">     137 </span>                : ZEND_API void zend_hash_graceful_reverse_destroy(HashTable *ht);
+<span class="lineNum">     138 </span>                : ZEND_API void zend_hash_apply(HashTable *ht, apply_func_t apply_func TSRMLS_DC);
+<span class="lineNum">     139 </span>                : ZEND_API void zend_hash_apply_with_argument(HashTable *ht, apply_func_arg_t apply_func, void * TSRMLS_DC);
+<span class="lineNum">     140 </span>                : ZEND_API void zend_hash_apply_with_arguments(HashTable *ht TSRMLS_DC, apply_func_args_t apply_func, int, ...);
+<span class="lineNum">     141 </span>                : 
+<span class="lineNum">     142 </span>                : /* This function should be used with special care (in other words,
+<span class="lineNum">     143 </span>                :  * it should usually not be used).  When used with the ZEND_HASH_APPLY_STOP
+<span class="lineNum">     144 </span>                :  * return value, it assumes things about the order of the elements in the hash.
+<span class="lineNum">     145 </span>                :  * Also, it does not provide the same kind of reentrancy protection that
+<span class="lineNum">     146 </span>                :  * the standard apply functions do.
+<span class="lineNum">     147 </span>                :  */
+<span class="lineNum">     148 </span>                : ZEND_API void zend_hash_reverse_apply(HashTable *ht, apply_func_t apply_func TSRMLS_DC);
+<span class="lineNum">     149 </span>                : 
+<span class="lineNum">     150 </span>                : 
+<span class="lineNum">     151 </span>                : /* Deletes */
+<span class="lineNum">     152 </span>                : ZEND_API int zend_hash_del_key_or_index(HashTable *ht, const char *arKey, uint nKeyLength, ulong h, int flag);
+<span class="lineNum">     153 </span>                : #define zend_hash_del(ht, arKey, nKeyLength) \
+<span class="lineNum">     154 </span>                :                 zend_hash_del_key_or_index(ht, arKey, nKeyLength, 0, HASH_DEL_KEY)
+<span class="lineNum">     155 </span>                : #define zend_hash_quick_del(ht, arKey, nKeyLength, h) \
+<span class="lineNum">     156 </span>                :                 zend_hash_del_key_or_index(ht, arKey, nKeyLength, h, HASH_DEL_KEY_QUICK)
+<span class="lineNum">     157 </span>                : #define zend_hash_index_del(ht, h) \
+<span class="lineNum">     158 </span>                :                 zend_hash_del_key_or_index(ht, NULL, 0, h, HASH_DEL_INDEX)
+<span class="lineNum">     159 </span>                : 
+<span class="lineNum">     160 </span>                : ZEND_API ulong zend_get_hash_value(const char *arKey, uint nKeyLength);
+<span class="lineNum">     161 </span>                : 
+<span class="lineNum">     162 </span>                : /* Data retreival */
+<span class="lineNum">     163 </span>                : ZEND_API int zend_hash_find(const HashTable *ht, const char *arKey, uint nKeyLength, void **pData);
+<span class="lineNum">     164 </span>                : ZEND_API int zend_hash_quick_find(const HashTable *ht, const char *arKey, uint nKeyLength, ulong h, void **pData);
+<span class="lineNum">     165 </span>                : ZEND_API int zend_hash_index_find(const HashTable *ht, ulong h, void **pData);
+<span class="lineNum">     166 </span>                : 
+<span class="lineNum">     167 </span>                : /* Misc */
+<span class="lineNum">     168 </span>                : ZEND_API int zend_hash_exists(const HashTable *ht, const char *arKey, uint nKeyLength);
+<span class="lineNum">     169 </span>                : ZEND_API int zend_hash_quick_exists(const HashTable *ht, const char *arKey, uint nKeyLength, ulong h);
+<span class="lineNum">     170 </span>                : ZEND_API int zend_hash_index_exists(const HashTable *ht, ulong h);
+<span class="lineNum">     171 </span>                : ZEND_API ulong zend_hash_next_free_element(const HashTable *ht);
+<span class="lineNum">     172 </span>                : 
+<span class="lineNum">     173 </span>                : 
+<span class="lineNum">     174 </span>                : /* traversing */
+<span class="lineNum">     175 </span>                : #define zend_hash_has_more_elements_ex(ht, pos) \
+<span class="lineNum">     176 </span>                :         (zend_hash_get_current_key_type_ex(ht, pos) == HASH_KEY_NON_EXISTANT ? FAILURE : SUCCESS)
+<span class="lineNum">     177 </span>                : ZEND_API int zend_hash_move_forward_ex(HashTable *ht, HashPosition *pos);
+<span class="lineNum">     178 </span>                : ZEND_API int zend_hash_move_backwards_ex(HashTable *ht, HashPosition *pos);
+<span class="lineNum">     179 </span>                : ZEND_API int zend_hash_get_current_key_ex(const HashTable *ht, char **str_index, uint *str_length, ulong *num_index, zend_bool duplicate, HashPosition *pos);
+<span class="lineNum">     180 </span>                : ZEND_API int zend_hash_get_current_key_type_ex(HashTable *ht, HashPosition *pos);
+<span class="lineNum">     181 </span>                : ZEND_API int zend_hash_get_current_data_ex(HashTable *ht, void **pData, HashPosition *pos);
+<span class="lineNum">     182 </span>                : ZEND_API void zend_hash_internal_pointer_reset_ex(HashTable *ht, HashPosition *pos);
+<span class="lineNum">     183 </span>                : ZEND_API void zend_hash_internal_pointer_end_ex(HashTable *ht, HashPosition *pos);
+<span class="lineNum">     184 </span>                : ZEND_API int zend_hash_update_current_key_ex(HashTable *ht, int key_type, const char *str_index, uint str_length, ulong num_index, int mode, HashPosition *pos);
+<span class="lineNum">     185 </span>                : 
+<span class="lineNum">     186 </span>                : typedef struct _HashPointer {
+<span class="lineNum">     187 </span>                :         HashPosition pos;
+<span class="lineNum">     188 </span>                :         ulong h;
+<span class="lineNum">     189 </span>                : } HashPointer;
+<span class="lineNum">     190 </span>                : 
+<span class="lineNum">     191 </span>                : ZEND_API int zend_hash_get_pointer(const HashTable *ht, HashPointer *ptr);
+<span class="lineNum">     192 </span>                : ZEND_API int zend_hash_set_pointer(HashTable *ht, const HashPointer *ptr);
+<span class="lineNum">     193 </span>                : 
+<span class="lineNum">     194 </span>                : #define zend_hash_has_more_elements(ht) \
+<span class="lineNum">     195 </span>                :         zend_hash_has_more_elements_ex(ht, NULL)
+<span class="lineNum">     196 </span>                : #define zend_hash_move_forward(ht) \
+<span class="lineNum">     197 </span>                :         zend_hash_move_forward_ex(ht, NULL)
+<span class="lineNum">     198 </span>                : #define zend_hash_move_backwards(ht) \
+<span class="lineNum">     199 </span>                :         zend_hash_move_backwards_ex(ht, NULL)
+<span class="lineNum">     200 </span>                : #define zend_hash_get_current_key(ht, str_index, num_index, duplicate) \
+<span class="lineNum">     201 </span>                :         zend_hash_get_current_key_ex(ht, str_index, NULL, num_index, duplicate, NULL)
+<span class="lineNum">     202 </span>                : #define zend_hash_get_current_key_type(ht) \
+<span class="lineNum">     203 </span>                :         zend_hash_get_current_key_type_ex(ht, NULL)
+<span class="lineNum">     204 </span>                : #define zend_hash_get_current_data(ht, pData) \
+<span class="lineNum">     205 </span>                :         zend_hash_get_current_data_ex(ht, pData, NULL)
+<span class="lineNum">     206 </span>                : #define zend_hash_internal_pointer_reset(ht) \
+<span class="lineNum">     207 </span>                :         zend_hash_internal_pointer_reset_ex(ht, NULL)
+<span class="lineNum">     208 </span>                : #define zend_hash_internal_pointer_end(ht) \
+<span class="lineNum">     209 </span>                :         zend_hash_internal_pointer_end_ex(ht, NULL)
+<span class="lineNum">     210 </span>                : #define zend_hash_update_current_key(ht, key_type, str_index, str_length, num_index) \
+<span class="lineNum">     211 </span>                :         zend_hash_update_current_key_ex(ht, key_type, str_index, str_length, num_index, HASH_UPDATE_KEY_ANYWAY, NULL)
+<span class="lineNum">     212 </span>                : 
+<span class="lineNum">     213 </span>                : /* Copying, merging and sorting */
+<span class="lineNum">     214 </span>                : ZEND_API void zend_hash_copy(HashTable *target, HashTable *source, copy_ctor_func_t pCopyConstructor, void *tmp, uint size);
+<span class="lineNum">     215 </span>                : ZEND_API void _zend_hash_merge(HashTable *target, HashTable *source, copy_ctor_func_t pCopyConstructor, void *tmp, uint size, int overwrite ZEND_FILE_LINE_DC);
+<span class="lineNum">     216 </span>                : ZEND_API void zend_hash_merge_ex(HashTable *target, HashTable *source, copy_ctor_func_t pCopyConstructor, uint size, merge_checker_func_t pMergeSource, void *pParam);
+<span class="lineNum">     217 </span>                : ZEND_API int zend_hash_sort(HashTable *ht, sort_func_t sort_func, compare_func_t compare_func, int renumber TSRMLS_DC);
+<span class="lineNum">     218 </span>                : ZEND_API int zend_hash_compare(HashTable *ht1, HashTable *ht2, compare_func_t compar, zend_bool ordered TSRMLS_DC);
+<span class="lineNum">     219 </span>                : ZEND_API int zend_hash_minmax(const HashTable *ht, compare_func_t compar, int flag, void **pData TSRMLS_DC);
+<span class="lineNum">     220 </span>                : 
+<span class="lineNum">     221 </span>                : #define zend_hash_merge(target, source, pCopyConstructor, tmp, size, overwrite)                                 \
+<span class="lineNum">     222 </span>                :         _zend_hash_merge(target, source, pCopyConstructor, tmp, size, overwrite ZEND_FILE_LINE_CC)
+<span class="lineNum">     223 </span>                : 
+<span class="lineNum">     224 </span>                : ZEND_API int zend_hash_num_elements(const HashTable *ht);
+<span class="lineNum">     225 </span>                : 
+<span class="lineNum">     226 </span>                : ZEND_API int zend_hash_rehash(HashTable *ht);
+<span class="lineNum">     227 </span>                : 
+<span class="lineNum">     228 </span>                : /*
+<span class="lineNum">     229 </span>                :  * DJBX33A (Daniel J. Bernstein, Times 33 with Addition)
+<span class="lineNum">     230 </span>                :  *
+<span class="lineNum">     231 </span>                :  * This is Daniel J. Bernstein's popular `times 33' hash function as
+<span class="lineNum">     232 </span>                :  * posted by him years ago on comp.lang.c. It basically uses a function
+<span class="lineNum">     233 </span>                :  * like ``hash(i) = hash(i-1) * 33 + str[i]''. This is one of the best
+<span class="lineNum">     234 </span>                :  * known hash functions for strings. Because it is both computed very
+<span class="lineNum">     235 </span>                :  * fast and distributes very well.
+<span class="lineNum">     236 </span>                :  *
+<span class="lineNum">     237 </span>                :  * The magic of number 33, i.e. why it works better than many other
+<span class="lineNum">     238 </span>                :  * constants, prime or not, has never been adequately explained by
+<span class="lineNum">     239 </span>                :  * anyone. So I try an explanation: if one experimentally tests all
+<span class="lineNum">     240 </span>                :  * multipliers between 1 and 256 (as RSE did now) one detects that even
+<span class="lineNum">     241 </span>                :  * numbers are not useable at all. The remaining 128 odd numbers
+<span class="lineNum">     242 </span>                :  * (except for the number 1) work more or less all equally well. They
+<span class="lineNum">     243 </span>                :  * all distribute in an acceptable way and this way fill a hash table
+<span class="lineNum">     244 </span>                :  * with an average percent of approx. 86%. 
+<span class="lineNum">     245 </span>                :  *
+<span class="lineNum">     246 </span>                :  * If one compares the Chi^2 values of the variants, the number 33 not
+<span class="lineNum">     247 </span>                :  * even has the best value. But the number 33 and a few other equally
+<span class="lineNum">     248 </span>                :  * good numbers like 17, 31, 63, 127 and 129 have nevertheless a great
+<span class="lineNum">     249 </span>                :  * advantage to the remaining numbers in the large set of possible
+<span class="lineNum">     250 </span>                :  * multipliers: their multiply operation can be replaced by a faster
+<span class="lineNum">     251 </span>                :  * operation based on just one shift plus either a single addition
+<span class="lineNum">     252 </span>                :  * or subtraction operation. And because a hash function has to both
+<span class="lineNum">     253 </span>                :  * distribute good _and_ has to be very fast to compute, those few
+<span class="lineNum">     254 </span>                :  * numbers should be preferred and seems to be the reason why Daniel J.
+<span class="lineNum">     255 </span>                :  * Bernstein also preferred it.
+<span class="lineNum">     256 </span>                :  *
+<span class="lineNum">     257 </span>                :  *
+<span class="lineNum">     258 </span>                :  *                  -- Ralf S. Engelschall &lt;rse@engelschall.com&gt;
+<a name="259"><span class="lineNum">     259 </span>                :  */</a>
+<span class="lineNum">     260 </span>                : 
+<span class="lineNum">     261 </span><span class="lineCov">         208929 : static inline ulong zend_inline_hash_func(const char *arKey, uint nKeyLength)</span>
+<span class="lineNum">     262 </span>                : {
+<span class="lineNum">     263 </span><span class="lineCov">         208929 :         register ulong hash = 5381;</span>
+<span class="lineNum">     264 </span>                : 
+<span class="lineNum">     265 </span>                :         /* variant with the hash unrolled eight times */
+<span class="lineNum">     266 </span><span class="lineCov">         438202 :         for (; nKeyLength &gt;= 8; nKeyLength -= 8) {</span>
+<span class="lineNum">     267 </span><span class="lineCov">         229273 :                 hash = ((hash &lt;&lt; 5) + hash) + *arKey++;</span>
+<span class="lineNum">     268 </span><span class="lineCov">         229273 :                 hash = ((hash &lt;&lt; 5) + hash) + *arKey++;</span>
+<span class="lineNum">     269 </span><span class="lineCov">         229273 :                 hash = ((hash &lt;&lt; 5) + hash) + *arKey++;</span>
+<span class="lineNum">     270 </span><span class="lineCov">         229273 :                 hash = ((hash &lt;&lt; 5) + hash) + *arKey++;</span>
+<span class="lineNum">     271 </span><span class="lineCov">         229273 :                 hash = ((hash &lt;&lt; 5) + hash) + *arKey++;</span>
+<span class="lineNum">     272 </span><span class="lineCov">         229273 :                 hash = ((hash &lt;&lt; 5) + hash) + *arKey++;</span>
+<span class="lineNum">     273 </span><span class="lineCov">         229273 :                 hash = ((hash &lt;&lt; 5) + hash) + *arKey++;</span>
+<span class="lineNum">     274 </span><span class="lineCov">         229273 :                 hash = ((hash &lt;&lt; 5) + hash) + *arKey++;</span>
+<span class="lineNum">     275 </span>                :         }
+<span class="lineNum">     276 </span><span class="lineCov">         208929 :         switch (nKeyLength) {</span>
+<span class="lineNum">     277 </span><span class="lineCov">          24166 :                 case 7: hash = ((hash &lt;&lt; 5) + hash) + *arKey++; /* fallthrough... */</span>
+<span class="lineNum">     278 </span><span class="lineCov">          47811 :                 case 6: hash = ((hash &lt;&lt; 5) + hash) + *arKey++; /* fallthrough... */</span>
+<span class="lineNum">     279 </span><span class="lineCov">          79461 :                 case 5: hash = ((hash &lt;&lt; 5) + hash) + *arKey++; /* fallthrough... */</span>
+<span class="lineNum">     280 </span><span class="lineCov">         110508 :                 case 4: hash = ((hash &lt;&lt; 5) + hash) + *arKey++; /* fallthrough... */</span>
+<span class="lineNum">     281 </span><span class="lineCov">         131041 :                 case 3: hash = ((hash &lt;&lt; 5) + hash) + *arKey++; /* fallthrough... */</span>
+<span class="lineNum">     282 </span><span class="lineCov">         156030 :                 case 2: hash = ((hash &lt;&lt; 5) + hash) + *arKey++; /* fallthrough... */</span>
+<span class="lineNum">     283 </span><span class="lineCov">         179274 :                 case 1: hash = ((hash &lt;&lt; 5) + hash) + *arKey++; break;</span>
+<span class="lineNum">     284 </span>                :                 case 0: break;
+<span class="lineNum">     285 </span>                : EMPTY_SWITCH_DEFAULT_CASE()
+<span class="lineNum">     286 </span>                :         }
+<span class="lineNum">     287 </span><span class="lineCov">         208929 :         return hash;</span>
+<span class="lineNum">     288 </span>                : }
+<span class="lineNum">     289 </span>                : 
+<span class="lineNum">     290 </span>                : 
+<span class="lineNum">     291 </span>                : ZEND_API ulong zend_hash_func(const char *arKey, uint nKeyLength);
+<span class="lineNum">     292 </span>                : 
+<span class="lineNum">     293 </span>                : #if ZEND_DEBUG
+<span class="lineNum">     294 </span>                : /* debug */
+<span class="lineNum">     295 </span>                : void zend_hash_display_pListTail(const HashTable *ht);
+<span class="lineNum">     296 </span>                : void zend_hash_display(const HashTable *ht);
+<span class="lineNum">     297 </span>                : #endif
+<span class="lineNum">     298 </span>                : 
+<span class="lineNum">     299 </span>                : END_EXTERN_C()
+<span class="lineNum">     300 </span>                : 
+<span class="lineNum">     301 </span>                : #define ZEND_INIT_SYMTABLE(ht)                                                          \
+<span class="lineNum">     302 </span>                :         ZEND_INIT_SYMTABLE_EX(ht, 2, 0)
+<span class="lineNum">     303 </span>                : 
+<span class="lineNum">     304 </span>                : #define ZEND_INIT_SYMTABLE_EX(ht, n, persistent)                        \
+<span class="lineNum">     305 </span>                :         zend_hash_init(ht, n, NULL, ZVAL_PTR_DTOR, persistent)
+<span class="lineNum">     306 </span>                : 
+<span class="lineNum">     307 </span>                : #define ZEND_HANDLE_NUMERIC_EX(key, length, idx, func) do {                                     \
+<span class="lineNum">     308 </span>                :         register const char *tmp = key;                                                                                 \
+<span class="lineNum">     309 </span>                :                                                                                                                                                         \
+<span class="lineNum">     310 </span>                :         if (*tmp == '-') {                                                                                                              \
+<span class="lineNum">     311 </span>                :                 tmp++;                                                                                                                          \
+<span class="lineNum">     312 </span>                :         }                                                                                                                                               \
+<span class="lineNum">     313 </span>                :         if (*tmp &gt;= '0' &amp;&amp; *tmp &lt;= '9') { /* possibly a numeric index */          \
+<span class="lineNum">     314 </span>                :                 const char *end = key + length - 1;                                                                     \
+<span class="lineNum">     315 </span>                :                                                                                                                                                         \
+<span class="lineNum">     316 </span>                :                 if ((*end != '\0') /* not a null terminated string */                           \
+<span class="lineNum">     317 </span>                :                  || (*tmp == '0' &amp;&amp; length &gt; 2) /* numbers with leading zeros */     \
+<span class="lineNum">     318 </span>                :                  || (end - tmp &gt; MAX_LENGTH_OF_LONG - 1) /* number too long */               \
+<span class="lineNum">     319 </span>                :                  || (SIZEOF_LONG == 4 &amp;&amp;                                                                                        \
+<span class="lineNum">     320 </span>                :                      end - tmp == MAX_LENGTH_OF_LONG - 1 &amp;&amp;                                                     \
+<span class="lineNum">     321 </span>                :                      *tmp &gt; '2')) { /* overflow */                                                                   \
+<span class="lineNum">     322 </span>                :                         break;                                                                                                                  \
+<span class="lineNum">     323 </span>                :                 }                                                                                                                                       \
+<span class="lineNum">     324 </span>                :                 idx = (*tmp - '0');                                                                                                     \
+<span class="lineNum">     325 </span>                :                 while (++tmp != end &amp;&amp; *tmp &gt;= '0' &amp;&amp; *tmp &lt;= '9') {                              \
+<span class="lineNum">     326 </span>                :                         idx = (idx * 10) + (*tmp - '0');                                                                \
+<span class="lineNum">     327 </span>                :                 }                                                                                                                                       \
+<span class="lineNum">     328 </span>                :                 if (tmp == end) {                                                                                                       \
+<span class="lineNum">     329 </span>                :                         if (*key == '-') {                                                                                              \
+<span class="lineNum">     330 </span>                :                                 if (idx-1 &gt; LONG_MAX) { /* overflow */                                               \
+<span class="lineNum">     331 </span>                :                                         break;                                                                                                  \
+<span class="lineNum">     332 </span>                :                                 }                                                                                                                       \
+<span class="lineNum">     333 </span>                :                                 idx = (ulong)(-(long)idx);                                                                      \
+<span class="lineNum">     334 </span>                :                         } else if (idx &gt; LONG_MAX) { /* overflow */                                          \
+<span class="lineNum">     335 </span>                :                                 break;                                                                                                          \
+<span class="lineNum">     336 </span>                :                         }                                                                                                                               \
+<span class="lineNum">     337 </span>                :                         func;                                                                                                                   \
+<span class="lineNum">     338 </span>                :                 }                                                                                                                                       \
+<span class="lineNum">     339 </span>                :         }                                                                                                                                               \
+<span class="lineNum">     340 </span>                : } while (0)
+<span class="lineNum">     341 </span>                : 
+<span class="lineNum">     342 </span>                : #define ZEND_HANDLE_NUMERIC(key, length, func) do {                                                     \
+<span class="lineNum">     343 </span>                :         ulong idx;                                                                                                                              \
+<span class="lineNum">     344 </span>                :                                                                                                                                                         \
+<span class="lineNum">     345 </span>                :         ZEND_HANDLE_NUMERIC_EX(key, length, idx, return func);                                  \
+<a name="346"><span class="lineNum">     346 </span>                : } while (0)</a>
+<span class="lineNum">     347 </span>                : 
+<span class="lineNum">     348 </span><span class="lineCov">           9294 : static inline int zend_symtable_update(HashTable *ht, const char *arKey, uint nKeyLength, void *pData, uint nDataSize, void **pDest)                                    \</span>
+<span class="lineNum">     349 </span>                : {
+<span class="lineNum">     350 </span><span class="lineCov">           9294 :         ZEND_HANDLE_NUMERIC(arKey, nKeyLength, zend_hash_index_update(ht, idx, pData, nDataSize, pDest));</span>
+<span class="lineNum">     351 </span><span class="lineCov">           9290 :         return zend_hash_update(ht, arKey, nKeyLength, pData, nDataSize, pDest);</span>
+<span class="lineNum">     352 </span>                : }
+<a name="353"><span class="lineNum">     353 </span>                : </a>
+<span class="lineNum">     354 </span>                : 
+<span class="lineNum">     355 </span><span class="lineNoCov">              0 : static inline int zend_symtable_del(HashTable *ht, const char *arKey, uint nKeyLength)</span>
+<span class="lineNum">     356 </span>                : {
+<span class="lineNum">     357 </span><span class="lineNoCov">              0 :         ZEND_HANDLE_NUMERIC(arKey, nKeyLength, zend_hash_index_del(ht, idx));</span>
+<span class="lineNum">     358 </span><span class="lineNoCov">              0 :         return zend_hash_del(ht, arKey, nKeyLength);</span>
+<span class="lineNum">     359 </span>                : }
+<a name="360"><span class="lineNum">     360 </span>                : </a>
+<span class="lineNum">     361 </span>                : 
+<span class="lineNum">     362 </span><span class="lineNoCov">              0 : static inline int zend_symtable_find(HashTable *ht, const char *arKey, uint nKeyLength, void **pData)</span>
+<span class="lineNum">     363 </span>                : {
+<span class="lineNum">     364 </span><span class="lineNoCov">              0 :         ZEND_HANDLE_NUMERIC(arKey, nKeyLength, zend_hash_index_find(ht, idx, pData));</span>
+<span class="lineNum">     365 </span><span class="lineNoCov">              0 :         return zend_hash_find(ht, arKey, nKeyLength, pData);</span>
+<span class="lineNum">     366 </span>                : }
+<a name="367"><span class="lineNum">     367 </span>                : </a>
+<span class="lineNum">     368 </span>                : 
+<span class="lineNum">     369 </span><span class="lineCov">            462 : static inline int zend_symtable_exists(HashTable *ht, const char *arKey, uint nKeyLength)</span>
+<span class="lineNum">     370 </span>                : {
+<span class="lineNum">     371 </span><span class="lineCov">            462 :         ZEND_HANDLE_NUMERIC(arKey, nKeyLength, zend_hash_index_exists(ht, idx));</span>
+<span class="lineNum">     372 </span><span class="lineCov">            462 :         return zend_hash_exists(ht, arKey, nKeyLength);</span>
+<a name="373"><span class="lineNum">     373 </span>                : }</a>
+<span class="lineNum">     374 </span>                : 
+<span class="lineNum">     375 </span><span class="lineNoCov">              0 : static inline int zend_symtable_update_current_key_ex(HashTable *ht, const char *arKey, uint nKeyLength, int mode, HashPosition *pos)</span>
+<span class="lineNum">     376 </span>                : {
+<span class="lineNum">     377 </span><span class="lineNoCov">              0 :         ZEND_HANDLE_NUMERIC(arKey, nKeyLength, zend_hash_update_current_key_ex(ht, HASH_KEY_IS_LONG, NULL, 0, idx, mode, pos));</span>
+<span class="lineNum">     378 </span><span class="lineNoCov">              0 :         return zend_hash_update_current_key_ex(ht, HASH_KEY_IS_STRING, arKey, nKeyLength, 0, mode, pos);</span>
+<span class="lineNum">     379 </span>                : }
+<span class="lineNum">     380 </span>                : #define zend_symtable_update_current_key(ht,arKey,nKeyLength,mode) \
+<span class="lineNum">     381 </span>                :         zend_symtable_update_current_key_ex(ht, arKey, nKeyLength, mode, NULL)
+<span class="lineNum">     382 </span>                : 
+<span class="lineNum">     383 </span>                : 
+<span class="lineNum">     384 </span>                : #endif                                                  /* ZEND_HASH_H */
+<span class="lineNum">     385 </span>                : 
+<span class="lineNum">     386 </span>                : /*
+<span class="lineNum">     387 </span>                :  * Local variables:
+<span class="lineNum">     388 </span>                :  * tab-width: 4
+<span class="lineNum">     389 </span>                :  * c-basic-offset: 4
+<span class="lineNum">     390 </span>                :  * indent-tabs-mode: t
+<span class="lineNum">     391 </span>                :  * End:
+<span class="lineNum">     392 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

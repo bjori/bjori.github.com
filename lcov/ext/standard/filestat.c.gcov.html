@@ -1,0 +1,1322 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - ext/standard/filestat.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../index.html">directory</a> - <a href="index.html">ext/standard</a> - filestat.c (source / <a href="filestat.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">386</td>
+          <td class="headerCovTableEntry">48</td>
+          <td class="headerCovTableEntryLo">12.4 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">39</td>
+          <td class="headerCovTableEntry">8</td>
+          <td class="headerCovTableEntryLo">20.5 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Author:  Jim Winstead &lt;jimw@php.net&gt;                                 |
+<span class="lineNum">      16 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      17 </span>                :  */
+<span class="lineNum">      18 </span>                : 
+<span class="lineNum">      19 </span>                : /* $Id$ */
+<span class="lineNum">      20 </span>                : 
+<span class="lineNum">      21 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">      22 </span>                : #include &quot;fopen_wrappers.h&quot;
+<span class="lineNum">      23 </span>                : #include &quot;php_globals.h&quot;
+<span class="lineNum">      24 </span>                : 
+<span class="lineNum">      25 </span>                : #include &lt;stdlib.h&gt;
+<span class="lineNum">      26 </span>                : #include &lt;sys/stat.h&gt;
+<span class="lineNum">      27 </span>                : #include &lt;string.h&gt;
+<span class="lineNum">      28 </span>                : #include &lt;errno.h&gt;
+<span class="lineNum">      29 </span>                : #include &lt;ctype.h&gt;
+<span class="lineNum">      30 </span>                : #include &lt;time.h&gt;
+<span class="lineNum">      31 </span>                : 
+<span class="lineNum">      32 </span>                : #if HAVE_UNISTD_H
+<span class="lineNum">      33 </span>                : # include &lt;unistd.h&gt;
+<span class="lineNum">      34 </span>                : #endif
+<span class="lineNum">      35 </span>                : 
+<span class="lineNum">      36 </span>                : #if HAVE_SYS_PARAM_H
+<span class="lineNum">      37 </span>                : # include &lt;sys/param.h&gt;
+<span class="lineNum">      38 </span>                : #endif
+<span class="lineNum">      39 </span>                : 
+<span class="lineNum">      40 </span>                : #if HAVE_SYS_VFS_H
+<span class="lineNum">      41 </span>                : # include &lt;sys/vfs.h&gt;
+<span class="lineNum">      42 </span>                : #endif
+<span class="lineNum">      43 </span>                : 
+<span class="lineNum">      44 </span>                : #ifdef OS2
+<span class="lineNum">      45 </span>                : #  define INCL_DOS
+<span class="lineNum">      46 </span>                : #  include &lt;os2.h&gt;
+<span class="lineNum">      47 </span>                : #endif
+<span class="lineNum">      48 </span>                : 
+<span class="lineNum">      49 </span>                : #if defined(HAVE_SYS_STATVFS_H) &amp;&amp; defined(HAVE_STATVFS)
+<span class="lineNum">      50 </span>                : # include &lt;sys/statvfs.h&gt;
+<span class="lineNum">      51 </span>                : #elif defined(HAVE_SYS_STATFS_H) &amp;&amp; defined(HAVE_STATFS)
+<span class="lineNum">      52 </span>                : # include &lt;sys/statfs.h&gt;
+<span class="lineNum">      53 </span>                : #elif defined(HAVE_SYS_MOUNT_H) &amp;&amp; defined(HAVE_STATFS)
+<span class="lineNum">      54 </span>                : # include &lt;sys/mount.h&gt;
+<span class="lineNum">      55 </span>                : #endif
+<span class="lineNum">      56 </span>                : 
+<span class="lineNum">      57 </span>                : #if HAVE_PWD_H
+<span class="lineNum">      58 </span>                : # ifdef PHP_WIN32
+<span class="lineNum">      59 </span>                : #  include &quot;win32/pwd.h&quot;
+<span class="lineNum">      60 </span>                : # else
+<span class="lineNum">      61 </span>                : #  include &lt;pwd.h&gt;
+<span class="lineNum">      62 </span>                : # endif
+<span class="lineNum">      63 </span>                : #endif
+<span class="lineNum">      64 </span>                : 
+<span class="lineNum">      65 </span>                : #if HAVE_GRP_H
+<span class="lineNum">      66 </span>                : # ifdef PHP_WIN32
+<span class="lineNum">      67 </span>                : #  include &quot;win32/grp.h&quot;
+<span class="lineNum">      68 </span>                : # else
+<span class="lineNum">      69 </span>                : #  include &lt;grp.h&gt;
+<span class="lineNum">      70 </span>                : # endif
+<span class="lineNum">      71 </span>                : #endif
+<span class="lineNum">      72 </span>                : 
+<span class="lineNum">      73 </span>                : #if HAVE_UTIME
+<span class="lineNum">      74 </span>                : # ifdef PHP_WIN32
+<span class="lineNum">      75 </span>                : #  include &lt;sys/utime.h&gt;
+<span class="lineNum">      76 </span>                : # else
+<span class="lineNum">      77 </span>                : #  include &lt;utime.h&gt;
+<span class="lineNum">      78 </span>                : # endif
+<span class="lineNum">      79 </span>                : #endif
+<span class="lineNum">      80 </span>                : 
+<span class="lineNum">      81 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">      82 </span>                : #include &quot;win32/winutil.h&quot;
+<span class="lineNum">      83 </span>                : #endif
+<span class="lineNum">      84 </span>                : 
+<span class="lineNum">      85 </span>                : #include &quot;basic_functions.h&quot;
+<span class="lineNum">      86 </span>                : #include &quot;php_filestat.h&quot;
+<span class="lineNum">      87 </span>                : 
+<span class="lineNum">      88 </span>                : #ifndef S_ISDIR
+<span class="lineNum">      89 </span>                : #define S_ISDIR(mode)   (((mode)&amp;S_IFMT) == S_IFDIR)
+<span class="lineNum">      90 </span>                : #endif
+<span class="lineNum">      91 </span>                : #ifndef S_ISREG
+<span class="lineNum">      92 </span>                : #define S_ISREG(mode)   (((mode)&amp;S_IFMT) == S_IFREG)
+<span class="lineNum">      93 </span>                : #endif
+<span class="lineNum">      94 </span>                : #ifndef S_ISLNK
+<span class="lineNum">      95 </span>                : #define S_ISLNK(mode)   (((mode)&amp;S_IFMT) == S_IFLNK)
+<span class="lineNum">      96 </span>                : #endif
+<span class="lineNum">      97 </span>                : 
+<a name="98"><span class="lineNum">      98 </span>                : #define S_IXROOT ( S_IXUSR | S_IXGRP | S_IXOTH )</a>
+<span class="lineNum">      99 </span>                : 
+<span class="lineNum">     100 </span><span class="lineCov">             48 : PHP_RINIT_FUNCTION(filestat) /* {{{ */</span>
+<span class="lineNum">     101 </span>                : {
+<span class="lineNum">     102 </span><span class="lineCov">             48 :         BG(CurrentStatFile)=NULL;</span>
+<span class="lineNum">     103 </span><span class="lineCov">             48 :         BG(CurrentLStatFile)=NULL;</span>
+<span class="lineNum">     104 </span><span class="lineCov">             48 :         return SUCCESS;</span>
+<span class="lineNum">     105 </span>                : }
+<a name="106"><span class="lineNum">     106 </span>                : /* }}} */</a>
+<span class="lineNum">     107 </span>                : 
+<span class="lineNum">     108 </span><span class="lineCov">             48 : PHP_RSHUTDOWN_FUNCTION(filestat) /* {{{ */</span>
+<span class="lineNum">     109 </span>                : {
+<span class="lineNum">     110 </span><span class="lineCov">             48 :         if (BG(CurrentStatFile)) {</span>
+<span class="lineNum">     111 </span><span class="lineNoCov">              0 :                 efree (BG(CurrentStatFile));</span>
+<span class="lineNum">     112 </span><span class="lineNoCov">              0 :                 BG(CurrentStatFile) = NULL;</span>
+<span class="lineNum">     113 </span>                :         }
+<span class="lineNum">     114 </span><span class="lineCov">             48 :         if (BG(CurrentLStatFile)) {</span>
+<span class="lineNum">     115 </span><span class="lineNoCov">              0 :                 efree (BG(CurrentLStatFile));</span>
+<span class="lineNum">     116 </span><span class="lineNoCov">              0 :                 BG(CurrentLStatFile) = NULL;</span>
+<span class="lineNum">     117 </span>                :         }
+<span class="lineNum">     118 </span><span class="lineCov">             48 :         return SUCCESS;</span>
+<span class="lineNum">     119 </span>                : }
+<a name="120"><span class="lineNum">     120 </span>                : /* }}} */</a>
+<span class="lineNum">     121 </span>                : 
+<span class="lineNum">     122 </span><span class="lineNoCov">              0 : static int php_disk_total_space(char *path, double *space TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     123 </span>                : #if defined(WINDOWS) /* {{{ */
+<span class="lineNum">     124 </span>                : {
+<span class="lineNum">     125 </span>                :         double bytestotal = 0;
+<span class="lineNum">     126 </span>                :         HINSTANCE kernel32;
+<span class="lineNum">     127 </span>                :         FARPROC gdfse;
+<span class="lineNum">     128 </span>                :         typedef BOOL (WINAPI *gdfse_func)(LPCTSTR, PULARGE_INTEGER, PULARGE_INTEGER, PULARGE_INTEGER);
+<span class="lineNum">     129 </span>                :         gdfse_func func;
+<span class="lineNum">     130 </span>                : 
+<span class="lineNum">     131 </span>                :         /* These are used by GetDiskFreeSpaceEx, if available. */
+<span class="lineNum">     132 </span>                :         ULARGE_INTEGER FreeBytesAvailableToCaller;
+<span class="lineNum">     133 </span>                :         ULARGE_INTEGER TotalNumberOfBytes;
+<span class="lineNum">     134 </span>                :         ULARGE_INTEGER TotalNumberOfFreeBytes;
+<span class="lineNum">     135 </span>                : 
+<span class="lineNum">     136 </span>                :         /* These are used by GetDiskFreeSpace otherwise. */
+<span class="lineNum">     137 </span>                :         DWORD SectorsPerCluster;
+<span class="lineNum">     138 </span>                :         DWORD BytesPerSector;
+<span class="lineNum">     139 </span>                :         DWORD NumberOfFreeClusters;
+<span class="lineNum">     140 </span>                :         DWORD TotalNumberOfClusters;
+<span class="lineNum">     141 </span>                : 
+<span class="lineNum">     142 </span>                :         /* GetDiskFreeSpaceEx is only available in NT and Win95 post-OSR2,
+<span class="lineNum">     143 </span>                :            so we have to jump through some hoops to see if the function
+<span class="lineNum">     144 </span>                :            exists. */
+<span class="lineNum">     145 </span>                :         kernel32 = LoadLibrary(&quot;kernel32.dll&quot;);
+<span class="lineNum">     146 </span>                :         if (kernel32) {
+<span class="lineNum">     147 </span>                :                 gdfse = GetProcAddress(kernel32, &quot;GetDiskFreeSpaceExA&quot;);
+<span class="lineNum">     148 </span>                :                 /* It's available, so we can call it. */
+<span class="lineNum">     149 </span>                :                 if (gdfse) {
+<span class="lineNum">     150 </span>                :                         func = (gdfse_func)gdfse;
+<span class="lineNum">     151 </span>                :                         if (func(path,
+<span class="lineNum">     152 </span>                :                                                 &amp;FreeBytesAvailableToCaller,
+<span class="lineNum">     153 </span>                :                                                 &amp;TotalNumberOfBytes,
+<span class="lineNum">     154 </span>                :                                                 &amp;TotalNumberOfFreeBytes) == 0) {
+<span class="lineNum">     155 </span>                :                                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;%s&quot;, php_win_err());
+<span class="lineNum">     156 </span>                :                                 return FAILURE;
+<span class="lineNum">     157 </span>                :                         }
+<span class="lineNum">     158 </span>                : 
+<span class="lineNum">     159 </span>                :                         /* i know - this is ugly, but i works &lt;thies@thieso.net&gt; */
+<span class="lineNum">     160 </span>                :                         bytestotal  = TotalNumberOfBytes.HighPart *
+<span class="lineNum">     161 </span>                :                                 (double) (((unsigned long)1) &lt;&lt; 31) * 2.0 +
+<span class="lineNum">     162 </span>                :                                 TotalNumberOfBytes.LowPart;
+<span class="lineNum">     163 </span>                :                 } else { /* If it's not available, we just use GetDiskFreeSpace */
+<span class="lineNum">     164 </span>                :                         if (GetDiskFreeSpace(path,
+<span class="lineNum">     165 </span>                :                                                 &amp;SectorsPerCluster, &amp;BytesPerSector,
+<span class="lineNum">     166 </span>                :                                                 &amp;NumberOfFreeClusters, &amp;TotalNumberOfClusters) == 0) {
+<span class="lineNum">     167 </span>                :                                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;%s&quot;, php_win_err());
+<span class="lineNum">     168 </span>                :                                 return FAILURE;
+<span class="lineNum">     169 </span>                :                         }
+<span class="lineNum">     170 </span>                :                         bytestotal = (double)TotalNumberOfClusters * (double)SectorsPerCluster * (double)BytesPerSector;
+<span class="lineNum">     171 </span>                :                 }
+<span class="lineNum">     172 </span>                :         } else {
+<span class="lineNum">     173 </span>                :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Unable to load kernel32.dll&quot;);
+<span class="lineNum">     174 </span>                :                 return FAILURE;
+<span class="lineNum">     175 </span>                :         }
+<span class="lineNum">     176 </span>                : 
+<span class="lineNum">     177 </span>                :         *space = bytestotal;
+<span class="lineNum">     178 </span>                :         return SUCCESS;
+<span class="lineNum">     179 </span>                : }
+<span class="lineNum">     180 </span>                : /* }}} */
+<span class="lineNum">     181 </span>                : #elif defined(OS2) /* {{{ */
+<span class="lineNum">     182 </span>                : {
+<span class="lineNum">     183 </span>                :         double bytestotal = 0;
+<span class="lineNum">     184 </span>                :         FSALLOCATE fsinfo;
+<span class="lineNum">     185 </span>                :         char drive = path[0] &amp; 95;
+<span class="lineNum">     186 </span>                : 
+<span class="lineNum">     187 </span>                :         if (DosQueryFSInfo( drive ? drive - 64 : 0, FSIL_ALLOC, &amp;fsinfo, sizeof( fsinfo ) ) == 0) {
+<span class="lineNum">     188 </span>                :                 bytestotal = (double)fsinfo.cbSector * fsinfo.cSectorUnit * fsinfo.cUnit;
+<span class="lineNum">     189 </span>                :                 *space = bytestotal;
+<span class="lineNum">     190 </span>                :                 return SUCCESS;
+<span class="lineNum">     191 </span>                :         }
+<span class="lineNum">     192 </span>                :         return FAILURE;
+<span class="lineNum">     193 </span>                : }
+<span class="lineNum">     194 </span>                : /* }}} */
+<span class="lineNum">     195 </span>                : #else /* {{{ if !defined(OS2) &amp;&amp; !defined(WINDOWS) */
+<span class="lineNum">     196 </span>                : {
+<span class="lineNum">     197 </span><span class="lineNoCov">              0 :         double bytestotal = 0;</span>
+<span class="lineNum">     198 </span>                : #if defined(HAVE_SYS_STATVFS_H) &amp;&amp; defined(HAVE_STATVFS)
+<span class="lineNum">     199 </span>                :         struct statvfs buf;
+<span class="lineNum">     200 </span>                : #elif (defined(HAVE_SYS_STATFS_H) || defined(HAVE_SYS_MOUNT_H)) &amp;&amp; defined(HAVE_STATFS)
+<span class="lineNum">     201 </span>                :         struct statfs buf;
+<span class="lineNum">     202 </span>                : #endif
+<span class="lineNum">     203 </span>                : 
+<span class="lineNum">     204 </span>                : #if defined(HAVE_SYS_STATVFS_H) &amp;&amp; defined(HAVE_STATVFS)
+<span class="lineNum">     205 </span><span class="lineNoCov">              0 :         if (statvfs(path, &amp;buf)) {</span>
+<span class="lineNum">     206 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;%s&quot;, strerror(errno));</span>
+<span class="lineNum">     207 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">     208 </span>                :         }
+<span class="lineNum">     209 </span><span class="lineNoCov">              0 :         if (buf.f_frsize) {</span>
+<span class="lineNum">     210 </span><span class="lineNoCov">              0 :                 bytestotal = (((double)buf.f_blocks) * ((double)buf.f_frsize));</span>
+<span class="lineNum">     211 </span>                :         } else {
+<span class="lineNum">     212 </span><span class="lineNoCov">              0 :                 bytestotal = (((double)buf.f_blocks) * ((double)buf.f_bsize));</span>
+<span class="lineNum">     213 </span>                :         }
+<span class="lineNum">     214 </span>                : 
+<span class="lineNum">     215 </span>                : #elif (defined(HAVE_SYS_STATFS_H) || defined(HAVE_SYS_MOUNT_H)) &amp;&amp; defined(HAVE_STATFS)
+<span class="lineNum">     216 </span>                :         if (statfs(path, &amp;buf)) {
+<span class="lineNum">     217 </span>                :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;%s&quot;, strerror(errno));
+<span class="lineNum">     218 </span>                :                 return FAILURE;
+<span class="lineNum">     219 </span>                :         }
+<span class="lineNum">     220 </span>                :         bytestotal = (((double)buf.f_bsize) * ((double)buf.f_blocks));
+<span class="lineNum">     221 </span>                : #endif
+<span class="lineNum">     222 </span>                : 
+<span class="lineNum">     223 </span><span class="lineNoCov">              0 :         *space = bytestotal;</span>
+<span class="lineNum">     224 </span><span class="lineNoCov">              0 :         return SUCCESS;</span>
+<span class="lineNum">     225 </span>                : }
+<span class="lineNum">     226 </span>                : #endif
+<span class="lineNum">     227 </span>                : /* }}} */
+<span class="lineNum">     228 </span>                : /* }}} */
+<span class="lineNum">     229 </span>                : 
+<a name="230"><span class="lineNum">     230 </span>                : /* {{{ proto float disk_total_space(string path)</a>
+<span class="lineNum">     231 </span>                :    Get total disk space for filesystem that path is on */
+<span class="lineNum">     232 </span><span class="lineNoCov">              0 : PHP_FUNCTION(disk_total_space)</span>
+<span class="lineNum">     233 </span>                : {
+<span class="lineNum">     234 </span>                :         double bytestotal;
+<span class="lineNum">     235 </span>                :         char *path;
+<span class="lineNum">     236 </span>                :         int path_len;
+<span class="lineNum">     237 </span>                : 
+<span class="lineNum">     238 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;p&quot;, &amp;path, &amp;path_len) == FAILURE) {</span>
+<span class="lineNum">     239 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     240 </span>                :         }
+<span class="lineNum">     241 </span>                : 
+<span class="lineNum">     242 </span><span class="lineNoCov">              0 :         if (php_check_open_basedir(path TSRMLS_CC)) {</span>
+<span class="lineNum">     243 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     244 </span>                :         }
+<span class="lineNum">     245 </span>                : 
+<span class="lineNum">     246 </span><span class="lineNoCov">              0 :         if (php_disk_total_space(path, &amp;bytestotal TSRMLS_CC) == SUCCESS) {</span>
+<span class="lineNum">     247 </span><span class="lineNoCov">              0 :                 RETURN_DOUBLE(bytestotal);</span>
+<span class="lineNum">     248 </span>                :         }
+<span class="lineNum">     249 </span><span class="lineNoCov">              0 :         RETURN_FALSE;</span>
+<span class="lineNum">     250 </span>                : }
+<a name="251"><span class="lineNum">     251 </span>                : /* }}} */</a>
+<span class="lineNum">     252 </span>                : 
+<span class="lineNum">     253 </span><span class="lineNoCov">              0 : static int php_disk_free_space(char *path, double *space TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     254 </span>                : #if defined(WINDOWS) /* {{{ */
+<span class="lineNum">     255 </span>                : {
+<span class="lineNum">     256 </span>                :         double bytesfree = 0;
+<span class="lineNum">     257 </span>                : 
+<span class="lineNum">     258 </span>                :         HINSTANCE kernel32;
+<span class="lineNum">     259 </span>                :         FARPROC gdfse;
+<span class="lineNum">     260 </span>                :         typedef BOOL (WINAPI *gdfse_func)(LPCTSTR, PULARGE_INTEGER, PULARGE_INTEGER, PULARGE_INTEGER);
+<span class="lineNum">     261 </span>                :         gdfse_func func;
+<span class="lineNum">     262 </span>                : 
+<span class="lineNum">     263 </span>                :         /* These are used by GetDiskFreeSpaceEx, if available. */
+<span class="lineNum">     264 </span>                :         ULARGE_INTEGER FreeBytesAvailableToCaller;
+<span class="lineNum">     265 </span>                :         ULARGE_INTEGER TotalNumberOfBytes;
+<span class="lineNum">     266 </span>                :         ULARGE_INTEGER TotalNumberOfFreeBytes;
+<span class="lineNum">     267 </span>                : 
+<span class="lineNum">     268 </span>                :         /* These are used by GetDiskFreeSpace otherwise. */
+<span class="lineNum">     269 </span>                :         DWORD SectorsPerCluster;
+<span class="lineNum">     270 </span>                :         DWORD BytesPerSector;
+<span class="lineNum">     271 </span>                :         DWORD NumberOfFreeClusters;
+<span class="lineNum">     272 </span>                :         DWORD TotalNumberOfClusters;
+<span class="lineNum">     273 </span>                : 
+<span class="lineNum">     274 </span>                :         /* GetDiskFreeSpaceEx is only available in NT and Win95 post-OSR2,
+<span class="lineNum">     275 </span>                :            so we have to jump through some hoops to see if the function
+<span class="lineNum">     276 </span>                :            exists. */
+<span class="lineNum">     277 </span>                :         kernel32 = LoadLibrary(&quot;kernel32.dll&quot;);
+<span class="lineNum">     278 </span>                :         if (kernel32) {
+<span class="lineNum">     279 </span>                :                 gdfse = GetProcAddress(kernel32, &quot;GetDiskFreeSpaceExA&quot;);
+<span class="lineNum">     280 </span>                :                 /* It's available, so we can call it. */
+<span class="lineNum">     281 </span>                :                 if (gdfse) {
+<span class="lineNum">     282 </span>                :                         func = (gdfse_func)gdfse;
+<span class="lineNum">     283 </span>                :                         if (func(path,
+<span class="lineNum">     284 </span>                :                                                 &amp;FreeBytesAvailableToCaller,
+<span class="lineNum">     285 </span>                :                                                 &amp;TotalNumberOfBytes,
+<span class="lineNum">     286 </span>                :                                                 &amp;TotalNumberOfFreeBytes) == 0) {
+<span class="lineNum">     287 </span>                :                                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;%s&quot;, php_win_err());
+<span class="lineNum">     288 </span>                :                                 return FAILURE;
+<span class="lineNum">     289 </span>                :                         }
+<span class="lineNum">     290 </span>                : 
+<span class="lineNum">     291 </span>                :                         /* i know - this is ugly, but i works &lt;thies@thieso.net&gt; */
+<span class="lineNum">     292 </span>                :                         bytesfree  = FreeBytesAvailableToCaller.HighPart *
+<span class="lineNum">     293 </span>                :                                 (double) (((unsigned long)1) &lt;&lt; 31) * 2.0 +
+<span class="lineNum">     294 </span>                :                                 FreeBytesAvailableToCaller.LowPart;
+<span class="lineNum">     295 </span>                :                 } else { /* If it's not available, we just use GetDiskFreeSpace */
+<span class="lineNum">     296 </span>                :                         if (GetDiskFreeSpace(path,
+<span class="lineNum">     297 </span>                :                                                 &amp;SectorsPerCluster, &amp;BytesPerSector,
+<span class="lineNum">     298 </span>                :                                                 &amp;NumberOfFreeClusters, &amp;TotalNumberOfClusters) == 0) {
+<span class="lineNum">     299 </span>                :                                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;%s&quot;, php_win_err());
+<span class="lineNum">     300 </span>                :                                 return FAILURE;
+<span class="lineNum">     301 </span>                :                         }
+<span class="lineNum">     302 </span>                :                         bytesfree = (double)NumberOfFreeClusters * (double)SectorsPerCluster * (double)BytesPerSector;
+<span class="lineNum">     303 </span>                :                 }
+<span class="lineNum">     304 </span>                :         } else {
+<span class="lineNum">     305 </span>                :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Unable to load kernel32.dll&quot;);
+<span class="lineNum">     306 </span>                :                 return FAILURE;
+<span class="lineNum">     307 </span>                :         }
+<span class="lineNum">     308 </span>                : 
+<span class="lineNum">     309 </span>                :         *space = bytesfree;
+<span class="lineNum">     310 </span>                :         return SUCCESS;
+<span class="lineNum">     311 </span>                : }
+<span class="lineNum">     312 </span>                : /* }}} */
+<span class="lineNum">     313 </span>                : #elif defined(OS2) /* {{{ */
+<span class="lineNum">     314 </span>                : {
+<span class="lineNum">     315 </span>                :         double bytesfree = 0;
+<span class="lineNum">     316 </span>                :         FSALLOCATE fsinfo;
+<span class="lineNum">     317 </span>                :         char drive = path[0] &amp; 95;
+<span class="lineNum">     318 </span>                : 
+<span class="lineNum">     319 </span>                :         if (DosQueryFSInfo( drive ? drive - 64 : 0, FSIL_ALLOC, &amp;fsinfo, sizeof( fsinfo ) ) == 0) {
+<span class="lineNum">     320 </span>                :                 bytesfree = (double)fsinfo.cbSector * fsinfo.cSectorUnit * fsinfo.cUnitAvail;
+<span class="lineNum">     321 </span>                :                 *space = bytesfree;
+<span class="lineNum">     322 </span>                :                 return SUCCESS;
+<span class="lineNum">     323 </span>                :         }
+<span class="lineNum">     324 </span>                :         return FAILURE;
+<span class="lineNum">     325 </span>                : }
+<span class="lineNum">     326 </span>                : /* }}} */
+<span class="lineNum">     327 </span>                : #else /* {{{ if !defined(OS2) &amp;&amp; !defined(WINDOWS) */
+<span class="lineNum">     328 </span>                : {
+<span class="lineNum">     329 </span><span class="lineNoCov">              0 :         double bytesfree = 0;</span>
+<span class="lineNum">     330 </span>                : #if defined(HAVE_SYS_STATVFS_H) &amp;&amp; defined(HAVE_STATVFS)
+<span class="lineNum">     331 </span>                :         struct statvfs buf;
+<span class="lineNum">     332 </span>                : #elif (defined(HAVE_SYS_STATFS_H) || defined(HAVE_SYS_MOUNT_H)) &amp;&amp; defined(HAVE_STATFS)
+<span class="lineNum">     333 </span>                :         struct statfs buf;
+<span class="lineNum">     334 </span>                : #endif
+<span class="lineNum">     335 </span>                : 
+<span class="lineNum">     336 </span>                : #if defined(HAVE_SYS_STATVFS_H) &amp;&amp; defined(HAVE_STATVFS)
+<span class="lineNum">     337 </span><span class="lineNoCov">              0 :         if (statvfs(path, &amp;buf)) {</span>
+<span class="lineNum">     338 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;%s&quot;, strerror(errno));</span>
+<span class="lineNum">     339 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">     340 </span>                :         }
+<span class="lineNum">     341 </span><span class="lineNoCov">              0 :         if (buf.f_frsize) {</span>
+<span class="lineNum">     342 </span><span class="lineNoCov">              0 :                 bytesfree = (((double)buf.f_bavail) * ((double)buf.f_frsize));</span>
+<span class="lineNum">     343 </span>                :         } else {
+<span class="lineNum">     344 </span><span class="lineNoCov">              0 :                 bytesfree = (((double)buf.f_bavail) * ((double)buf.f_bsize));</span>
+<span class="lineNum">     345 </span>                :         }
+<span class="lineNum">     346 </span>                : #elif (defined(HAVE_SYS_STATFS_H) || defined(HAVE_SYS_MOUNT_H)) &amp;&amp; defined(HAVE_STATFS)
+<span class="lineNum">     347 </span>                :         if (statfs(path, &amp;buf)) {
+<span class="lineNum">     348 </span>                :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;%s&quot;, strerror(errno));
+<span class="lineNum">     349 </span>                :                 return FAILURE;
+<span class="lineNum">     350 </span>                :         }
+<span class="lineNum">     351 </span>                : #ifdef NETWARE
+<span class="lineNum">     352 </span>                :         bytesfree = (((double)buf.f_bsize) * ((double)buf.f_bfree));
+<span class="lineNum">     353 </span>                : #else
+<span class="lineNum">     354 </span>                :         bytesfree = (((double)buf.f_bsize) * ((double)buf.f_bavail));
+<span class="lineNum">     355 </span>                : #endif
+<span class="lineNum">     356 </span>                : #endif
+<span class="lineNum">     357 </span>                : 
+<span class="lineNum">     358 </span><span class="lineNoCov">              0 :         *space = bytesfree;</span>
+<span class="lineNum">     359 </span><span class="lineNoCov">              0 :         return SUCCESS;</span>
+<span class="lineNum">     360 </span>                : }
+<span class="lineNum">     361 </span>                : #endif
+<span class="lineNum">     362 </span>                : /* }}} */
+<span class="lineNum">     363 </span>                : /* }}} */
+<span class="lineNum">     364 </span>                : 
+<a name="365"><span class="lineNum">     365 </span>                : /* {{{ proto float disk_free_space(string path)</a>
+<span class="lineNum">     366 </span>                :    Get free disk space for filesystem that path is on */
+<span class="lineNum">     367 </span><span class="lineNoCov">              0 : PHP_FUNCTION(disk_free_space)</span>
+<span class="lineNum">     368 </span>                : {
+<span class="lineNum">     369 </span>                :         double bytesfree;
+<span class="lineNum">     370 </span>                :         char *path;
+<span class="lineNum">     371 </span>                :         int path_len;
+<span class="lineNum">     372 </span>                : 
+<span class="lineNum">     373 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;p&quot;, &amp;path, &amp;path_len) == FAILURE) {</span>
+<span class="lineNum">     374 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     375 </span>                :         }
+<span class="lineNum">     376 </span>                : 
+<span class="lineNum">     377 </span><span class="lineNoCov">              0 :         if (php_check_open_basedir(path TSRMLS_CC)) {</span>
+<span class="lineNum">     378 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     379 </span>                :         }
+<span class="lineNum">     380 </span>                : 
+<span class="lineNum">     381 </span><span class="lineNoCov">              0 :         if (php_disk_free_space(path, &amp;bytesfree TSRMLS_CC) == SUCCESS) {</span>
+<span class="lineNum">     382 </span><span class="lineNoCov">              0 :                 RETURN_DOUBLE(bytesfree);</span>
+<span class="lineNum">     383 </span>                :         }
+<span class="lineNum">     384 </span><span class="lineNoCov">              0 :         RETURN_FALSE;</span>
+<span class="lineNum">     385 </span>                : }
+<span class="lineNum">     386 </span>                : /* }}} */
+<a name="387"><span class="lineNum">     387 </span>                : </a>
+<span class="lineNum">     388 </span>                : #if !defined(WINDOWS) &amp;&amp; !defined(NETWARE)
+<span class="lineNum">     389 </span><span class="lineNoCov">              0 : PHPAPI int php_get_gid_by_name(const char *name, gid_t *gid TSRMLS_DC)</span>
+<span class="lineNum">     390 </span>                : {
+<span class="lineNum">     391 </span>                : #if defined(ZTS) &amp;&amp; defined(HAVE_GETGRNAM_R) &amp;&amp; defined(_SC_GETGR_R_SIZE_MAX)
+<span class="lineNum">     392 </span>                :                 struct group gr;
+<span class="lineNum">     393 </span>                :                 struct group *retgrptr;
+<span class="lineNum">     394 </span>                :                 long grbuflen = sysconf(_SC_GETGR_R_SIZE_MAX);
+<span class="lineNum">     395 </span>                :                 char *grbuf;
+<span class="lineNum">     396 </span>                : 
+<span class="lineNum">     397 </span>                :                 if (grbuflen &lt; 1) {
+<span class="lineNum">     398 </span>                :                         return FAILURE;
+<span class="lineNum">     399 </span>                :                 }
+<span class="lineNum">     400 </span>                : 
+<span class="lineNum">     401 </span>                :                 grbuf = emalloc(grbuflen);
+<span class="lineNum">     402 </span>                :                 if (getgrnam_r(name, &amp;gr, grbuf, grbuflen, &amp;retgrptr) != 0 || retgrptr == NULL) {
+<span class="lineNum">     403 </span>                :                         efree(grbuf);
+<span class="lineNum">     404 </span>                :                         return FAILURE;
+<span class="lineNum">     405 </span>                :                 }
+<span class="lineNum">     406 </span>                :                 efree(grbuf);
+<span class="lineNum">     407 </span>                :                 *gid = gr.gr_gid;
+<span class="lineNum">     408 </span>                : #else
+<span class="lineNum">     409 </span><span class="lineNoCov">              0 :                 struct group *gr = getgrnam(name);</span>
+<span class="lineNum">     410 </span>                : 
+<span class="lineNum">     411 </span><span class="lineNoCov">              0 :                 if (!gr) {</span>
+<span class="lineNum">     412 </span><span class="lineNoCov">              0 :                         return FAILURE;</span>
+<span class="lineNum">     413 </span>                :                 }
+<span class="lineNum">     414 </span><span class="lineNoCov">              0 :                 *gid = gr-&gt;gr_gid;</span>
+<span class="lineNum">     415 </span>                : #endif
+<span class="lineNum">     416 </span><span class="lineNoCov">              0 :                 return SUCCESS;</span>
+<span class="lineNum">     417 </span>                : }
+<a name="418"><span class="lineNum">     418 </span>                : #endif</a>
+<span class="lineNum">     419 </span>                : 
+<span class="lineNum">     420 </span><span class="lineNoCov">              0 : static void php_do_chgrp(INTERNAL_FUNCTION_PARAMETERS, int do_lchgrp) /* {{{ */</span>
+<span class="lineNum">     421 </span>                : {
+<span class="lineNum">     422 </span>                :         char *filename;
+<span class="lineNum">     423 </span>                :         int filename_len;
+<span class="lineNum">     424 </span>                :         zval *group;
+<span class="lineNum">     425 </span>                : #if !defined(WINDOWS)
+<span class="lineNum">     426 </span>                :         gid_t gid;
+<span class="lineNum">     427 </span>                :         int ret;
+<span class="lineNum">     428 </span>                : #endif
+<span class="lineNum">     429 </span>                :         php_stream_wrapper *wrapper;
+<span class="lineNum">     430 </span>                : 
+<span class="lineNum">     431 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;pz/&quot;, &amp;filename, &amp;filename_len, &amp;group) == FAILURE) {</span>
+<span class="lineNum">     432 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     433 </span>                :         }
+<span class="lineNum">     434 </span>                : 
+<span class="lineNum">     435 </span><span class="lineNoCov">              0 :         wrapper = php_stream_locate_url_wrapper(filename, NULL, 0 TSRMLS_CC);</span>
+<span class="lineNum">     436 </span><span class="lineNoCov">              0 :         if(wrapper != &amp;php_plain_files_wrapper || strncasecmp(&quot;file://&quot;, filename, 7) == 0) {</span>
+<span class="lineNum">     437 </span><span class="lineNoCov">              0 :                 if(wrapper &amp;&amp; wrapper-&gt;wops-&gt;stream_metadata) {</span>
+<span class="lineNum">     438 </span>                :                         int option;
+<span class="lineNum">     439 </span>                :                         void *value;
+<span class="lineNum">     440 </span><span class="lineNoCov">              0 :                         if (Z_TYPE_P(group) == IS_LONG) {</span>
+<span class="lineNum">     441 </span><span class="lineNoCov">              0 :                                 option = PHP_STREAM_META_GROUP;</span>
+<span class="lineNum">     442 </span><span class="lineNoCov">              0 :                                 value = &amp;Z_LVAL_P(group);</span>
+<span class="lineNum">     443 </span><span class="lineNoCov">              0 :                         } else if (Z_TYPE_P(group) == IS_STRING) {</span>
+<span class="lineNum">     444 </span><span class="lineNoCov">              0 :                                 option = PHP_STREAM_META_GROUP_NAME;</span>
+<span class="lineNum">     445 </span><span class="lineNoCov">              0 :                                 value = Z_STRVAL_P(group);</span>
+<span class="lineNum">     446 </span>                :                         } else {
+<span class="lineNum">     447 </span><span class="lineNoCov">              0 :                                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;parameter 2 should be string or integer, %s given&quot;, zend_zval_type_name(group));</span>
+<span class="lineNum">     448 </span><span class="lineNoCov">              0 :                                 RETURN_FALSE;</span>
+<span class="lineNum">     449 </span>                :                         }
+<span class="lineNum">     450 </span><span class="lineNoCov">              0 :                         if(wrapper-&gt;wops-&gt;stream_metadata(wrapper, filename, option, value, NULL TSRMLS_CC)) {</span>
+<span class="lineNum">     451 </span><span class="lineNoCov">              0 :                                 RETURN_TRUE;</span>
+<span class="lineNum">     452 </span>                :                         } else {
+<span class="lineNum">     453 </span><span class="lineNoCov">              0 :                                 RETURN_FALSE;</span>
+<span class="lineNum">     454 </span>                :                         }
+<span class="lineNum">     455 </span>                :                 } else {
+<span class="lineNum">     456 </span>                : #if !defined(WINDOWS)
+<span class="lineNum">     457 </span>                : /* On Windows, we expect regular chgrp to fail silently by default */
+<span class="lineNum">     458 </span><span class="lineNoCov">              0 :                         php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Can not call chgrp() for a non-standard stream&quot;);</span>
+<span class="lineNum">     459 </span>                : #endif
+<span class="lineNum">     460 </span><span class="lineNoCov">              0 :                         RETURN_FALSE;</span>
+<span class="lineNum">     461 </span>                :                 }
+<span class="lineNum">     462 </span>                :         }
+<span class="lineNum">     463 </span>                : 
+<span class="lineNum">     464 </span>                : #if defined(WINDOWS)
+<span class="lineNum">     465 </span>                :         /* We have no native chgrp on Windows, nothing left to do if stream doesn't have own implementation */
+<span class="lineNum">     466 </span>                :         RETURN_FALSE;
+<span class="lineNum">     467 </span>                : #else
+<span class="lineNum">     468 </span><span class="lineNoCov">              0 :         if (Z_TYPE_P(group) == IS_LONG) {</span>
+<span class="lineNum">     469 </span><span class="lineNoCov">              0 :                 gid = (gid_t)Z_LVAL_P(group);</span>
+<span class="lineNum">     470 </span><span class="lineNoCov">              0 :         } else if (Z_TYPE_P(group) == IS_STRING) {</span>
+<span class="lineNum">     471 </span><span class="lineNoCov">              0 :                 if(php_get_gid_by_name(Z_STRVAL_P(group), &amp;gid TSRMLS_CC) != SUCCESS) {</span>
+<span class="lineNum">     472 </span><span class="lineNoCov">              0 :                         php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Unable to find gid for %s&quot;, Z_STRVAL_P(group));</span>
+<span class="lineNum">     473 </span><span class="lineNoCov">              0 :                         RETURN_FALSE;</span>
+<span class="lineNum">     474 </span>                :                 }
+<span class="lineNum">     475 </span>                :         } else {
+<span class="lineNum">     476 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;parameter 2 should be string or integer, %s given&quot;, zend_zval_type_name(group));</span>
+<span class="lineNum">     477 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     478 </span>                :         }
+<span class="lineNum">     479 </span>                : 
+<span class="lineNum">     480 </span>                :         /* Check the basedir */
+<span class="lineNum">     481 </span><span class="lineNoCov">              0 :         if (php_check_open_basedir(filename TSRMLS_CC)) {</span>
+<span class="lineNum">     482 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     483 </span>                :         }
+<span class="lineNum">     484 </span>                : 
+<span class="lineNum">     485 </span><span class="lineNoCov">              0 :         if (do_lchgrp) {</span>
+<span class="lineNum">     486 </span>                : #if HAVE_LCHOWN
+<span class="lineNum">     487 </span><span class="lineNoCov">              0 :                 ret = VCWD_LCHOWN(filename, -1, gid);</span>
+<span class="lineNum">     488 </span>                : #endif
+<span class="lineNum">     489 </span>                :         } else {
+<span class="lineNum">     490 </span><span class="lineNoCov">              0 :                 ret = VCWD_CHOWN(filename, -1, gid);</span>
+<span class="lineNum">     491 </span>                :         }
+<span class="lineNum">     492 </span><span class="lineNoCov">              0 :         if (ret == -1) {</span>
+<span class="lineNum">     493 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;%s&quot;, strerror(errno));</span>
+<span class="lineNum">     494 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     495 </span>                :         }
+<span class="lineNum">     496 </span><span class="lineNoCov">              0 :         RETURN_TRUE;</span>
+<span class="lineNum">     497 </span>                : #endif
+<span class="lineNum">     498 </span>                : }
+<span class="lineNum">     499 </span>                : /* }}} */
+<span class="lineNum">     500 </span>                : 
+<span class="lineNum">     501 </span>                : #ifndef NETWARE
+<a name="502"><span class="lineNum">     502 </span>                : /* {{{ proto bool chgrp(string filename, mixed group)</a>
+<span class="lineNum">     503 </span>                :    Change file group */
+<span class="lineNum">     504 </span><span class="lineNoCov">              0 : PHP_FUNCTION(chgrp)</span>
+<span class="lineNum">     505 </span>                : {
+<span class="lineNum">     506 </span><span class="lineNoCov">              0 :         php_do_chgrp(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0);</span>
+<span class="lineNum">     507 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     508 </span>                : /* }}} */
+<span class="lineNum">     509 </span>                : 
+<span class="lineNum">     510 </span>                : /* {{{ proto bool lchgrp(string filename, mixed group)
+<a name="511"><span class="lineNum">     511 </span>                :    Change symlink group */</a>
+<span class="lineNum">     512 </span>                : #if HAVE_LCHOWN
+<span class="lineNum">     513 </span><span class="lineNoCov">              0 : PHP_FUNCTION(lchgrp)</span>
+<span class="lineNum">     514 </span>                : {
+<span class="lineNum">     515 </span>                : # if !defined(WINDOWS)
+<span class="lineNum">     516 </span><span class="lineNoCov">              0 :         php_do_chgrp(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1);</span>
+<span class="lineNum">     517 </span>                : # else
+<span class="lineNum">     518 </span>                :         RETURN_FALSE;
+<span class="lineNum">     519 </span>                : # endif
+<span class="lineNum">     520 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     521 </span>                : #endif
+<span class="lineNum">     522 </span>                : /* }}} */
+<span class="lineNum">     523 </span>                : #endif /* !NETWARE */
+<a name="524"><span class="lineNum">     524 </span>                : </a>
+<span class="lineNum">     525 </span>                : #if !defined(WINDOWS) &amp;&amp; !defined(NETWARE)
+<span class="lineNum">     526 </span><span class="lineNoCov">              0 : PHPAPI uid_t php_get_uid_by_name(const char *name, uid_t *uid TSRMLS_DC)</span>
+<span class="lineNum">     527 </span>                : {
+<span class="lineNum">     528 </span>                : #if defined(ZTS) &amp;&amp; defined(_SC_GETPW_R_SIZE_MAX) &amp;&amp; defined(HAVE_GETPWNAM_R)
+<span class="lineNum">     529 </span>                :                 struct passwd pw;
+<span class="lineNum">     530 </span>                :                 struct passwd *retpwptr = NULL;
+<span class="lineNum">     531 </span>                :                 long pwbuflen = sysconf(_SC_GETPW_R_SIZE_MAX);
+<span class="lineNum">     532 </span>                :                 char *pwbuf;
+<span class="lineNum">     533 </span>                : 
+<span class="lineNum">     534 </span>                :                 if (pwbuflen &lt; 1) {
+<span class="lineNum">     535 </span>                :                         return FAILURE;
+<span class="lineNum">     536 </span>                :                 }
+<span class="lineNum">     537 </span>                : 
+<span class="lineNum">     538 </span>                :                 pwbuf = emalloc(pwbuflen);
+<span class="lineNum">     539 </span>                :                 if (getpwnam_r(name, &amp;pw, pwbuf, pwbuflen, &amp;retpwptr) != 0 || retpwptr == NULL) {
+<span class="lineNum">     540 </span>                :                         efree(pwbuf);
+<span class="lineNum">     541 </span>                :                         return FAILURE;
+<span class="lineNum">     542 </span>                :                 }
+<span class="lineNum">     543 </span>                :                 efree(pwbuf);
+<span class="lineNum">     544 </span>                :                 *uid = pw.pw_uid;
+<span class="lineNum">     545 </span>                : #else
+<span class="lineNum">     546 </span><span class="lineNoCov">              0 :                 struct passwd *pw = getpwnam(name);</span>
+<span class="lineNum">     547 </span>                : 
+<span class="lineNum">     548 </span><span class="lineNoCov">              0 :                 if (!pw) {</span>
+<span class="lineNum">     549 </span><span class="lineNoCov">              0 :                         return FAILURE;</span>
+<span class="lineNum">     550 </span>                :                 }
+<span class="lineNum">     551 </span><span class="lineNoCov">              0 :                 *uid = pw-&gt;pw_uid;</span>
+<span class="lineNum">     552 </span>                : #endif
+<span class="lineNum">     553 </span><span class="lineNoCov">              0 :                 return SUCCESS;</span>
+<span class="lineNum">     554 </span>                : }
+<a name="555"><span class="lineNum">     555 </span>                : #endif</a>
+<span class="lineNum">     556 </span>                : 
+<span class="lineNum">     557 </span><span class="lineNoCov">              0 : static void php_do_chown(INTERNAL_FUNCTION_PARAMETERS, int do_lchown) /* {{{ */</span>
+<span class="lineNum">     558 </span>                : {
+<span class="lineNum">     559 </span>                :         char *filename;
+<span class="lineNum">     560 </span>                :         int filename_len;
+<span class="lineNum">     561 </span>                :         zval *user;
+<span class="lineNum">     562 </span>                : #if !defined(WINDOWS)
+<span class="lineNum">     563 </span>                :         uid_t uid;
+<span class="lineNum">     564 </span>                :         int ret;
+<span class="lineNum">     565 </span>                : #endif
+<span class="lineNum">     566 </span>                :         php_stream_wrapper *wrapper;
+<span class="lineNum">     567 </span>                : 
+<span class="lineNum">     568 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;pz/&quot;, &amp;filename, &amp;filename_len, &amp;user) == FAILURE) {</span>
+<span class="lineNum">     569 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     570 </span>                :         }
+<span class="lineNum">     571 </span>                : 
+<span class="lineNum">     572 </span><span class="lineNoCov">              0 :         wrapper = php_stream_locate_url_wrapper(filename, NULL, 0 TSRMLS_CC);</span>
+<span class="lineNum">     573 </span><span class="lineNoCov">              0 :         if(wrapper != &amp;php_plain_files_wrapper || strncasecmp(&quot;file://&quot;, filename, 7) == 0) {</span>
+<span class="lineNum">     574 </span><span class="lineNoCov">              0 :                 if(wrapper &amp;&amp; wrapper-&gt;wops-&gt;stream_metadata) {</span>
+<span class="lineNum">     575 </span>                :                         int option;
+<span class="lineNum">     576 </span>                :                         void *value;
+<span class="lineNum">     577 </span><span class="lineNoCov">              0 :                         if (Z_TYPE_P(user) == IS_LONG) {</span>
+<span class="lineNum">     578 </span><span class="lineNoCov">              0 :                                 option = PHP_STREAM_META_OWNER;</span>
+<span class="lineNum">     579 </span><span class="lineNoCov">              0 :                                 value = &amp;Z_LVAL_P(user);</span>
+<span class="lineNum">     580 </span><span class="lineNoCov">              0 :                         } else if (Z_TYPE_P(user) == IS_STRING) {</span>
+<span class="lineNum">     581 </span><span class="lineNoCov">              0 :                                 option = PHP_STREAM_META_OWNER_NAME;</span>
+<span class="lineNum">     582 </span><span class="lineNoCov">              0 :                                 value = Z_STRVAL_P(user);</span>
+<span class="lineNum">     583 </span>                :                         } else {
+<span class="lineNum">     584 </span><span class="lineNoCov">              0 :                                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;parameter 2 should be string or integer, %s given&quot;, zend_zval_type_name(user));</span>
+<span class="lineNum">     585 </span><span class="lineNoCov">              0 :                                 RETURN_FALSE;</span>
+<span class="lineNum">     586 </span>                :                         }
+<span class="lineNum">     587 </span><span class="lineNoCov">              0 :                         if(wrapper-&gt;wops-&gt;stream_metadata(wrapper, filename, option, value, NULL TSRMLS_CC)) {</span>
+<span class="lineNum">     588 </span><span class="lineNoCov">              0 :                                 RETURN_TRUE;</span>
+<span class="lineNum">     589 </span>                :                         } else {
+<span class="lineNum">     590 </span><span class="lineNoCov">              0 :                                 RETURN_FALSE;</span>
+<span class="lineNum">     591 </span>                :                         }
+<span class="lineNum">     592 </span>                :                 } else {
+<span class="lineNum">     593 </span>                : #if !defined(WINDOWS)
+<span class="lineNum">     594 </span>                : /* On Windows, we expect regular chown to fail silently by default */
+<span class="lineNum">     595 </span><span class="lineNoCov">              0 :                         php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Can not call chown() for a non-standard stream&quot;);</span>
+<span class="lineNum">     596 </span>                : #endif
+<span class="lineNum">     597 </span><span class="lineNoCov">              0 :                         RETURN_FALSE;</span>
+<span class="lineNum">     598 </span>                :                 }
+<span class="lineNum">     599 </span>                :         }
+<span class="lineNum">     600 </span>                : 
+<span class="lineNum">     601 </span>                : #if defined(WINDOWS)
+<span class="lineNum">     602 </span>                :         /* We have no native chown on Windows, nothing left to do if stream doesn't have own implementation */
+<span class="lineNum">     603 </span>                :         RETURN_FALSE;
+<span class="lineNum">     604 </span>                : #else
+<span class="lineNum">     605 </span>                : 
+<span class="lineNum">     606 </span><span class="lineNoCov">              0 :         if (Z_TYPE_P(user) == IS_LONG) {</span>
+<span class="lineNum">     607 </span><span class="lineNoCov">              0 :                 uid = (uid_t)Z_LVAL_P(user);</span>
+<span class="lineNum">     608 </span><span class="lineNoCov">              0 :         } else if (Z_TYPE_P(user) == IS_STRING) {</span>
+<span class="lineNum">     609 </span><span class="lineNoCov">              0 :                 if(php_get_uid_by_name(Z_STRVAL_P(user), &amp;uid TSRMLS_CC) != SUCCESS) {</span>
+<span class="lineNum">     610 </span><span class="lineNoCov">              0 :                         php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Unable to find uid for %s&quot;, Z_STRVAL_P(user));</span>
+<span class="lineNum">     611 </span><span class="lineNoCov">              0 :                         RETURN_FALSE;</span>
+<span class="lineNum">     612 </span>                :                 }
+<span class="lineNum">     613 </span>                :         } else {
+<span class="lineNum">     614 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;parameter 2 should be string or integer, %s given&quot;, zend_zval_type_name(user));</span>
+<span class="lineNum">     615 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     616 </span>                :         }
+<span class="lineNum">     617 </span>                : 
+<span class="lineNum">     618 </span>                :         /* Check the basedir */
+<span class="lineNum">     619 </span><span class="lineNoCov">              0 :         if (php_check_open_basedir(filename TSRMLS_CC)) {</span>
+<span class="lineNum">     620 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     621 </span>                :         }
+<span class="lineNum">     622 </span>                : 
+<span class="lineNum">     623 </span><span class="lineNoCov">              0 :         if (do_lchown) {</span>
+<span class="lineNum">     624 </span>                : #if HAVE_LCHOWN
+<span class="lineNum">     625 </span><span class="lineNoCov">              0 :                 ret = VCWD_LCHOWN(filename, uid, -1);</span>
+<span class="lineNum">     626 </span>                : #endif
+<span class="lineNum">     627 </span>                :         } else {
+<span class="lineNum">     628 </span><span class="lineNoCov">              0 :                 ret = VCWD_CHOWN(filename, uid, -1);</span>
+<span class="lineNum">     629 </span>                :         }
+<span class="lineNum">     630 </span><span class="lineNoCov">              0 :         if (ret == -1) {</span>
+<span class="lineNum">     631 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;%s&quot;, strerror(errno));</span>
+<span class="lineNum">     632 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     633 </span>                :         }
+<span class="lineNum">     634 </span><span class="lineNoCov">              0 :         RETURN_TRUE;</span>
+<span class="lineNum">     635 </span>                : #endif
+<span class="lineNum">     636 </span>                : }
+<span class="lineNum">     637 </span>                : /* }}} */
+<span class="lineNum">     638 </span>                : 
+<span class="lineNum">     639 </span>                : 
+<span class="lineNum">     640 </span>                : #ifndef NETWARE
+<a name="641"><span class="lineNum">     641 </span>                : /* {{{ proto bool chown (string filename, mixed user)</a>
+<span class="lineNum">     642 </span>                :    Change file owner */
+<span class="lineNum">     643 </span><span class="lineNoCov">              0 : PHP_FUNCTION(chown)</span>
+<span class="lineNum">     644 </span>                : {
+<span class="lineNum">     645 </span><span class="lineNoCov">              0 :         php_do_chown(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0);</span>
+<span class="lineNum">     646 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     647 </span>                : /* }}} */
+<span class="lineNum">     648 </span>                : 
+<span class="lineNum">     649 </span>                : /* {{{ proto bool chown (string filename, mixed user)
+<a name="650"><span class="lineNum">     650 </span>                :    Change file owner */</a>
+<span class="lineNum">     651 </span>                : #if HAVE_LCHOWN
+<span class="lineNum">     652 </span><span class="lineNoCov">              0 : PHP_FUNCTION(lchown)</span>
+<span class="lineNum">     653 </span>                : {
+<span class="lineNum">     654 </span>                : # if !defined(WINDOWS)
+<span class="lineNum">     655 </span><span class="lineNoCov">              0 :         RETVAL_TRUE;</span>
+<span class="lineNum">     656 </span><span class="lineNoCov">              0 :         php_do_chown(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1);</span>
+<span class="lineNum">     657 </span>                : # else
+<span class="lineNum">     658 </span>                :         RETURN_FALSE;
+<span class="lineNum">     659 </span>                : # endif
+<span class="lineNum">     660 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     661 </span>                : #endif
+<span class="lineNum">     662 </span>                : /* }}} */
+<span class="lineNum">     663 </span>                : #endif /* !NETWARE */
+<span class="lineNum">     664 </span>                : 
+<a name="665"><span class="lineNum">     665 </span>                : /* {{{ proto bool chmod(string filename, int mode)</a>
+<span class="lineNum">     666 </span>                :    Change file mode */
+<span class="lineNum">     667 </span><span class="lineCov">             11 : PHP_FUNCTION(chmod)</span>
+<span class="lineNum">     668 </span>                : {
+<span class="lineNum">     669 </span>                :         char *filename;
+<span class="lineNum">     670 </span>                :         int filename_len;
+<span class="lineNum">     671 </span>                :         long mode;
+<span class="lineNum">     672 </span>                :         int ret;
+<span class="lineNum">     673 </span>                :         mode_t imode;
+<span class="lineNum">     674 </span>                :         php_stream_wrapper *wrapper;
+<span class="lineNum">     675 </span>                : 
+<span class="lineNum">     676 </span><span class="lineCov">             11 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;pl&quot;, &amp;filename, &amp;filename_len, &amp;mode) == FAILURE) {</span>
+<span class="lineNum">     677 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     678 </span>                :         }
+<span class="lineNum">     679 </span>                : 
+<span class="lineNum">     680 </span><span class="lineCov">             11 :         wrapper = php_stream_locate_url_wrapper(filename, NULL, 0 TSRMLS_CC);</span>
+<span class="lineNum">     681 </span><span class="lineCov">             11 :         if(wrapper != &amp;php_plain_files_wrapper || strncasecmp(&quot;file://&quot;, filename, 7) == 0) {</span>
+<span class="lineNum">     682 </span><span class="lineNoCov">              0 :                 if(wrapper &amp;&amp; wrapper-&gt;wops-&gt;stream_metadata) {</span>
+<span class="lineNum">     683 </span><span class="lineNoCov">              0 :                         if(wrapper-&gt;wops-&gt;stream_metadata(wrapper, filename, PHP_STREAM_META_ACCESS, &amp;mode, NULL TSRMLS_CC)) {</span>
+<span class="lineNum">     684 </span><span class="lineNoCov">              0 :                                 RETURN_TRUE;</span>
+<span class="lineNum">     685 </span>                :                         } else {
+<span class="lineNum">     686 </span><span class="lineNoCov">              0 :                                 RETURN_FALSE;</span>
+<span class="lineNum">     687 </span>                :                         }
+<span class="lineNum">     688 </span>                :                 } else {
+<span class="lineNum">     689 </span><span class="lineNoCov">              0 :                         php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Can not call chmod() for a non-standard stream&quot;);</span>
+<span class="lineNum">     690 </span><span class="lineNoCov">              0 :                         RETURN_FALSE;</span>
+<span class="lineNum">     691 </span>                :                 }
+<span class="lineNum">     692 </span>                :         }
+<span class="lineNum">     693 </span>                : 
+<span class="lineNum">     694 </span>                :         /* Check the basedir */
+<span class="lineNum">     695 </span><span class="lineCov">             11 :         if (php_check_open_basedir(filename TSRMLS_CC)) {</span>
+<span class="lineNum">     696 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     697 </span>                :         }
+<span class="lineNum">     698 </span>                : 
+<span class="lineNum">     699 </span><span class="lineCov">             11 :         imode = (mode_t) mode;</span>
+<span class="lineNum">     700 </span>                : 
+<span class="lineNum">     701 </span><span class="lineCov">             11 :         ret = VCWD_CHMOD(filename, imode);</span>
+<span class="lineNum">     702 </span><span class="lineCov">             11 :         if (ret == -1) {</span>
+<span class="lineNum">     703 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;%s&quot;, strerror(errno));</span>
+<span class="lineNum">     704 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     705 </span>                :         }
+<span class="lineNum">     706 </span><span class="lineCov">             11 :         RETURN_TRUE;</span>
+<span class="lineNum">     707 </span>                : }
+<span class="lineNum">     708 </span>                : /* }}} */
+<span class="lineNum">     709 </span>                : 
+<span class="lineNum">     710 </span>                : #if HAVE_UTIME
+<a name="711"><span class="lineNum">     711 </span>                : /* {{{ proto bool touch(string filename [, int time [, int atime]])</a>
+<span class="lineNum">     712 </span>                :    Set modification time of file */
+<span class="lineNum">     713 </span><span class="lineNoCov">              0 : PHP_FUNCTION(touch)</span>
+<span class="lineNum">     714 </span>                : {
+<span class="lineNum">     715 </span>                :         char *filename;
+<span class="lineNum">     716 </span>                :         int filename_len;
+<span class="lineNum">     717 </span><span class="lineNoCov">              0 :         long filetime = 0, fileatime = 0;</span>
+<span class="lineNum">     718 </span><span class="lineNoCov">              0 :         int ret, argc = ZEND_NUM_ARGS();</span>
+<span class="lineNum">     719 </span>                :         FILE *file;
+<span class="lineNum">     720 </span>                :         struct utimbuf newtimebuf;
+<span class="lineNum">     721 </span><span class="lineNoCov">              0 :         struct utimbuf *newtime = &amp;newtimebuf;</span>
+<span class="lineNum">     722 </span>                :         php_stream_wrapper *wrapper;
+<span class="lineNum">     723 </span>                : 
+<span class="lineNum">     724 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(argc TSRMLS_CC, &quot;p|ll&quot;, &amp;filename, &amp;filename_len, &amp;filetime, &amp;fileatime) == FAILURE) {</span>
+<span class="lineNum">     725 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     726 </span>                :         }
+<span class="lineNum">     727 </span>                : 
+<span class="lineNum">     728 </span><span class="lineNoCov">              0 :         if (!filename_len) {</span>
+<span class="lineNum">     729 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     730 </span>                :         }
+<span class="lineNum">     731 </span>                : 
+<span class="lineNum">     732 </span><span class="lineNoCov">              0 :         switch (argc) {</span>
+<span class="lineNum">     733 </span>                :                 case 1:
+<span class="lineNum">     734 </span>                : #ifdef HAVE_UTIME_NULL
+<span class="lineNum">     735 </span><span class="lineNoCov">              0 :                         newtime = NULL;</span>
+<span class="lineNum">     736 </span>                : #else
+<span class="lineNum">     737 </span>                :                         newtime-&gt;modtime = newtime-&gt;actime = time(NULL);
+<span class="lineNum">     738 </span>                : #endif
+<span class="lineNum">     739 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     740 </span>                :                 case 2:
+<span class="lineNum">     741 </span><span class="lineNoCov">              0 :                         newtime-&gt;modtime = newtime-&gt;actime = filetime;</span>
+<span class="lineNum">     742 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     743 </span>                :                 case 3:
+<span class="lineNum">     744 </span><span class="lineNoCov">              0 :                         newtime-&gt;modtime = filetime;</span>
+<span class="lineNum">     745 </span><span class="lineNoCov">              0 :                         newtime-&gt;actime = fileatime;</span>
+<span class="lineNum">     746 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     747 </span>                :                 default:
+<span class="lineNum">     748 </span>                :                         /* Never reached */
+<span class="lineNum">     749 </span><span class="lineNoCov">              0 :                         WRONG_PARAM_COUNT;</span>
+<span class="lineNum">     750 </span>                :         }
+<span class="lineNum">     751 </span>                : 
+<span class="lineNum">     752 </span><span class="lineNoCov">              0 :         wrapper = php_stream_locate_url_wrapper(filename, NULL, 0 TSRMLS_CC);</span>
+<span class="lineNum">     753 </span><span class="lineNoCov">              0 :         if(wrapper != &amp;php_plain_files_wrapper || strncasecmp(&quot;file://&quot;, filename, 7) == 0) {</span>
+<span class="lineNum">     754 </span><span class="lineNoCov">              0 :                 if(wrapper &amp;&amp; wrapper-&gt;wops-&gt;stream_metadata) {</span>
+<span class="lineNum">     755 </span><span class="lineNoCov">              0 :                         if(wrapper-&gt;wops-&gt;stream_metadata(wrapper, filename, PHP_STREAM_META_TOUCH, newtime, NULL TSRMLS_CC)) {</span>
+<span class="lineNum">     756 </span><span class="lineNoCov">              0 :                                 RETURN_TRUE;</span>
+<span class="lineNum">     757 </span>                :                         } else {
+<span class="lineNum">     758 </span><span class="lineNoCov">              0 :                                 RETURN_FALSE;</span>
+<span class="lineNum">     759 </span>                :                         }
+<span class="lineNum">     760 </span>                :                 } else {
+<span class="lineNum">     761 </span>                :                         php_stream *stream;
+<span class="lineNum">     762 </span><span class="lineNoCov">              0 :                         if(argc &gt; 1) {</span>
+<span class="lineNum">     763 </span><span class="lineNoCov">              0 :                                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Can not call touch() for a non-standard stream&quot;);</span>
+<span class="lineNum">     764 </span><span class="lineNoCov">              0 :                                 RETURN_FALSE;</span>
+<span class="lineNum">     765 </span>                :                         }
+<span class="lineNum">     766 </span><span class="lineNoCov">              0 :                         stream = php_stream_open_wrapper_ex(filename, &quot;c&quot;, REPORT_ERRORS, NULL, NULL);</span>
+<span class="lineNum">     767 </span><span class="lineNoCov">              0 :                         if(stream != NULL) {</span>
+<span class="lineNum">     768 </span><span class="lineNoCov">              0 :                                 php_stream_pclose(stream);</span>
+<span class="lineNum">     769 </span><span class="lineNoCov">              0 :                                 RETURN_TRUE;</span>
+<span class="lineNum">     770 </span>                :                         } else {
+<span class="lineNum">     771 </span><span class="lineNoCov">              0 :                                 RETURN_FALSE;</span>
+<span class="lineNum">     772 </span>                :                         }
+<span class="lineNum">     773 </span>                :                 }
+<span class="lineNum">     774 </span>                :         }
+<span class="lineNum">     775 </span>                : 
+<span class="lineNum">     776 </span>                :         /* Check the basedir */
+<span class="lineNum">     777 </span><span class="lineNoCov">              0 :         if (php_check_open_basedir(filename TSRMLS_CC)) {</span>
+<span class="lineNum">     778 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     779 </span>                :         }
+<span class="lineNum">     780 </span>                : 
+<span class="lineNum">     781 </span>                :         /* create the file if it doesn't exist already */
+<span class="lineNum">     782 </span><span class="lineNoCov">              0 :         if (VCWD_ACCESS(filename, F_OK) != 0) {</span>
+<span class="lineNum">     783 </span><span class="lineNoCov">              0 :                 file = VCWD_FOPEN(filename, &quot;w&quot;);</span>
+<span class="lineNum">     784 </span><span class="lineNoCov">              0 :                 if (file == NULL) {</span>
+<span class="lineNum">     785 </span><span class="lineNoCov">              0 :                         php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Unable to create file %s because %s&quot;, filename, strerror(errno));</span>
+<span class="lineNum">     786 </span><span class="lineNoCov">              0 :                         RETURN_FALSE;</span>
+<span class="lineNum">     787 </span>                :                 }
+<span class="lineNum">     788 </span><span class="lineNoCov">              0 :                 fclose(file);</span>
+<span class="lineNum">     789 </span>                :         }
+<span class="lineNum">     790 </span>                : 
+<span class="lineNum">     791 </span><span class="lineNoCov">              0 :         ret = VCWD_UTIME(filename, newtime);</span>
+<span class="lineNum">     792 </span><span class="lineNoCov">              0 :         if (ret == -1) {</span>
+<span class="lineNum">     793 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Utime failed: %s&quot;, strerror(errno));</span>
+<span class="lineNum">     794 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     795 </span>                :         }
+<span class="lineNum">     796 </span><span class="lineNoCov">              0 :         RETURN_TRUE;</span>
+<span class="lineNum">     797 </span>                : }
+<span class="lineNum">     798 </span>                : /* }}} */
+<span class="lineNum">     799 </span>                : #endif
+<span class="lineNum">     800 </span>                : 
+<a name="801"><span class="lineNum">     801 </span>                : /* {{{ php_clear_stat_cache()</a>
+<span class="lineNum">     802 </span>                : */
+<span class="lineNum">     803 </span><span class="lineCov">            285 : PHPAPI void php_clear_stat_cache(zend_bool clear_realpath_cache, const char *filename, int filename_len TSRMLS_DC)</span>
+<span class="lineNum">     804 </span>                : {
+<span class="lineNum">     805 </span>                :         /* always clear CurrentStatFile and CurrentLStatFile even if filename is not NULL
+<span class="lineNum">     806 </span>                :          * as it may contains outdated data (e.g. &quot;nlink&quot; for a directory when deleting a file
+<span class="lineNum">     807 </span>                :          * in this directory, as shown by lstat_stat_variation9.phpt) */
+<span class="lineNum">     808 </span><span class="lineCov">            285 :         if (BG(CurrentStatFile)) {</span>
+<span class="lineNum">     809 </span><span class="lineCov">              1 :                 efree(BG(CurrentStatFile));</span>
+<span class="lineNum">     810 </span><span class="lineCov">              1 :                 BG(CurrentStatFile) = NULL;</span>
+<span class="lineNum">     811 </span>                :         }
+<span class="lineNum">     812 </span><span class="lineCov">            285 :         if (BG(CurrentLStatFile)) {</span>
+<span class="lineNum">     813 </span><span class="lineNoCov">              0 :                 efree(BG(CurrentLStatFile));</span>
+<span class="lineNum">     814 </span><span class="lineNoCov">              0 :                 BG(CurrentLStatFile) = NULL;</span>
+<span class="lineNum">     815 </span>                :         }
+<span class="lineNum">     816 </span><span class="lineCov">            285 :         if (clear_realpath_cache) {</span>
+<span class="lineNum">     817 </span><span class="lineCov">            285 :                 if (filename != NULL) {</span>
+<span class="lineNum">     818 </span><span class="lineNoCov">              0 :                         realpath_cache_del(filename, filename_len TSRMLS_CC);</span>
+<span class="lineNum">     819 </span>                :                 } else {
+<span class="lineNum">     820 </span><span class="lineCov">            285 :                         realpath_cache_clean(TSRMLS_C);</span>
+<span class="lineNum">     821 </span>                :                 }
+<span class="lineNum">     822 </span>                :         }
+<span class="lineNum">     823 </span><span class="lineCov">            285 : }</span>
+<span class="lineNum">     824 </span>                : /* }}} */
+<span class="lineNum">     825 </span>                : 
+<a name="826"><span class="lineNum">     826 </span>                : /* {{{ proto void clearstatcache([bool clear_realpath_cache[, string filename]])</a>
+<span class="lineNum">     827 </span>                :    Clear file stat cache */
+<span class="lineNum">     828 </span><span class="lineNoCov">              0 : PHP_FUNCTION(clearstatcache)</span>
+<span class="lineNum">     829 </span>                : {
+<span class="lineNum">     830 </span><span class="lineNoCov">              0 :         zend_bool  clear_realpath_cache = 0;</span>
+<span class="lineNum">     831 </span><span class="lineNoCov">              0 :         char      *filename             = NULL;</span>
+<span class="lineNum">     832 </span><span class="lineNoCov">              0 :         int        filename_len         = 0;</span>
+<span class="lineNum">     833 </span>                : 
+<span class="lineNum">     834 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;|bp&quot;, &amp;clear_realpath_cache, &amp;filename, &amp;filename_len) == FAILURE) {</span>
+<span class="lineNum">     835 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     836 </span>                :         }
+<span class="lineNum">     837 </span>                : 
+<span class="lineNum">     838 </span><span class="lineNoCov">              0 :         php_clear_stat_cache(clear_realpath_cache, filename, filename_len TSRMLS_CC);</span>
+<span class="lineNum">     839 </span>                : }
+<span class="lineNum">     840 </span>                : /* }}} */
+<span class="lineNum">     841 </span>                : 
+<span class="lineNum">     842 </span>                : #define IS_LINK_OPERATION(__t) ((__t) == FS_TYPE || (__t) == FS_IS_LINK || (__t) == FS_LSTAT)
+<span class="lineNum">     843 </span>                : #define IS_EXISTS_CHECK(__t) ((__t) == FS_EXISTS  || (__t) == FS_IS_W || (__t) == FS_IS_R || (__t) == FS_IS_X || (__t) == FS_IS_FILE || (__t) == FS_IS_DIR || (__t) == FS_IS_LINK)
+<span class="lineNum">     844 </span>                : #define IS_ABLE_CHECK(__t) ((__t) == FS_IS_R || (__t) == FS_IS_W || (__t) == FS_IS_X)
+<span class="lineNum">     845 </span>                : #define IS_ACCESS_CHECK(__t) (IS_ABLE_CHECK(type) || (__t) == FS_EXISTS)
+<span class="lineNum">     846 </span>                : 
+<a name="847"><span class="lineNum">     847 </span>                : /* {{{ php_stat</a>
+<span class="lineNum">     848 </span>                :  */
+<span class="lineNum">     849 </span><span class="lineCov">           1185 : PHPAPI void php_stat(const char *filename, php_stat_len filename_length, int type, zval *return_value TSRMLS_DC)</span>
+<span class="lineNum">     850 </span>                : {
+<span class="lineNum">     851 </span>                :         zval *stat_dev, *stat_ino, *stat_mode, *stat_nlink, *stat_uid, *stat_gid, *stat_rdev,
+<span class="lineNum">     852 </span>                :                  *stat_size, *stat_atime, *stat_mtime, *stat_ctime, *stat_blksize, *stat_blocks;
+<span class="lineNum">     853 </span>                :         struct stat *stat_sb;
+<span class="lineNum">     854 </span>                :         php_stream_statbuf ssb;
+<span class="lineNum">     855 </span><span class="lineCov">           1185 :         int flags = 0, rmask=S_IROTH, wmask=S_IWOTH, xmask=S_IXOTH; /* access rights defaults to other */</span>
+<span class="lineNum">     856 </span>                :         char *stat_sb_names[13] = {
+<span class="lineNum">     857 </span>                :                 &quot;dev&quot;, &quot;ino&quot;, &quot;mode&quot;, &quot;nlink&quot;, &quot;uid&quot;, &quot;gid&quot;, &quot;rdev&quot;,
+<span class="lineNum">     858 </span>                :                 &quot;size&quot;, &quot;atime&quot;, &quot;mtime&quot;, &quot;ctime&quot;, &quot;blksize&quot;, &quot;blocks&quot;
+<span class="lineNum">     859 </span><span class="lineCov">           1185 :         };</span>
+<span class="lineNum">     860 </span>                :         char *local;
+<span class="lineNum">     861 </span>                :         php_stream_wrapper *wrapper;
+<span class="lineNum">     862 </span>                : 
+<span class="lineNum">     863 </span><span class="lineCov">           1185 :         if (!filename_length) {</span>
+<span class="lineNum">     864 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     865 </span>                :         }
+<span class="lineNum">     866 </span>                : 
+<span class="lineNum">     867 </span><span class="lineCov">           1185 :         if ((wrapper = php_stream_locate_url_wrapper(filename, &amp;local, 0 TSRMLS_CC)) == &amp;php_plain_files_wrapper &amp;&amp; php_check_open_basedir(local TSRMLS_CC)) {</span>
+<span class="lineNum">     868 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     869 </span>                :         }
+<span class="lineNum">     870 </span>                : 
+<span class="lineNum">     871 </span><span class="lineCov">           1185 :         if (IS_ACCESS_CHECK(type)) {</span>
+<span class="lineNum">     872 </span><span class="lineCov">              2 :                 if (wrapper == &amp;php_plain_files_wrapper) {</span>
+<span class="lineNum">     873 </span>                : 
+<span class="lineNum">     874 </span><span class="lineCov">              2 :                         switch (type) {</span>
+<span class="lineNum">     875 </span>                : #ifdef F_OK
+<span class="lineNum">     876 </span>                :                                 case FS_EXISTS:
+<span class="lineNum">     877 </span><span class="lineCov">              1 :                                         RETURN_BOOL(VCWD_ACCESS(local, F_OK) == 0);</span>
+<span class="lineNum">     878 </span>                :                                         break;
+<span class="lineNum">     879 </span>                : #endif
+<span class="lineNum">     880 </span>                : #ifdef W_OK
+<span class="lineNum">     881 </span>                :                                 case FS_IS_W:
+<span class="lineNum">     882 </span><span class="lineNoCov">              0 :                                         RETURN_BOOL(VCWD_ACCESS(local, W_OK) == 0);</span>
+<span class="lineNum">     883 </span>                :                                         break;
+<span class="lineNum">     884 </span>                : #endif
+<span class="lineNum">     885 </span>                : #ifdef R_OK
+<span class="lineNum">     886 </span>                :                                 case FS_IS_R:
+<span class="lineNum">     887 </span><span class="lineNoCov">              0 :                                         RETURN_BOOL(VCWD_ACCESS(local, R_OK) == 0);</span>
+<span class="lineNum">     888 </span>                :                                         break;
+<span class="lineNum">     889 </span>                : #endif
+<span class="lineNum">     890 </span>                : #ifdef X_OK
+<span class="lineNum">     891 </span>                :                                 case FS_IS_X:
+<span class="lineNum">     892 </span><span class="lineCov">              1 :                                         RETURN_BOOL(VCWD_ACCESS(local, X_OK) == 0);</span>
+<span class="lineNum">     893 </span>                :                                         break;
+<span class="lineNum">     894 </span>                : #endif
+<span class="lineNum">     895 </span>                :                         }
+<span class="lineNum">     896 </span>                :                 }
+<span class="lineNum">     897 </span>                :         }
+<span class="lineNum">     898 </span>                : 
+<span class="lineNum">     899 </span><span class="lineCov">           1183 :         if (IS_LINK_OPERATION(type)) {</span>
+<span class="lineNum">     900 </span><span class="lineNoCov">              0 :                 flags |= PHP_STREAM_URL_STAT_LINK;</span>
+<span class="lineNum">     901 </span>                :         }
+<span class="lineNum">     902 </span><span class="lineCov">           1183 :         if (IS_EXISTS_CHECK(type)) {</span>
+<span class="lineNum">     903 </span><span class="lineCov">           1183 :                 flags |= PHP_STREAM_URL_STAT_QUIET;</span>
+<span class="lineNum">     904 </span>                :         }
+<span class="lineNum">     905 </span>                : 
+<span class="lineNum">     906 </span><span class="lineCov">           1183 :         if (php_stream_stat_path_ex((char *)filename, flags, &amp;ssb, NULL)) {</span>
+<span class="lineNum">     907 </span>                :                 /* Error Occured */
+<span class="lineNum">     908 </span><span class="lineNoCov">              0 :                 if (!IS_EXISTS_CHECK(type)) {</span>
+<span class="lineNum">     909 </span><span class="lineNoCov">              0 :                         php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;%sstat failed for %s&quot;, IS_LINK_OPERATION(type) ? &quot;L&quot; : &quot;&quot;, filename);</span>
+<span class="lineNum">     910 </span>                :                 }
+<span class="lineNum">     911 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     912 </span>                :         }
+<span class="lineNum">     913 </span>                : 
+<span class="lineNum">     914 </span><span class="lineCov">           1183 :         stat_sb = &amp;ssb.sb;</span>
+<span class="lineNum">     915 </span>                : 
+<span class="lineNum">     916 </span>                : 
+<span class="lineNum">     917 </span>                : #ifndef NETWARE
+<span class="lineNum">     918 </span><span class="lineCov">           1183 :         if (type &gt;= FS_IS_W &amp;&amp; type &lt;= FS_IS_X) {</span>
+<span class="lineNum">     919 </span><span class="lineNoCov">              0 :                 if(ssb.sb.st_uid==getuid()) {</span>
+<span class="lineNum">     920 </span><span class="lineNoCov">              0 :                         rmask=S_IRUSR;</span>
+<span class="lineNum">     921 </span><span class="lineNoCov">              0 :                         wmask=S_IWUSR;</span>
+<span class="lineNum">     922 </span><span class="lineNoCov">              0 :                         xmask=S_IXUSR;</span>
+<span class="lineNum">     923 </span><span class="lineNoCov">              0 :                 } else if(ssb.sb.st_gid==getgid()) {</span>
+<span class="lineNum">     924 </span><span class="lineNoCov">              0 :                         rmask=S_IRGRP;</span>
+<span class="lineNum">     925 </span><span class="lineNoCov">              0 :                         wmask=S_IWGRP;</span>
+<span class="lineNum">     926 </span><span class="lineNoCov">              0 :                         xmask=S_IXGRP;</span>
+<span class="lineNum">     927 </span>                :                 } else {
+<span class="lineNum">     928 </span>                :                         int   groups, n, i;
+<span class="lineNum">     929 </span>                :                         gid_t *gids;
+<span class="lineNum">     930 </span>                : 
+<span class="lineNum">     931 </span><span class="lineNoCov">              0 :                         groups = getgroups(0, NULL);</span>
+<span class="lineNum">     932 </span><span class="lineNoCov">              0 :                         if(groups &gt; 0) {</span>
+<span class="lineNum">     933 </span><span class="lineNoCov">              0 :                                 gids=(gid_t *)safe_emalloc(groups, sizeof(gid_t), 0);</span>
+<span class="lineNum">     934 </span><span class="lineNoCov">              0 :                                 n=getgroups(groups, gids);</span>
+<span class="lineNum">     935 </span><span class="lineNoCov">              0 :                                 for(i=0;i&lt;n;i++){</span>
+<span class="lineNum">     936 </span><span class="lineNoCov">              0 :                                         if(ssb.sb.st_gid==gids[i]) {</span>
+<span class="lineNum">     937 </span><span class="lineNoCov">              0 :                                                 rmask=S_IRGRP;</span>
+<span class="lineNum">     938 </span><span class="lineNoCov">              0 :                                                 wmask=S_IWGRP;</span>
+<span class="lineNum">     939 </span><span class="lineNoCov">              0 :                                                 xmask=S_IXGRP;</span>
+<span class="lineNum">     940 </span><span class="lineNoCov">              0 :                                                 break;</span>
+<span class="lineNum">     941 </span>                :                                         }
+<span class="lineNum">     942 </span>                :                                 }
+<span class="lineNum">     943 </span><span class="lineNoCov">              0 :                                 efree(gids);</span>
+<span class="lineNum">     944 </span>                :                         }
+<span class="lineNum">     945 </span>                :                 }
+<span class="lineNum">     946 </span>                :         }
+<span class="lineNum">     947 </span>                : #endif
+<span class="lineNum">     948 </span>                : 
+<span class="lineNum">     949 </span>                : #ifndef NETWARE
+<span class="lineNum">     950 </span><span class="lineCov">           1183 :         if (IS_ABLE_CHECK(type) &amp;&amp; getuid() == 0) {</span>
+<span class="lineNum">     951 </span>                :                 /* root has special perms on plain_wrapper
+<span class="lineNum">     952 </span>                :                    But we don't know about root under Netware */
+<span class="lineNum">     953 </span><span class="lineNoCov">              0 :                 if (wrapper == &amp;php_plain_files_wrapper) {</span>
+<span class="lineNum">     954 </span><span class="lineNoCov">              0 :                         if (type == FS_IS_X) {</span>
+<span class="lineNum">     955 </span><span class="lineNoCov">              0 :                                 xmask = S_IXROOT;</span>
+<span class="lineNum">     956 </span>                :                         } else {
+<span class="lineNum">     957 </span><span class="lineNoCov">              0 :                                 RETURN_TRUE;</span>
+<span class="lineNum">     958 </span>                :                         }
+<span class="lineNum">     959 </span>                :                 }
+<span class="lineNum">     960 </span>                :         }
+<span class="lineNum">     961 </span>                : #endif
+<span class="lineNum">     962 </span>                : 
+<span class="lineNum">     963 </span><span class="lineCov">           1183 :         switch (type) {</span>
+<span class="lineNum">     964 </span>                :         case FS_PERMS:
+<span class="lineNum">     965 </span><span class="lineNoCov">              0 :                 RETURN_LONG((long)ssb.sb.st_mode);</span>
+<span class="lineNum">     966 </span>                :         case FS_INODE:
+<span class="lineNum">     967 </span><span class="lineNoCov">              0 :                 RETURN_LONG((long)ssb.sb.st_ino);</span>
+<span class="lineNum">     968 </span>                :         case FS_SIZE:
+<span class="lineNum">     969 </span><span class="lineNoCov">              0 :                 RETURN_LONG((long)ssb.sb.st_size);</span>
+<span class="lineNum">     970 </span>                :         case FS_OWNER:
+<span class="lineNum">     971 </span><span class="lineNoCov">              0 :                 RETURN_LONG((long)ssb.sb.st_uid);</span>
+<span class="lineNum">     972 </span>                :         case FS_GROUP:
+<span class="lineNum">     973 </span><span class="lineNoCov">              0 :                 RETURN_LONG((long)ssb.sb.st_gid);</span>
+<span class="lineNum">     974 </span>                :         case FS_ATIME:
+<span class="lineNum">     975 </span><span class="lineNoCov">              0 :                 RETURN_LONG((long)ssb.sb.st_atime);</span>
+<span class="lineNum">     976 </span>                :         case FS_MTIME:
+<span class="lineNum">     977 </span><span class="lineNoCov">              0 :                 RETURN_LONG((long)ssb.sb.st_mtime);</span>
+<span class="lineNum">     978 </span>                :         case FS_CTIME:
+<span class="lineNum">     979 </span><span class="lineNoCov">              0 :                 RETURN_LONG((long)ssb.sb.st_ctime);</span>
+<span class="lineNum">     980 </span>                :         case FS_TYPE:
+<span class="lineNum">     981 </span><span class="lineNoCov">              0 :                 if (S_ISLNK(ssb.sb.st_mode)) {</span>
+<span class="lineNum">     982 </span><span class="lineNoCov">              0 :                         RETURN_STRING(&quot;link&quot;, 1);</span>
+<span class="lineNum">     983 </span>                :                 }
+<span class="lineNum">     984 </span><span class="lineNoCov">              0 :                 switch(ssb.sb.st_mode &amp; S_IFMT) {</span>
+<span class="lineNum">     985 </span><span class="lineNoCov">              0 :                 case S_IFIFO: RETURN_STRING(&quot;fifo&quot;, 1);</span>
+<span class="lineNum">     986 </span><span class="lineNoCov">              0 :                 case S_IFCHR: RETURN_STRING(&quot;char&quot;, 1);</span>
+<span class="lineNum">     987 </span><span class="lineNoCov">              0 :                 case S_IFDIR: RETURN_STRING(&quot;dir&quot;, 1);</span>
+<span class="lineNum">     988 </span><span class="lineNoCov">              0 :                 case S_IFBLK: RETURN_STRING(&quot;block&quot;, 1);</span>
+<span class="lineNum">     989 </span><span class="lineNoCov">              0 :                 case S_IFREG: RETURN_STRING(&quot;file&quot;, 1);</span>
+<span class="lineNum">     990 </span>                : #if defined(S_IFSOCK) &amp;&amp; !defined(ZEND_WIN32)&amp;&amp;!defined(__BEOS__)
+<span class="lineNum">     991 </span><span class="lineNoCov">              0 :                 case S_IFSOCK: RETURN_STRING(&quot;socket&quot;, 1);</span>
+<span class="lineNum">     992 </span>                : #endif
+<span class="lineNum">     993 </span>                :                 }
+<span class="lineNum">     994 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_NOTICE, &quot;Unknown file type (%d)&quot;, ssb.sb.st_mode&amp;S_IFMT);</span>
+<span class="lineNum">     995 </span><span class="lineNoCov">              0 :                 RETURN_STRING(&quot;unknown&quot;, 1);</span>
+<span class="lineNum">     996 </span>                :         case FS_IS_W:
+<span class="lineNum">     997 </span><span class="lineNoCov">              0 :                 RETURN_BOOL((ssb.sb.st_mode &amp; wmask) != 0);</span>
+<span class="lineNum">     998 </span>                :         case FS_IS_R:
+<span class="lineNum">     999 </span><span class="lineNoCov">              0 :                 RETURN_BOOL((ssb.sb.st_mode&amp;rmask)!=0);</span>
+<span class="lineNum">    1000 </span>                :         case FS_IS_X:
+<span class="lineNum">    1001 </span><span class="lineNoCov">              0 :                 RETURN_BOOL((ssb.sb.st_mode&amp;xmask)!=0 &amp;&amp; !S_ISDIR(ssb.sb.st_mode));</span>
+<span class="lineNum">    1002 </span>                :         case FS_IS_FILE:
+<span class="lineNum">    1003 </span><span class="lineNoCov">              0 :                 RETURN_BOOL(S_ISREG(ssb.sb.st_mode));</span>
+<span class="lineNum">    1004 </span>                :         case FS_IS_DIR:
+<span class="lineNum">    1005 </span><span class="lineCov">           1183 :                 RETURN_BOOL(S_ISDIR(ssb.sb.st_mode));</span>
+<span class="lineNum">    1006 </span>                :         case FS_IS_LINK:
+<span class="lineNum">    1007 </span><span class="lineNoCov">              0 :                 RETURN_BOOL(S_ISLNK(ssb.sb.st_mode));</span>
+<span class="lineNum">    1008 </span>                :         case FS_EXISTS:
+<span class="lineNum">    1009 </span><span class="lineNoCov">              0 :                 RETURN_TRUE; /* the false case was done earlier */</span>
+<span class="lineNum">    1010 </span>                :         case FS_LSTAT:
+<span class="lineNum">    1011 </span>                :                 /* FALLTHROUGH */
+<span class="lineNum">    1012 </span>                :         case FS_STAT:
+<span class="lineNum">    1013 </span><span class="lineNoCov">              0 :                 array_init(return_value);</span>
+<span class="lineNum">    1014 </span>                : 
+<span class="lineNum">    1015 </span><span class="lineNoCov">              0 :                 MAKE_LONG_ZVAL_INCREF(stat_dev, stat_sb-&gt;st_dev);</span>
+<span class="lineNum">    1016 </span><span class="lineNoCov">              0 :                 MAKE_LONG_ZVAL_INCREF(stat_ino, stat_sb-&gt;st_ino);</span>
+<span class="lineNum">    1017 </span><span class="lineNoCov">              0 :                 MAKE_LONG_ZVAL_INCREF(stat_mode, stat_sb-&gt;st_mode);</span>
+<span class="lineNum">    1018 </span><span class="lineNoCov">              0 :                 MAKE_LONG_ZVAL_INCREF(stat_nlink, stat_sb-&gt;st_nlink);</span>
+<span class="lineNum">    1019 </span><span class="lineNoCov">              0 :                 MAKE_LONG_ZVAL_INCREF(stat_uid, stat_sb-&gt;st_uid);</span>
+<span class="lineNum">    1020 </span><span class="lineNoCov">              0 :                 MAKE_LONG_ZVAL_INCREF(stat_gid, stat_sb-&gt;st_gid);</span>
+<span class="lineNum">    1021 </span>                : #ifdef HAVE_ST_RDEV
+<span class="lineNum">    1022 </span><span class="lineNoCov">              0 :                 MAKE_LONG_ZVAL_INCREF(stat_rdev, stat_sb-&gt;st_rdev);</span>
+<span class="lineNum">    1023 </span>                : #else
+<span class="lineNum">    1024 </span>                :                 MAKE_LONG_ZVAL_INCREF(stat_rdev, -1);
+<span class="lineNum">    1025 </span>                : #endif
+<span class="lineNum">    1026 </span><span class="lineNoCov">              0 :                 MAKE_LONG_ZVAL_INCREF(stat_size, stat_sb-&gt;st_size);</span>
+<span class="lineNum">    1027 </span><span class="lineNoCov">              0 :                 MAKE_LONG_ZVAL_INCREF(stat_atime, stat_sb-&gt;st_atime);</span>
+<span class="lineNum">    1028 </span><span class="lineNoCov">              0 :                 MAKE_LONG_ZVAL_INCREF(stat_mtime, stat_sb-&gt;st_mtime);</span>
+<span class="lineNum">    1029 </span><span class="lineNoCov">              0 :                 MAKE_LONG_ZVAL_INCREF(stat_ctime, stat_sb-&gt;st_ctime);</span>
+<span class="lineNum">    1030 </span>                : #ifdef HAVE_ST_BLKSIZE
+<span class="lineNum">    1031 </span><span class="lineNoCov">              0 :                 MAKE_LONG_ZVAL_INCREF(stat_blksize, stat_sb-&gt;st_blksize);</span>
+<span class="lineNum">    1032 </span>                : #else
+<span class="lineNum">    1033 </span>                :                 MAKE_LONG_ZVAL_INCREF(stat_blksize,-1);
+<span class="lineNum">    1034 </span>                : #endif
+<span class="lineNum">    1035 </span>                : #ifdef HAVE_ST_BLOCKS
+<span class="lineNum">    1036 </span><span class="lineNoCov">              0 :                 MAKE_LONG_ZVAL_INCREF(stat_blocks, stat_sb-&gt;st_blocks);</span>
+<span class="lineNum">    1037 </span>                : #else
+<span class="lineNum">    1038 </span>                :                 MAKE_LONG_ZVAL_INCREF(stat_blocks,-1);
+<span class="lineNum">    1039 </span>                : #endif
+<span class="lineNum">    1040 </span>                :                 /* Store numeric indexes in propper order */
+<span class="lineNum">    1041 </span><span class="lineNoCov">              0 :                 zend_hash_next_index_insert(HASH_OF(return_value), (void *)&amp;stat_dev, sizeof(zval *), NULL);</span>
+<span class="lineNum">    1042 </span><span class="lineNoCov">              0 :                 zend_hash_next_index_insert(HASH_OF(return_value), (void *)&amp;stat_ino, sizeof(zval *), NULL);</span>
+<span class="lineNum">    1043 </span><span class="lineNoCov">              0 :                 zend_hash_next_index_insert(HASH_OF(return_value), (void *)&amp;stat_mode, sizeof(zval *), NULL);</span>
+<span class="lineNum">    1044 </span><span class="lineNoCov">              0 :                 zend_hash_next_index_insert(HASH_OF(return_value), (void *)&amp;stat_nlink, sizeof(zval *), NULL);</span>
+<span class="lineNum">    1045 </span><span class="lineNoCov">              0 :                 zend_hash_next_index_insert(HASH_OF(return_value), (void *)&amp;stat_uid, sizeof(zval *), NULL);</span>
+<span class="lineNum">    1046 </span><span class="lineNoCov">              0 :                 zend_hash_next_index_insert(HASH_OF(return_value), (void *)&amp;stat_gid, sizeof(zval *), NULL);</span>
+<span class="lineNum">    1047 </span>                : 
+<span class="lineNum">    1048 </span><span class="lineNoCov">              0 :                 zend_hash_next_index_insert(HASH_OF(return_value), (void *)&amp;stat_rdev, sizeof(zval *), NULL);</span>
+<span class="lineNum">    1049 </span><span class="lineNoCov">              0 :                 zend_hash_next_index_insert(HASH_OF(return_value), (void *)&amp;stat_size, sizeof(zval *), NULL);</span>
+<span class="lineNum">    1050 </span><span class="lineNoCov">              0 :                 zend_hash_next_index_insert(HASH_OF(return_value), (void *)&amp;stat_atime, sizeof(zval *), NULL);</span>
+<span class="lineNum">    1051 </span><span class="lineNoCov">              0 :                 zend_hash_next_index_insert(HASH_OF(return_value), (void *)&amp;stat_mtime, sizeof(zval *), NULL);</span>
+<span class="lineNum">    1052 </span><span class="lineNoCov">              0 :                 zend_hash_next_index_insert(HASH_OF(return_value), (void *)&amp;stat_ctime, sizeof(zval *), NULL);</span>
+<span class="lineNum">    1053 </span><span class="lineNoCov">              0 :                 zend_hash_next_index_insert(HASH_OF(return_value), (void *)&amp;stat_blksize, sizeof(zval *), NULL);</span>
+<span class="lineNum">    1054 </span><span class="lineNoCov">              0 :                 zend_hash_next_index_insert(HASH_OF(return_value), (void *)&amp;stat_blocks, sizeof(zval *), NULL);</span>
+<span class="lineNum">    1055 </span>                : 
+<span class="lineNum">    1056 </span>                :                 /* Store string indexes referencing the same zval*/
+<span class="lineNum">    1057 </span><span class="lineNoCov">              0 :                 zend_hash_update(HASH_OF(return_value), stat_sb_names[0], strlen(stat_sb_names[0])+1, (void *) &amp;stat_dev, sizeof(zval *), NULL);</span>
+<span class="lineNum">    1058 </span><span class="lineNoCov">              0 :                 zend_hash_update(HASH_OF(return_value), stat_sb_names[1], strlen(stat_sb_names[1])+1, (void *) &amp;stat_ino, sizeof(zval *), NULL);</span>
+<span class="lineNum">    1059 </span><span class="lineNoCov">              0 :                 zend_hash_update(HASH_OF(return_value), stat_sb_names[2], strlen(stat_sb_names[2])+1, (void *) &amp;stat_mode, sizeof(zval *), NULL);</span>
+<span class="lineNum">    1060 </span><span class="lineNoCov">              0 :                 zend_hash_update(HASH_OF(return_value), stat_sb_names[3], strlen(stat_sb_names[3])+1, (void *) &amp;stat_nlink, sizeof(zval *), NULL);</span>
+<span class="lineNum">    1061 </span><span class="lineNoCov">              0 :                 zend_hash_update(HASH_OF(return_value), stat_sb_names[4], strlen(stat_sb_names[4])+1, (void *) &amp;stat_uid, sizeof(zval *), NULL);</span>
+<span class="lineNum">    1062 </span><span class="lineNoCov">              0 :                 zend_hash_update(HASH_OF(return_value), stat_sb_names[5], strlen(stat_sb_names[5])+1, (void *) &amp;stat_gid, sizeof(zval *), NULL);</span>
+<span class="lineNum">    1063 </span><span class="lineNoCov">              0 :                 zend_hash_update(HASH_OF(return_value), stat_sb_names[6], strlen(stat_sb_names[6])+1, (void *) &amp;stat_rdev, sizeof(zval *), NULL);</span>
+<span class="lineNum">    1064 </span><span class="lineNoCov">              0 :                 zend_hash_update(HASH_OF(return_value), stat_sb_names[7], strlen(stat_sb_names[7])+1, (void *) &amp;stat_size, sizeof(zval *), NULL);</span>
+<span class="lineNum">    1065 </span><span class="lineNoCov">              0 :                 zend_hash_update(HASH_OF(return_value), stat_sb_names[8], strlen(stat_sb_names[8])+1, (void *) &amp;stat_atime, sizeof(zval *), NULL);</span>
+<span class="lineNum">    1066 </span><span class="lineNoCov">              0 :                 zend_hash_update(HASH_OF(return_value), stat_sb_names[9], strlen(stat_sb_names[9])+1, (void *) &amp;stat_mtime, sizeof(zval *), NULL);</span>
+<span class="lineNum">    1067 </span><span class="lineNoCov">              0 :                 zend_hash_update(HASH_OF(return_value), stat_sb_names[10], strlen(stat_sb_names[10])+1, (void *) &amp;stat_ctime, sizeof(zval *), NULL);</span>
+<span class="lineNum">    1068 </span><span class="lineNoCov">              0 :                 zend_hash_update(HASH_OF(return_value), stat_sb_names[11], strlen(stat_sb_names[11])+1, (void *) &amp;stat_blksize, sizeof(zval *), NULL);</span>
+<span class="lineNum">    1069 </span><span class="lineNoCov">              0 :                 zend_hash_update(HASH_OF(return_value), stat_sb_names[12], strlen(stat_sb_names[12])+1, (void *) &amp;stat_blocks, sizeof(zval *), NULL);</span>
+<span class="lineNum">    1070 </span>                : 
+<span class="lineNum">    1071 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">    1072 </span>                :         }
+<span class="lineNum">    1073 </span><span class="lineNoCov">              0 :         php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Didn't understand stat call&quot;);</span>
+<span class="lineNum">    1074 </span><span class="lineNoCov">              0 :         RETURN_FALSE;</span>
+<span class="lineNum">    1075 </span>                : }
+<span class="lineNum">    1076 </span>                : /* }}} */
+<span class="lineNum">    1077 </span>                : 
+<span class="lineNum">    1078 </span>                : /* another quickie macro to make defining similar functions easier */
+<span class="lineNum">    1079 </span>                : /* {{{ FileFunction(name, funcnum) */
+<span class="lineNum">    1080 </span>                : #define FileFunction(name, funcnum) \
+<span class="lineNum">    1081 </span>                : void name(INTERNAL_FUNCTION_PARAMETERS) { \
+<span class="lineNum">    1082 </span>                :         char *filename; \
+<span class="lineNum">    1083 </span>                :         int filename_len; \
+<span class="lineNum">    1084 </span>                :         \
+<span class="lineNum">    1085 </span>                :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;p&quot;, &amp;filename, &amp;filename_len) == FAILURE) { \
+<span class="lineNum">    1086 </span>                :                 return; \
+<span class="lineNum">    1087 </span>                :         } \
+<span class="lineNum">    1088 </span>                :         \
+<span class="lineNum">    1089 </span>                :         php_stat(filename, (php_stat_len) filename_len, funcnum, return_value TSRMLS_CC); \
+<span class="lineNum">    1090 </span>                : }
+<span class="lineNum">    1091 </span>                : /* }}} */
+<span class="lineNum">    1092 </span>                : 
+<a name="1093"><span class="lineNum">    1093 </span>                : /* {{{ proto int fileperms(string filename)</a>
+<span class="lineNum">    1094 </span>                :    Get file permissions */
+<span class="lineNum">    1095 </span><span class="lineNoCov">              0 : FileFunction(PHP_FN(fileperms), FS_PERMS)</span>
+<span class="lineNum">    1096 </span>                : /* }}} */
+<span class="lineNum">    1097 </span>                : 
+<a name="1098"><span class="lineNum">    1098 </span>                : /* {{{ proto int fileinode(string filename)</a>
+<span class="lineNum">    1099 </span>                :    Get file inode */
+<span class="lineNum">    1100 </span><span class="lineNoCov">              0 : FileFunction(PHP_FN(fileinode), FS_INODE)</span>
+<span class="lineNum">    1101 </span>                : /* }}} */
+<span class="lineNum">    1102 </span>                : 
+<a name="1103"><span class="lineNum">    1103 </span>                : /* {{{ proto int filesize(string filename)</a>
+<span class="lineNum">    1104 </span>                :    Get file size */
+<span class="lineNum">    1105 </span><span class="lineNoCov">              0 : FileFunction(PHP_FN(filesize), FS_SIZE)</span>
+<span class="lineNum">    1106 </span>                : /* }}} */
+<span class="lineNum">    1107 </span>                : 
+<a name="1108"><span class="lineNum">    1108 </span>                : /* {{{ proto int fileowner(string filename)</a>
+<span class="lineNum">    1109 </span>                :    Get file owner */
+<span class="lineNum">    1110 </span><span class="lineNoCov">              0 : FileFunction(PHP_FN(fileowner), FS_OWNER)</span>
+<span class="lineNum">    1111 </span>                : /* }}} */
+<span class="lineNum">    1112 </span>                : 
+<a name="1113"><span class="lineNum">    1113 </span>                : /* {{{ proto int filegroup(string filename)</a>
+<span class="lineNum">    1114 </span>                :    Get file group */
+<span class="lineNum">    1115 </span><span class="lineNoCov">              0 : FileFunction(PHP_FN(filegroup), FS_GROUP)</span>
+<span class="lineNum">    1116 </span>                : /* }}} */
+<span class="lineNum">    1117 </span>                : 
+<a name="1118"><span class="lineNum">    1118 </span>                : /* {{{ proto int fileatime(string filename)</a>
+<span class="lineNum">    1119 </span>                :    Get last access time of file */
+<span class="lineNum">    1120 </span><span class="lineNoCov">              0 : FileFunction(PHP_FN(fileatime), FS_ATIME)</span>
+<span class="lineNum">    1121 </span>                : /* }}} */
+<span class="lineNum">    1122 </span>                : 
+<a name="1123"><span class="lineNum">    1123 </span>                : /* {{{ proto int filemtime(string filename)</a>
+<span class="lineNum">    1124 </span>                :    Get last modification time of file */
+<span class="lineNum">    1125 </span><span class="lineNoCov">              0 : FileFunction(PHP_FN(filemtime), FS_MTIME)</span>
+<span class="lineNum">    1126 </span>                : /* }}} */
+<span class="lineNum">    1127 </span>                : 
+<a name="1128"><span class="lineNum">    1128 </span>                : /* {{{ proto int filectime(string filename)</a>
+<span class="lineNum">    1129 </span>                :    Get inode modification time of file */
+<span class="lineNum">    1130 </span><span class="lineNoCov">              0 : FileFunction(PHP_FN(filectime), FS_CTIME)</span>
+<span class="lineNum">    1131 </span>                : /* }}} */
+<span class="lineNum">    1132 </span>                : 
+<a name="1133"><span class="lineNum">    1133 </span>                : /* {{{ proto string filetype(string filename)</a>
+<span class="lineNum">    1134 </span>                :    Get file type */
+<span class="lineNum">    1135 </span><span class="lineNoCov">              0 : FileFunction(PHP_FN(filetype), FS_TYPE)</span>
+<span class="lineNum">    1136 </span>                : /* }}} */
+<span class="lineNum">    1137 </span>                : 
+<a name="1138"><span class="lineNum">    1138 </span>                : /* {{{ proto bool is_writable(string filename)</a>
+<span class="lineNum">    1139 </span>                :    Returns true if file can be written */
+<span class="lineNum">    1140 </span><span class="lineNoCov">              0 : FileFunction(PHP_FN(is_writable), FS_IS_W)</span>
+<span class="lineNum">    1141 </span>                : /* }}} */
+<span class="lineNum">    1142 </span>                : 
+<a name="1143"><span class="lineNum">    1143 </span>                : /* {{{ proto bool is_readable(string filename)</a>
+<span class="lineNum">    1144 </span>                :    Returns true if file can be read */
+<span class="lineNum">    1145 </span><span class="lineNoCov">              0 : FileFunction(PHP_FN(is_readable), FS_IS_R)</span>
+<span class="lineNum">    1146 </span>                : /* }}} */
+<span class="lineNum">    1147 </span>                : 
+<a name="1148"><span class="lineNum">    1148 </span>                : /* {{{ proto bool is_executable(string filename)</a>
+<span class="lineNum">    1149 </span>                :    Returns true if file is executable */
+<span class="lineNum">    1150 </span><span class="lineCov">              1 : FileFunction(PHP_FN(is_executable), FS_IS_X)</span>
+<span class="lineNum">    1151 </span>                : /* }}} */
+<span class="lineNum">    1152 </span>                : 
+<a name="1153"><span class="lineNum">    1153 </span>                : /* {{{ proto bool is_file(string filename)</a>
+<span class="lineNum">    1154 </span>                :    Returns true if file is a regular file */
+<span class="lineNum">    1155 </span><span class="lineNoCov">              0 : FileFunction(PHP_FN(is_file), FS_IS_FILE)</span>
+<span class="lineNum">    1156 </span>                : /* }}} */
+<span class="lineNum">    1157 </span>                : 
+<a name="1158"><span class="lineNum">    1158 </span>                : /* {{{ proto bool is_dir(string filename)</a>
+<span class="lineNum">    1159 </span>                :    Returns true if file is directory */
+<span class="lineNum">    1160 </span><span class="lineCov">           1183 : FileFunction(PHP_FN(is_dir), FS_IS_DIR)</span>
+<span class="lineNum">    1161 </span>                : /* }}} */
+<span class="lineNum">    1162 </span>                : 
+<a name="1163"><span class="lineNum">    1163 </span>                : /* {{{ proto bool is_link(string filename)</a>
+<span class="lineNum">    1164 </span>                :    Returns true if file is symbolic link */
+<span class="lineNum">    1165 </span><span class="lineNoCov">              0 : FileFunction(PHP_FN(is_link), FS_IS_LINK)</span>
+<span class="lineNum">    1166 </span>                : /* }}} */
+<span class="lineNum">    1167 </span>                : 
+<a name="1168"><span class="lineNum">    1168 </span>                : /* {{{ proto bool file_exists(string filename)</a>
+<span class="lineNum">    1169 </span>                :    Returns true if filename exists */
+<span class="lineNum">    1170 </span><span class="lineCov">              1 : FileFunction(PHP_FN(file_exists), FS_EXISTS)</span>
+<span class="lineNum">    1171 </span>                : /* }}} */
+<span class="lineNum">    1172 </span>                : 
+<a name="1173"><span class="lineNum">    1173 </span>                : /* {{{ proto array lstat(string filename)</a>
+<span class="lineNum">    1174 </span>                :    Give information about a file or symbolic link */
+<span class="lineNum">    1175 </span><span class="lineNoCov">              0 : FileFunction(php_if_lstat, FS_LSTAT)</span>
+<span class="lineNum">    1176 </span>                : /* }}} */
+<span class="lineNum">    1177 </span>                : 
+<a name="1178"><span class="lineNum">    1178 </span>                : /* {{{ proto array stat(string filename)</a>
+<span class="lineNum">    1179 </span>                :    Give information about a file */
+<span class="lineNum">    1180 </span><span class="lineNoCov">              0 : FileFunction(php_if_stat, FS_STAT)</span>
+<span class="lineNum">    1181 </span>                : /* }}} */
+<span class="lineNum">    1182 </span>                : 
+<a name="1183"><span class="lineNum">    1183 </span>                : /* {{{ proto bool realpath_cache_size()</a>
+<span class="lineNum">    1184 </span>                :    Get current size of realpath cache */
+<span class="lineNum">    1185 </span><span class="lineNoCov">              0 : PHP_FUNCTION(realpath_cache_size)</span>
+<span class="lineNum">    1186 </span>                : {
+<span class="lineNum">    1187 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters_none() == FAILURE) {</span>
+<span class="lineNum">    1188 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">    1189 </span>                :         }
+<span class="lineNum">    1190 </span><span class="lineNoCov">              0 :         RETURN_LONG(realpath_cache_size(TSRMLS_C));</span>
+<span class="lineNum">    1191 </span>                : }
+<span class="lineNum">    1192 </span>                : 
+<a name="1193"><span class="lineNum">    1193 </span>                : /* {{{ proto bool realpath_cache_get()</a>
+<span class="lineNum">    1194 </span>                :    Get current size of realpath cache */
+<span class="lineNum">    1195 </span><span class="lineNoCov">              0 : PHP_FUNCTION(realpath_cache_get)</span>
+<span class="lineNum">    1196 </span>                : {
+<span class="lineNum">    1197 </span><span class="lineNoCov">              0 :         realpath_cache_bucket **buckets = realpath_cache_get_buckets(TSRMLS_C), **end = buckets + realpath_cache_max_buckets(TSRMLS_C);</span>
+<span class="lineNum">    1198 </span>                : 
+<span class="lineNum">    1199 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters_none() == FAILURE) {</span>
+<span class="lineNum">    1200 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">    1201 </span>                :         }
+<span class="lineNum">    1202 </span>                : 
+<span class="lineNum">    1203 </span><span class="lineNoCov">              0 :         array_init(return_value);</span>
+<span class="lineNum">    1204 </span><span class="lineNoCov">              0 :         while(buckets &lt; end) {</span>
+<span class="lineNum">    1205 </span><span class="lineNoCov">              0 :                 realpath_cache_bucket *bucket = *buckets;</span>
+<span class="lineNum">    1206 </span><span class="lineNoCov">              0 :                 while(bucket) {</span>
+<span class="lineNum">    1207 </span>                :                         zval *entry;
+<span class="lineNum">    1208 </span><span class="lineNoCov">              0 :                         MAKE_STD_ZVAL(entry);</span>
+<span class="lineNum">    1209 </span><span class="lineNoCov">              0 :                         array_init(entry);</span>
+<span class="lineNum">    1210 </span>                : 
+<span class="lineNum">    1211 </span>                :                         /* bucket-&gt;key is unsigned long */
+<span class="lineNum">    1212 </span><span class="lineNoCov">              0 :                         if (LONG_MAX &gt;= bucket-&gt;key) {</span>
+<span class="lineNum">    1213 </span><span class="lineNoCov">              0 :                                 add_assoc_long(entry, &quot;key&quot;, bucket-&gt;key);</span>
+<span class="lineNum">    1214 </span>                :                         } else {
+<span class="lineNum">    1215 </span><span class="lineNoCov">              0 :                                 add_assoc_double(entry, &quot;key&quot;, (double)bucket-&gt;key);</span>
+<span class="lineNum">    1216 </span>                :                         }
+<span class="lineNum">    1217 </span><span class="lineNoCov">              0 :                         add_assoc_bool(entry, &quot;is_dir&quot;, bucket-&gt;is_dir);</span>
+<span class="lineNum">    1218 </span><span class="lineNoCov">              0 :                         add_assoc_stringl(entry, &quot;realpath&quot;, bucket-&gt;realpath, bucket-&gt;realpath_len, 1);</span>
+<span class="lineNum">    1219 </span><span class="lineNoCov">              0 :                         add_assoc_long(entry, &quot;expires&quot;, bucket-&gt;expires);</span>
+<span class="lineNum">    1220 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">    1221 </span>                :                         add_assoc_bool(entry, &quot;is_rvalid&quot;, bucket-&gt;is_rvalid);
+<span class="lineNum">    1222 </span>                :                         add_assoc_bool(entry, &quot;is_wvalid&quot;, bucket-&gt;is_wvalid);
+<span class="lineNum">    1223 </span>                :                         add_assoc_bool(entry, &quot;is_readable&quot;, bucket-&gt;is_readable);
+<span class="lineNum">    1224 </span>                :                         add_assoc_bool(entry, &quot;is_writable&quot;, bucket-&gt;is_writable);
+<span class="lineNum">    1225 </span>                : #endif
+<span class="lineNum">    1226 </span><span class="lineNoCov">              0 :                         zend_hash_update(Z_ARRVAL_P(return_value), bucket-&gt;path, bucket-&gt;path_len+1, &amp;entry, sizeof(zval *), NULL);</span>
+<span class="lineNum">    1227 </span><span class="lineNoCov">              0 :                         bucket = bucket-&gt;next;</span>
+<span class="lineNum">    1228 </span>                :                 }
+<span class="lineNum">    1229 </span><span class="lineNoCov">              0 :                 buckets++;</span>
+<span class="lineNum">    1230 </span>                :         }
+<span class="lineNum">    1231 </span>                : }
+<span class="lineNum">    1232 </span>                : 
+<span class="lineNum">    1233 </span>                : /*
+<span class="lineNum">    1234 </span>                :  * Local variables:
+<span class="lineNum">    1235 </span>                :  * tab-width: 4
+<span class="lineNum">    1236 </span>                :  * c-basic-offset: 4
+<span class="lineNum">    1237 </span>                :  * End:
+<span class="lineNum">    1238 </span>                :  * vim600: sw=4 ts=4 fdm=marker
+<span class="lineNum">    1239 </span>                :  * vim&lt;600: sw=4 ts=4
+<span class="lineNum">    1240 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

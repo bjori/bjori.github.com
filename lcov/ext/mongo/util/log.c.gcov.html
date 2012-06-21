@@ -1,0 +1,190 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - ext/mongo/util/log.c</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../../index.html">directory</a> - <a href="index.html">ext/mongo/util</a> - log.c (source / <a href="log.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">42</td>
+          <td class="headerCovTableEntry">31</td>
+          <td class="headerCovTableEntryHi">73.8 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">8</td>
+          <td class="headerCovTableEntry">5</td>
+          <td class="headerCovTableEntryLo">62.5 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : // log.c</a>
+<span class="lineNum">       2 </span>                : /**
+<span class="lineNum">       3 </span>                :  *  Copyright 2009-2011 10gen, Inc.
+<span class="lineNum">       4 </span>                :  *
+<span class="lineNum">       5 </span>                :  *  Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+<span class="lineNum">       6 </span>                :  *  you may not use this file except in compliance with the License.
+<span class="lineNum">       7 </span>                :  *  You may obtain a copy of the License at
+<span class="lineNum">       8 </span>                :  *
+<span class="lineNum">       9 </span>                :  *  http://www.apache.org/licenses/LICENSE-2.0
+<span class="lineNum">      10 </span>                :  *
+<span class="lineNum">      11 </span>                :  *  Unless required by applicable law or agreed to in writing, software
+<span class="lineNum">      12 </span>                :  *  distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+<span class="lineNum">      13 </span>                :  *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+<span class="lineNum">      14 </span>                :  *  See the License for the specific language governing permissions and
+<span class="lineNum">      15 </span>                :  *  limitations under the License.
+<span class="lineNum">      16 </span>                :  */
+<span class="lineNum">      17 </span>                : 
+<span class="lineNum">      18 </span>                : #include &lt;php.h&gt;
+<span class="lineNum">      19 </span>                : 
+<span class="lineNum">      20 </span>                : #include &quot;../php_mongo.h&quot;
+<span class="lineNum">      21 </span>                : #include &quot;log.h&quot;
+<span class="lineNum">      22 </span>                : 
+<span class="lineNum">      23 </span>                : zend_class_entry *mongo_ce_Log;
+<span class="lineNum">      24 </span>                : ZEND_EXTERN_MODULE_GLOBALS(mongo);
+<span class="lineNum">      25 </span>                : 
+<span class="lineNum">      26 </span>                : static long set_value(char *setting, zval *return_value TSRMLS_DC);
+<span class="lineNum">      27 </span>                : static void get_value(char *setting, zval *return_value TSRMLS_DC);
+<span class="lineNum">      28 </span>                : 
+<span class="lineNum">      29 </span>                : static zend_function_entry mongo_log_methods[] = {
+<span class="lineNum">      30 </span>                :   PHP_ME(MongoLog, setLevel, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
+<span class="lineNum">      31 </span>                :   PHP_ME(MongoLog, getLevel, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
+<span class="lineNum">      32 </span>                :   PHP_ME(MongoLog, setModule, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
+<span class="lineNum">      33 </span>                :   PHP_ME(MongoLog, getModule, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
+<span class="lineNum">      34 </span>                :   {NULL, NULL, NULL}
+<a name="35"><span class="lineNum">      35 </span>                : };</a>
+<span class="lineNum">      36 </span>                : 
+<span class="lineNum">      37 </span><span class="lineCov">             48 : void mongo_init_MongoLog(TSRMLS_D) {</span>
+<span class="lineNum">      38 </span>                :   zend_class_entry ce;
+<span class="lineNum">      39 </span>                : 
+<span class="lineNum">      40 </span><span class="lineCov">             48 :   INIT_CLASS_ENTRY(ce, &quot;MongoLog&quot;, mongo_log_methods);</span>
+<span class="lineNum">      41 </span><span class="lineCov">             48 :   mongo_ce_Log = zend_register_internal_class(&amp;ce TSRMLS_CC);</span>
+<span class="lineNum">      42 </span>                : 
+<span class="lineNum">      43 </span><span class="lineCov">             48 :   zend_declare_class_constant_long(mongo_ce_Log, &quot;NONE&quot;, strlen(&quot;NONE&quot;), MONGO_LOG_NONE TSRMLS_CC);</span>
+<span class="lineNum">      44 </span>                : 
+<span class="lineNum">      45 </span><span class="lineCov">             48 :   zend_declare_class_constant_long(mongo_ce_Log, &quot;WARNING&quot;, strlen(&quot;WARNING&quot;), MONGO_LOG_WARNING TSRMLS_CC);</span>
+<span class="lineNum">      46 </span><span class="lineCov">             48 :   zend_declare_class_constant_long(mongo_ce_Log, &quot;INFO&quot;, strlen(&quot;INFO&quot;), MONGO_LOG_INFO TSRMLS_CC);</span>
+<span class="lineNum">      47 </span><span class="lineCov">             48 :   zend_declare_class_constant_long(mongo_ce_Log, &quot;FINE&quot;, strlen(&quot;FINE&quot;), MONGO_LOG_FINE TSRMLS_CC);</span>
+<span class="lineNum">      48 </span>                : 
+<span class="lineNum">      49 </span><span class="lineCov">             48 :   zend_declare_class_constant_long(mongo_ce_Log, &quot;RS&quot;, strlen(&quot;RS&quot;), MONGO_LOG_RS TSRMLS_CC);</span>
+<span class="lineNum">      50 </span><span class="lineCov">             48 :   zend_declare_class_constant_long(mongo_ce_Log, &quot;POOL&quot;, strlen(&quot;POOL&quot;), MONGO_LOG_POOL TSRMLS_CC);</span>
+<span class="lineNum">      51 </span><span class="lineCov">             48 :   zend_declare_class_constant_long(mongo_ce_Log, &quot;IO&quot;, strlen(&quot;IO&quot;), MONGO_LOG_IO TSRMLS_CC);</span>
+<span class="lineNum">      52 </span><span class="lineCov">             48 :   zend_declare_class_constant_long(mongo_ce_Log, &quot;SERVER&quot;, strlen(&quot;SERVER&quot;), MONGO_LOG_SERVER TSRMLS_CC);</span>
+<span class="lineNum">      53 </span><span class="lineCov">             48 :   zend_declare_class_constant_long(mongo_ce_Log, &quot;ALL&quot;, strlen(&quot;ALL&quot;), MONGO_LOG_ALL TSRMLS_CC);</span>
+<span class="lineNum">      54 </span>                : 
+<span class="lineNum">      55 </span><span class="lineCov">             48 :   zend_declare_property_long(mongo_ce_Log, &quot;level&quot;, strlen(&quot;level&quot;), 0, ZEND_ACC_PRIVATE|ZEND_ACC_STATIC TSRMLS_CC);</span>
+<span class="lineNum">      56 </span><span class="lineCov">             48 :   zend_declare_property_long(mongo_ce_Log, &quot;module&quot;, strlen(&quot;module&quot;), 0, ZEND_ACC_PRIVATE|ZEND_ACC_STATIC TSRMLS_CC);</span>
+<a name="57"><span class="lineNum">      57 </span><span class="lineCov">             48 : }</span></a>
+<span class="lineNum">      58 </span>                : 
+<span class="lineNum">      59 </span><span class="lineCov">             12 : static long set_value(char *setting, zval *return_value TSRMLS_DC) {</span>
+<span class="lineNum">      60 </span>                :   long value;
+<span class="lineNum">      61 </span>                : 
+<span class="lineNum">      62 </span><span class="lineCov">             12 :   if (zend_parse_parameters(1 TSRMLS_CC, &quot;l&quot;, &amp;value) == FAILURE) {</span>
+<span class="lineNum">      63 </span><span class="lineNoCov">              0 :     return 0;</span>
+<span class="lineNum">      64 </span>                :   }
+<span class="lineNum">      65 </span>                : 
+<span class="lineNum">      66 </span><span class="lineCov">             12 :   zend_update_static_property_long(mongo_ce_Log, setting, strlen(setting), value TSRMLS_CC);</span>
+<span class="lineNum">      67 </span>                : 
+<span class="lineNum">      68 </span><span class="lineCov">             12 :   return value;</span>
+<a name="69"><span class="lineNum">      69 </span>                : }</a>
+<span class="lineNum">      70 </span>                : 
+<span class="lineNum">      71 </span><span class="lineNoCov">              0 : static void get_value(char *setting, zval *return_value TSRMLS_DC) {</span>
+<span class="lineNum">      72 </span>                :   zval *value;
+<span class="lineNum">      73 </span>                : 
+<span class="lineNum">      74 </span><span class="lineNoCov">              0 :   value = zend_read_static_property(mongo_ce_Log, setting, strlen(setting), NOISY TSRMLS_CC);</span>
+<span class="lineNum">      75 </span>                : 
+<span class="lineNum">      76 </span><span class="lineNoCov">              0 :   ZVAL_LONG(return_value, Z_LVAL_P(value));</span>
+<a name="77"><span class="lineNum">      77 </span><span class="lineNoCov">              0 : }</span></a>
+<span class="lineNum">      78 </span>                : 
+<span class="lineNum">      79 </span><span class="lineCov">              6 : PHP_METHOD(MongoLog, setLevel)</span>
+<span class="lineNum">      80 </span>                : {
+<span class="lineNum">      81 </span><span class="lineCov">              6 :         MonGlo(log_level) = set_value(&quot;level&quot;, return_value TSRMLS_CC);</span>
+<a name="82"><span class="lineNum">      82 </span><span class="lineCov">              6 : }</span></a>
+<span class="lineNum">      83 </span>                : 
+<span class="lineNum">      84 </span><span class="lineNoCov">              0 : PHP_METHOD(MongoLog, getLevel)</span>
+<span class="lineNum">      85 </span>                : {
+<span class="lineNum">      86 </span><span class="lineNoCov">              0 :         get_value(&quot;level&quot;, return_value TSRMLS_CC);</span>
+<a name="87"><span class="lineNum">      87 </span><span class="lineNoCov">              0 : }</span></a>
+<span class="lineNum">      88 </span>                : 
+<span class="lineNum">      89 </span><span class="lineCov">              6 : PHP_METHOD(MongoLog, setModule)</span>
+<span class="lineNum">      90 </span>                : {
+<span class="lineNum">      91 </span><span class="lineCov">              6 :         MonGlo(log_module) = set_value(&quot;module&quot;, return_value TSRMLS_CC);</span>
+<a name="92"><span class="lineNum">      92 </span><span class="lineCov">              6 : }</span></a>
+<span class="lineNum">      93 </span>                : 
+<span class="lineNum">      94 </span><span class="lineNoCov">              0 : PHP_METHOD(MongoLog, getModule)</span>
+<span class="lineNum">      95 </span>                : {
+<span class="lineNum">      96 </span><span class="lineNoCov">              0 :         get_value(&quot;module&quot;, return_value TSRMLS_CC);</span>
+<a name="97"><span class="lineNum">      97 </span><span class="lineNoCov">              0 : }</span></a>
+<span class="lineNum">      98 </span>                : 
+<span class="lineNum">      99 </span><span class="lineCov">           4937 : void mongo_log(const int module, const int level TSRMLS_DC, const char *format, ...)</span>
+<span class="lineNum">     100 </span>                : {
+<span class="lineNum">     101 </span><span class="lineCov">           4937 :         if ((module &amp; MonGlo(log_module)) &amp;&amp; (level &amp; MonGlo(log_level))) {</span>
+<span class="lineNum">     102 </span>                :                 va_list args;
+<span class="lineNum">     103 </span>                : 
+<span class="lineNum">     104 </span><span class="lineCov">             18 :                 va_start(args, format);</span>
+<span class="lineNum">     105 </span><span class="lineCov">             18 :                 php_verror(NULL, &quot;&quot;, E_NOTICE, format, args TSRMLS_CC);</span>
+<span class="lineNum">     106 </span><span class="lineCov">             18 :                 va_end(args);</span>
+<span class="lineNum">     107 </span>                :         }
+<span class="lineNum">     108 </span><span class="lineCov">           4937 : }</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

@@ -1,0 +1,454 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - Zend/zend_list.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../index.html">directory</a> - <a href="index.html">Zend</a> - zend_list.c (source / <a href="zend_list.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">149</td>
+          <td class="headerCovTableEntry">87</td>
+          <td class="headerCovTableEntryHi">58.4 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">20</td>
+          <td class="headerCovTableEntry">14</td>
+          <td class="headerCovTableEntryLo">70.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | Zend Engine                                                          |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1998-2012 Zend Technologies Ltd. (http://www.zend.com) |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 2.00 of the Zend license,     |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        | 
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.zend.com/license/2_00.txt.                                |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the Zend license and are unable to  |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@zend.com so we can mail you a copy immediately.              |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Authors: Andi Gutmans &lt;andi@zend.com&gt;                                |
+<span class="lineNum">      16 </span>                :    |          Zeev Suraski &lt;zeev@zend.com&gt;                                |
+<span class="lineNum">      17 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      18 </span>                : */
+<span class="lineNum">      19 </span>                : 
+<span class="lineNum">      20 </span>                : /* $Id$ */
+<span class="lineNum">      21 </span>                : 
+<span class="lineNum">      22 </span>                : /* resource lists */
+<span class="lineNum">      23 </span>                : 
+<span class="lineNum">      24 </span>                : #include &quot;zend.h&quot;
+<span class="lineNum">      25 </span>                : #include &quot;zend_list.h&quot;
+<span class="lineNum">      26 </span>                : #include &quot;zend_API.h&quot;
+<span class="lineNum">      27 </span>                : #include &quot;zend_globals.h&quot;
+<span class="lineNum">      28 </span>                : 
+<span class="lineNum">      29 </span>                : ZEND_API int le_index_ptr;
+<span class="lineNum">      30 </span>                : 
+<span class="lineNum">      31 </span>                : /* true global */
+<span class="lineNum">      32 </span>                : static HashTable list_destructors;
+<a name="33"><span class="lineNum">      33 </span>                : </a>
+<span class="lineNum">      34 </span>                : 
+<span class="lineNum">      35 </span><span class="lineCov">            627 : ZEND_API int zend_list_insert(void *ptr, int type TSRMLS_DC)</span>
+<span class="lineNum">      36 </span>                : {
+<span class="lineNum">      37 </span>                :         int index;
+<span class="lineNum">      38 </span>                :         zend_rsrc_list_entry le;
+<span class="lineNum">      39 </span>                : 
+<span class="lineNum">      40 </span><span class="lineCov">            627 :         le.ptr=ptr;</span>
+<span class="lineNum">      41 </span><span class="lineCov">            627 :         le.type=type;</span>
+<span class="lineNum">      42 </span><span class="lineCov">            627 :         le.refcount=1;</span>
+<span class="lineNum">      43 </span>                : 
+<span class="lineNum">      44 </span><span class="lineCov">            627 :         index = zend_hash_next_free_element(&amp;EG(regular_list));</span>
+<span class="lineNum">      45 </span>                : 
+<span class="lineNum">      46 </span><span class="lineCov">            627 :         zend_hash_index_update(&amp;EG(regular_list), index, (void *) &amp;le, sizeof(zend_rsrc_list_entry), NULL);</span>
+<span class="lineNum">      47 </span><span class="lineCov">            627 :         return index;</span>
+<a name="48"><span class="lineNum">      48 </span>                : }</a>
+<span class="lineNum">      49 </span>                : 
+<span class="lineNum">      50 </span><span class="lineCov">           1387 : ZEND_API int _zend_list_delete(int id TSRMLS_DC)</span>
+<span class="lineNum">      51 </span>                : {
+<span class="lineNum">      52 </span>                :         zend_rsrc_list_entry *le;
+<span class="lineNum">      53 </span>                :         
+<span class="lineNum">      54 </span><span class="lineCov">           1387 :         if (zend_hash_index_find(&amp;EG(regular_list), id, (void **) &amp;le)==SUCCESS) {</span>
+<span class="lineNum">      55 </span>                : /*              printf(&quot;del(%d): %d-&gt;%d\n&quot;, id, le-&gt;refcount, le-&gt;refcount-1); */
+<span class="lineNum">      56 </span><span class="lineCov">            783 :                 if (--le-&gt;refcount&lt;=0) {</span>
+<span class="lineNum">      57 </span><span class="lineCov">            622 :                         return zend_hash_index_del(&amp;EG(regular_list), id);</span>
+<span class="lineNum">      58 </span>                :                 } else {
+<span class="lineNum">      59 </span><span class="lineCov">            161 :                         return SUCCESS;</span>
+<span class="lineNum">      60 </span>                :                 }
+<span class="lineNum">      61 </span>                :         } else {
+<span class="lineNum">      62 </span><span class="lineCov">            604 :                 return FAILURE;</span>
+<span class="lineNum">      63 </span>                :         }
+<span class="lineNum">      64 </span>                : }
+<a name="65"><span class="lineNum">      65 </span>                : </a>
+<span class="lineNum">      66 </span>                : 
+<span class="lineNum">      67 </span><span class="lineCov">           6518 : ZEND_API void *_zend_list_find(int id, int *type TSRMLS_DC)</span>
+<span class="lineNum">      68 </span>                : {
+<span class="lineNum">      69 </span>                :         zend_rsrc_list_entry *le;
+<span class="lineNum">      70 </span>                : 
+<span class="lineNum">      71 </span><span class="lineCov">           6518 :         if (zend_hash_index_find(&amp;EG(regular_list), id, (void **) &amp;le)==SUCCESS) {</span>
+<span class="lineNum">      72 </span><span class="lineCov">           5969 :                 *type = le-&gt;type;</span>
+<span class="lineNum">      73 </span><span class="lineCov">           5969 :                 return le-&gt;ptr;</span>
+<span class="lineNum">      74 </span>                :         } else {
+<span class="lineNum">      75 </span><span class="lineCov">            549 :                 *type = -1;</span>
+<span class="lineNum">      76 </span><span class="lineCov">            549 :                 return NULL;</span>
+<span class="lineNum">      77 </span>                :         }
+<a name="78"><span class="lineNum">      78 </span>                : }</a>
+<span class="lineNum">      79 </span>                : 
+<span class="lineNum">      80 </span><span class="lineCov">            161 : ZEND_API int _zend_list_addref(int id TSRMLS_DC)</span>
+<span class="lineNum">      81 </span>                : {
+<span class="lineNum">      82 </span>                :         zend_rsrc_list_entry *le;
+<span class="lineNum">      83 </span>                :         
+<span class="lineNum">      84 </span><span class="lineCov">            161 :         if (zend_hash_index_find(&amp;EG(regular_list), id, (void **) &amp;le)==SUCCESS) {</span>
+<span class="lineNum">      85 </span>                : /*              printf(&quot;add(%d): %d-&gt;%d\n&quot;, id, le-&gt;refcount, le-&gt;refcount+1); */
+<span class="lineNum">      86 </span><span class="lineCov">            161 :                 le-&gt;refcount++;</span>
+<span class="lineNum">      87 </span><span class="lineCov">            161 :                 return SUCCESS;</span>
+<span class="lineNum">      88 </span>                :         } else {
+<span class="lineNum">      89 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">      90 </span>                :         }
+<span class="lineNum">      91 </span>                : }
+<a name="92"><span class="lineNum">      92 </span>                : </a>
+<span class="lineNum">      93 </span>                : 
+<span class="lineNum">      94 </span><span class="lineCov">            627 : ZEND_API int zend_register_resource(zval *rsrc_result, void *rsrc_pointer, int rsrc_type TSRMLS_DC)</span>
+<span class="lineNum">      95 </span>                : {
+<span class="lineNum">      96 </span>                :         int rsrc_id;
+<span class="lineNum">      97 </span>                : 
+<span class="lineNum">      98 </span><span class="lineCov">            627 :         rsrc_id = zend_list_insert(rsrc_pointer, rsrc_type TSRMLS_CC);</span>
+<span class="lineNum">      99 </span>                :         
+<span class="lineNum">     100 </span><span class="lineCov">            627 :         if (rsrc_result) {</span>
+<span class="lineNum">     101 </span><span class="lineCov">             42 :                 rsrc_result-&gt;value.lval = rsrc_id;</span>
+<span class="lineNum">     102 </span><span class="lineCov">             42 :                 rsrc_result-&gt;type = IS_RESOURCE;</span>
+<span class="lineNum">     103 </span>                :         }
+<span class="lineNum">     104 </span>                : 
+<span class="lineNum">     105 </span><span class="lineCov">            627 :         return rsrc_id;</span>
+<span class="lineNum">     106 </span>                : }
+<a name="107"><span class="lineNum">     107 </span>                : </a>
+<span class="lineNum">     108 </span>                : 
+<span class="lineNum">     109 </span><span class="lineCov">           6518 : ZEND_API void *zend_fetch_resource(zval **passed_id TSRMLS_DC, int default_id, const char *resource_type_name, int *found_resource_type, int num_resource_types, ...)</span>
+<span class="lineNum">     110 </span>                : {
+<span class="lineNum">     111 </span>                :         int id;
+<span class="lineNum">     112 </span>                :         int actual_resource_type;
+<span class="lineNum">     113 </span>                :         void *resource;
+<span class="lineNum">     114 </span>                :         va_list resource_types;
+<span class="lineNum">     115 </span>                :         int i;
+<span class="lineNum">     116 </span>                :         const char *space;
+<span class="lineNum">     117 </span>                :         const char *class_name;
+<span class="lineNum">     118 </span>                : 
+<span class="lineNum">     119 </span><span class="lineCov">           6518 :         if (default_id==-1) { /* use id */</span>
+<span class="lineNum">     120 </span><span class="lineCov">           6518 :                 if (!passed_id) {</span>
+<span class="lineNum">     121 </span><span class="lineNoCov">              0 :                         if (resource_type_name) {</span>
+<span class="lineNum">     122 </span><span class="lineNoCov">              0 :                                 class_name = get_active_class_name(&amp;space TSRMLS_CC);</span>
+<span class="lineNum">     123 </span><span class="lineNoCov">              0 :                                 zend_error(E_WARNING, &quot;%s%s%s(): no %s resource supplied&quot;, class_name, space, get_active_function_name(TSRMLS_C), resource_type_name);</span>
+<span class="lineNum">     124 </span>                :                         }
+<span class="lineNum">     125 </span><span class="lineNoCov">              0 :                         return NULL;</span>
+<span class="lineNum">     126 </span><span class="lineCov">           6518 :                 } else if ((*passed_id)-&gt;type != IS_RESOURCE) {</span>
+<span class="lineNum">     127 </span><span class="lineNoCov">              0 :                         if (resource_type_name) {</span>
+<span class="lineNum">     128 </span><span class="lineNoCov">              0 :                                 class_name = get_active_class_name(&amp;space TSRMLS_CC);</span>
+<span class="lineNum">     129 </span><span class="lineNoCov">              0 :                                 zend_error(E_WARNING, &quot;%s%s%s(): supplied argument is not a valid %s resource&quot;, class_name, space, get_active_function_name(TSRMLS_C), resource_type_name);</span>
+<span class="lineNum">     130 </span>                :                         }
+<span class="lineNum">     131 </span><span class="lineNoCov">              0 :                         return NULL;</span>
+<span class="lineNum">     132 </span>                :                 }
+<span class="lineNum">     133 </span><span class="lineCov">           6518 :                 id = (*passed_id)-&gt;value.lval;</span>
+<span class="lineNum">     134 </span>                :         } else {
+<span class="lineNum">     135 </span><span class="lineNoCov">              0 :                 id = default_id;</span>
+<span class="lineNum">     136 </span>                :         }
+<span class="lineNum">     137 </span>                : 
+<span class="lineNum">     138 </span><span class="lineCov">           6518 :         resource = zend_list_find(id, &amp;actual_resource_type);</span>
+<span class="lineNum">     139 </span><span class="lineCov">           6518 :         if (!resource) {</span>
+<span class="lineNum">     140 </span><span class="lineCov">            549 :                 if (resource_type_name) {</span>
+<span class="lineNum">     141 </span><span class="lineCov">            549 :                         class_name = get_active_class_name(&amp;space TSRMLS_CC);</span>
+<span class="lineNum">     142 </span><span class="lineCov">            549 :                         zend_error(E_WARNING, &quot;%s%s%s(): %d is not a valid %s resource&quot;, class_name, space, get_active_function_name(TSRMLS_C), id, resource_type_name);</span>
+<span class="lineNum">     143 </span>                :                 }
+<span class="lineNum">     144 </span><span class="lineCov">            549 :                 return NULL;</span>
+<span class="lineNum">     145 </span>                :         }
+<span class="lineNum">     146 </span>                : 
+<span class="lineNum">     147 </span><span class="lineCov">           5969 :         va_start(resource_types, num_resource_types);</span>
+<span class="lineNum">     148 </span><span class="lineCov">           5969 :         for (i=0; i&lt;num_resource_types; i++) {</span>
+<span class="lineNum">     149 </span><span class="lineCov">           5969 :                 if (actual_resource_type == va_arg(resource_types, int)) {</span>
+<span class="lineNum">     150 </span><span class="lineCov">           5969 :                         va_end(resource_types);</span>
+<span class="lineNum">     151 </span><span class="lineCov">           5969 :                         if (found_resource_type) {</span>
+<span class="lineNum">     152 </span><span class="lineNoCov">              0 :                                 *found_resource_type = actual_resource_type;</span>
+<span class="lineNum">     153 </span>                :                         }
+<span class="lineNum">     154 </span><span class="lineCov">           5969 :                         return resource;</span>
+<span class="lineNum">     155 </span>                :                 }
+<span class="lineNum">     156 </span>                :         }
+<span class="lineNum">     157 </span><span class="lineNoCov">              0 :         va_end(resource_types);</span>
+<span class="lineNum">     158 </span>                : 
+<span class="lineNum">     159 </span><span class="lineNoCov">              0 :         if (resource_type_name) {</span>
+<span class="lineNum">     160 </span><span class="lineNoCov">              0 :                 class_name = get_active_class_name(&amp;space TSRMLS_CC);</span>
+<span class="lineNum">     161 </span><span class="lineNoCov">              0 :                 zend_error(E_WARNING, &quot;%s%s%s(): supplied resource is not a valid %s resource&quot;, class_name, space, get_active_function_name(TSRMLS_C), resource_type_name);</span>
+<span class="lineNum">     162 </span>                :         }
+<span class="lineNum">     163 </span>                : 
+<span class="lineNum">     164 </span><span class="lineNoCov">              0 :         return NULL;</span>
+<span class="lineNum">     165 </span>                : }
+<a name="166"><span class="lineNum">     166 </span>                : </a>
+<span class="lineNum">     167 </span>                : 
+<span class="lineNum">     168 </span><span class="lineCov">            627 : void list_entry_destructor(void *ptr)</span>
+<span class="lineNum">     169 </span>                : {
+<span class="lineNum">     170 </span><span class="lineCov">            627 :         zend_rsrc_list_entry *le = (zend_rsrc_list_entry *) ptr;</span>
+<span class="lineNum">     171 </span>                :         zend_rsrc_list_dtors_entry *ld;
+<span class="lineNum">     172 </span>                :         TSRMLS_FETCH();
+<span class="lineNum">     173 </span>                :         
+<span class="lineNum">     174 </span><span class="lineCov">            627 :         if (zend_hash_index_find(&amp;list_destructors, le-&gt;type, (void **) &amp;ld)==SUCCESS) {</span>
+<span class="lineNum">     175 </span><span class="lineCov">            627 :                 switch (ld-&gt;type) {</span>
+<span class="lineNum">     176 </span>                :                         case ZEND_RESOURCE_LIST_TYPE_STD:
+<span class="lineNum">     177 </span><span class="lineNoCov">              0 :                                 if (ld-&gt;list_dtor) {</span>
+<span class="lineNum">     178 </span><span class="lineNoCov">              0 :                                         (ld-&gt;list_dtor)(le-&gt;ptr);</span>
+<span class="lineNum">     179 </span>                :                                 }
+<span class="lineNum">     180 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     181 </span>                :                         case ZEND_RESOURCE_LIST_TYPE_EX:
+<span class="lineNum">     182 </span><span class="lineCov">            627 :                                 if (ld-&gt;list_dtor_ex) {</span>
+<span class="lineNum">     183 </span><span class="lineCov">            627 :                                         ld-&gt;list_dtor_ex(le TSRMLS_CC);</span>
+<span class="lineNum">     184 </span>                :                                 }
+<span class="lineNum">     185 </span>                :                                 break;
+<span class="lineNum">     186 </span>                :                         EMPTY_SWITCH_DEFAULT_CASE()
+<span class="lineNum">     187 </span>                :                 }
+<span class="lineNum">     188 </span>                :         } else {
+<span class="lineNum">     189 </span><span class="lineNoCov">              0 :                 zend_error(E_WARNING,&quot;Unknown list entry type in request shutdown (%d)&quot;, le-&gt;type);</span>
+<span class="lineNum">     190 </span>                :         }
+<span class="lineNum">     191 </span><span class="lineCov">            627 : }</span>
+<a name="192"><span class="lineNum">     192 </span>                : </a>
+<span class="lineNum">     193 </span>                : 
+<span class="lineNum">     194 </span><span class="lineCov">             62 : void plist_entry_destructor(void *ptr)</span>
+<span class="lineNum">     195 </span>                : {
+<span class="lineNum">     196 </span><span class="lineCov">             62 :         zend_rsrc_list_entry *le = (zend_rsrc_list_entry *) ptr;</span>
+<span class="lineNum">     197 </span>                :         zend_rsrc_list_dtors_entry *ld;
+<span class="lineNum">     198 </span>                :         TSRMLS_FETCH();
+<span class="lineNum">     199 </span>                : 
+<span class="lineNum">     200 </span><span class="lineCov">             62 :         if (zend_hash_index_find(&amp;list_destructors, le-&gt;type, (void **) &amp;ld)==SUCCESS) {</span>
+<span class="lineNum">     201 </span><span class="lineCov">             62 :                 switch (ld-&gt;type) {</span>
+<span class="lineNum">     202 </span>                :                         case ZEND_RESOURCE_LIST_TYPE_STD:
+<span class="lineNum">     203 </span><span class="lineNoCov">              0 :                                 if (ld-&gt;plist_dtor) {</span>
+<span class="lineNum">     204 </span><span class="lineNoCov">              0 :                                         (ld-&gt;plist_dtor)(le-&gt;ptr);</span>
+<span class="lineNum">     205 </span>                :                                 }
+<span class="lineNum">     206 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     207 </span>                :                         case ZEND_RESOURCE_LIST_TYPE_EX:
+<span class="lineNum">     208 </span><span class="lineCov">             62 :                                 if (ld-&gt;plist_dtor_ex) {</span>
+<span class="lineNum">     209 </span><span class="lineCov">             62 :                                         ld-&gt;plist_dtor_ex(le TSRMLS_CC);</span>
+<span class="lineNum">     210 </span>                :                                 }
+<span class="lineNum">     211 </span>                :                                 break;
+<span class="lineNum">     212 </span>                :                                 EMPTY_SWITCH_DEFAULT_CASE()
+<span class="lineNum">     213 </span>                :                 }
+<span class="lineNum">     214 </span>                :         } else {
+<span class="lineNum">     215 </span><span class="lineNoCov">              0 :                 zend_error(E_WARNING,&quot;Unknown persistent list entry type in module shutdown (%d)&quot;, le-&gt;type);</span>
+<span class="lineNum">     216 </span>                :         }
+<span class="lineNum">     217 </span><span class="lineCov">             62 : }</span>
+<a name="218"><span class="lineNum">     218 </span>                : </a>
+<span class="lineNum">     219 </span>                : 
+<span class="lineNum">     220 </span><span class="lineCov">             48 : int zend_init_rsrc_list(TSRMLS_D)</span>
+<span class="lineNum">     221 </span>                : {
+<span class="lineNum">     222 </span><span class="lineCov">             48 :         if (zend_hash_init(&amp;EG(regular_list), 0, NULL, list_entry_destructor, 0)==SUCCESS) {</span>
+<span class="lineNum">     223 </span><span class="lineCov">             48 :                 EG(regular_list).nNextFreeElement=1;    /* we don't want resource id 0 */</span>
+<span class="lineNum">     224 </span><span class="lineCov">             48 :                 return SUCCESS;</span>
+<span class="lineNum">     225 </span>                :         } else {
+<span class="lineNum">     226 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">     227 </span>                :         }
+<span class="lineNum">     228 </span>                : }
+<a name="229"><span class="lineNum">     229 </span>                : </a>
+<span class="lineNum">     230 </span>                : 
+<span class="lineNum">     231 </span><span class="lineCov">             48 : int zend_init_rsrc_plist(TSRMLS_D)</span>
+<span class="lineNum">     232 </span>                : {
+<span class="lineNum">     233 </span><span class="lineCov">             48 :         return zend_hash_init_ex(&amp;EG(persistent_list), 0, NULL, plist_entry_destructor, 1, 0);</span>
+<span class="lineNum">     234 </span>                : }
+<a name="235"><span class="lineNum">     235 </span>                : </a>
+<span class="lineNum">     236 </span>                : 
+<span class="lineNum">     237 </span><span class="lineCov">             96 : void zend_destroy_rsrc_list(HashTable *ht TSRMLS_DC)</span>
+<span class="lineNum">     238 </span>                : {
+<span class="lineNum">     239 </span><span class="lineCov">             96 :         zend_hash_graceful_reverse_destroy(ht);</span>
+<a name="240"><span class="lineNum">     240 </span><span class="lineCov">             96 : }</span></a>
+<span class="lineNum">     241 </span>                : 
+<span class="lineNum">     242 </span><span class="lineNoCov">              0 : static int clean_module_resource(zend_rsrc_list_entry *le, int *resource_id TSRMLS_DC)</span>
+<span class="lineNum">     243 </span>                : {
+<span class="lineNum">     244 </span><span class="lineNoCov">              0 :         if (le-&gt;type == *resource_id) {</span>
+<span class="lineNum">     245 </span><span class="lineNoCov">              0 :                 return 1;</span>
+<span class="lineNum">     246 </span>                :         } else {
+<span class="lineNum">     247 </span><span class="lineNoCov">              0 :                 return 0;</span>
+<span class="lineNum">     248 </span>                :         }
+<span class="lineNum">     249 </span>                : }
+<a name="250"><span class="lineNum">     250 </span>                : </a>
+<span class="lineNum">     251 </span>                : 
+<span class="lineNum">     252 </span><span class="lineNoCov">              0 : static int zend_clean_module_rsrc_dtors_cb(zend_rsrc_list_dtors_entry *ld, int *module_number TSRMLS_DC)</span>
+<span class="lineNum">     253 </span>                : {
+<span class="lineNum">     254 </span><span class="lineNoCov">              0 :         if (ld-&gt;module_number == *module_number) {</span>
+<span class="lineNum">     255 </span><span class="lineNoCov">              0 :                 zend_hash_apply_with_argument(&amp;EG(persistent_list), (apply_func_arg_t) clean_module_resource, (void *) &amp;(ld-&gt;resource_id) TSRMLS_CC);</span>
+<span class="lineNum">     256 </span><span class="lineNoCov">              0 :                 return 1;</span>
+<span class="lineNum">     257 </span>                :         } else {
+<span class="lineNum">     258 </span><span class="lineNoCov">              0 :                 return 0;</span>
+<span class="lineNum">     259 </span>                :         }
+<span class="lineNum">     260 </span>                : }
+<a name="261"><span class="lineNum">     261 </span>                : </a>
+<span class="lineNum">     262 </span>                : 
+<span class="lineNum">     263 </span><span class="lineNoCov">              0 : void zend_clean_module_rsrc_dtors(int module_number TSRMLS_DC)</span>
+<span class="lineNum">     264 </span>                : {
+<span class="lineNum">     265 </span><span class="lineNoCov">              0 :         zend_hash_apply_with_argument(&amp;list_destructors, (apply_func_arg_t) zend_clean_module_rsrc_dtors_cb, (void *) &amp;module_number TSRMLS_CC);</span>
+<span class="lineNum">     266 </span><span class="lineNoCov">              0 : }</span>
+<a name="267"><span class="lineNum">     267 </span>                : </a>
+<span class="lineNum">     268 </span>                : 
+<span class="lineNum">     269 </span><span class="lineNoCov">              0 : ZEND_API int zend_register_list_destructors(void (*ld)(void *), void (*pld)(void *), int module_number)</span>
+<span class="lineNum">     270 </span>                : {
+<span class="lineNum">     271 </span>                :         zend_rsrc_list_dtors_entry lde;
+<span class="lineNum">     272 </span>                :         
+<span class="lineNum">     273 </span>                : #if 0
+<span class="lineNum">     274 </span>                :         printf(&quot;Registering destructors %d for module %d\n&quot;, list_destructors.nNextFreeElement, module_number);
+<span class="lineNum">     275 </span>                : #endif
+<span class="lineNum">     276 </span>                :         
+<span class="lineNum">     277 </span><span class="lineNoCov">              0 :         lde.list_dtor=(void (*)(void *)) ld;</span>
+<span class="lineNum">     278 </span><span class="lineNoCov">              0 :         lde.plist_dtor=(void (*)(void *)) pld;</span>
+<span class="lineNum">     279 </span><span class="lineNoCov">              0 :         lde.list_dtor_ex = lde.plist_dtor_ex = NULL;</span>
+<span class="lineNum">     280 </span><span class="lineNoCov">              0 :         lde.module_number = module_number;</span>
+<span class="lineNum">     281 </span><span class="lineNoCov">              0 :         lde.resource_id = list_destructors.nNextFreeElement;</span>
+<span class="lineNum">     282 </span><span class="lineNoCov">              0 :         lde.type = ZEND_RESOURCE_LIST_TYPE_STD;</span>
+<span class="lineNum">     283 </span><span class="lineNoCov">              0 :         lde.type_name = NULL;</span>
+<span class="lineNum">     284 </span>                :         
+<span class="lineNum">     285 </span><span class="lineNoCov">              0 :         if (zend_hash_next_index_insert(&amp;list_destructors, (void *) &amp;lde, sizeof(zend_rsrc_list_dtors_entry), NULL)==FAILURE) {</span>
+<span class="lineNum">     286 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">     287 </span>                :         }
+<span class="lineNum">     288 </span><span class="lineNoCov">              0 :         return list_destructors.nNextFreeElement-1;</span>
+<span class="lineNum">     289 </span>                : }
+<a name="290"><span class="lineNum">     290 </span>                : </a>
+<span class="lineNum">     291 </span>                : 
+<span class="lineNum">     292 </span><span class="lineCov">            672 : ZEND_API int zend_register_list_destructors_ex(rsrc_dtor_func_t ld, rsrc_dtor_func_t pld, const char *type_name, int module_number)</span>
+<span class="lineNum">     293 </span>                : {
+<span class="lineNum">     294 </span>                :         zend_rsrc_list_dtors_entry lde;
+<span class="lineNum">     295 </span>                :         
+<span class="lineNum">     296 </span>                : #if 0
+<span class="lineNum">     297 </span>                :         printf(&quot;Registering destructors %d for module %d\n&quot;, list_destructors.nNextFreeElement, module_number);
+<span class="lineNum">     298 </span>                : #endif
+<span class="lineNum">     299 </span>                : 
+<span class="lineNum">     300 </span><span class="lineCov">            672 :         lde.list_dtor = NULL;</span>
+<span class="lineNum">     301 </span><span class="lineCov">            672 :         lde.plist_dtor = NULL;</span>
+<span class="lineNum">     302 </span><span class="lineCov">            672 :         lde.list_dtor_ex = ld;</span>
+<span class="lineNum">     303 </span><span class="lineCov">            672 :         lde.plist_dtor_ex = pld;</span>
+<span class="lineNum">     304 </span><span class="lineCov">            672 :         lde.module_number = module_number;</span>
+<span class="lineNum">     305 </span><span class="lineCov">            672 :         lde.resource_id = list_destructors.nNextFreeElement;</span>
+<span class="lineNum">     306 </span><span class="lineCov">            672 :         lde.type = ZEND_RESOURCE_LIST_TYPE_EX;</span>
+<span class="lineNum">     307 </span><span class="lineCov">            672 :         lde.type_name = type_name;</span>
+<span class="lineNum">     308 </span>                :         
+<span class="lineNum">     309 </span><span class="lineCov">            672 :         if (zend_hash_next_index_insert(&amp;list_destructors, (void *) &amp;lde, sizeof(zend_rsrc_list_dtors_entry), NULL)==FAILURE) {</span>
+<span class="lineNum">     310 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">     311 </span>                :         }
+<span class="lineNum">     312 </span><span class="lineCov">            672 :         return list_destructors.nNextFreeElement-1;</span>
+<a name="313"><span class="lineNum">     313 </span>                : }</a>
+<span class="lineNum">     314 </span>                : 
+<span class="lineNum">     315 </span><span class="lineNoCov">              0 : ZEND_API int zend_fetch_list_dtor_id(char *type_name)</span>
+<span class="lineNum">     316 </span>                : {
+<span class="lineNum">     317 </span>                :         zend_rsrc_list_dtors_entry *lde;
+<span class="lineNum">     318 </span>                :         HashPosition pos;
+<span class="lineNum">     319 </span>                : 
+<span class="lineNum">     320 </span><span class="lineNoCov">              0 :         zend_hash_internal_pointer_reset_ex(&amp;list_destructors, &amp;pos);</span>
+<span class="lineNum">     321 </span><span class="lineNoCov">              0 :         while (zend_hash_get_current_data_ex(&amp;list_destructors, (void **)&amp;lde, &amp;pos) == SUCCESS) {</span>
+<span class="lineNum">     322 </span><span class="lineNoCov">              0 :                 if (lde-&gt;type_name &amp;&amp; (strcmp(type_name, lde-&gt;type_name) == 0)) {</span>
+<span class="lineNum">     323 </span>                : #if 0
+<span class="lineNum">     324 </span>                :                         printf(&quot;Found resource id %d for resource type %s\n&quot;, (*lde).resource_id, type_name);
+<span class="lineNum">     325 </span>                : #endif
+<span class="lineNum">     326 </span><span class="lineNoCov">              0 :                         return lde-&gt;resource_id;</span>
+<span class="lineNum">     327 </span>                :                 }
+<span class="lineNum">     328 </span><span class="lineNoCov">              0 :                 zend_hash_move_forward_ex(&amp;list_destructors, &amp;pos);</span>
+<span class="lineNum">     329 </span>                :         }
+<span class="lineNum">     330 </span>                : 
+<span class="lineNum">     331 </span><span class="lineNoCov">              0 :         return 0;</span>
+<a name="332"><span class="lineNum">     332 </span>                : }</a>
+<span class="lineNum">     333 </span>                : 
+<span class="lineNum">     334 </span><span class="lineCov">             48 : int zend_init_rsrc_list_dtors(void)</span>
+<span class="lineNum">     335 </span>                : {
+<span class="lineNum">     336 </span>                :         int retval;
+<span class="lineNum">     337 </span>                : 
+<span class="lineNum">     338 </span><span class="lineCov">             48 :         retval = zend_hash_init(&amp;list_destructors, 50, NULL, NULL, 1);</span>
+<span class="lineNum">     339 </span><span class="lineCov">             48 :         list_destructors.nNextFreeElement=1;    /* we don't want resource type 0 */</span>
+<span class="lineNum">     340 </span>                : 
+<span class="lineNum">     341 </span><span class="lineCov">             48 :         return retval;</span>
+<span class="lineNum">     342 </span>                : }
+<a name="343"><span class="lineNum">     343 </span>                : </a>
+<span class="lineNum">     344 </span>                : 
+<span class="lineNum">     345 </span><span class="lineCov">             48 : void zend_destroy_rsrc_list_dtors(void)</span>
+<span class="lineNum">     346 </span>                : {
+<span class="lineNum">     347 </span><span class="lineCov">             48 :         zend_hash_destroy(&amp;list_destructors);</span>
+<span class="lineNum">     348 </span><span class="lineCov">             48 : }</span>
+<a name="349"><span class="lineNum">     349 </span>                : </a>
+<span class="lineNum">     350 </span>                : 
+<span class="lineNum">     351 </span><span class="lineNoCov">              0 : const char *zend_rsrc_list_get_rsrc_type(int resource TSRMLS_DC)</span>
+<span class="lineNum">     352 </span>                : {
+<span class="lineNum">     353 </span>                :         zend_rsrc_list_dtors_entry *lde;
+<span class="lineNum">     354 </span>                :         int rsrc_type;
+<span class="lineNum">     355 </span>                : 
+<span class="lineNum">     356 </span><span class="lineNoCov">              0 :         if (!zend_list_find(resource, &amp;rsrc_type))</span>
+<span class="lineNum">     357 </span><span class="lineNoCov">              0 :                 return NULL;</span>
+<span class="lineNum">     358 </span>                : 
+<span class="lineNum">     359 </span><span class="lineNoCov">              0 :         if (zend_hash_index_find(&amp;list_destructors, rsrc_type, (void **) &amp;lde)==SUCCESS) {</span>
+<span class="lineNum">     360 </span><span class="lineNoCov">              0 :                 return lde-&gt;type_name;</span>
+<span class="lineNum">     361 </span>                :         } else {
+<span class="lineNum">     362 </span><span class="lineNoCov">              0 :                 return NULL;</span>
+<span class="lineNum">     363 </span>                :         }
+<span class="lineNum">     364 </span>                : }
+<span class="lineNum">     365 </span>                : 
+<span class="lineNum">     366 </span>                : /*
+<span class="lineNum">     367 </span>                :  * Local variables:
+<span class="lineNum">     368 </span>                :  * tab-width: 4
+<span class="lineNum">     369 </span>                :  * c-basic-offset: 4
+<span class="lineNum">     370 </span>                :  * indent-tabs-mode: t
+<span class="lineNum">     371 </span>                :  * End:
+<span class="lineNum">     372 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

@@ -1,0 +1,178 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - ext/standard/uniqid.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../index.html">directory</a> - <a href="index.html">ext/standard</a> - uniqid.c (source / <a href="uniqid.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">15</td>
+          <td class="headerCovTableEntry">13</td>
+          <td class="headerCovTableEntryHi">86.7 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">1</td>
+          <td class="headerCovTableEntry">1</td>
+          <td class="headerCovTableEntryHi">100.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Author: Stig Sæther Bakken &lt;ssb@php.net&gt;                             |
+<span class="lineNum">      16 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      17 </span>                :  */
+<span class="lineNum">      18 </span>                : 
+<span class="lineNum">      19 </span>                : /* $Id$ */
+<span class="lineNum">      20 </span>                : 
+<span class="lineNum">      21 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">      22 </span>                : 
+<span class="lineNum">      23 </span>                : #include &lt;stdlib.h&gt;
+<span class="lineNum">      24 </span>                : #if HAVE_UNISTD_H
+<span class="lineNum">      25 </span>                : #include &lt;unistd.h&gt;
+<span class="lineNum">      26 </span>                : #endif
+<span class="lineNum">      27 </span>                : 
+<span class="lineNum">      28 </span>                : #include &lt;string.h&gt;
+<span class="lineNum">      29 </span>                : #include &lt;errno.h&gt;
+<span class="lineNum">      30 </span>                : 
+<span class="lineNum">      31 </span>                : #include &lt;stdio.h&gt;
+<span class="lineNum">      32 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">      33 </span>                : #include &quot;win32/time.h&quot;
+<span class="lineNum">      34 </span>                : #else
+<span class="lineNum">      35 </span>                : #include &lt;sys/time.h&gt;
+<span class="lineNum">      36 </span>                : #endif
+<span class="lineNum">      37 </span>                : 
+<span class="lineNum">      38 </span>                : #include &quot;php_lcg.h&quot;
+<span class="lineNum">      39 </span>                : #include &quot;uniqid.h&quot;
+<span class="lineNum">      40 </span>                : 
+<span class="lineNum">      41 </span>                : /* {{{ proto string uniqid([string prefix [, bool more_entropy]])
+<a name="42"><span class="lineNum">      42 </span>                :    Generates a unique ID */</a>
+<span class="lineNum">      43 </span>                : #ifdef HAVE_GETTIMEOFDAY
+<span class="lineNum">      44 </span><span class="lineCov">             42 : PHP_FUNCTION(uniqid)</span>
+<span class="lineNum">      45 </span>                : {
+<span class="lineNum">      46 </span><span class="lineCov">             42 :         char *prefix = &quot;&quot;;</span>
+<span class="lineNum">      47 </span>                : #if defined(__CYGWIN__)
+<span class="lineNum">      48 </span>                :         zend_bool more_entropy = 1;
+<span class="lineNum">      49 </span>                : #else
+<span class="lineNum">      50 </span><span class="lineCov">             42 :         zend_bool more_entropy = 0;</span>
+<span class="lineNum">      51 </span>                : #endif
+<span class="lineNum">      52 </span>                :         char *uniqid;
+<span class="lineNum">      53 </span><span class="lineCov">             42 :         int sec, usec, prefix_len = 0;</span>
+<span class="lineNum">      54 </span>                :         struct timeval tv;
+<span class="lineNum">      55 </span>                : 
+<span class="lineNum">      56 </span><span class="lineCov">             42 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;|sb&quot;, &amp;prefix, &amp;prefix_len,</span>
+<span class="lineNum">      57 </span>                :                                                           &amp;more_entropy)) {
+<span class="lineNum">      58 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">      59 </span>                :         }
+<span class="lineNum">      60 </span>                : 
+<span class="lineNum">      61 </span>                : #if HAVE_USLEEP &amp;&amp; !defined(PHP_WIN32)
+<span class="lineNum">      62 </span><span class="lineCov">             42 :         if (!more_entropy) {</span>
+<span class="lineNum">      63 </span>                : #if defined(__CYGWIN__)
+<span class="lineNum">      64 </span>                :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;You must use 'more entropy' under CYGWIN&quot;);
+<span class="lineNum">      65 </span>                :                 RETURN_FALSE;
+<span class="lineNum">      66 </span>                : #else
+<span class="lineNum">      67 </span><span class="lineCov">             42 :                 usleep(1);</span>
+<span class="lineNum">      68 </span>                : #endif
+<span class="lineNum">      69 </span>                :         }
+<span class="lineNum">      70 </span>                : #endif
+<span class="lineNum">      71 </span><span class="lineCov">             42 :         gettimeofday((struct timeval *) &amp;tv, (struct timezone *) NULL);</span>
+<span class="lineNum">      72 </span><span class="lineCov">             42 :         sec = (int) tv.tv_sec;</span>
+<span class="lineNum">      73 </span><span class="lineCov">             42 :         usec = (int) (tv.tv_usec % 0x100000);</span>
+<span class="lineNum">      74 </span>                : 
+<span class="lineNum">      75 </span>                :         /* The max value usec can have is 0xF423F, so we use only five hex
+<span class="lineNum">      76 </span>                :          * digits for usecs.
+<span class="lineNum">      77 </span>                :          */
+<span class="lineNum">      78 </span><span class="lineCov">             42 :         if (more_entropy) {</span>
+<span class="lineNum">      79 </span><span class="lineNoCov">              0 :                 spprintf(&amp;uniqid, 0, &quot;%s%08x%05x%.8F&quot;, prefix, sec, usec, php_combined_lcg(TSRMLS_C) * 10);</span>
+<span class="lineNum">      80 </span>                :         } else {
+<span class="lineNum">      81 </span><span class="lineCov">             42 :                 spprintf(&amp;uniqid, 0, &quot;%s%08x%05x&quot;, prefix, sec, usec);</span>
+<span class="lineNum">      82 </span>                :         }
+<span class="lineNum">      83 </span>                : 
+<span class="lineNum">      84 </span><span class="lineCov">             42 :         RETURN_STRING(uniqid, 0);</span>
+<span class="lineNum">      85 </span>                : }
+<span class="lineNum">      86 </span>                : #endif
+<span class="lineNum">      87 </span>                : /* }}} */
+<span class="lineNum">      88 </span>                : 
+<span class="lineNum">      89 </span>                : /*
+<span class="lineNum">      90 </span>                :  * Local variables:
+<span class="lineNum">      91 </span>                :  * tab-width: 4
+<span class="lineNum">      92 </span>                :  * c-basic-offset: 4
+<span class="lineNum">      93 </span>                :  * End:
+<span class="lineNum">      94 </span>                :  * vim600: sw=4 ts=4 fdm=marker
+<span class="lineNum">      95 </span>                :  * vim&lt;600: sw=4 ts=4
+<span class="lineNum">      96 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

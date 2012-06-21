@@ -1,0 +1,863 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - ext/standard/url.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../index.html">directory</a> - <a href="index.html">ext/standard</a> - url.c (source / <a href="url.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">365</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">16</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Author: Jim Winstead &lt;jimw@php.net&gt;                                  |
+<span class="lineNum">      16 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      17 </span>                :  */
+<span class="lineNum">      18 </span>                : /* $Id$ */
+<span class="lineNum">      19 </span>                : 
+<span class="lineNum">      20 </span>                : #include &lt;stdlib.h&gt;
+<span class="lineNum">      21 </span>                : #include &lt;string.h&gt;
+<span class="lineNum">      22 </span>                : #include &lt;ctype.h&gt;
+<span class="lineNum">      23 </span>                : #include &lt;sys/types.h&gt;
+<span class="lineNum">      24 </span>                : 
+<span class="lineNum">      25 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">      26 </span>                : 
+<span class="lineNum">      27 </span>                : #include &quot;url.h&quot;
+<span class="lineNum">      28 </span>                : #include &quot;file.h&quot;
+<span class="lineNum">      29 </span>                : #ifdef _OSD_POSIX
+<span class="lineNum">      30 </span>                : #ifndef APACHE
+<span class="lineNum">      31 </span>                : #error On this EBCDIC platform, PHP is only supported as an Apache module.
+<span class="lineNum">      32 </span>                : #else /*APACHE*/
+<span class="lineNum">      33 </span>                : #ifndef CHARSET_EBCDIC
+<span class="lineNum">      34 </span>                : #define CHARSET_EBCDIC /* this machine uses EBCDIC, not ASCII! */
+<span class="lineNum">      35 </span>                : #endif
+<span class="lineNum">      36 </span>                : #include &quot;ebcdic.h&quot;
+<span class="lineNum">      37 </span>                : #endif /*APACHE*/
+<span class="lineNum">      38 </span>                : #endif /*_OSD_POSIX*/
+<span class="lineNum">      39 </span>                : 
+<a name="40"><span class="lineNum">      40 </span>                : /* {{{ free_url</a>
+<span class="lineNum">      41 </span>                :  */
+<span class="lineNum">      42 </span><span class="lineNoCov">              0 : PHPAPI void php_url_free(php_url *theurl)</span>
+<span class="lineNum">      43 </span>                : {
+<span class="lineNum">      44 </span><span class="lineNoCov">              0 :         if (theurl-&gt;scheme)</span>
+<span class="lineNum">      45 </span><span class="lineNoCov">              0 :                 efree(theurl-&gt;scheme);</span>
+<span class="lineNum">      46 </span><span class="lineNoCov">              0 :         if (theurl-&gt;user)</span>
+<span class="lineNum">      47 </span><span class="lineNoCov">              0 :                 efree(theurl-&gt;user);</span>
+<span class="lineNum">      48 </span><span class="lineNoCov">              0 :         if (theurl-&gt;pass)</span>
+<span class="lineNum">      49 </span><span class="lineNoCov">              0 :                 efree(theurl-&gt;pass);</span>
+<span class="lineNum">      50 </span><span class="lineNoCov">              0 :         if (theurl-&gt;host)</span>
+<span class="lineNum">      51 </span><span class="lineNoCov">              0 :                 efree(theurl-&gt;host);</span>
+<span class="lineNum">      52 </span><span class="lineNoCov">              0 :         if (theurl-&gt;path)</span>
+<span class="lineNum">      53 </span><span class="lineNoCov">              0 :                 efree(theurl-&gt;path);</span>
+<span class="lineNum">      54 </span><span class="lineNoCov">              0 :         if (theurl-&gt;query)</span>
+<span class="lineNum">      55 </span><span class="lineNoCov">              0 :                 efree(theurl-&gt;query);</span>
+<span class="lineNum">      56 </span><span class="lineNoCov">              0 :         if (theurl-&gt;fragment)</span>
+<span class="lineNum">      57 </span><span class="lineNoCov">              0 :                 efree(theurl-&gt;fragment);</span>
+<span class="lineNum">      58 </span><span class="lineNoCov">              0 :         efree(theurl);</span>
+<span class="lineNum">      59 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">      60 </span>                : /* }}} */
+<span class="lineNum">      61 </span>                : 
+<a name="62"><span class="lineNum">      62 </span>                : /* {{{ php_replace_controlchars</a>
+<span class="lineNum">      63 </span>                :  */
+<span class="lineNum">      64 </span><span class="lineNoCov">              0 : PHPAPI char *php_replace_controlchars_ex(char *str, int len)</span>
+<span class="lineNum">      65 </span>                : {
+<span class="lineNum">      66 </span><span class="lineNoCov">              0 :         unsigned char *s = (unsigned char *)str;</span>
+<span class="lineNum">      67 </span><span class="lineNoCov">              0 :         unsigned char *e = (unsigned char *)str + len;</span>
+<span class="lineNum">      68 </span>                :         
+<span class="lineNum">      69 </span><span class="lineNoCov">              0 :         if (!str) {</span>
+<span class="lineNum">      70 </span><span class="lineNoCov">              0 :                 return (NULL);</span>
+<span class="lineNum">      71 </span>                :         }
+<span class="lineNum">      72 </span>                :         
+<span class="lineNum">      73 </span><span class="lineNoCov">              0 :         while (s &lt; e) {</span>
+<span class="lineNum">      74 </span>                :             
+<span class="lineNum">      75 </span><span class="lineNoCov">              0 :                 if (iscntrl(*s)) {</span>
+<span class="lineNum">      76 </span><span class="lineNoCov">              0 :                         *s='_';</span>
+<span class="lineNum">      77 </span>                :                 }       
+<span class="lineNum">      78 </span><span class="lineNoCov">              0 :                 s++;</span>
+<span class="lineNum">      79 </span>                :         }
+<span class="lineNum">      80 </span>                :         
+<span class="lineNum">      81 </span><span class="lineNoCov">              0 :         return (str);</span>
+<span class="lineNum">      82 </span>                : } 
+<a name="83"><span class="lineNum">      83 </span>                : /* }}} */</a>
+<span class="lineNum">      84 </span>                : 
+<span class="lineNum">      85 </span><span class="lineNoCov">              0 : PHPAPI char *php_replace_controlchars(char *str)</span>
+<span class="lineNum">      86 </span>                : {
+<span class="lineNum">      87 </span><span class="lineNoCov">              0 :         return php_replace_controlchars_ex(str, strlen(str));</span>
+<a name="88"><span class="lineNum">      88 </span>                : } </a>
+<span class="lineNum">      89 </span>                : 
+<span class="lineNum">      90 </span><span class="lineNoCov">              0 : PHPAPI php_url *php_url_parse(char const *str)</span>
+<span class="lineNum">      91 </span>                : {
+<span class="lineNum">      92 </span><span class="lineNoCov">              0 :         return php_url_parse_ex(str, strlen(str));</span>
+<span class="lineNum">      93 </span>                : }
+<span class="lineNum">      94 </span>                : 
+<a name="95"><span class="lineNum">      95 </span>                : /* {{{ php_url_parse</a>
+<span class="lineNum">      96 </span>                :  */
+<span class="lineNum">      97 </span><span class="lineNoCov">              0 : PHPAPI php_url *php_url_parse_ex(char const *str, int length)</span>
+<span class="lineNum">      98 </span>                : {
+<span class="lineNum">      99 </span>                :         char port_buf[6];
+<span class="lineNum">     100 </span><span class="lineNoCov">              0 :         php_url *ret = ecalloc(1, sizeof(php_url));</span>
+<span class="lineNum">     101 </span>                :         char const *s, *e, *p, *pp, *ue;
+<span class="lineNum">     102 </span>                :                 
+<span class="lineNum">     103 </span><span class="lineNoCov">              0 :         s = str;</span>
+<span class="lineNum">     104 </span><span class="lineNoCov">              0 :         ue = s + length;</span>
+<span class="lineNum">     105 </span>                : 
+<span class="lineNum">     106 </span>                :         /* parse scheme */
+<span class="lineNum">     107 </span><span class="lineNoCov">              0 :         if ((e = memchr(s, ':', length)) &amp;&amp; (e - s)) {</span>
+<span class="lineNum">     108 </span>                :                 /* validate scheme */
+<span class="lineNum">     109 </span><span class="lineNoCov">              0 :                 p = s;</span>
+<span class="lineNum">     110 </span><span class="lineNoCov">              0 :                 while (p &lt; e) {</span>
+<span class="lineNum">     111 </span>                :                         /* scheme = 1*[ lowalpha | digit | &quot;+&quot; | &quot;-&quot; | &quot;.&quot; ] */
+<span class="lineNum">     112 </span><span class="lineNoCov">              0 :                         if (!isalpha(*p) &amp;&amp; !isdigit(*p) &amp;&amp; *p != '+' &amp;&amp; *p != '.' &amp;&amp; *p != '-') {</span>
+<span class="lineNum">     113 </span><span class="lineNoCov">              0 :                                 if (e + 1 &lt; ue) {</span>
+<span class="lineNum">     114 </span><span class="lineNoCov">              0 :                                         goto parse_port;</span>
+<span class="lineNum">     115 </span>                :                                 } else {
+<span class="lineNum">     116 </span><span class="lineNoCov">              0 :                                         goto just_path;</span>
+<span class="lineNum">     117 </span>                :                                 }
+<span class="lineNum">     118 </span>                :                         }
+<span class="lineNum">     119 </span><span class="lineNoCov">              0 :                         p++;</span>
+<span class="lineNum">     120 </span>                :                 }
+<span class="lineNum">     121 </span>                :         
+<span class="lineNum">     122 </span><span class="lineNoCov">              0 :                 if (*(e + 1) == '\0') { /* only scheme is available */</span>
+<span class="lineNum">     123 </span><span class="lineNoCov">              0 :                         ret-&gt;scheme = estrndup(s, (e - s));</span>
+<span class="lineNum">     124 </span><span class="lineNoCov">              0 :                         php_replace_controlchars_ex(ret-&gt;scheme, (e - s));</span>
+<span class="lineNum">     125 </span><span class="lineNoCov">              0 :                         goto end;</span>
+<span class="lineNum">     126 </span>                :                 }
+<span class="lineNum">     127 </span>                : 
+<span class="lineNum">     128 </span>                :                 /* 
+<span class="lineNum">     129 </span>                :                  * certain schemas like mailto: and zlib: may not have any / after them
+<span class="lineNum">     130 </span>                :                  * this check ensures we support those.
+<span class="lineNum">     131 </span>                :                  */
+<span class="lineNum">     132 </span><span class="lineNoCov">              0 :                 if (*(e+1) != '/') {</span>
+<span class="lineNum">     133 </span>                :                         /* check if the data we get is a port this allows us to 
+<span class="lineNum">     134 </span>                :                          * correctly parse things like a.com:80
+<span class="lineNum">     135 </span>                :                          */
+<span class="lineNum">     136 </span><span class="lineNoCov">              0 :                         p = e + 1;</span>
+<span class="lineNum">     137 </span><span class="lineNoCov">              0 :                         while (isdigit(*p)) {</span>
+<span class="lineNum">     138 </span><span class="lineNoCov">              0 :                                 p++;</span>
+<span class="lineNum">     139 </span>                :                         }
+<span class="lineNum">     140 </span>                :                         
+<span class="lineNum">     141 </span><span class="lineNoCov">              0 :                         if ((*p == '\0' || *p == '/') &amp;&amp; (p - e) &lt; 7) {</span>
+<span class="lineNum">     142 </span><span class="lineNoCov">              0 :                                 goto parse_port;</span>
+<span class="lineNum">     143 </span>                :                         }
+<span class="lineNum">     144 </span>                :                         
+<span class="lineNum">     145 </span><span class="lineNoCov">              0 :                         ret-&gt;scheme = estrndup(s, (e-s));</span>
+<span class="lineNum">     146 </span><span class="lineNoCov">              0 :                         php_replace_controlchars_ex(ret-&gt;scheme, (e - s));</span>
+<span class="lineNum">     147 </span>                :                         
+<span class="lineNum">     148 </span><span class="lineNoCov">              0 :                         length -= ++e - s;</span>
+<span class="lineNum">     149 </span><span class="lineNoCov">              0 :                         s = e;</span>
+<span class="lineNum">     150 </span><span class="lineNoCov">              0 :                         goto just_path;</span>
+<span class="lineNum">     151 </span>                :                 } else {
+<span class="lineNum">     152 </span><span class="lineNoCov">              0 :                         ret-&gt;scheme = estrndup(s, (e-s));</span>
+<span class="lineNum">     153 </span><span class="lineNoCov">              0 :                         php_replace_controlchars_ex(ret-&gt;scheme, (e - s));</span>
+<span class="lineNum">     154 </span>                :                 
+<span class="lineNum">     155 </span><span class="lineNoCov">              0 :                         if (*(e+2) == '/') {</span>
+<span class="lineNum">     156 </span><span class="lineNoCov">              0 :                                 s = e + 3;</span>
+<span class="lineNum">     157 </span><span class="lineNoCov">              0 :                                 if (!strncasecmp(&quot;file&quot;, ret-&gt;scheme, sizeof(&quot;file&quot;))) {</span>
+<span class="lineNum">     158 </span><span class="lineNoCov">              0 :                                         if (*(e + 3) == '/') {</span>
+<span class="lineNum">     159 </span>                :                                                 /* support windows drive letters as in:
+<span class="lineNum">     160 </span>                :                                                    file:///c:/somedir/file.txt
+<span class="lineNum">     161 </span>                :                                                 */
+<span class="lineNum">     162 </span><span class="lineNoCov">              0 :                                                 if (*(e + 5) == ':') {</span>
+<span class="lineNum">     163 </span><span class="lineNoCov">              0 :                                                         s = e + 4;</span>
+<span class="lineNum">     164 </span>                :                                                 }
+<span class="lineNum">     165 </span><span class="lineNoCov">              0 :                                                 goto nohost;</span>
+<span class="lineNum">     166 </span>                :                                         }
+<span class="lineNum">     167 </span>                :                                 }
+<span class="lineNum">     168 </span>                :                         } else {
+<span class="lineNum">     169 </span><span class="lineNoCov">              0 :                                 if (!strncasecmp(&quot;file&quot;, ret-&gt;scheme, sizeof(&quot;file&quot;))) {</span>
+<span class="lineNum">     170 </span><span class="lineNoCov">              0 :                                         s = e + 1;</span>
+<span class="lineNum">     171 </span><span class="lineNoCov">              0 :                                         goto nohost;</span>
+<span class="lineNum">     172 </span>                :                                 } else {
+<span class="lineNum">     173 </span><span class="lineNoCov">              0 :                                         length -= ++e - s;</span>
+<span class="lineNum">     174 </span><span class="lineNoCov">              0 :                                         s = e;</span>
+<span class="lineNum">     175 </span><span class="lineNoCov">              0 :                                         goto just_path;</span>
+<span class="lineNum">     176 </span>                :                                 }       
+<span class="lineNum">     177 </span>                :                         }
+<span class="lineNum">     178 </span>                :                 }       
+<span class="lineNum">     179 </span><span class="lineNoCov">              0 :         } else if (e) { /* no scheme; starts with colon: look for port */</span>
+<span class="lineNum">     180 </span>                :                 parse_port:
+<span class="lineNum">     181 </span><span class="lineNoCov">              0 :                 p = e + 1;</span>
+<span class="lineNum">     182 </span><span class="lineNoCov">              0 :                 pp = p;</span>
+<span class="lineNum">     183 </span>                : 
+<span class="lineNum">     184 </span><span class="lineNoCov">              0 :                 while (pp-p &lt; 6 &amp;&amp; isdigit(*pp)) {</span>
+<span class="lineNum">     185 </span><span class="lineNoCov">              0 :                         pp++;</span>
+<span class="lineNum">     186 </span>                :                 }
+<span class="lineNum">     187 </span>                : 
+<span class="lineNum">     188 </span><span class="lineNoCov">              0 :                 if (pp - p &gt; 0 &amp;&amp; pp - p &lt; 6 &amp;&amp; (*pp == '/' || *pp == '\0')) {</span>
+<span class="lineNum">     189 </span>                :                         long port;
+<span class="lineNum">     190 </span><span class="lineNoCov">              0 :                         memcpy(port_buf, p, (pp - p));</span>
+<span class="lineNum">     191 </span><span class="lineNoCov">              0 :                         port_buf[pp - p] = '\0';</span>
+<span class="lineNum">     192 </span><span class="lineNoCov">              0 :                         port = strtol(port_buf, NULL, 10);</span>
+<span class="lineNum">     193 </span><span class="lineNoCov">              0 :                         if (port &gt; 0 &amp;&amp; port &lt;= 65535) {</span>
+<span class="lineNum">     194 </span><span class="lineNoCov">              0 :                                 ret-&gt;port = (unsigned short) port;</span>
+<span class="lineNum">     195 </span>                :                         } else {
+<span class="lineNum">     196 </span><span class="lineNoCov">              0 :                                 STR_FREE(ret-&gt;scheme);</span>
+<span class="lineNum">     197 </span><span class="lineNoCov">              0 :                                 efree(ret);</span>
+<span class="lineNum">     198 </span><span class="lineNoCov">              0 :                                 return NULL;</span>
+<span class="lineNum">     199 </span>                :                         }
+<span class="lineNum">     200 </span><span class="lineNoCov">              0 :                 } else if (p == pp &amp;&amp; *pp == '\0') {</span>
+<span class="lineNum">     201 </span><span class="lineNoCov">              0 :                         STR_FREE(ret-&gt;scheme);</span>
+<span class="lineNum">     202 </span><span class="lineNoCov">              0 :                         efree(ret);</span>
+<span class="lineNum">     203 </span><span class="lineNoCov">              0 :                         return NULL;</span>
+<span class="lineNum">     204 </span>                :                 } else {
+<span class="lineNum">     205 </span>                :                         goto just_path;
+<span class="lineNum">     206 </span>                :                 }
+<span class="lineNum">     207 </span>                :         } else {
+<span class="lineNum">     208 </span>                :                 just_path:
+<span class="lineNum">     209 </span><span class="lineNoCov">              0 :                 ue = s + length;</span>
+<span class="lineNum">     210 </span><span class="lineNoCov">              0 :                 goto nohost;</span>
+<span class="lineNum">     211 </span>                :         }
+<span class="lineNum">     212 </span>                :         
+<span class="lineNum">     213 </span><span class="lineNoCov">              0 :         e = ue;</span>
+<span class="lineNum">     214 </span>                :         
+<span class="lineNum">     215 </span><span class="lineNoCov">              0 :         if (!(p = memchr(s, '/', (ue - s)))) {</span>
+<span class="lineNum">     216 </span>                :                 char *query, *fragment;
+<span class="lineNum">     217 </span>                : 
+<span class="lineNum">     218 </span><span class="lineNoCov">              0 :                 query = memchr(s, '?', (ue - s));</span>
+<span class="lineNum">     219 </span><span class="lineNoCov">              0 :                 fragment = memchr(s, '#', (ue - s));</span>
+<span class="lineNum">     220 </span>                : 
+<span class="lineNum">     221 </span><span class="lineNoCov">              0 :                 if (query &amp;&amp; fragment) {</span>
+<span class="lineNum">     222 </span><span class="lineNoCov">              0 :                         if (query &gt; fragment) {</span>
+<span class="lineNum">     223 </span><span class="lineNoCov">              0 :                                 p = e = fragment;</span>
+<span class="lineNum">     224 </span>                :                         } else {
+<span class="lineNum">     225 </span><span class="lineNoCov">              0 :                                 p = e = query;</span>
+<span class="lineNum">     226 </span>                :                         }
+<span class="lineNum">     227 </span><span class="lineNoCov">              0 :                 } else if (query) {</span>
+<span class="lineNum">     228 </span><span class="lineNoCov">              0 :                         p = e = query;</span>
+<span class="lineNum">     229 </span><span class="lineNoCov">              0 :                 } else if (fragment) {</span>
+<span class="lineNum">     230 </span><span class="lineNoCov">              0 :                         p = e = fragment;</span>
+<span class="lineNum">     231 </span>                :                 }
+<span class="lineNum">     232 </span>                :         } else {
+<span class="lineNum">     233 </span><span class="lineNoCov">              0 :                 e = p;</span>
+<span class="lineNum">     234 </span>                :         }       
+<span class="lineNum">     235 </span>                :                 
+<span class="lineNum">     236 </span>                :         /* check for login and password */
+<span class="lineNum">     237 </span><span class="lineNoCov">              0 :         if ((p = zend_memrchr(s, '@', (e-s)))) {</span>
+<span class="lineNum">     238 </span><span class="lineNoCov">              0 :                 if ((pp = memchr(s, ':', (p-s)))) {</span>
+<span class="lineNum">     239 </span><span class="lineNoCov">              0 :                         if ((pp-s) &gt; 0) {</span>
+<span class="lineNum">     240 </span><span class="lineNoCov">              0 :                                 ret-&gt;user = estrndup(s, (pp-s));</span>
+<span class="lineNum">     241 </span><span class="lineNoCov">              0 :                                 php_replace_controlchars_ex(ret-&gt;user, (pp - s));</span>
+<span class="lineNum">     242 </span>                :                         }       
+<span class="lineNum">     243 </span>                :                 
+<span class="lineNum">     244 </span><span class="lineNoCov">              0 :                         pp++;</span>
+<span class="lineNum">     245 </span><span class="lineNoCov">              0 :                         if (p-pp &gt; 0) {</span>
+<span class="lineNum">     246 </span><span class="lineNoCov">              0 :                                 ret-&gt;pass = estrndup(pp, (p-pp));</span>
+<span class="lineNum">     247 </span><span class="lineNoCov">              0 :                                 php_replace_controlchars_ex(ret-&gt;pass, (p-pp));</span>
+<span class="lineNum">     248 </span>                :                         }       
+<span class="lineNum">     249 </span>                :                 } else {
+<span class="lineNum">     250 </span><span class="lineNoCov">              0 :                         ret-&gt;user = estrndup(s, (p-s));</span>
+<span class="lineNum">     251 </span><span class="lineNoCov">              0 :                         php_replace_controlchars_ex(ret-&gt;user, (p-s));</span>
+<span class="lineNum">     252 </span>                :                 }
+<span class="lineNum">     253 </span>                :                 
+<span class="lineNum">     254 </span><span class="lineNoCov">              0 :                 s = p + 1;</span>
+<span class="lineNum">     255 </span>                :         }
+<span class="lineNum">     256 </span>                : 
+<span class="lineNum">     257 </span>                :         /* check for port */
+<span class="lineNum">     258 </span><span class="lineNoCov">              0 :         if (*s == '[' &amp;&amp; *(e-1) == ']') {</span>
+<span class="lineNum">     259 </span>                :                 /* Short circuit portscan, 
+<span class="lineNum">     260 </span>                :                    we're dealing with an 
+<span class="lineNum">     261 </span>                :                    IPv6 embedded address */
+<span class="lineNum">     262 </span><span class="lineNoCov">              0 :                 p = s;</span>
+<span class="lineNum">     263 </span>                :         } else {
+<span class="lineNum">     264 </span>                :                 /* memrchr is a GNU specific extension
+<span class="lineNum">     265 </span>                :                    Emulate for wide compatability */
+<span class="lineNum">     266 </span><span class="lineNoCov">              0 :                 for(p = e; *p != ':' &amp;&amp; p &gt;= s; p--);</span>
+<span class="lineNum">     267 </span>                :         }
+<span class="lineNum">     268 </span>                : 
+<span class="lineNum">     269 </span><span class="lineNoCov">              0 :         if (p &gt;= s &amp;&amp; *p == ':') {</span>
+<span class="lineNum">     270 </span><span class="lineNoCov">              0 :                 if (!ret-&gt;port) {</span>
+<span class="lineNum">     271 </span><span class="lineNoCov">              0 :                         p++;</span>
+<span class="lineNum">     272 </span><span class="lineNoCov">              0 :                         if (e-p &gt; 5) { /* port cannot be longer then 5 characters */</span>
+<span class="lineNum">     273 </span><span class="lineNoCov">              0 :                                 STR_FREE(ret-&gt;scheme);</span>
+<span class="lineNum">     274 </span><span class="lineNoCov">              0 :                                 STR_FREE(ret-&gt;user);</span>
+<span class="lineNum">     275 </span><span class="lineNoCov">              0 :                                 STR_FREE(ret-&gt;pass);</span>
+<span class="lineNum">     276 </span><span class="lineNoCov">              0 :                                 efree(ret);</span>
+<span class="lineNum">     277 </span><span class="lineNoCov">              0 :                                 return NULL;</span>
+<span class="lineNum">     278 </span><span class="lineNoCov">              0 :                         } else if (e - p &gt; 0) {</span>
+<span class="lineNum">     279 </span>                :                                 long port;
+<span class="lineNum">     280 </span><span class="lineNoCov">              0 :                                 memcpy(port_buf, p, (e - p));</span>
+<span class="lineNum">     281 </span><span class="lineNoCov">              0 :                                 port_buf[e - p] = '\0';</span>
+<span class="lineNum">     282 </span><span class="lineNoCov">              0 :                                 port = strtol(port_buf, NULL, 10);</span>
+<span class="lineNum">     283 </span><span class="lineNoCov">              0 :                                 if (port &gt; 0 &amp;&amp; port &lt;= 65535) {</span>
+<span class="lineNum">     284 </span><span class="lineNoCov">              0 :                                         ret-&gt;port = (unsigned short)port;</span>
+<span class="lineNum">     285 </span>                :                                 } else {
+<span class="lineNum">     286 </span><span class="lineNoCov">              0 :                                         STR_FREE(ret-&gt;scheme);</span>
+<span class="lineNum">     287 </span><span class="lineNoCov">              0 :                                         STR_FREE(ret-&gt;user);</span>
+<span class="lineNum">     288 </span><span class="lineNoCov">              0 :                                         STR_FREE(ret-&gt;pass);</span>
+<span class="lineNum">     289 </span><span class="lineNoCov">              0 :                                         efree(ret);</span>
+<span class="lineNum">     290 </span><span class="lineNoCov">              0 :                                         return NULL;</span>
+<span class="lineNum">     291 </span>                :                                 }
+<span class="lineNum">     292 </span>                :                         }
+<span class="lineNum">     293 </span><span class="lineNoCov">              0 :                         p--;</span>
+<span class="lineNum">     294 </span>                :                 }       
+<span class="lineNum">     295 </span>                :         } else {
+<span class="lineNum">     296 </span><span class="lineNoCov">              0 :                 p = e;</span>
+<span class="lineNum">     297 </span>                :         }
+<span class="lineNum">     298 </span>                :         
+<span class="lineNum">     299 </span>                :         /* check if we have a valid host, if we don't reject the string as url */
+<span class="lineNum">     300 </span><span class="lineNoCov">              0 :         if ((p-s) &lt; 1) {</span>
+<span class="lineNum">     301 </span><span class="lineNoCov">              0 :                 STR_FREE(ret-&gt;scheme);</span>
+<span class="lineNum">     302 </span><span class="lineNoCov">              0 :                 STR_FREE(ret-&gt;user);</span>
+<span class="lineNum">     303 </span><span class="lineNoCov">              0 :                 STR_FREE(ret-&gt;pass);</span>
+<span class="lineNum">     304 </span><span class="lineNoCov">              0 :                 efree(ret);</span>
+<span class="lineNum">     305 </span><span class="lineNoCov">              0 :                 return NULL;</span>
+<span class="lineNum">     306 </span>                :         }
+<span class="lineNum">     307 </span>                : 
+<span class="lineNum">     308 </span><span class="lineNoCov">              0 :         ret-&gt;host = estrndup(s, (p-s));</span>
+<span class="lineNum">     309 </span><span class="lineNoCov">              0 :         php_replace_controlchars_ex(ret-&gt;host, (p - s));</span>
+<span class="lineNum">     310 </span>                :         
+<span class="lineNum">     311 </span><span class="lineNoCov">              0 :         if (e == ue) {</span>
+<span class="lineNum">     312 </span><span class="lineNoCov">              0 :                 return ret;</span>
+<span class="lineNum">     313 </span>                :         }
+<span class="lineNum">     314 </span>                :         
+<span class="lineNum">     315 </span><span class="lineNoCov">              0 :         s = e;</span>
+<span class="lineNum">     316 </span>                :         
+<span class="lineNum">     317 </span>                :         nohost:
+<span class="lineNum">     318 </span>                :         
+<span class="lineNum">     319 </span><span class="lineNoCov">              0 :         if ((p = memchr(s, '?', (ue - s)))) {</span>
+<span class="lineNum">     320 </span><span class="lineNoCov">              0 :                 pp = strchr(s, '#');</span>
+<span class="lineNum">     321 </span>                : 
+<span class="lineNum">     322 </span><span class="lineNoCov">              0 :                 if (pp &amp;&amp; pp &lt; p) {</span>
+<span class="lineNum">     323 </span><span class="lineNoCov">              0 :                         if (pp - s) {</span>
+<span class="lineNum">     324 </span><span class="lineNoCov">              0 :                                 ret-&gt;path = estrndup(s, (pp-s));</span>
+<span class="lineNum">     325 </span><span class="lineNoCov">              0 :                                 php_replace_controlchars_ex(ret-&gt;path, (pp - s));</span>
+<span class="lineNum">     326 </span>                :                         }
+<span class="lineNum">     327 </span><span class="lineNoCov">              0 :                         p = pp;</span>
+<span class="lineNum">     328 </span><span class="lineNoCov">              0 :                         goto label_parse;</span>
+<span class="lineNum">     329 </span>                :                 }
+<span class="lineNum">     330 </span>                :         
+<span class="lineNum">     331 </span><span class="lineNoCov">              0 :                 if (p - s) {</span>
+<span class="lineNum">     332 </span><span class="lineNoCov">              0 :                         ret-&gt;path = estrndup(s, (p-s));</span>
+<span class="lineNum">     333 </span><span class="lineNoCov">              0 :                         php_replace_controlchars_ex(ret-&gt;path, (p - s));</span>
+<span class="lineNum">     334 </span>                :                 }       
+<span class="lineNum">     335 </span>                :         
+<span class="lineNum">     336 </span><span class="lineNoCov">              0 :                 if (pp) {</span>
+<span class="lineNum">     337 </span><span class="lineNoCov">              0 :                         if (pp - ++p) { </span>
+<span class="lineNum">     338 </span><span class="lineNoCov">              0 :                                 ret-&gt;query = estrndup(p, (pp-p));</span>
+<span class="lineNum">     339 </span><span class="lineNoCov">              0 :                                 php_replace_controlchars_ex(ret-&gt;query, (pp - p));</span>
+<span class="lineNum">     340 </span>                :                         }
+<span class="lineNum">     341 </span><span class="lineNoCov">              0 :                         p = pp;</span>
+<span class="lineNum">     342 </span><span class="lineNoCov">              0 :                         goto label_parse;</span>
+<span class="lineNum">     343 </span><span class="lineNoCov">              0 :                 } else if (++p - ue) {</span>
+<span class="lineNum">     344 </span><span class="lineNoCov">              0 :                         ret-&gt;query = estrndup(p, (ue-p));</span>
+<span class="lineNum">     345 </span><span class="lineNoCov">              0 :                         php_replace_controlchars_ex(ret-&gt;query, (ue - p));</span>
+<span class="lineNum">     346 </span>                :                 }
+<span class="lineNum">     347 </span><span class="lineNoCov">              0 :         } else if ((p = memchr(s, '#', (ue - s)))) {</span>
+<span class="lineNum">     348 </span><span class="lineNoCov">              0 :                 if (p - s) {</span>
+<span class="lineNum">     349 </span><span class="lineNoCov">              0 :                         ret-&gt;path = estrndup(s, (p-s));</span>
+<span class="lineNum">     350 </span><span class="lineNoCov">              0 :                         php_replace_controlchars_ex(ret-&gt;path, (p - s));</span>
+<span class="lineNum">     351 </span>                :                 }       
+<span class="lineNum">     352 </span>                :                 
+<span class="lineNum">     353 </span>                :                 label_parse:
+<span class="lineNum">     354 </span><span class="lineNoCov">              0 :                 p++;</span>
+<span class="lineNum">     355 </span>                :                 
+<span class="lineNum">     356 </span><span class="lineNoCov">              0 :                 if (ue - p) {</span>
+<span class="lineNum">     357 </span><span class="lineNoCov">              0 :                         ret-&gt;fragment = estrndup(p, (ue-p));</span>
+<span class="lineNum">     358 </span><span class="lineNoCov">              0 :                         php_replace_controlchars_ex(ret-&gt;fragment, (ue - p));</span>
+<span class="lineNum">     359 </span>                :                 }       
+<span class="lineNum">     360 </span>                :         } else {
+<span class="lineNum">     361 </span><span class="lineNoCov">              0 :                 ret-&gt;path = estrndup(s, (ue-s));</span>
+<span class="lineNum">     362 </span><span class="lineNoCov">              0 :                 php_replace_controlchars_ex(ret-&gt;path, (ue - s));</span>
+<span class="lineNum">     363 </span>                :         }
+<span class="lineNum">     364 </span>                : end:
+<span class="lineNum">     365 </span><span class="lineNoCov">              0 :         return ret;</span>
+<span class="lineNum">     366 </span>                : }
+<span class="lineNum">     367 </span>                : /* }}} */
+<span class="lineNum">     368 </span>                : 
+<a name="369"><span class="lineNum">     369 </span>                : /* {{{ proto mixed parse_url(string url, [int url_component])</a>
+<span class="lineNum">     370 </span>                :    Parse a URL and return its components */
+<span class="lineNum">     371 </span><span class="lineNoCov">              0 : PHP_FUNCTION(parse_url)</span>
+<span class="lineNum">     372 </span>                : {
+<span class="lineNum">     373 </span>                :         char *str;
+<span class="lineNum">     374 </span>                :         int str_len;
+<span class="lineNum">     375 </span>                :         php_url *resource;
+<span class="lineNum">     376 </span><span class="lineNoCov">              0 :         long key = -1;</span>
+<span class="lineNum">     377 </span>                : 
+<span class="lineNum">     378 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;s|l&quot;, &amp;str, &amp;str_len, &amp;key) == FAILURE) {</span>
+<span class="lineNum">     379 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     380 </span>                :         }
+<span class="lineNum">     381 </span>                : 
+<span class="lineNum">     382 </span><span class="lineNoCov">              0 :         resource = php_url_parse_ex(str, str_len);</span>
+<span class="lineNum">     383 </span><span class="lineNoCov">              0 :         if (resource == NULL) {</span>
+<span class="lineNum">     384 </span>                :                 /* @todo Find a method to determine why php_url_parse_ex() failed */
+<span class="lineNum">     385 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     386 </span>                :         }
+<span class="lineNum">     387 </span>                : 
+<span class="lineNum">     388 </span><span class="lineNoCov">              0 :         if (key &gt; -1) {</span>
+<span class="lineNum">     389 </span><span class="lineNoCov">              0 :                 switch (key) {</span>
+<span class="lineNum">     390 </span>                :                         case PHP_URL_SCHEME:
+<span class="lineNum">     391 </span><span class="lineNoCov">              0 :                                 if (resource-&gt;scheme != NULL) RETVAL_STRING(resource-&gt;scheme, 1);</span>
+<span class="lineNum">     392 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     393 </span>                :                         case PHP_URL_HOST:
+<span class="lineNum">     394 </span><span class="lineNoCov">              0 :                                 if (resource-&gt;host != NULL) RETVAL_STRING(resource-&gt;host, 1);</span>
+<span class="lineNum">     395 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     396 </span>                :                         case PHP_URL_PORT:
+<span class="lineNum">     397 </span><span class="lineNoCov">              0 :                                 if (resource-&gt;port != 0) RETVAL_LONG(resource-&gt;port);</span>
+<span class="lineNum">     398 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     399 </span>                :                         case PHP_URL_USER:
+<span class="lineNum">     400 </span><span class="lineNoCov">              0 :                                 if (resource-&gt;user != NULL) RETVAL_STRING(resource-&gt;user, 1);</span>
+<span class="lineNum">     401 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     402 </span>                :                         case PHP_URL_PASS:
+<span class="lineNum">     403 </span><span class="lineNoCov">              0 :                                 if (resource-&gt;pass != NULL) RETVAL_STRING(resource-&gt;pass, 1);</span>
+<span class="lineNum">     404 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     405 </span>                :                         case PHP_URL_PATH:
+<span class="lineNum">     406 </span><span class="lineNoCov">              0 :                                 if (resource-&gt;path != NULL) RETVAL_STRING(resource-&gt;path, 1);</span>
+<span class="lineNum">     407 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     408 </span>                :                         case PHP_URL_QUERY:
+<span class="lineNum">     409 </span><span class="lineNoCov">              0 :                                 if (resource-&gt;query != NULL) RETVAL_STRING(resource-&gt;query, 1);</span>
+<span class="lineNum">     410 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     411 </span>                :                         case PHP_URL_FRAGMENT:
+<span class="lineNum">     412 </span><span class="lineNoCov">              0 :                                 if (resource-&gt;fragment != NULL) RETVAL_STRING(resource-&gt;fragment, 1);</span>
+<span class="lineNum">     413 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     414 </span>                :                         default:
+<span class="lineNum">     415 </span><span class="lineNoCov">              0 :                                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Invalid URL component identifier %ld&quot;, key);</span>
+<span class="lineNum">     416 </span><span class="lineNoCov">              0 :                                 RETVAL_FALSE;</span>
+<span class="lineNum">     417 </span>                :                 }
+<span class="lineNum">     418 </span><span class="lineNoCov">              0 :                 goto done;</span>
+<span class="lineNum">     419 </span>                :         }
+<span class="lineNum">     420 </span>                : 
+<span class="lineNum">     421 </span>                :         /* allocate an array for return */
+<span class="lineNum">     422 </span><span class="lineNoCov">              0 :         array_init(return_value);</span>
+<span class="lineNum">     423 </span>                : 
+<span class="lineNum">     424 </span>                :     /* add the various elements to the array */
+<span class="lineNum">     425 </span><span class="lineNoCov">              0 :         if (resource-&gt;scheme != NULL)</span>
+<span class="lineNum">     426 </span><span class="lineNoCov">              0 :                 add_assoc_string(return_value, &quot;scheme&quot;, resource-&gt;scheme, 1);</span>
+<span class="lineNum">     427 </span><span class="lineNoCov">              0 :         if (resource-&gt;host != NULL)</span>
+<span class="lineNum">     428 </span><span class="lineNoCov">              0 :                 add_assoc_string(return_value, &quot;host&quot;, resource-&gt;host, 1);</span>
+<span class="lineNum">     429 </span><span class="lineNoCov">              0 :         if (resource-&gt;port != 0)</span>
+<span class="lineNum">     430 </span><span class="lineNoCov">              0 :                 add_assoc_long(return_value, &quot;port&quot;, resource-&gt;port);</span>
+<span class="lineNum">     431 </span><span class="lineNoCov">              0 :         if (resource-&gt;user != NULL)</span>
+<span class="lineNum">     432 </span><span class="lineNoCov">              0 :                 add_assoc_string(return_value, &quot;user&quot;, resource-&gt;user, 1);</span>
+<span class="lineNum">     433 </span><span class="lineNoCov">              0 :         if (resource-&gt;pass != NULL)</span>
+<span class="lineNum">     434 </span><span class="lineNoCov">              0 :                 add_assoc_string(return_value, &quot;pass&quot;, resource-&gt;pass, 1);</span>
+<span class="lineNum">     435 </span><span class="lineNoCov">              0 :         if (resource-&gt;path != NULL)</span>
+<span class="lineNum">     436 </span><span class="lineNoCov">              0 :                 add_assoc_string(return_value, &quot;path&quot;, resource-&gt;path, 1);</span>
+<span class="lineNum">     437 </span><span class="lineNoCov">              0 :         if (resource-&gt;query != NULL)</span>
+<span class="lineNum">     438 </span><span class="lineNoCov">              0 :                 add_assoc_string(return_value, &quot;query&quot;, resource-&gt;query, 1);</span>
+<span class="lineNum">     439 </span><span class="lineNoCov">              0 :         if (resource-&gt;fragment != NULL)</span>
+<span class="lineNum">     440 </span><span class="lineNoCov">              0 :                 add_assoc_string(return_value, &quot;fragment&quot;, resource-&gt;fragment, 1);</span>
+<span class="lineNum">     441 </span>                : done:   
+<span class="lineNum">     442 </span><span class="lineNoCov">              0 :         php_url_free(resource);</span>
+<span class="lineNum">     443 </span>                : }
+<span class="lineNum">     444 </span>                : /* }}} */
+<span class="lineNum">     445 </span>                : 
+<a name="446"><span class="lineNum">     446 </span>                : /* {{{ php_htoi</a>
+<span class="lineNum">     447 </span>                :  */
+<span class="lineNum">     448 </span><span class="lineNoCov">              0 : static int php_htoi(char *s)</span>
+<span class="lineNum">     449 </span>                : {
+<span class="lineNum">     450 </span>                :         int value;
+<span class="lineNum">     451 </span>                :         int c;
+<span class="lineNum">     452 </span>                : 
+<span class="lineNum">     453 </span><span class="lineNoCov">              0 :         c = ((unsigned char *)s)[0];</span>
+<span class="lineNum">     454 </span><span class="lineNoCov">              0 :         if (isupper(c))</span>
+<span class="lineNum">     455 </span><span class="lineNoCov">              0 :                 c = tolower(c);</span>
+<span class="lineNum">     456 </span><span class="lineNoCov">              0 :         value = (c &gt;= '0' &amp;&amp; c &lt;= '9' ? c - '0' : c - 'a' + 10) * 16;</span>
+<span class="lineNum">     457 </span>                : 
+<span class="lineNum">     458 </span><span class="lineNoCov">              0 :         c = ((unsigned char *)s)[1];</span>
+<span class="lineNum">     459 </span><span class="lineNoCov">              0 :         if (isupper(c))</span>
+<span class="lineNum">     460 </span><span class="lineNoCov">              0 :                 c = tolower(c);</span>
+<span class="lineNum">     461 </span><span class="lineNoCov">              0 :         value += c &gt;= '0' &amp;&amp; c &lt;= '9' ? c - '0' : c - 'a' + 10;</span>
+<span class="lineNum">     462 </span>                : 
+<span class="lineNum">     463 </span><span class="lineNoCov">              0 :         return (value);</span>
+<span class="lineNum">     464 </span>                : }
+<span class="lineNum">     465 </span>                : /* }}} */
+<span class="lineNum">     466 </span>                : 
+<span class="lineNum">     467 </span>                : /* rfc1738:
+<span class="lineNum">     468 </span>                : 
+<span class="lineNum">     469 </span>                :    ...The characters &quot;;&quot;,
+<span class="lineNum">     470 </span>                :    &quot;/&quot;, &quot;?&quot;, &quot;:&quot;, &quot;@&quot;, &quot;=&quot; and &quot;&amp;&quot; are the characters which may be
+<span class="lineNum">     471 </span>                :    reserved for special meaning within a scheme...
+<span class="lineNum">     472 </span>                : 
+<span class="lineNum">     473 </span>                :    ...Thus, only alphanumerics, the special characters &quot;$-_.+!*'(),&quot;, and
+<span class="lineNum">     474 </span>                :    reserved characters used for their reserved purposes may be used
+<span class="lineNum">     475 </span>                :    unencoded within a URL...
+<span class="lineNum">     476 </span>                : 
+<span class="lineNum">     477 </span>                :    For added safety, we only leave -_. unencoded.
+<span class="lineNum">     478 </span>                :  */
+<span class="lineNum">     479 </span>                : 
+<span class="lineNum">     480 </span>                : static unsigned char hexchars[] = &quot;0123456789ABCDEF&quot;;
+<span class="lineNum">     481 </span>                : 
+<a name="482"><span class="lineNum">     482 </span>                : /* {{{ php_url_encode</a>
+<span class="lineNum">     483 </span>                :  */
+<span class="lineNum">     484 </span><span class="lineNoCov">              0 : PHPAPI char *php_url_encode(char const *s, int len, int *new_length)</span>
+<span class="lineNum">     485 </span>                : {
+<span class="lineNum">     486 </span>                :         register unsigned char c;
+<span class="lineNum">     487 </span>                :         unsigned char *to, *start;
+<span class="lineNum">     488 </span>                :         unsigned char const *from, *end;
+<span class="lineNum">     489 </span>                :         
+<span class="lineNum">     490 </span><span class="lineNoCov">              0 :         from = (unsigned char *)s;</span>
+<span class="lineNum">     491 </span><span class="lineNoCov">              0 :         end = (unsigned char *)s + len;</span>
+<span class="lineNum">     492 </span><span class="lineNoCov">              0 :         start = to = (unsigned char *) safe_emalloc(3, len, 1);</span>
+<span class="lineNum">     493 </span>                : 
+<span class="lineNum">     494 </span><span class="lineNoCov">              0 :         while (from &lt; end) {</span>
+<span class="lineNum">     495 </span><span class="lineNoCov">              0 :                 c = *from++;</span>
+<span class="lineNum">     496 </span>                : 
+<span class="lineNum">     497 </span><span class="lineNoCov">              0 :                 if (c == ' ') {</span>
+<span class="lineNum">     498 </span><span class="lineNoCov">              0 :                         *to++ = '+';</span>
+<span class="lineNum">     499 </span>                : #ifndef CHARSET_EBCDIC
+<span class="lineNum">     500 </span><span class="lineNoCov">              0 :                 } else if ((c &lt; '0' &amp;&amp; c != '-' &amp;&amp; c != '.') ||</span>
+<span class="lineNum">     501 </span>                :                                    (c &lt; 'A' &amp;&amp; c &gt; '9') ||
+<span class="lineNum">     502 </span>                :                                    (c &gt; 'Z' &amp;&amp; c &lt; 'a' &amp;&amp; c != '_') ||
+<span class="lineNum">     503 </span>                :                                    (c &gt; 'z')) {
+<span class="lineNum">     504 </span><span class="lineNoCov">              0 :                         to[0] = '%';</span>
+<span class="lineNum">     505 </span><span class="lineNoCov">              0 :                         to[1] = hexchars[c &gt;&gt; 4];</span>
+<span class="lineNum">     506 </span><span class="lineNoCov">              0 :                         to[2] = hexchars[c &amp; 15];</span>
+<span class="lineNum">     507 </span><span class="lineNoCov">              0 :                         to += 3;</span>
+<span class="lineNum">     508 </span>                : #else /*CHARSET_EBCDIC*/
+<span class="lineNum">     509 </span>                :                 } else if (!isalnum(c) &amp;&amp; strchr(&quot;_-.&quot;, c) == NULL) {
+<span class="lineNum">     510 </span>                :                         /* Allow only alphanumeric chars and '_', '-', '.'; escape the rest */
+<span class="lineNum">     511 </span>                :                         to[0] = '%';
+<span class="lineNum">     512 </span>                :                         to[1] = hexchars[os_toascii[c] &gt;&gt; 4];
+<span class="lineNum">     513 </span>                :                         to[2] = hexchars[os_toascii[c] &amp; 15];
+<span class="lineNum">     514 </span>                :                         to += 3;
+<span class="lineNum">     515 </span>                : #endif /*CHARSET_EBCDIC*/
+<span class="lineNum">     516 </span>                :                 } else {
+<span class="lineNum">     517 </span><span class="lineNoCov">              0 :                         *to++ = c;</span>
+<span class="lineNum">     518 </span>                :                 }
+<span class="lineNum">     519 </span>                :         }
+<span class="lineNum">     520 </span><span class="lineNoCov">              0 :         *to = 0;</span>
+<span class="lineNum">     521 </span><span class="lineNoCov">              0 :         if (new_length) {</span>
+<span class="lineNum">     522 </span><span class="lineNoCov">              0 :                 *new_length = to - start;</span>
+<span class="lineNum">     523 </span>                :         }
+<span class="lineNum">     524 </span><span class="lineNoCov">              0 :         return (char *) start;</span>
+<span class="lineNum">     525 </span>                : }
+<span class="lineNum">     526 </span>                : /* }}} */
+<span class="lineNum">     527 </span>                : 
+<a name="528"><span class="lineNum">     528 </span>                : /* {{{ proto string urlencode(string str)</a>
+<span class="lineNum">     529 </span>                :    URL-encodes string */
+<span class="lineNum">     530 </span><span class="lineNoCov">              0 : PHP_FUNCTION(urlencode)</span>
+<span class="lineNum">     531 </span>                : {
+<span class="lineNum">     532 </span>                :         char *in_str, *out_str;
+<span class="lineNum">     533 </span>                :         int in_str_len, out_str_len;
+<span class="lineNum">     534 </span>                : 
+<span class="lineNum">     535 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;s&quot;, &amp;in_str,</span>
+<span class="lineNum">     536 </span>                :                                                           &amp;in_str_len) == FAILURE) {
+<span class="lineNum">     537 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     538 </span>                :         }
+<span class="lineNum">     539 </span>                : 
+<span class="lineNum">     540 </span><span class="lineNoCov">              0 :         out_str = php_url_encode(in_str, in_str_len, &amp;out_str_len);</span>
+<span class="lineNum">     541 </span><span class="lineNoCov">              0 :         RETURN_STRINGL(out_str, out_str_len, 0);</span>
+<span class="lineNum">     542 </span>                : }
+<span class="lineNum">     543 </span>                : /* }}} */
+<span class="lineNum">     544 </span>                : 
+<a name="545"><span class="lineNum">     545 </span>                : /* {{{ proto string urldecode(string str)</a>
+<span class="lineNum">     546 </span>                :    Decodes URL-encoded string */
+<span class="lineNum">     547 </span><span class="lineNoCov">              0 : PHP_FUNCTION(urldecode)</span>
+<span class="lineNum">     548 </span>                : {
+<span class="lineNum">     549 </span>                :         char *in_str, *out_str;
+<span class="lineNum">     550 </span>                :         int in_str_len, out_str_len;
+<span class="lineNum">     551 </span>                : 
+<span class="lineNum">     552 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;s&quot;, &amp;in_str,</span>
+<span class="lineNum">     553 </span>                :                                                           &amp;in_str_len) == FAILURE) {
+<span class="lineNum">     554 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     555 </span>                :         }
+<span class="lineNum">     556 </span>                : 
+<span class="lineNum">     557 </span><span class="lineNoCov">              0 :         out_str = estrndup(in_str, in_str_len);</span>
+<span class="lineNum">     558 </span><span class="lineNoCov">              0 :         out_str_len = php_url_decode(out_str, in_str_len);</span>
+<span class="lineNum">     559 </span>                : 
+<span class="lineNum">     560 </span><span class="lineNoCov">              0 :     RETURN_STRINGL(out_str, out_str_len, 0);</span>
+<span class="lineNum">     561 </span>                : }
+<span class="lineNum">     562 </span>                : /* }}} */
+<span class="lineNum">     563 </span>                : 
+<a name="564"><span class="lineNum">     564 </span>                : /* {{{ php_url_decode</a>
+<span class="lineNum">     565 </span>                :  */
+<span class="lineNum">     566 </span><span class="lineNoCov">              0 : PHPAPI int php_url_decode(char *str, int len)</span>
+<span class="lineNum">     567 </span>                : {
+<span class="lineNum">     568 </span><span class="lineNoCov">              0 :         char *dest = str;</span>
+<span class="lineNum">     569 </span><span class="lineNoCov">              0 :         char *data = str;</span>
+<span class="lineNum">     570 </span>                : 
+<span class="lineNum">     571 </span><span class="lineNoCov">              0 :         while (len--) {</span>
+<span class="lineNum">     572 </span><span class="lineNoCov">              0 :                 if (*data == '+') {</span>
+<span class="lineNum">     573 </span><span class="lineNoCov">              0 :                         *dest = ' ';</span>
+<span class="lineNum">     574 </span>                :                 }
+<span class="lineNum">     575 </span><span class="lineNoCov">              0 :                 else if (*data == '%' &amp;&amp; len &gt;= 2 &amp;&amp; isxdigit((int) *(data + 1)) </span>
+<span class="lineNum">     576 </span><span class="lineNoCov">              0 :                                  &amp;&amp; isxdigit((int) *(data + 2))) {</span>
+<span class="lineNum">     577 </span>                : #ifndef CHARSET_EBCDIC
+<span class="lineNum">     578 </span><span class="lineNoCov">              0 :                         *dest = (char) php_htoi(data + 1);</span>
+<span class="lineNum">     579 </span>                : #else
+<span class="lineNum">     580 </span>                :                         *dest = os_toebcdic[(char) php_htoi(data + 1)];
+<span class="lineNum">     581 </span>                : #endif
+<span class="lineNum">     582 </span><span class="lineNoCov">              0 :                         data += 2;</span>
+<span class="lineNum">     583 </span><span class="lineNoCov">              0 :                         len -= 2;</span>
+<span class="lineNum">     584 </span>                :                 } else {
+<span class="lineNum">     585 </span><span class="lineNoCov">              0 :                         *dest = *data;</span>
+<span class="lineNum">     586 </span>                :                 }
+<span class="lineNum">     587 </span><span class="lineNoCov">              0 :                 data++;</span>
+<span class="lineNum">     588 </span><span class="lineNoCov">              0 :                 dest++;</span>
+<span class="lineNum">     589 </span>                :         }
+<span class="lineNum">     590 </span><span class="lineNoCov">              0 :         *dest = '\0';</span>
+<span class="lineNum">     591 </span><span class="lineNoCov">              0 :         return dest - str;</span>
+<span class="lineNum">     592 </span>                : }
+<span class="lineNum">     593 </span>                : /* }}} */
+<span class="lineNum">     594 </span>                : 
+<a name="595"><span class="lineNum">     595 </span>                : /* {{{ php_raw_url_encode</a>
+<span class="lineNum">     596 </span>                :  */
+<span class="lineNum">     597 </span><span class="lineNoCov">              0 : PHPAPI char *php_raw_url_encode(char const *s, int len, int *new_length)</span>
+<span class="lineNum">     598 </span>                : {
+<span class="lineNum">     599 </span>                :         register int x, y;
+<span class="lineNum">     600 </span>                :         unsigned char *str;
+<span class="lineNum">     601 </span>                : 
+<span class="lineNum">     602 </span><span class="lineNoCov">              0 :         str = (unsigned char *) safe_emalloc(3, len, 1);</span>
+<span class="lineNum">     603 </span><span class="lineNoCov">              0 :         for (x = 0, y = 0; len--; x++, y++) {</span>
+<span class="lineNum">     604 </span><span class="lineNoCov">              0 :                 str[y] = (unsigned char) s[x];</span>
+<span class="lineNum">     605 </span>                : #ifndef CHARSET_EBCDIC
+<span class="lineNum">     606 </span><span class="lineNoCov">              0 :                 if ((str[y] &lt; '0' &amp;&amp; str[y] != '-' &amp;&amp; str[y] != '.') ||</span>
+<span class="lineNum">     607 </span><span class="lineNoCov">              0 :                         (str[y] &lt; 'A' &amp;&amp; str[y] &gt; '9') ||</span>
+<span class="lineNum">     608 </span><span class="lineNoCov">              0 :                         (str[y] &gt; 'Z' &amp;&amp; str[y] &lt; 'a' &amp;&amp; str[y] != '_') ||</span>
+<span class="lineNum">     609 </span><span class="lineNoCov">              0 :                         (str[y] &gt; 'z' &amp;&amp; str[y] != '~')) {</span>
+<span class="lineNum">     610 </span><span class="lineNoCov">              0 :                         str[y++] = '%';</span>
+<span class="lineNum">     611 </span><span class="lineNoCov">              0 :                         str[y++] = hexchars[(unsigned char) s[x] &gt;&gt; 4];</span>
+<span class="lineNum">     612 </span><span class="lineNoCov">              0 :                         str[y] = hexchars[(unsigned char) s[x] &amp; 15];</span>
+<span class="lineNum">     613 </span>                : #else /*CHARSET_EBCDIC*/
+<span class="lineNum">     614 </span>                :                 if (!isalnum(str[y]) &amp;&amp; strchr(&quot;_-.~&quot;, str[y]) != NULL) {
+<span class="lineNum">     615 </span>                :                         str[y++] = '%';
+<span class="lineNum">     616 </span>                :                         str[y++] = hexchars[os_toascii[(unsigned char) s[x]] &gt;&gt; 4];
+<span class="lineNum">     617 </span>                :                         str[y] = hexchars[os_toascii[(unsigned char) s[x]] &amp; 15];
+<span class="lineNum">     618 </span>                : #endif /*CHARSET_EBCDIC*/
+<span class="lineNum">     619 </span>                :                 }
+<span class="lineNum">     620 </span>                :         }
+<span class="lineNum">     621 </span><span class="lineNoCov">              0 :         str[y] = '\0';</span>
+<span class="lineNum">     622 </span><span class="lineNoCov">              0 :         if (new_length) {</span>
+<span class="lineNum">     623 </span><span class="lineNoCov">              0 :                 *new_length = y;</span>
+<span class="lineNum">     624 </span>                :         }
+<span class="lineNum">     625 </span><span class="lineNoCov">              0 :         return ((char *) str);</span>
+<span class="lineNum">     626 </span>                : }
+<span class="lineNum">     627 </span>                : /* }}} */
+<span class="lineNum">     628 </span>                : 
+<a name="629"><span class="lineNum">     629 </span>                : /* {{{ proto string rawurlencode(string str)</a>
+<span class="lineNum">     630 </span>                :    URL-encodes string */
+<span class="lineNum">     631 </span><span class="lineNoCov">              0 : PHP_FUNCTION(rawurlencode)</span>
+<span class="lineNum">     632 </span>                : {
+<span class="lineNum">     633 </span>                :         char *in_str, *out_str;
+<span class="lineNum">     634 </span>                :         int in_str_len, out_str_len;
+<span class="lineNum">     635 </span>                : 
+<span class="lineNum">     636 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;s&quot;, &amp;in_str,</span>
+<span class="lineNum">     637 </span>                :                                                           &amp;in_str_len) == FAILURE) {
+<span class="lineNum">     638 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     639 </span>                :         }
+<span class="lineNum">     640 </span>                : 
+<span class="lineNum">     641 </span><span class="lineNoCov">              0 :         out_str = php_raw_url_encode(in_str, in_str_len, &amp;out_str_len);</span>
+<span class="lineNum">     642 </span><span class="lineNoCov">              0 :         RETURN_STRINGL(out_str, out_str_len, 0);</span>
+<span class="lineNum">     643 </span>                : }
+<span class="lineNum">     644 </span>                : /* }}} */
+<span class="lineNum">     645 </span>                : 
+<a name="646"><span class="lineNum">     646 </span>                : /* {{{ proto string rawurldecode(string str)</a>
+<span class="lineNum">     647 </span>                :    Decodes URL-encodes string */
+<span class="lineNum">     648 </span><span class="lineNoCov">              0 : PHP_FUNCTION(rawurldecode)</span>
+<span class="lineNum">     649 </span>                : {
+<span class="lineNum">     650 </span>                :         char *in_str, *out_str;
+<span class="lineNum">     651 </span>                :         int in_str_len, out_str_len;
+<span class="lineNum">     652 </span>                : 
+<span class="lineNum">     653 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;s&quot;, &amp;in_str,</span>
+<span class="lineNum">     654 </span>                :                                                           &amp;in_str_len) == FAILURE) {
+<span class="lineNum">     655 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     656 </span>                :         }
+<span class="lineNum">     657 </span>                : 
+<span class="lineNum">     658 </span><span class="lineNoCov">              0 :         out_str = estrndup(in_str, in_str_len);</span>
+<span class="lineNum">     659 </span><span class="lineNoCov">              0 :         out_str_len = php_raw_url_decode(out_str, in_str_len);</span>
+<span class="lineNum">     660 </span>                : 
+<span class="lineNum">     661 </span><span class="lineNoCov">              0 :     RETURN_STRINGL(out_str, out_str_len, 0);</span>
+<span class="lineNum">     662 </span>                : }
+<span class="lineNum">     663 </span>                : /* }}} */
+<span class="lineNum">     664 </span>                : 
+<a name="665"><span class="lineNum">     665 </span>                : /* {{{ php_raw_url_decode</a>
+<span class="lineNum">     666 </span>                :  */
+<span class="lineNum">     667 </span><span class="lineNoCov">              0 : PHPAPI int php_raw_url_decode(char *str, int len)</span>
+<span class="lineNum">     668 </span>                : {
+<span class="lineNum">     669 </span><span class="lineNoCov">              0 :         char *dest = str;</span>
+<span class="lineNum">     670 </span><span class="lineNoCov">              0 :         char *data = str;</span>
+<span class="lineNum">     671 </span>                : 
+<span class="lineNum">     672 </span><span class="lineNoCov">              0 :         while (len--) {</span>
+<span class="lineNum">     673 </span><span class="lineNoCov">              0 :                 if (*data == '%' &amp;&amp; len &gt;= 2 &amp;&amp; isxdigit((int) *(data + 1)) </span>
+<span class="lineNum">     674 </span><span class="lineNoCov">              0 :                         &amp;&amp; isxdigit((int) *(data + 2))) {</span>
+<span class="lineNum">     675 </span>                : #ifndef CHARSET_EBCDIC
+<span class="lineNum">     676 </span><span class="lineNoCov">              0 :                         *dest = (char) php_htoi(data + 1);</span>
+<span class="lineNum">     677 </span>                : #else
+<span class="lineNum">     678 </span>                :                         *dest = os_toebcdic[(char) php_htoi(data + 1)];
+<span class="lineNum">     679 </span>                : #endif
+<span class="lineNum">     680 </span><span class="lineNoCov">              0 :                         data += 2;</span>
+<span class="lineNum">     681 </span><span class="lineNoCov">              0 :                         len -= 2;</span>
+<span class="lineNum">     682 </span>                :                 } else {
+<span class="lineNum">     683 </span><span class="lineNoCov">              0 :                         *dest = *data;</span>
+<span class="lineNum">     684 </span>                :                 }
+<span class="lineNum">     685 </span><span class="lineNoCov">              0 :                 data++;</span>
+<span class="lineNum">     686 </span><span class="lineNoCov">              0 :                 dest++;</span>
+<span class="lineNum">     687 </span>                :         }
+<span class="lineNum">     688 </span><span class="lineNoCov">              0 :         *dest = '\0';</span>
+<span class="lineNum">     689 </span><span class="lineNoCov">              0 :         return dest - str;</span>
+<span class="lineNum">     690 </span>                : }
+<span class="lineNum">     691 </span>                : /* }}} */
+<span class="lineNum">     692 </span>                : 
+<a name="693"><span class="lineNum">     693 </span>                : /* {{{ proto array get_headers(string url[, int format])</a>
+<span class="lineNum">     694 </span>                :    fetches all the headers sent by the server in response to a HTTP request */
+<span class="lineNum">     695 </span><span class="lineNoCov">              0 : PHP_FUNCTION(get_headers)</span>
+<span class="lineNum">     696 </span>                : {
+<span class="lineNum">     697 </span>                :         char *url;
+<span class="lineNum">     698 </span>                :         int url_len;
+<span class="lineNum">     699 </span>                :         php_stream_context *context;
+<span class="lineNum">     700 </span>                :         php_stream *stream;
+<span class="lineNum">     701 </span><span class="lineNoCov">              0 :         zval **prev_val, **hdr = NULL, **h;</span>
+<span class="lineNum">     702 </span>                :         HashPosition pos;
+<span class="lineNum">     703 </span>                :         HashTable *hashT;
+<span class="lineNum">     704 </span><span class="lineNoCov">              0 :         long format = 0;</span>
+<span class="lineNum">     705 </span>                :                 
+<span class="lineNum">     706 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;s|l&quot;, &amp;url, &amp;url_len, &amp;format) == FAILURE) {</span>
+<span class="lineNum">     707 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     708 </span>                :         }
+<span class="lineNum">     709 </span><span class="lineNoCov">              0 :         context = FG(default_context) ? FG(default_context) : (FG(default_context) = php_stream_context_alloc(TSRMLS_C));</span>
+<span class="lineNum">     710 </span>                : 
+<span class="lineNum">     711 </span><span class="lineNoCov">              0 :         if (!(stream = php_stream_open_wrapper_ex(url, &quot;r&quot;, REPORT_ERRORS | STREAM_USE_URL | STREAM_ONLY_GET_HEADERS, NULL, context))) {</span>
+<span class="lineNum">     712 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     713 </span>                :         }
+<span class="lineNum">     714 </span>                : 
+<span class="lineNum">     715 </span><span class="lineNoCov">              0 :         if (!stream-&gt;wrapperdata || Z_TYPE_P(stream-&gt;wrapperdata) != IS_ARRAY) {</span>
+<span class="lineNum">     716 </span><span class="lineNoCov">              0 :                 php_stream_close(stream);</span>
+<span class="lineNum">     717 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     718 </span>                :         }
+<span class="lineNum">     719 </span>                : 
+<span class="lineNum">     720 </span><span class="lineNoCov">              0 :         array_init(return_value);</span>
+<span class="lineNum">     721 </span>                : 
+<span class="lineNum">     722 </span>                :         /* check for curl-wrappers that provide headers via a special &quot;headers&quot; element */
+<span class="lineNum">     723 </span><span class="lineNoCov">              0 :         if (zend_hash_find(HASH_OF(stream-&gt;wrapperdata), &quot;headers&quot;, sizeof(&quot;headers&quot;), (void **)&amp;h) != FAILURE &amp;&amp; Z_TYPE_PP(h) == IS_ARRAY) {</span>
+<span class="lineNum">     724 </span>                :                 /* curl-wrappers don't load data until the 1st read */ 
+<span class="lineNum">     725 </span><span class="lineNoCov">              0 :                 if (!Z_ARRVAL_PP(h)-&gt;nNumOfElements) {</span>
+<span class="lineNum">     726 </span><span class="lineNoCov">              0 :                         php_stream_getc(stream);</span>
+<span class="lineNum">     727 </span>                :                 }
+<span class="lineNum">     728 </span><span class="lineNoCov">              0 :                 zend_hash_find(HASH_OF(stream-&gt;wrapperdata), &quot;headers&quot;, sizeof(&quot;headers&quot;), (void **)&amp;h);</span>
+<span class="lineNum">     729 </span><span class="lineNoCov">              0 :                 hashT = Z_ARRVAL_PP(h); </span>
+<span class="lineNum">     730 </span>                :         } else {
+<span class="lineNum">     731 </span><span class="lineNoCov">              0 :                 hashT = HASH_OF(stream-&gt;wrapperdata);</span>
+<span class="lineNum">     732 </span>                :         }
+<span class="lineNum">     733 </span>                : 
+<span class="lineNum">     734 </span><span class="lineNoCov">              0 :         zend_hash_internal_pointer_reset_ex(hashT, &amp;pos);</span>
+<span class="lineNum">     735 </span><span class="lineNoCov">              0 :         while (zend_hash_get_current_data_ex(hashT, (void**)&amp;hdr, &amp;pos) != FAILURE) {</span>
+<span class="lineNum">     736 </span><span class="lineNoCov">              0 :                 if (!hdr || Z_TYPE_PP(hdr) != IS_STRING) {</span>
+<span class="lineNum">     737 </span><span class="lineNoCov">              0 :                         zend_hash_move_forward_ex(hashT, &amp;pos);</span>
+<span class="lineNum">     738 </span><span class="lineNoCov">              0 :                         continue;</span>
+<span class="lineNum">     739 </span>                :                 }
+<span class="lineNum">     740 </span><span class="lineNoCov">              0 :                 if (!format) {</span>
+<span class="lineNum">     741 </span>                : no_name_header:
+<span class="lineNum">     742 </span><span class="lineNoCov">              0 :                         add_next_index_stringl(return_value, Z_STRVAL_PP(hdr), Z_STRLEN_PP(hdr), 1);</span>
+<span class="lineNum">     743 </span>                :                 } else {
+<span class="lineNum">     744 </span>                :                         char c;
+<span class="lineNum">     745 </span>                :                         char *s, *p;
+<span class="lineNum">     746 </span>                : 
+<span class="lineNum">     747 </span><span class="lineNoCov">              0 :                         if ((p = strchr(Z_STRVAL_PP(hdr), ':'))) {</span>
+<span class="lineNum">     748 </span><span class="lineNoCov">              0 :                                 c = *p;</span>
+<span class="lineNum">     749 </span><span class="lineNoCov">              0 :                                 *p = '\0';</span>
+<span class="lineNum">     750 </span><span class="lineNoCov">              0 :                                 s = p + 1;</span>
+<span class="lineNum">     751 </span><span class="lineNoCov">              0 :                                 while (isspace((int)*(unsigned char *)s)) {</span>
+<span class="lineNum">     752 </span><span class="lineNoCov">              0 :                                         s++;</span>
+<span class="lineNum">     753 </span>                :                                 }
+<span class="lineNum">     754 </span>                : 
+<span class="lineNum">     755 </span><span class="lineNoCov">              0 :                                 if (zend_hash_find(HASH_OF(return_value), Z_STRVAL_PP(hdr), (p - Z_STRVAL_PP(hdr) + 1), (void **) &amp;prev_val) == FAILURE) {</span>
+<span class="lineNum">     756 </span><span class="lineNoCov">              0 :                                         add_assoc_stringl_ex(return_value, Z_STRVAL_PP(hdr), (p - Z_STRVAL_PP(hdr) + 1), s, (Z_STRLEN_PP(hdr) - (s - Z_STRVAL_PP(hdr))), 1);</span>
+<span class="lineNum">     757 </span>                :                                 } else { /* some headers may occur more then once, therefor we need to remake the string into an array */
+<span class="lineNum">     758 </span><span class="lineNoCov">              0 :                                         convert_to_array(*prev_val);</span>
+<span class="lineNum">     759 </span><span class="lineNoCov">              0 :                                         add_next_index_stringl(*prev_val, s, (Z_STRLEN_PP(hdr) - (s - Z_STRVAL_PP(hdr))), 1);</span>
+<span class="lineNum">     760 </span>                :                                 }
+<span class="lineNum">     761 </span>                : 
+<span class="lineNum">     762 </span><span class="lineNoCov">              0 :                                 *p = c;</span>
+<span class="lineNum">     763 </span>                :                         } else {
+<span class="lineNum">     764 </span><span class="lineNoCov">              0 :                                 goto no_name_header;</span>
+<span class="lineNum">     765 </span>                :                         }
+<span class="lineNum">     766 </span>                :                 }
+<span class="lineNum">     767 </span><span class="lineNoCov">              0 :                 zend_hash_move_forward_ex(hashT, &amp;pos);</span>
+<span class="lineNum">     768 </span>                :         }
+<span class="lineNum">     769 </span>                : 
+<span class="lineNum">     770 </span><span class="lineNoCov">              0 :         php_stream_close(stream);</span>
+<span class="lineNum">     771 </span>                : }
+<span class="lineNum">     772 </span>                : /* }}} */
+<span class="lineNum">     773 </span>                : 
+<span class="lineNum">     774 </span>                : /*
+<span class="lineNum">     775 </span>                :  * Local variables:
+<span class="lineNum">     776 </span>                :  * tab-width: 4
+<span class="lineNum">     777 </span>                :  * c-basic-offset: 4
+<span class="lineNum">     778 </span>                :  * End:
+<span class="lineNum">     779 </span>                :  * vim600: sw=4 ts=4 fdm=marker
+<span class="lineNum">     780 </span>                :  * vim&lt;600: sw=4 ts=4
+<span class="lineNum">     781 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

@@ -1,0 +1,335 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - ext/standard/http.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../index.html">directory</a> - <a href="index.html">ext/standard</a> - http.c (source / <a href="http.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">126</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">2</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Authors: Sara Golemon &lt;pollita@php.net&gt;                              |
+<span class="lineNum">      16 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      17 </span>                : */
+<span class="lineNum">      18 </span>                : 
+<span class="lineNum">      19 </span>                : /* $Id$ */
+<span class="lineNum">      20 </span>                : 
+<span class="lineNum">      21 </span>                : #include &quot;php_http.h&quot;
+<span class="lineNum">      22 </span>                : #include &quot;php_ini.h&quot;
+<span class="lineNum">      23 </span>                : #include &quot;url.h&quot;
+<span class="lineNum">      24 </span>                : 
+<span class="lineNum">      25 </span>                : #define URL_DEFAULT_ARG_SEP &quot;&amp;&quot;
+<a name="26"><span class="lineNum">      26 </span>                : </a>
+<span class="lineNum">      27 </span>                : /* {{{ php_url_encode_hash */
+<span class="lineNum">      28 </span><span class="lineNoCov">              0 : PHPAPI int php_url_encode_hash_ex(HashTable *ht, smart_str *formstr,</span>
+<span class="lineNum">      29 </span>                :                                 const char *num_prefix, int num_prefix_len,
+<span class="lineNum">      30 </span>                :                                 const char *key_prefix, int key_prefix_len,
+<span class="lineNum">      31 </span>                :                                 const char *key_suffix, int key_suffix_len,
+<span class="lineNum">      32 </span>                :                           zval *type, char *arg_sep, int enc_type TSRMLS_DC)
+<span class="lineNum">      33 </span>                : {
+<span class="lineNum">      34 </span><span class="lineNoCov">              0 :         char *key = NULL;</span>
+<span class="lineNum">      35 </span>                :         char *ekey, *newprefix, *p;
+<span class="lineNum">      36 </span>                :         int arg_sep_len, ekey_len, key_type, newprefix_len;
+<span class="lineNum">      37 </span>                :         uint key_len;
+<span class="lineNum">      38 </span>                :         ulong idx;
+<span class="lineNum">      39 </span><span class="lineNoCov">              0 :         zval **zdata = NULL, *copyzval;</span>
+<span class="lineNum">      40 </span>                : 
+<span class="lineNum">      41 </span><span class="lineNoCov">              0 :         if (!ht) {</span>
+<span class="lineNum">      42 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">      43 </span>                :         }
+<span class="lineNum">      44 </span>                : 
+<span class="lineNum">      45 </span><span class="lineNoCov">              0 :         if (ht-&gt;nApplyCount &gt; 0) {</span>
+<span class="lineNum">      46 </span>                :                 /* Prevent recursion */
+<span class="lineNum">      47 </span><span class="lineNoCov">              0 :                 return SUCCESS;</span>
+<span class="lineNum">      48 </span>                :         }
+<span class="lineNum">      49 </span>                : 
+<span class="lineNum">      50 </span><span class="lineNoCov">              0 :         if (!arg_sep) {</span>
+<span class="lineNum">      51 </span><span class="lineNoCov">              0 :                 arg_sep = INI_STR(&quot;arg_separator.output&quot;);</span>
+<span class="lineNum">      52 </span><span class="lineNoCov">              0 :                 if (!arg_sep || !strlen(arg_sep)) {</span>
+<span class="lineNum">      53 </span><span class="lineNoCov">              0 :                         arg_sep = URL_DEFAULT_ARG_SEP;</span>
+<span class="lineNum">      54 </span>                :                 }
+<span class="lineNum">      55 </span>                :         }
+<span class="lineNum">      56 </span><span class="lineNoCov">              0 :         arg_sep_len = strlen(arg_sep);</span>
+<span class="lineNum">      57 </span>                : 
+<span class="lineNum">      58 </span><span class="lineNoCov">              0 :         for (zend_hash_internal_pointer_reset(ht);</span>
+<span class="lineNum">      59 </span><span class="lineNoCov">              0 :                 (key_type = zend_hash_get_current_key_ex(ht, &amp;key, &amp;key_len, &amp;idx, 0, NULL)) != HASH_KEY_NON_EXISTANT;</span>
+<span class="lineNum">      60 </span>                :                 zend_hash_move_forward(ht)
+<span class="lineNum">      61 </span><span class="lineNoCov">              0 :         ) {</span>
+<span class="lineNum">      62 </span><span class="lineNoCov">              0 :                 if (key_type == HASH_KEY_IS_STRING &amp;&amp; key_len &amp;&amp; key[key_len-1] == '\0') {</span>
+<span class="lineNum">      63 </span>                :                         /* We don't want that trailing NULL */
+<span class="lineNum">      64 </span><span class="lineNoCov">              0 :                         key_len -= 1;</span>
+<span class="lineNum">      65 </span>                :                 }
+<span class="lineNum">      66 </span>                : 
+<span class="lineNum">      67 </span>                :                 /* handling for private &amp; protected object properties */
+<span class="lineNum">      68 </span><span class="lineNoCov">              0 :                 if (key &amp;&amp; *key == '\0' &amp;&amp; type != NULL) {</span>
+<span class="lineNum">      69 </span>                :                         const char *tmp;
+<span class="lineNum">      70 </span>                : 
+<span class="lineNum">      71 </span><span class="lineNoCov">              0 :                         zend_object *zobj = zend_objects_get_address(type TSRMLS_CC);</span>
+<span class="lineNum">      72 </span><span class="lineNoCov">              0 :                         if (zend_check_property_access(zobj, key, key_len-1 TSRMLS_CC) != SUCCESS) {</span>
+<span class="lineNum">      73 </span>                :                                 /* private or protected property access outside of the class */
+<span class="lineNum">      74 </span><span class="lineNoCov">              0 :                                 continue;</span>
+<span class="lineNum">      75 </span>                :                         }
+<span class="lineNum">      76 </span><span class="lineNoCov">              0 :                         zend_unmangle_property_name(key, key_len-1, &amp;tmp, (const char**)&amp;key);</span>
+<span class="lineNum">      77 </span><span class="lineNoCov">              0 :                         key_len = strlen(key);          </span>
+<span class="lineNum">      78 </span>                :                 }
+<span class="lineNum">      79 </span>                : 
+<span class="lineNum">      80 </span><span class="lineNoCov">              0 :                 if (zend_hash_get_current_data_ex(ht, (void **)&amp;zdata, NULL) == FAILURE || !zdata || !(*zdata)) {</span>
+<span class="lineNum">      81 </span><span class="lineNoCov">              0 :                         php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Error traversing form data array&quot;);</span>
+<span class="lineNum">      82 </span><span class="lineNoCov">              0 :                         return FAILURE;</span>
+<span class="lineNum">      83 </span>                :                 }
+<span class="lineNum">      84 </span><span class="lineNoCov">              0 :                 if (Z_TYPE_PP(zdata) == IS_ARRAY || Z_TYPE_PP(zdata) == IS_OBJECT) {</span>
+<span class="lineNum">      85 </span><span class="lineNoCov">              0 :                         if (key_type == HASH_KEY_IS_STRING) {</span>
+<span class="lineNum">      86 </span><span class="lineNoCov">              0 :                                 if (enc_type == PHP_QUERY_RFC3986) {</span>
+<span class="lineNum">      87 </span><span class="lineNoCov">              0 :                                         ekey = php_raw_url_encode(key, key_len, &amp;ekey_len);</span>
+<span class="lineNum">      88 </span>                :                                 } else {
+<span class="lineNum">      89 </span><span class="lineNoCov">              0 :                                         ekey = php_url_encode(key, key_len, &amp;ekey_len);</span>
+<span class="lineNum">      90 </span>                :                                 }
+<span class="lineNum">      91 </span><span class="lineNoCov">              0 :                                 newprefix_len = key_suffix_len + ekey_len + key_prefix_len + 3 /* %5B */;</span>
+<span class="lineNum">      92 </span><span class="lineNoCov">              0 :                                 newprefix = emalloc(newprefix_len + 1);</span>
+<span class="lineNum">      93 </span><span class="lineNoCov">              0 :                                 p = newprefix;</span>
+<span class="lineNum">      94 </span>                : 
+<span class="lineNum">      95 </span><span class="lineNoCov">              0 :                                 if (key_prefix) {</span>
+<span class="lineNum">      96 </span><span class="lineNoCov">              0 :                                         memcpy(p, key_prefix, key_prefix_len);</span>
+<span class="lineNum">      97 </span><span class="lineNoCov">              0 :                                         p += key_prefix_len;</span>
+<span class="lineNum">      98 </span>                :                                 }
+<span class="lineNum">      99 </span>                : 
+<span class="lineNum">     100 </span><span class="lineNoCov">              0 :                                 memcpy(p, ekey, ekey_len);</span>
+<span class="lineNum">     101 </span><span class="lineNoCov">              0 :                                 p += ekey_len;</span>
+<span class="lineNum">     102 </span><span class="lineNoCov">              0 :                                 efree(ekey);</span>
+<span class="lineNum">     103 </span>                : 
+<span class="lineNum">     104 </span><span class="lineNoCov">              0 :                                 if (key_suffix) {</span>
+<span class="lineNum">     105 </span><span class="lineNoCov">              0 :                                         memcpy(p, key_suffix, key_suffix_len);</span>
+<span class="lineNum">     106 </span><span class="lineNoCov">              0 :                                         p += key_suffix_len;</span>
+<span class="lineNum">     107 </span>                :                                 }
+<span class="lineNum">     108 </span><span class="lineNoCov">              0 :                                 *(p++) = '%';</span>
+<span class="lineNum">     109 </span><span class="lineNoCov">              0 :                                 *(p++) = '5';</span>
+<span class="lineNum">     110 </span><span class="lineNoCov">              0 :                                 *(p++) = 'B';</span>
+<span class="lineNum">     111 </span><span class="lineNoCov">              0 :                                 *p = '\0';</span>
+<span class="lineNum">     112 </span>                :                         } else {
+<span class="lineNum">     113 </span>                :                                 /* Is an integer key */
+<span class="lineNum">     114 </span><span class="lineNoCov">              0 :                                 ekey_len = spprintf(&amp;ekey, 0, &quot;%ld&quot;, idx);</span>
+<span class="lineNum">     115 </span><span class="lineNoCov">              0 :                                 newprefix_len = key_prefix_len + num_prefix_len + ekey_len + key_suffix_len + 3 /* %5B */;</span>
+<span class="lineNum">     116 </span><span class="lineNoCov">              0 :                                 newprefix = emalloc(newprefix_len + 1);</span>
+<span class="lineNum">     117 </span><span class="lineNoCov">              0 :                                 p = newprefix;</span>
+<span class="lineNum">     118 </span>                : 
+<span class="lineNum">     119 </span><span class="lineNoCov">              0 :                                 if (key_prefix) {</span>
+<span class="lineNum">     120 </span><span class="lineNoCov">              0 :                                         memcpy(p, key_prefix, key_prefix_len);</span>
+<span class="lineNum">     121 </span><span class="lineNoCov">              0 :                                         p += key_prefix_len;</span>
+<span class="lineNum">     122 </span>                :                                 }
+<span class="lineNum">     123 </span>                : 
+<span class="lineNum">     124 </span><span class="lineNoCov">              0 :                                 memcpy(p, num_prefix, num_prefix_len);</span>
+<span class="lineNum">     125 </span><span class="lineNoCov">              0 :                                 p += num_prefix_len;</span>
+<span class="lineNum">     126 </span>                : 
+<span class="lineNum">     127 </span><span class="lineNoCov">              0 :                                 memcpy(p, ekey, ekey_len);</span>
+<span class="lineNum">     128 </span><span class="lineNoCov">              0 :                                 p += ekey_len;</span>
+<span class="lineNum">     129 </span><span class="lineNoCov">              0 :                                 efree(ekey);</span>
+<span class="lineNum">     130 </span>                : 
+<span class="lineNum">     131 </span><span class="lineNoCov">              0 :                                 if (key_suffix) {</span>
+<span class="lineNum">     132 </span><span class="lineNoCov">              0 :                                         memcpy(p, key_suffix, key_suffix_len);</span>
+<span class="lineNum">     133 </span><span class="lineNoCov">              0 :                                         p += key_suffix_len;</span>
+<span class="lineNum">     134 </span>                :                                 }
+<span class="lineNum">     135 </span><span class="lineNoCov">              0 :                                 *(p++) = '%';</span>
+<span class="lineNum">     136 </span><span class="lineNoCov">              0 :                                 *(p++) = '5';</span>
+<span class="lineNum">     137 </span><span class="lineNoCov">              0 :                                 *(p++) = 'B';</span>
+<span class="lineNum">     138 </span><span class="lineNoCov">              0 :                                 *p = '\0';</span>
+<span class="lineNum">     139 </span>                :                         }
+<span class="lineNum">     140 </span><span class="lineNoCov">              0 :                         ht-&gt;nApplyCount++;</span>
+<span class="lineNum">     141 </span><span class="lineNoCov">              0 :                         php_url_encode_hash_ex(HASH_OF(*zdata), formstr, NULL, 0, newprefix, newprefix_len, &quot;%5D&quot;, 3, (Z_TYPE_PP(zdata) == IS_OBJECT ? *zdata : NULL), arg_sep, enc_type TSRMLS_CC);</span>
+<span class="lineNum">     142 </span><span class="lineNoCov">              0 :                         ht-&gt;nApplyCount--;</span>
+<span class="lineNum">     143 </span><span class="lineNoCov">              0 :                         efree(newprefix);</span>
+<span class="lineNum">     144 </span><span class="lineNoCov">              0 :                 } else if (Z_TYPE_PP(zdata) == IS_NULL || Z_TYPE_PP(zdata) == IS_RESOURCE) {</span>
+<span class="lineNum">     145 </span>                :                         /* Skip these types */
+<span class="lineNum">     146 </span><span class="lineNoCov">              0 :                         continue;</span>
+<span class="lineNum">     147 </span>                :                 } else {
+<span class="lineNum">     148 </span><span class="lineNoCov">              0 :                         if (formstr-&gt;len) {</span>
+<span class="lineNum">     149 </span><span class="lineNoCov">              0 :                                 smart_str_appendl(formstr, arg_sep, arg_sep_len);</span>
+<span class="lineNum">     150 </span>                :                         }
+<span class="lineNum">     151 </span>                :                         /* Simple key=value */
+<span class="lineNum">     152 </span><span class="lineNoCov">              0 :                         smart_str_appendl(formstr, key_prefix, key_prefix_len);</span>
+<span class="lineNum">     153 </span><span class="lineNoCov">              0 :                         if (key_type == HASH_KEY_IS_STRING) {</span>
+<span class="lineNum">     154 </span><span class="lineNoCov">              0 :                                 if (enc_type == PHP_QUERY_RFC3986) {</span>
+<span class="lineNum">     155 </span><span class="lineNoCov">              0 :                                         ekey = php_raw_url_encode(key, key_len, &amp;ekey_len);</span>
+<span class="lineNum">     156 </span>                :                                 } else {
+<span class="lineNum">     157 </span><span class="lineNoCov">              0 :                                         ekey = php_url_encode(key, key_len, &amp;ekey_len);</span>
+<span class="lineNum">     158 </span>                :                                 }
+<span class="lineNum">     159 </span><span class="lineNoCov">              0 :                                 smart_str_appendl(formstr, ekey, ekey_len);</span>
+<span class="lineNum">     160 </span><span class="lineNoCov">              0 :                                 efree(ekey);</span>
+<span class="lineNum">     161 </span>                :                         } else {
+<span class="lineNum">     162 </span>                :                                 /* Numeric key */
+<span class="lineNum">     163 </span><span class="lineNoCov">              0 :                                 if (num_prefix) {</span>
+<span class="lineNum">     164 </span><span class="lineNoCov">              0 :                                         smart_str_appendl(formstr, num_prefix, num_prefix_len);</span>
+<span class="lineNum">     165 </span>                :                                 }
+<span class="lineNum">     166 </span><span class="lineNoCov">              0 :                                 ekey_len = spprintf(&amp;ekey, 0, &quot;%ld&quot;, idx);</span>
+<span class="lineNum">     167 </span><span class="lineNoCov">              0 :                                 smart_str_appendl(formstr, ekey, ekey_len);</span>
+<span class="lineNum">     168 </span><span class="lineNoCov">              0 :                                 efree(ekey);</span>
+<span class="lineNum">     169 </span>                :                         }
+<span class="lineNum">     170 </span><span class="lineNoCov">              0 :                         smart_str_appendl(formstr, key_suffix, key_suffix_len);</span>
+<span class="lineNum">     171 </span><span class="lineNoCov">              0 :                         smart_str_appendl(formstr, &quot;=&quot;, 1);</span>
+<span class="lineNum">     172 </span><span class="lineNoCov">              0 :                         switch (Z_TYPE_PP(zdata)) {</span>
+<span class="lineNum">     173 </span>                :                                 case IS_STRING:
+<span class="lineNum">     174 </span><span class="lineNoCov">              0 :                                         if (enc_type == PHP_QUERY_RFC3986) {</span>
+<span class="lineNum">     175 </span><span class="lineNoCov">              0 :                                                 ekey = php_raw_url_encode(Z_STRVAL_PP(zdata), Z_STRLEN_PP(zdata), &amp;ekey_len);</span>
+<span class="lineNum">     176 </span>                :                                         } else {
+<span class="lineNum">     177 </span><span class="lineNoCov">              0 :                                                 ekey = php_url_encode(Z_STRVAL_PP(zdata), Z_STRLEN_PP(zdata), &amp;ekey_len);                                           </span>
+<span class="lineNum">     178 </span>                :                                         }
+<span class="lineNum">     179 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">     180 </span>                :                                 case IS_LONG:
+<span class="lineNum">     181 </span>                :                                 case IS_BOOL:
+<span class="lineNum">     182 </span><span class="lineNoCov">              0 :                                         ekey_len = spprintf(&amp;ekey, 0, &quot;%ld&quot;, Z_LVAL_PP(zdata));</span>
+<span class="lineNum">     183 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">     184 </span>                :                                 case IS_DOUBLE:
+<span class="lineNum">     185 </span><span class="lineNoCov">              0 :                                         ekey_len = spprintf(&amp;ekey, 0, &quot;%.*G&quot;, (int) EG(precision), Z_DVAL_PP(zdata));</span>
+<span class="lineNum">     186 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">     187 </span>                :                                 default:
+<span class="lineNum">     188 </span>                :                                         /* fall back on convert to string */
+<span class="lineNum">     189 </span><span class="lineNoCov">              0 :                                         MAKE_STD_ZVAL(copyzval);</span>
+<span class="lineNum">     190 </span><span class="lineNoCov">              0 :                                         *copyzval = **zdata;</span>
+<span class="lineNum">     191 </span><span class="lineNoCov">              0 :                                         zval_copy_ctor(copyzval);</span>
+<span class="lineNum">     192 </span><span class="lineNoCov">              0 :                                         convert_to_string_ex(&amp;copyzval);</span>
+<span class="lineNum">     193 </span><span class="lineNoCov">              0 :                                         if (enc_type == PHP_QUERY_RFC3986) {</span>
+<span class="lineNum">     194 </span><span class="lineNoCov">              0 :                                                 ekey = php_raw_url_encode(Z_STRVAL_P(copyzval), Z_STRLEN_P(copyzval), &amp;ekey_len);</span>
+<span class="lineNum">     195 </span>                :                                         } else {
+<span class="lineNum">     196 </span><span class="lineNoCov">              0 :                                                 ekey = php_url_encode(Z_STRVAL_P(copyzval), Z_STRLEN_P(copyzval), &amp;ekey_len);</span>
+<span class="lineNum">     197 </span>                :                                         }
+<span class="lineNum">     198 </span><span class="lineNoCov">              0 :                                         zval_ptr_dtor(&amp;copyzval);</span>
+<span class="lineNum">     199 </span>                :                         }
+<span class="lineNum">     200 </span><span class="lineNoCov">              0 :                         smart_str_appendl(formstr, ekey, ekey_len);</span>
+<span class="lineNum">     201 </span><span class="lineNoCov">              0 :                         efree(ekey);</span>
+<span class="lineNum">     202 </span>                :                 }
+<span class="lineNum">     203 </span>                :         }
+<span class="lineNum">     204 </span>                : 
+<span class="lineNum">     205 </span><span class="lineNoCov">              0 :         return SUCCESS;</span>
+<span class="lineNum">     206 </span>                : }
+<span class="lineNum">     207 </span>                : /* }}} */
+<span class="lineNum">     208 </span>                : 
+<a name="209"><span class="lineNum">     209 </span>                : /* {{{ proto string http_build_query(mixed formdata [, string prefix [, string arg_separator [, int enc_type]]])</a>
+<span class="lineNum">     210 </span>                :    Generates a form-encoded query string from an associative array or object. */
+<span class="lineNum">     211 </span><span class="lineNoCov">              0 : PHP_FUNCTION(http_build_query)</span>
+<span class="lineNum">     212 </span>                : {
+<span class="lineNum">     213 </span>                :         zval *formdata;
+<span class="lineNum">     214 </span><span class="lineNoCov">              0 :         char *prefix = NULL, *arg_sep=NULL;</span>
+<span class="lineNum">     215 </span><span class="lineNoCov">              0 :         int arg_sep_len = 0, prefix_len = 0;</span>
+<span class="lineNum">     216 </span><span class="lineNoCov">              0 :         smart_str formstr = {0};</span>
+<span class="lineNum">     217 </span><span class="lineNoCov">              0 :         long enc_type = PHP_QUERY_RFC1738;</span>
+<span class="lineNum">     218 </span>                : 
+<span class="lineNum">     219 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;z|ssl&quot;, &amp;formdata, &amp;prefix, &amp;prefix_len, &amp;arg_sep, &amp;arg_sep_len, &amp;enc_type) != SUCCESS) {</span>
+<span class="lineNum">     220 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     221 </span>                :         }
+<span class="lineNum">     222 </span>                : 
+<span class="lineNum">     223 </span><span class="lineNoCov">              0 :         if (Z_TYPE_P(formdata) != IS_ARRAY &amp;&amp; Z_TYPE_P(formdata) != IS_OBJECT) {</span>
+<span class="lineNum">     224 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;Parameter 1 expected to be Array or Object.  Incorrect value given&quot;);</span>
+<span class="lineNum">     225 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     226 </span>                :         }
+<span class="lineNum">     227 </span>                : 
+<span class="lineNum">     228 </span><span class="lineNoCov">              0 :         if (php_url_encode_hash_ex(HASH_OF(formdata), &amp;formstr, prefix, prefix_len, NULL, 0, NULL, 0, (Z_TYPE_P(formdata) == IS_OBJECT ? formdata : NULL), arg_sep, enc_type TSRMLS_CC) == FAILURE) {</span>
+<span class="lineNum">     229 </span><span class="lineNoCov">              0 :                 if (formstr.c) {</span>
+<span class="lineNum">     230 </span><span class="lineNoCov">              0 :                         efree(formstr.c);</span>
+<span class="lineNum">     231 </span>                :                 }
+<span class="lineNum">     232 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     233 </span>                :         }
+<span class="lineNum">     234 </span>                : 
+<span class="lineNum">     235 </span><span class="lineNoCov">              0 :         if (!formstr.c) {</span>
+<span class="lineNum">     236 </span><span class="lineNoCov">              0 :                 RETURN_EMPTY_STRING();</span>
+<span class="lineNum">     237 </span>                :         }
+<span class="lineNum">     238 </span>                : 
+<span class="lineNum">     239 </span><span class="lineNoCov">              0 :         smart_str_0(&amp;formstr);</span>
+<span class="lineNum">     240 </span>                :         
+<span class="lineNum">     241 </span><span class="lineNoCov">              0 :         RETURN_STRINGL(formstr.c, formstr.len, 0);</span>
+<span class="lineNum">     242 </span>                : }
+<span class="lineNum">     243 </span>                : /* }}} */
+<span class="lineNum">     244 </span>                : 
+<span class="lineNum">     245 </span>                : /*
+<span class="lineNum">     246 </span>                :  * Local variables:
+<span class="lineNum">     247 </span>                :  * tab-width: 4
+<span class="lineNum">     248 </span>                :  * c-basic-offset: 4
+<span class="lineNum">     249 </span>                :  * End:
+<span class="lineNum">     250 </span>                :  * vim600: sw=4 ts=4 fdm=marker
+<span class="lineNum">     251 </span>                :  * vim&lt;600: sw=4 ts=4
+<span class="lineNum">     252 </span>                :  */
+<span class="lineNum">     253 </span>                : 
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

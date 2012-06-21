@@ -1,0 +1,323 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - Zend/zend_objects.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../index.html">directory</a> - <a href="index.html">Zend</a> - zend_objects.c (source / <a href="zend_objects.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">112</td>
+          <td class="headerCovTableEntry">39</td>
+          <td class="headerCovTableEntryMed">34.8 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">8</td>
+          <td class="headerCovTableEntry">6</td>
+          <td class="headerCovTableEntryMed">75.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | Zend Engine                                                          |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1998-2012 Zend Technologies Ltd. (http://www.zend.com) |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 2.00 of the Zend license,     |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.zend.com/license/2_00.txt.                                |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the Zend license and are unable to  |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@zend.com so we can mail you a copy immediately.              |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Authors: Andi Gutmans &lt;andi@zend.com&gt;                                |
+<span class="lineNum">      16 </span>                :    |          Zeev Suraski &lt;zeev@zend.com&gt;                                |
+<span class="lineNum">      17 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      18 </span>                : */
+<span class="lineNum">      19 </span>                : 
+<span class="lineNum">      20 </span>                : /* $Id$ */
+<span class="lineNum">      21 </span>                : 
+<span class="lineNum">      22 </span>                : #include &quot;zend.h&quot;
+<span class="lineNum">      23 </span>                : #include &quot;zend_globals.h&quot;
+<span class="lineNum">      24 </span>                : #include &quot;zend_variables.h&quot;
+<span class="lineNum">      25 </span>                : #include &quot;zend_API.h&quot;
+<span class="lineNum">      26 </span>                : #include &quot;zend_interfaces.h&quot;
+<a name="27"><span class="lineNum">      27 </span>                : #include &quot;zend_exceptions.h&quot;</a>
+<span class="lineNum">      28 </span>                : 
+<span class="lineNum">      29 </span><span class="lineCov">           3570 : ZEND_API void zend_object_std_init(zend_object *object, zend_class_entry *ce TSRMLS_DC)</span>
+<span class="lineNum">      30 </span>                : {
+<span class="lineNum">      31 </span><span class="lineCov">           3570 :         object-&gt;ce = ce;</span>
+<span class="lineNum">      32 </span><span class="lineCov">           3570 :         object-&gt;properties = NULL;</span>
+<span class="lineNum">      33 </span><span class="lineCov">           3570 :         object-&gt;properties_table = NULL;</span>
+<span class="lineNum">      34 </span><span class="lineCov">           3570 :         object-&gt;guards = NULL;</span>
+<a name="35"><span class="lineNum">      35 </span><span class="lineCov">           3570 : }</span></a>
+<span class="lineNum">      36 </span>                : 
+<span class="lineNum">      37 </span><span class="lineCov">           5820 : ZEND_API void zend_object_std_dtor(zend_object *object TSRMLS_DC)</span>
+<span class="lineNum">      38 </span>                : {
+<span class="lineNum">      39 </span><span class="lineCov">           5820 :         if (object-&gt;guards) {</span>
+<span class="lineNum">      40 </span><span class="lineCov">             11 :                 zend_hash_destroy(object-&gt;guards);</span>
+<span class="lineNum">      41 </span><span class="lineCov">             11 :                 FREE_HASHTABLE(object-&gt;guards);</span>
+<span class="lineNum">      42 </span>                :         }
+<span class="lineNum">      43 </span><span class="lineCov">           5820 :         if (object-&gt;properties) {</span>
+<span class="lineNum">      44 </span><span class="lineCov">           2179 :                 zend_hash_destroy(object-&gt;properties);</span>
+<span class="lineNum">      45 </span><span class="lineCov">           2179 :                 FREE_HASHTABLE(object-&gt;properties);</span>
+<span class="lineNum">      46 </span><span class="lineCov">           2179 :                 if (object-&gt;properties_table) {</span>
+<span class="lineNum">      47 </span><span class="lineCov">             20 :                         efree(object-&gt;properties_table);</span>
+<span class="lineNum">      48 </span>                :                 }
+<span class="lineNum">      49 </span><span class="lineCov">           3641 :         } else if (object-&gt;properties_table) {</span>
+<span class="lineNum">      50 </span>                :                 int i;
+<span class="lineNum">      51 </span>                : 
+<span class="lineNum">      52 </span><span class="lineCov">           4362 :                 for (i = 0; i &lt; object-&gt;ce-&gt;default_properties_count; i++) {</span>
+<span class="lineNum">      53 </span><span class="lineCov">           2919 :                         if (object-&gt;properties_table[i]) {</span>
+<span class="lineNum">      54 </span><span class="lineCov">           2919 :                                 zval_ptr_dtor(&amp;object-&gt;properties_table[i]);</span>
+<span class="lineNum">      55 </span>                :                         }
+<span class="lineNum">      56 </span>                :                 }
+<span class="lineNum">      57 </span><span class="lineCov">           1443 :                 efree(object-&gt;properties_table);</span>
+<span class="lineNum">      58 </span>                :         }
+<a name="59"><span class="lineNum">      59 </span><span class="lineCov">           5820 : }</span></a>
+<span class="lineNum">      60 </span>                : 
+<span class="lineNum">      61 </span><span class="lineCov">           5803 : ZEND_API void zend_objects_destroy_object(zend_object *object, zend_object_handle handle TSRMLS_DC)</span>
+<span class="lineNum">      62 </span>                : {
+<span class="lineNum">      63 </span><span class="lineCov">           5803 :         zend_function *destructor = object ? object-&gt;ce-&gt;destructor : NULL;</span>
+<span class="lineNum">      64 </span>                : 
+<span class="lineNum">      65 </span><span class="lineCov">           5803 :         if (destructor) {</span>
+<span class="lineNum">      66 </span>                :                 zval *old_exception;
+<span class="lineNum">      67 </span>                :                 zval *obj;
+<span class="lineNum">      68 </span>                :                 zend_object_store_bucket *obj_bucket;
+<span class="lineNum">      69 </span>                : 
+<span class="lineNum">      70 </span><span class="lineNoCov">              0 :                 if (destructor-&gt;op_array.fn_flags &amp; (ZEND_ACC_PRIVATE|ZEND_ACC_PROTECTED)) {</span>
+<span class="lineNum">      71 </span><span class="lineNoCov">              0 :                         if (destructor-&gt;op_array.fn_flags &amp; ZEND_ACC_PRIVATE) {</span>
+<span class="lineNum">      72 </span>                :                                 /* Ensure that if we're calling a private function, we're allowed to do so.
+<span class="lineNum">      73 </span>                :                                  */
+<span class="lineNum">      74 </span><span class="lineNoCov">              0 :                                 if (object-&gt;ce != EG(scope)) {</span>
+<span class="lineNum">      75 </span><span class="lineNoCov">              0 :                                         zend_class_entry *ce = object-&gt;ce;</span>
+<span class="lineNum">      76 </span>                : 
+<span class="lineNum">      77 </span><span class="lineNoCov">              0 :                                         zend_error(EG(in_execution) ? E_ERROR : E_WARNING,</span>
+<span class="lineNum">      78 </span>                :                                                 &quot;Call to private %s::__destruct() from context '%s'%s&quot;,
+<span class="lineNum">      79 </span>                :                                                 ce-&gt;name,
+<span class="lineNum">      80 </span><span class="lineNoCov">              0 :                                                 EG(scope) ? EG(scope)-&gt;name : &quot;&quot;,</span>
+<span class="lineNum">      81 </span><span class="lineNoCov">              0 :                                                 EG(in_execution) ? &quot;&quot; : &quot; during shutdown ignored&quot;);</span>
+<span class="lineNum">      82 </span><span class="lineNoCov">              0 :                                         return;</span>
+<span class="lineNum">      83 </span>                :                                 }
+<span class="lineNum">      84 </span>                :                         } else {
+<span class="lineNum">      85 </span>                :                                 /* Ensure that if we're calling a protected function, we're allowed to do so.
+<span class="lineNum">      86 </span>                :                                  */
+<span class="lineNum">      87 </span><span class="lineNoCov">              0 :                                 if (!zend_check_protected(zend_get_function_root_class(destructor), EG(scope))) {</span>
+<span class="lineNum">      88 </span><span class="lineNoCov">              0 :                                         zend_class_entry *ce = object-&gt;ce;</span>
+<span class="lineNum">      89 </span>                : 
+<span class="lineNum">      90 </span><span class="lineNoCov">              0 :                                         zend_error(EG(in_execution) ? E_ERROR : E_WARNING,</span>
+<span class="lineNum">      91 </span>                :                                                 &quot;Call to protected %s::__destruct() from context '%s'%s&quot;,
+<span class="lineNum">      92 </span>                :                                                 ce-&gt;name,
+<span class="lineNum">      93 </span><span class="lineNoCov">              0 :                                                 EG(scope) ? EG(scope)-&gt;name : &quot;&quot;,</span>
+<span class="lineNum">      94 </span><span class="lineNoCov">              0 :                                                 EG(in_execution) ? &quot;&quot; : &quot; during shutdown ignored&quot;);</span>
+<span class="lineNum">      95 </span><span class="lineNoCov">              0 :                                         return;</span>
+<span class="lineNum">      96 </span>                :                                 }
+<span class="lineNum">      97 </span>                :                         }
+<span class="lineNum">      98 </span>                :                 }
+<span class="lineNum">      99 </span>                : 
+<span class="lineNum">     100 </span><span class="lineNoCov">              0 :                 MAKE_STD_ZVAL(obj);</span>
+<span class="lineNum">     101 </span><span class="lineNoCov">              0 :                 Z_TYPE_P(obj) = IS_OBJECT;</span>
+<span class="lineNum">     102 </span><span class="lineNoCov">              0 :                 Z_OBJ_HANDLE_P(obj) = handle;</span>
+<span class="lineNum">     103 </span><span class="lineNoCov">              0 :                 obj_bucket = &amp;EG(objects_store).object_buckets[handle];</span>
+<span class="lineNum">     104 </span><span class="lineNoCov">              0 :                 if (!obj_bucket-&gt;bucket.obj.handlers) {</span>
+<span class="lineNum">     105 </span><span class="lineNoCov">              0 :                         obj_bucket-&gt;bucket.obj.handlers = &amp;std_object_handlers;</span>
+<span class="lineNum">     106 </span>                :                 }
+<span class="lineNum">     107 </span><span class="lineNoCov">              0 :                 Z_OBJ_HT_P(obj) = obj_bucket-&gt;bucket.obj.handlers;</span>
+<span class="lineNum">     108 </span><span class="lineNoCov">              0 :                 zval_copy_ctor(obj);</span>
+<span class="lineNum">     109 </span>                : 
+<span class="lineNum">     110 </span>                :                 /* Make sure that destructors are protected from previously thrown exceptions.
+<span class="lineNum">     111 </span>                :                  * For example, if an exception was thrown in a function and when the function's
+<span class="lineNum">     112 </span>                :                  * local variable destruction results in a destructor being called.
+<span class="lineNum">     113 </span>                :                  */
+<span class="lineNum">     114 </span><span class="lineNoCov">              0 :                 old_exception = NULL;</span>
+<span class="lineNum">     115 </span><span class="lineNoCov">              0 :                 if (EG(exception)) {</span>
+<span class="lineNum">     116 </span><span class="lineNoCov">              0 :                         if (Z_OBJ_HANDLE_P(EG(exception)) == handle) {</span>
+<span class="lineNum">     117 </span><span class="lineNoCov">              0 :                                 zend_error(E_ERROR, &quot;Attempt to destruct pending exception&quot;);</span>
+<span class="lineNum">     118 </span>                :                         } else {
+<span class="lineNum">     119 </span><span class="lineNoCov">              0 :                                 old_exception = EG(exception);</span>
+<span class="lineNum">     120 </span><span class="lineNoCov">              0 :                                 EG(exception) = NULL;</span>
+<span class="lineNum">     121 </span>                :                         }
+<span class="lineNum">     122 </span>                :                 }
+<span class="lineNum">     123 </span><span class="lineNoCov">              0 :                 zend_call_method_with_0_params(&amp;obj, object-&gt;ce, &amp;destructor, ZEND_DESTRUCTOR_FUNC_NAME, NULL);</span>
+<span class="lineNum">     124 </span><span class="lineNoCov">              0 :                 if (old_exception) {</span>
+<span class="lineNum">     125 </span><span class="lineNoCov">              0 :                         if (EG(exception)) {</span>
+<span class="lineNum">     126 </span><span class="lineNoCov">              0 :                                 zend_exception_set_previous(EG(exception), old_exception TSRMLS_CC);</span>
+<span class="lineNum">     127 </span>                :                         } else {
+<span class="lineNum">     128 </span><span class="lineNoCov">              0 :                                 EG(exception) = old_exception;</span>
+<span class="lineNum">     129 </span>                :                         }
+<span class="lineNum">     130 </span>                :                 }
+<span class="lineNum">     131 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;obj);</span>
+<span class="lineNum">     132 </span>                :         }
+<a name="133"><span class="lineNum">     133 </span>                : }</a>
+<span class="lineNum">     134 </span>                : 
+<span class="lineNum">     135 </span><span class="lineCov">           2250 : ZEND_API void zend_objects_free_object_storage(zend_object *object TSRMLS_DC)</span>
+<span class="lineNum">     136 </span>                : {
+<span class="lineNum">     137 </span><span class="lineCov">           2250 :         zend_object_std_dtor(object TSRMLS_CC);</span>
+<span class="lineNum">     138 </span><span class="lineCov">           2250 :         efree(object);</span>
+<a name="139"><span class="lineNum">     139 </span><span class="lineCov">           2250 : }</span></a>
+<span class="lineNum">     140 </span>                : 
+<span class="lineNum">     141 </span><span class="lineCov">           2250 : ZEND_API zend_object_value zend_objects_new(zend_object **object, zend_class_entry *class_type TSRMLS_DC)</span>
+<span class="lineNum">     142 </span>                : {
+<span class="lineNum">     143 </span>                :         zend_object_value retval;
+<span class="lineNum">     144 </span>                : 
+<span class="lineNum">     145 </span><span class="lineCov">           2250 :         *object = emalloc(sizeof(zend_object));</span>
+<span class="lineNum">     146 </span><span class="lineCov">           2250 :         (*object)-&gt;ce = class_type;</span>
+<span class="lineNum">     147 </span><span class="lineCov">           2250 :         (*object)-&gt;properties = NULL;</span>
+<span class="lineNum">     148 </span><span class="lineCov">           2250 :         (*object)-&gt;properties_table = NULL;</span>
+<span class="lineNum">     149 </span><span class="lineCov">           2250 :         (*object)-&gt;guards = NULL;</span>
+<span class="lineNum">     150 </span><span class="lineCov">           2250 :         retval.handle = zend_objects_store_put(*object, (zend_objects_store_dtor_t) zend_objects_destroy_object, (zend_objects_free_object_storage_t) zend_objects_free_object_storage, NULL TSRMLS_CC);</span>
+<span class="lineNum">     151 </span><span class="lineCov">           2250 :         retval.handlers = &amp;std_object_handlers;</span>
+<span class="lineNum">     152 </span><span class="lineCov">           2250 :         return retval;</span>
+<a name="153"><span class="lineNum">     153 </span>                : }</a>
+<span class="lineNum">     154 </span>                : 
+<span class="lineNum">     155 </span><span class="lineCov">              6 : ZEND_API zend_object *zend_objects_get_address(const zval *zobject TSRMLS_DC)</span>
+<span class="lineNum">     156 </span>                : {
+<span class="lineNum">     157 </span><span class="lineCov">              6 :         return (zend_object *)zend_object_store_get_object(zobject TSRMLS_CC);</span>
+<a name="158"><span class="lineNum">     158 </span>                : }</a>
+<span class="lineNum">     159 </span>                : 
+<span class="lineNum">     160 </span><span class="lineNoCov">              0 : ZEND_API void zend_objects_clone_members(zend_object *new_object, zend_object_value new_obj_val, zend_object *old_object, zend_object_handle handle TSRMLS_DC)</span>
+<span class="lineNum">     161 </span>                : {
+<span class="lineNum">     162 </span>                :         int i;
+<span class="lineNum">     163 </span>                : 
+<span class="lineNum">     164 </span><span class="lineNoCov">              0 :         if (old_object-&gt;properties_table) {</span>
+<span class="lineNum">     165 </span><span class="lineNoCov">              0 :                 if (!new_object-&gt;properties_table) {</span>
+<span class="lineNum">     166 </span><span class="lineNoCov">              0 :                         new_object-&gt;properties_table = emalloc(sizeof(zval*) * old_object-&gt;ce-&gt;default_properties_count);</span>
+<span class="lineNum">     167 </span><span class="lineNoCov">              0 :                         memset(new_object-&gt;properties_table, 0, sizeof(zval*) * old_object-&gt;ce-&gt;default_properties_count);</span>
+<span class="lineNum">     168 </span>                :                 }
+<span class="lineNum">     169 </span><span class="lineNoCov">              0 :                 for (i = 0; i &lt; old_object-&gt;ce-&gt;default_properties_count; i++) {</span>
+<span class="lineNum">     170 </span><span class="lineNoCov">              0 :                         if (!new_object-&gt;properties) {</span>
+<span class="lineNum">     171 </span><span class="lineNoCov">              0 :                                 if (new_object-&gt;properties_table[i]) {</span>
+<span class="lineNum">     172 </span><span class="lineNoCov">              0 :                                         zval_ptr_dtor(&amp;new_object-&gt;properties_table[i]);</span>
+<span class="lineNum">     173 </span>                :                                 }
+<span class="lineNum">     174 </span>                :                         }
+<span class="lineNum">     175 </span><span class="lineNoCov">              0 :                         if (!old_object-&gt;properties) {</span>
+<span class="lineNum">     176 </span><span class="lineNoCov">              0 :                                 new_object-&gt;properties_table[i] = old_object-&gt;properties_table[i];</span>
+<span class="lineNum">     177 </span><span class="lineNoCov">              0 :                                 if (new_object-&gt;properties_table[i]) {</span>
+<span class="lineNum">     178 </span><span class="lineNoCov">              0 :                                         Z_ADDREF_P(new_object-&gt;properties_table[i]);</span>
+<span class="lineNum">     179 </span>                :                                 }
+<span class="lineNum">     180 </span>                :                         }
+<span class="lineNum">     181 </span>                :                 }
+<span class="lineNum">     182 </span>                :         }
+<span class="lineNum">     183 </span><span class="lineNoCov">              0 :         if (old_object-&gt;properties) {</span>
+<span class="lineNum">     184 </span><span class="lineNoCov">              0 :                 if (!new_object-&gt;properties) {</span>
+<span class="lineNum">     185 </span><span class="lineNoCov">              0 :                         ALLOC_HASHTABLE(new_object-&gt;properties);</span>
+<span class="lineNum">     186 </span><span class="lineNoCov">              0 :                         zend_hash_init(new_object-&gt;properties, 0, NULL, ZVAL_PTR_DTOR, 0);</span>
+<span class="lineNum">     187 </span>                :                 }
+<span class="lineNum">     188 </span><span class="lineNoCov">              0 :                 zend_hash_copy(new_object-&gt;properties, old_object-&gt;properties, (copy_ctor_func_t) zval_add_ref, (void *) NULL /* Not used anymore */, sizeof(zval *));</span>
+<span class="lineNum">     189 </span><span class="lineNoCov">              0 :                 if (old_object-&gt;properties_table) {</span>
+<span class="lineNum">     190 </span>                :                         HashPosition pos;
+<span class="lineNum">     191 </span>                :                         zend_property_info *prop_info;
+<span class="lineNum">     192 </span><span class="lineNoCov">              0 :                         for (zend_hash_internal_pointer_reset_ex(&amp;old_object-&gt;ce-&gt;properties_info, &amp;pos);</span>
+<span class="lineNum">     193 </span><span class="lineNoCov">              0 :                              zend_hash_get_current_data_ex(&amp;old_object-&gt;ce-&gt;properties_info, (void**)&amp;prop_info, &amp;pos) == SUCCESS;</span>
+<span class="lineNum">     194 </span><span class="lineNoCov">              0 :                              zend_hash_move_forward_ex(&amp;old_object-&gt;ce-&gt;properties_info, &amp;pos)) {</span>
+<span class="lineNum">     195 </span><span class="lineNoCov">              0 :                                 if ((prop_info-&gt;flags &amp; ZEND_ACC_STATIC) == 0) {</span>
+<span class="lineNum">     196 </span><span class="lineNoCov">              0 :                                         if (zend_hash_quick_find(new_object-&gt;properties, prop_info-&gt;name, prop_info-&gt;name_length+1, prop_info-&gt;h, (void**)&amp;new_object-&gt;properties_table[prop_info-&gt;offset]) == FAILURE) {</span>
+<span class="lineNum">     197 </span><span class="lineNoCov">              0 :                                                 new_object-&gt;properties_table[prop_info-&gt;offset] = NULL;</span>
+<span class="lineNum">     198 </span>                :                                         }
+<span class="lineNum">     199 </span>                :                                 }
+<span class="lineNum">     200 </span>                :                         }
+<span class="lineNum">     201 </span>                :                 }
+<span class="lineNum">     202 </span>                :         }
+<span class="lineNum">     203 </span>                : 
+<span class="lineNum">     204 </span><span class="lineNoCov">              0 :         if (old_object-&gt;ce-&gt;clone) {</span>
+<span class="lineNum">     205 </span>                :                 zval *new_obj;
+<span class="lineNum">     206 </span>                : 
+<span class="lineNum">     207 </span><span class="lineNoCov">              0 :                 MAKE_STD_ZVAL(new_obj);</span>
+<span class="lineNum">     208 </span><span class="lineNoCov">              0 :                 new_obj-&gt;type = IS_OBJECT;</span>
+<span class="lineNum">     209 </span><span class="lineNoCov">              0 :                 new_obj-&gt;value.obj = new_obj_val;</span>
+<span class="lineNum">     210 </span><span class="lineNoCov">              0 :                 zval_copy_ctor(new_obj);</span>
+<span class="lineNum">     211 </span>                : 
+<span class="lineNum">     212 </span><span class="lineNoCov">              0 :                 zend_call_method_with_0_params(&amp;new_obj, old_object-&gt;ce, &amp;old_object-&gt;ce-&gt;clone, ZEND_CLONE_FUNC_NAME, NULL);</span>
+<span class="lineNum">     213 </span>                : 
+<span class="lineNum">     214 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;new_obj);</span>
+<span class="lineNum">     215 </span>                :         }
+<a name="216"><span class="lineNum">     216 </span><span class="lineNoCov">              0 : }</span></a>
+<span class="lineNum">     217 </span>                : 
+<span class="lineNum">     218 </span><span class="lineNoCov">              0 : ZEND_API zend_object_value zend_objects_clone_obj(zval *zobject TSRMLS_DC)</span>
+<span class="lineNum">     219 </span>                : {
+<span class="lineNum">     220 </span>                :         zend_object_value new_obj_val;
+<span class="lineNum">     221 </span>                :         zend_object *old_object;
+<span class="lineNum">     222 </span>                :         zend_object *new_object;
+<span class="lineNum">     223 </span><span class="lineNoCov">              0 :         zend_object_handle handle = Z_OBJ_HANDLE_P(zobject);</span>
+<span class="lineNum">     224 </span>                : 
+<span class="lineNum">     225 </span>                :         /* assume that create isn't overwritten, so when clone depends on the
+<span class="lineNum">     226 </span>                :          * overwritten one then it must itself be overwritten */
+<span class="lineNum">     227 </span><span class="lineNoCov">              0 :         old_object = zend_objects_get_address(zobject TSRMLS_CC);</span>
+<span class="lineNum">     228 </span><span class="lineNoCov">              0 :         new_obj_val = zend_objects_new(&amp;new_object, old_object-&gt;ce TSRMLS_CC);</span>
+<span class="lineNum">     229 </span>                : 
+<span class="lineNum">     230 </span><span class="lineNoCov">              0 :         zend_objects_clone_members(new_object, new_obj_val, old_object, handle TSRMLS_CC);</span>
+<span class="lineNum">     231 </span>                : 
+<span class="lineNum">     232 </span><span class="lineNoCov">              0 :         return new_obj_val;</span>
+<span class="lineNum">     233 </span>                : }
+<span class="lineNum">     234 </span>                : 
+<span class="lineNum">     235 </span>                : /*
+<span class="lineNum">     236 </span>                :  * Local variables:
+<span class="lineNum">     237 </span>                :  * tab-width: 4
+<span class="lineNum">     238 </span>                :  * c-basic-offset: 4
+<span class="lineNum">     239 </span>                :  * indent-tabs-mode: t
+<span class="lineNum">     240 </span>                :  * End:
+<span class="lineNum">     241 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

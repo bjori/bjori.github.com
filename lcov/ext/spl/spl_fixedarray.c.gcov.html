@@ -1,0 +1,1191 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - ext/spl/spl_fixedarray.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../index.html">directory</a> - <a href="index.html">ext/spl</a> - spl_fixedarray.c (source / <a href="spl_fixedarray.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">478</td>
+          <td class="headerCovTableEntry">15</td>
+          <td class="headerCovTableEntryLo">3.1 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">40</td>
+          <td class="headerCovTableEntry">1</td>
+          <td class="headerCovTableEntryLo">2.5 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :   +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :   | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :   +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :   | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :   +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :   | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :   | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :   | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :   | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :   | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :   | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :   | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :   +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :   | Author: Antony Dovgal &lt;tony@daylessday.org&gt;                          |
+<span class="lineNum">      16 </span>                :   |         Etienne Kneuss &lt;colder@php.net&gt;                              |
+<span class="lineNum">      17 </span>                :   +----------------------------------------------------------------------+
+<span class="lineNum">      18 </span>                : */
+<span class="lineNum">      19 </span>                : 
+<span class="lineNum">      20 </span>                : /* $Id$ */
+<span class="lineNum">      21 </span>                : 
+<span class="lineNum">      22 </span>                : #ifdef HAVE_CONFIG_H
+<span class="lineNum">      23 </span>                : #include &quot;config.h&quot;
+<span class="lineNum">      24 </span>                : #endif
+<span class="lineNum">      25 </span>                : 
+<span class="lineNum">      26 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">      27 </span>                : #include &quot;php_ini.h&quot;
+<span class="lineNum">      28 </span>                : #include &quot;ext/standard/info.h&quot;
+<span class="lineNum">      29 </span>                : #include &quot;zend_exceptions.h&quot;
+<span class="lineNum">      30 </span>                : 
+<span class="lineNum">      31 </span>                : #include &quot;php_spl.h&quot;
+<span class="lineNum">      32 </span>                : #include &quot;spl_functions.h&quot;
+<span class="lineNum">      33 </span>                : #include &quot;spl_engine.h&quot;
+<span class="lineNum">      34 </span>                : #include &quot;spl_fixedarray.h&quot;
+<span class="lineNum">      35 </span>                : #include &quot;spl_exceptions.h&quot;
+<span class="lineNum">      36 </span>                : #include &quot;spl_iterators.h&quot;
+<span class="lineNum">      37 </span>                : 
+<span class="lineNum">      38 </span>                : zend_object_handlers spl_handler_SplFixedArray;
+<span class="lineNum">      39 </span>                : PHPAPI zend_class_entry *spl_ce_SplFixedArray;
+<span class="lineNum">      40 </span>                : 
+<span class="lineNum">      41 </span>                : #ifdef COMPILE_DL_SPL_FIXEDARRAY
+<span class="lineNum">      42 </span>                : ZEND_GET_MODULE(spl_fixedarray)
+<span class="lineNum">      43 </span>                : #endif
+<span class="lineNum">      44 </span>                : 
+<span class="lineNum">      45 </span>                : typedef struct _spl_fixedarray { /* {{{ */
+<span class="lineNum">      46 </span>                :         long size;
+<span class="lineNum">      47 </span>                :         zval **elements;
+<span class="lineNum">      48 </span>                : } spl_fixedarray;
+<span class="lineNum">      49 </span>                : /* }}} */
+<span class="lineNum">      50 </span>                : 
+<span class="lineNum">      51 </span>                : typedef struct _spl_fixedarray_object { /* {{{ */
+<span class="lineNum">      52 </span>                :         zend_object            std;
+<span class="lineNum">      53 </span>                :         spl_fixedarray         *array;
+<span class="lineNum">      54 </span>                :         zval                  *retval;
+<span class="lineNum">      55 </span>                :         zend_function         *fptr_offset_get;
+<span class="lineNum">      56 </span>                :         zend_function         *fptr_offset_set;
+<span class="lineNum">      57 </span>                :         zend_function         *fptr_offset_has;
+<span class="lineNum">      58 </span>                :         zend_function         *fptr_offset_del;
+<span class="lineNum">      59 </span>                :         zend_function         *fptr_count;
+<span class="lineNum">      60 </span>                :         int                    current;
+<span class="lineNum">      61 </span>                :         int                    flags;
+<span class="lineNum">      62 </span>                :         zend_class_entry      *ce_get_iterator;
+<span class="lineNum">      63 </span>                : } spl_fixedarray_object;
+<span class="lineNum">      64 </span>                : /* }}} */
+<span class="lineNum">      65 </span>                : 
+<span class="lineNum">      66 </span>                : typedef struct _spl_fixedarray_it { /* {{{ */
+<span class="lineNum">      67 </span>                :         zend_user_iterator     intern;
+<span class="lineNum">      68 </span>                :         spl_fixedarray_object  *object;
+<span class="lineNum">      69 </span>                : } spl_fixedarray_it;
+<span class="lineNum">      70 </span>                : /* }}} */
+<span class="lineNum">      71 </span>                : 
+<span class="lineNum">      72 </span>                : #define SPL_FIXEDARRAY_OVERLOADED_REWIND  0x0001
+<span class="lineNum">      73 </span>                : #define SPL_FIXEDARRAY_OVERLOADED_VALID   0x0002
+<span class="lineNum">      74 </span>                : #define SPL_FIXEDARRAY_OVERLOADED_KEY     0x0004
+<span class="lineNum">      75 </span>                : #define SPL_FIXEDARRAY_OVERLOADED_CURRENT 0x0008
+<a name="76"><span class="lineNum">      76 </span>                : #define SPL_FIXEDARRAY_OVERLOADED_NEXT    0x0010</a>
+<span class="lineNum">      77 </span>                : 
+<span class="lineNum">      78 </span><span class="lineNoCov">              0 : static void spl_fixedarray_init(spl_fixedarray *array, long size TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">      79 </span>                : {
+<span class="lineNum">      80 </span><span class="lineNoCov">              0 :         if (size &gt; 0) {</span>
+<span class="lineNum">      81 </span><span class="lineNoCov">              0 :                 array-&gt;size = 0; /* reset size in case ecalloc() fails */</span>
+<span class="lineNum">      82 </span><span class="lineNoCov">              0 :                 array-&gt;elements = ecalloc(size, sizeof(zval *));</span>
+<span class="lineNum">      83 </span><span class="lineNoCov">              0 :                 array-&gt;size = size;</span>
+<span class="lineNum">      84 </span>                :         } else {
+<span class="lineNum">      85 </span><span class="lineNoCov">              0 :                 array-&gt;elements = NULL;</span>
+<span class="lineNum">      86 </span><span class="lineNoCov">              0 :                 array-&gt;size = 0;</span>
+<span class="lineNum">      87 </span>                :         }
+<span class="lineNum">      88 </span><span class="lineNoCov">              0 : }</span>
+<a name="89"><span class="lineNum">      89 </span>                : /* }}} */</a>
+<span class="lineNum">      90 </span>                : 
+<span class="lineNum">      91 </span><span class="lineNoCov">              0 : static void spl_fixedarray_resize(spl_fixedarray *array, long size TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">      92 </span>                : {
+<span class="lineNum">      93 </span><span class="lineNoCov">              0 :         if (size == array-&gt;size) {</span>
+<span class="lineNum">      94 </span>                :                 /* nothing to do */
+<span class="lineNum">      95 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">      96 </span>                :         }
+<span class="lineNum">      97 </span>                : 
+<span class="lineNum">      98 </span>                :         /* first initialization */
+<span class="lineNum">      99 </span><span class="lineNoCov">              0 :         if (array-&gt;size == 0) {</span>
+<span class="lineNum">     100 </span><span class="lineNoCov">              0 :                 spl_fixedarray_init(array, size TSRMLS_CC);</span>
+<span class="lineNum">     101 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     102 </span>                :         }
+<span class="lineNum">     103 </span>                : 
+<span class="lineNum">     104 </span>                :         /* clearing the array */
+<span class="lineNum">     105 </span><span class="lineNoCov">              0 :         if (size == 0) {</span>
+<span class="lineNum">     106 </span>                :                 long i;
+<span class="lineNum">     107 </span>                : 
+<span class="lineNum">     108 </span><span class="lineNoCov">              0 :                 for (i = 0; i &lt; array-&gt;size; i++) {</span>
+<span class="lineNum">     109 </span><span class="lineNoCov">              0 :                         if (array-&gt;elements[i]) {</span>
+<span class="lineNum">     110 </span><span class="lineNoCov">              0 :                                 zval_ptr_dtor(&amp;(array-&gt;elements[i]));</span>
+<span class="lineNum">     111 </span>                :                         }
+<span class="lineNum">     112 </span>                :                 }
+<span class="lineNum">     113 </span>                : 
+<span class="lineNum">     114 </span><span class="lineNoCov">              0 :                 if (array-&gt;elements) {</span>
+<span class="lineNum">     115 </span><span class="lineNoCov">              0 :                         efree(array-&gt;elements);</span>
+<span class="lineNum">     116 </span><span class="lineNoCov">              0 :                         array-&gt;elements = NULL;</span>
+<span class="lineNum">     117 </span>                :                 }
+<span class="lineNum">     118 </span><span class="lineNoCov">              0 :         } else if (size &gt; array-&gt;size) {</span>
+<span class="lineNum">     119 </span><span class="lineNoCov">              0 :                 array-&gt;elements = erealloc(array-&gt;elements, sizeof(zval *) * size);</span>
+<span class="lineNum">     120 </span><span class="lineNoCov">              0 :                 memset(array-&gt;elements + array-&gt;size, '\0', sizeof(zval *) * (size - array-&gt;size));</span>
+<span class="lineNum">     121 </span>                :         } else { /* size &lt; array-&gt;size */
+<span class="lineNum">     122 </span>                :                 long i;
+<span class="lineNum">     123 </span>                : 
+<span class="lineNum">     124 </span><span class="lineNoCov">              0 :                 for (i = size; i &lt; array-&gt;size; i++) {</span>
+<span class="lineNum">     125 </span><span class="lineNoCov">              0 :                         if (array-&gt;elements[i]) {</span>
+<span class="lineNum">     126 </span><span class="lineNoCov">              0 :                                 zval_ptr_dtor(&amp;(array-&gt;elements[i]));</span>
+<span class="lineNum">     127 </span>                :                         }
+<span class="lineNum">     128 </span>                :                 }
+<span class="lineNum">     129 </span><span class="lineNoCov">              0 :                 array-&gt;elements = erealloc(array-&gt;elements, sizeof(zval *) * size);</span>
+<span class="lineNum">     130 </span>                :         }
+<span class="lineNum">     131 </span>                : 
+<span class="lineNum">     132 </span><span class="lineNoCov">              0 :         array-&gt;size = size;</span>
+<span class="lineNum">     133 </span>                : }
+<a name="134"><span class="lineNum">     134 </span>                : /* }}} */</a>
+<span class="lineNum">     135 </span>                : 
+<span class="lineNum">     136 </span><span class="lineNoCov">              0 : static void spl_fixedarray_copy(spl_fixedarray *to, spl_fixedarray *from TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     137 </span>                : {
+<span class="lineNum">     138 </span>                :         int i;
+<span class="lineNum">     139 </span><span class="lineNoCov">              0 :         for (i = 0; i &lt; from-&gt;size; i++) {</span>
+<span class="lineNum">     140 </span><span class="lineNoCov">              0 :                 if (from-&gt;elements[i]) {</span>
+<span class="lineNum">     141 </span><span class="lineNoCov">              0 :                         Z_ADDREF_P(from-&gt;elements[i]);</span>
+<span class="lineNum">     142 </span><span class="lineNoCov">              0 :                         to-&gt;elements[i] = from-&gt;elements[i];</span>
+<span class="lineNum">     143 </span>                :                 } else {
+<span class="lineNum">     144 </span><span class="lineNoCov">              0 :                         to-&gt;elements[i] = NULL;</span>
+<span class="lineNum">     145 </span>                :                 }
+<span class="lineNum">     146 </span>                :         }
+<span class="lineNum">     147 </span><span class="lineNoCov">              0 : }</span>
+<a name="148"><span class="lineNum">     148 </span>                : /* }}} */</a>
+<span class="lineNum">     149 </span>                : 
+<span class="lineNum">     150 </span><span class="lineNoCov">              0 : static HashTable* spl_fixedarray_object_get_properties(zval *obj TSRMLS_DC) /* {{{{ */</span>
+<span class="lineNum">     151 </span>                : {
+<span class="lineNum">     152 </span><span class="lineNoCov">              0 :         spl_fixedarray_object *intern  = (spl_fixedarray_object*)zend_object_store_get_object(obj TSRMLS_CC);</span>
+<span class="lineNum">     153 </span><span class="lineNoCov">              0 :         HashTable *ht = zend_std_get_properties(obj TSRMLS_CC);</span>
+<span class="lineNum">     154 </span><span class="lineNoCov">              0 :         int  i = 0;</span>
+<span class="lineNum">     155 </span>                : 
+<span class="lineNum">     156 </span><span class="lineNoCov">              0 :         if (intern-&gt;array &amp;&amp; !GC_G(gc_active)) {</span>
+<span class="lineNum">     157 </span><span class="lineNoCov">              0 :                 int j = zend_hash_num_elements(ht);</span>
+<span class="lineNum">     158 </span>                : 
+<span class="lineNum">     159 </span><span class="lineNoCov">              0 :                 for (i = 0; i &lt; intern-&gt;array-&gt;size; i++) {</span>
+<span class="lineNum">     160 </span><span class="lineNoCov">              0 :                         if (intern-&gt;array-&gt;elements[i]) {</span>
+<span class="lineNum">     161 </span><span class="lineNoCov">              0 :                                 zend_hash_index_update(ht, i, (void *)&amp;intern-&gt;array-&gt;elements[i], sizeof(zval *), NULL);</span>
+<span class="lineNum">     162 </span><span class="lineNoCov">              0 :                                 Z_ADDREF_P(intern-&gt;array-&gt;elements[i]);</span>
+<span class="lineNum">     163 </span>                :                         } else {
+<span class="lineNum">     164 </span><span class="lineNoCov">              0 :                                 zend_hash_index_update(ht, i, (void *)&amp;EG(uninitialized_zval_ptr), sizeof(zval *), NULL);</span>
+<span class="lineNum">     165 </span><span class="lineNoCov">              0 :                                 Z_ADDREF_P(EG(uninitialized_zval_ptr));</span>
+<span class="lineNum">     166 </span>                :                         }
+<span class="lineNum">     167 </span>                :                 }
+<span class="lineNum">     168 </span><span class="lineNoCov">              0 :                 if (j &gt; intern-&gt;array-&gt;size) {</span>
+<span class="lineNum">     169 </span><span class="lineNoCov">              0 :                         for (i = intern-&gt;array-&gt;size; i &lt; j; ++i) {</span>
+<span class="lineNum">     170 </span><span class="lineNoCov">              0 :                                 zend_hash_index_del(ht, i);</span>
+<span class="lineNum">     171 </span>                :                         }
+<span class="lineNum">     172 </span>                :                 }
+<span class="lineNum">     173 </span>                :         }
+<span class="lineNum">     174 </span>                : 
+<span class="lineNum">     175 </span><span class="lineNoCov">              0 :         return ht;</span>
+<span class="lineNum">     176 </span>                : }
+<a name="177"><span class="lineNum">     177 </span>                : /* }}}} */</a>
+<span class="lineNum">     178 </span>                : 
+<span class="lineNum">     179 </span><span class="lineNoCov">              0 : static void spl_fixedarray_object_free_storage(void *object TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     180 </span>                : {
+<span class="lineNum">     181 </span><span class="lineNoCov">              0 :         spl_fixedarray_object *intern = (spl_fixedarray_object *)object;</span>
+<span class="lineNum">     182 </span>                :         long i;
+<span class="lineNum">     183 </span>                : 
+<span class="lineNum">     184 </span><span class="lineNoCov">              0 :         if (intern-&gt;array) {</span>
+<span class="lineNum">     185 </span><span class="lineNoCov">              0 :                 for (i = 0; i &lt; intern-&gt;array-&gt;size; i++) {</span>
+<span class="lineNum">     186 </span><span class="lineNoCov">              0 :                         if (intern-&gt;array-&gt;elements[i]) {</span>
+<span class="lineNum">     187 </span><span class="lineNoCov">              0 :                                 zval_ptr_dtor(&amp;(intern-&gt;array-&gt;elements[i]));</span>
+<span class="lineNum">     188 </span>                :                         }
+<span class="lineNum">     189 </span>                :                 }
+<span class="lineNum">     190 </span>                : 
+<span class="lineNum">     191 </span><span class="lineNoCov">              0 :                 if (intern-&gt;array-&gt;size &gt; 0 &amp;&amp; intern-&gt;array-&gt;elements) {</span>
+<span class="lineNum">     192 </span><span class="lineNoCov">              0 :                         efree(intern-&gt;array-&gt;elements);</span>
+<span class="lineNum">     193 </span>                :                 }
+<span class="lineNum">     194 </span><span class="lineNoCov">              0 :                 efree(intern-&gt;array);</span>
+<span class="lineNum">     195 </span>                :         }
+<span class="lineNum">     196 </span>                : 
+<span class="lineNum">     197 </span><span class="lineNoCov">              0 :         zend_object_std_dtor(&amp;intern-&gt;std TSRMLS_CC);</span>
+<span class="lineNum">     198 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;intern-&gt;retval);</span>
+<span class="lineNum">     199 </span>                : 
+<span class="lineNum">     200 </span><span class="lineNoCov">              0 :         efree(object);</span>
+<span class="lineNum">     201 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     202 </span>                : /* }}} */
+<span class="lineNum">     203 </span>                : 
+<a name="204"><span class="lineNum">     204 </span>                : zend_object_iterator *spl_fixedarray_get_iterator(zend_class_entry *ce, zval *object, int by_ref TSRMLS_DC);</a>
+<span class="lineNum">     205 </span>                : 
+<span class="lineNum">     206 </span><span class="lineNoCov">              0 : static zend_object_value spl_fixedarray_object_new_ex(zend_class_entry *class_type, spl_fixedarray_object **obj, zval *orig, int clone_orig TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     207 </span>                : {
+<span class="lineNum">     208 </span>                :         zend_object_value     retval;
+<span class="lineNum">     209 </span>                :         spl_fixedarray_object *intern;
+<span class="lineNum">     210 </span><span class="lineNoCov">              0 :         zend_class_entry     *parent = class_type;</span>
+<span class="lineNum">     211 </span><span class="lineNoCov">              0 :         int                   inherited = 0;</span>
+<span class="lineNum">     212 </span>                : 
+<span class="lineNum">     213 </span><span class="lineNoCov">              0 :         intern = ecalloc(1, sizeof(spl_fixedarray_object));</span>
+<span class="lineNum">     214 </span><span class="lineNoCov">              0 :         *obj = intern;</span>
+<span class="lineNum">     215 </span><span class="lineNoCov">              0 :         ALLOC_INIT_ZVAL(intern-&gt;retval);</span>
+<span class="lineNum">     216 </span>                : 
+<span class="lineNum">     217 </span><span class="lineNoCov">              0 :         zend_object_std_init(&amp;intern-&gt;std, class_type TSRMLS_CC);</span>
+<span class="lineNum">     218 </span><span class="lineNoCov">              0 :         object_properties_init(&amp;intern-&gt;std, class_type);</span>
+<span class="lineNum">     219 </span>                : 
+<span class="lineNum">     220 </span><span class="lineNoCov">              0 :         intern-&gt;current = 0;</span>
+<span class="lineNum">     221 </span><span class="lineNoCov">              0 :         intern-&gt;flags = 0;</span>
+<span class="lineNum">     222 </span>                : 
+<span class="lineNum">     223 </span><span class="lineNoCov">              0 :         if (orig &amp;&amp; clone_orig) {</span>
+<span class="lineNum">     224 </span><span class="lineNoCov">              0 :                 spl_fixedarray_object *other = (spl_fixedarray_object*)zend_object_store_get_object(orig TSRMLS_CC);</span>
+<span class="lineNum">     225 </span><span class="lineNoCov">              0 :                 intern-&gt;ce_get_iterator = other-&gt;ce_get_iterator;</span>
+<span class="lineNum">     226 </span>                : 
+<span class="lineNum">     227 </span><span class="lineNoCov">              0 :                 intern-&gt;array = emalloc(sizeof(spl_fixedarray));</span>
+<span class="lineNum">     228 </span><span class="lineNoCov">              0 :                 spl_fixedarray_init(intern-&gt;array, other-&gt;array-&gt;size TSRMLS_CC);</span>
+<span class="lineNum">     229 </span><span class="lineNoCov">              0 :                 spl_fixedarray_copy(intern-&gt;array, other-&gt;array TSRMLS_CC);</span>
+<span class="lineNum">     230 </span>                :         }
+<span class="lineNum">     231 </span>                : 
+<span class="lineNum">     232 </span><span class="lineNoCov">              0 :         while (parent) {</span>
+<span class="lineNum">     233 </span><span class="lineNoCov">              0 :                 if (parent == spl_ce_SplFixedArray) {</span>
+<span class="lineNum">     234 </span><span class="lineNoCov">              0 :                         retval.handlers = &amp;spl_handler_SplFixedArray;</span>
+<span class="lineNum">     235 </span><span class="lineNoCov">              0 :                         class_type-&gt;get_iterator = spl_fixedarray_get_iterator;</span>
+<span class="lineNum">     236 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     237 </span>                :                 }
+<span class="lineNum">     238 </span>                : 
+<span class="lineNum">     239 </span><span class="lineNoCov">              0 :                 parent = parent-&gt;parent;</span>
+<span class="lineNum">     240 </span><span class="lineNoCov">              0 :                 inherited = 1;</span>
+<span class="lineNum">     241 </span>                :         }
+<span class="lineNum">     242 </span>                : 
+<span class="lineNum">     243 </span><span class="lineNoCov">              0 :         retval.handle = zend_objects_store_put(intern, (zend_objects_store_dtor_t)zend_objects_destroy_object, spl_fixedarray_object_free_storage, NULL TSRMLS_CC);</span>
+<span class="lineNum">     244 </span>                : 
+<span class="lineNum">     245 </span><span class="lineNoCov">              0 :         if (!parent) { /* this must never happen */</span>
+<span class="lineNum">     246 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_COMPILE_ERROR, &quot;Internal compiler error, Class is not child of SplFixedArray&quot;);</span>
+<span class="lineNum">     247 </span>                :         }
+<span class="lineNum">     248 </span><span class="lineNoCov">              0 :         if (!class_type-&gt;iterator_funcs.zf_current) {</span>
+<span class="lineNum">     249 </span><span class="lineNoCov">              0 :                 zend_hash_find(&amp;class_type-&gt;function_table, &quot;rewind&quot;,  sizeof(&quot;rewind&quot;),  (void **) &amp;class_type-&gt;iterator_funcs.zf_rewind);</span>
+<span class="lineNum">     250 </span><span class="lineNoCov">              0 :                 zend_hash_find(&amp;class_type-&gt;function_table, &quot;valid&quot;,   sizeof(&quot;valid&quot;),   (void **) &amp;class_type-&gt;iterator_funcs.zf_valid);</span>
+<span class="lineNum">     251 </span><span class="lineNoCov">              0 :                 zend_hash_find(&amp;class_type-&gt;function_table, &quot;key&quot;,     sizeof(&quot;key&quot;),     (void **) &amp;class_type-&gt;iterator_funcs.zf_key);</span>
+<span class="lineNum">     252 </span><span class="lineNoCov">              0 :                 zend_hash_find(&amp;class_type-&gt;function_table, &quot;current&quot;, sizeof(&quot;current&quot;), (void **) &amp;class_type-&gt;iterator_funcs.zf_current);</span>
+<span class="lineNum">     253 </span><span class="lineNoCov">              0 :                 zend_hash_find(&amp;class_type-&gt;function_table, &quot;next&quot;,    sizeof(&quot;next&quot;),    (void **) &amp;class_type-&gt;iterator_funcs.zf_next);</span>
+<span class="lineNum">     254 </span>                :         }
+<span class="lineNum">     255 </span><span class="lineNoCov">              0 :         if (inherited) {</span>
+<span class="lineNum">     256 </span><span class="lineNoCov">              0 :                 if (class_type-&gt;iterator_funcs.zf_rewind-&gt;common.scope  != parent) { </span>
+<span class="lineNum">     257 </span><span class="lineNoCov">              0 :                         intern-&gt;flags |= SPL_FIXEDARRAY_OVERLOADED_REWIND;</span>
+<span class="lineNum">     258 </span>                :                 }
+<span class="lineNum">     259 </span><span class="lineNoCov">              0 :                 if (class_type-&gt;iterator_funcs.zf_valid-&gt;common.scope   != parent) { </span>
+<span class="lineNum">     260 </span><span class="lineNoCov">              0 :                         intern-&gt;flags |= SPL_FIXEDARRAY_OVERLOADED_VALID;</span>
+<span class="lineNum">     261 </span>                :                 }
+<span class="lineNum">     262 </span><span class="lineNoCov">              0 :                 if (class_type-&gt;iterator_funcs.zf_key-&gt;common.scope     != parent) { </span>
+<span class="lineNum">     263 </span><span class="lineNoCov">              0 :                         intern-&gt;flags |= SPL_FIXEDARRAY_OVERLOADED_KEY;</span>
+<span class="lineNum">     264 </span>                :                 }
+<span class="lineNum">     265 </span><span class="lineNoCov">              0 :                 if (class_type-&gt;iterator_funcs.zf_current-&gt;common.scope != parent) { </span>
+<span class="lineNum">     266 </span><span class="lineNoCov">              0 :                         intern-&gt;flags |= SPL_FIXEDARRAY_OVERLOADED_CURRENT;</span>
+<span class="lineNum">     267 </span>                :                 }
+<span class="lineNum">     268 </span><span class="lineNoCov">              0 :                 if (class_type-&gt;iterator_funcs.zf_next-&gt;common.scope    != parent) { </span>
+<span class="lineNum">     269 </span><span class="lineNoCov">              0 :                         intern-&gt;flags |= SPL_FIXEDARRAY_OVERLOADED_NEXT;</span>
+<span class="lineNum">     270 </span>                :                 }
+<span class="lineNum">     271 </span>                : 
+<span class="lineNum">     272 </span><span class="lineNoCov">              0 :                 zend_hash_find(&amp;class_type-&gt;function_table, &quot;offsetget&quot;,    sizeof(&quot;offsetget&quot;),    (void **) &amp;intern-&gt;fptr_offset_get);</span>
+<span class="lineNum">     273 </span><span class="lineNoCov">              0 :                 if (intern-&gt;fptr_offset_get-&gt;common.scope == parent) {</span>
+<span class="lineNum">     274 </span><span class="lineNoCov">              0 :                         intern-&gt;fptr_offset_get = NULL;</span>
+<span class="lineNum">     275 </span>                :                 }
+<span class="lineNum">     276 </span><span class="lineNoCov">              0 :                 zend_hash_find(&amp;class_type-&gt;function_table, &quot;offsetset&quot;,    sizeof(&quot;offsetset&quot;),    (void **) &amp;intern-&gt;fptr_offset_set);</span>
+<span class="lineNum">     277 </span><span class="lineNoCov">              0 :                 if (intern-&gt;fptr_offset_set-&gt;common.scope == parent) {</span>
+<span class="lineNum">     278 </span><span class="lineNoCov">              0 :                         intern-&gt;fptr_offset_set = NULL;</span>
+<span class="lineNum">     279 </span>                :                 }
+<span class="lineNum">     280 </span><span class="lineNoCov">              0 :                 zend_hash_find(&amp;class_type-&gt;function_table, &quot;offsetexists&quot;, sizeof(&quot;offsetexists&quot;), (void **) &amp;intern-&gt;fptr_offset_has);</span>
+<span class="lineNum">     281 </span><span class="lineNoCov">              0 :                 if (intern-&gt;fptr_offset_has-&gt;common.scope == parent) {</span>
+<span class="lineNum">     282 </span><span class="lineNoCov">              0 :                         intern-&gt;fptr_offset_has = NULL;</span>
+<span class="lineNum">     283 </span>                :                 }
+<span class="lineNum">     284 </span><span class="lineNoCov">              0 :                 zend_hash_find(&amp;class_type-&gt;function_table, &quot;offsetunset&quot;,  sizeof(&quot;offsetunset&quot;),  (void **) &amp;intern-&gt;fptr_offset_del);</span>
+<span class="lineNum">     285 </span><span class="lineNoCov">              0 :                 if (intern-&gt;fptr_offset_del-&gt;common.scope == parent) {</span>
+<span class="lineNum">     286 </span><span class="lineNoCov">              0 :                         intern-&gt;fptr_offset_del = NULL;</span>
+<span class="lineNum">     287 </span>                :                 }
+<span class="lineNum">     288 </span><span class="lineNoCov">              0 :                 zend_hash_find(&amp;class_type-&gt;function_table, &quot;count&quot;,        sizeof(&quot;count&quot;),        (void **) &amp;intern-&gt;fptr_count);</span>
+<span class="lineNum">     289 </span><span class="lineNoCov">              0 :                 if (intern-&gt;fptr_count-&gt;common.scope == parent) {</span>
+<span class="lineNum">     290 </span><span class="lineNoCov">              0 :                         intern-&gt;fptr_count = NULL;</span>
+<span class="lineNum">     291 </span>                :                 }
+<span class="lineNum">     292 </span>                :         }
+<span class="lineNum">     293 </span>                : 
+<span class="lineNum">     294 </span><span class="lineNoCov">              0 :         return retval;</span>
+<span class="lineNum">     295 </span>                : }
+<a name="296"><span class="lineNum">     296 </span>                : /* }}} */</a>
+<span class="lineNum">     297 </span>                : 
+<span class="lineNum">     298 </span><span class="lineNoCov">              0 : static zend_object_value spl_fixedarray_new(zend_class_entry *class_type TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     299 </span>                : {
+<span class="lineNum">     300 </span>                :         spl_fixedarray_object *tmp;
+<span class="lineNum">     301 </span><span class="lineNoCov">              0 :         return spl_fixedarray_object_new_ex(class_type, &amp;tmp, NULL, 0 TSRMLS_CC);</span>
+<span class="lineNum">     302 </span>                : }
+<a name="303"><span class="lineNum">     303 </span>                : /* }}} */</a>
+<span class="lineNum">     304 </span>                : 
+<span class="lineNum">     305 </span><span class="lineNoCov">              0 : static zend_object_value spl_fixedarray_object_clone(zval *zobject TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     306 </span>                : {
+<span class="lineNum">     307 </span>                :         zend_object_value      new_obj_val;
+<span class="lineNum">     308 </span>                :         zend_object           *old_object;
+<span class="lineNum">     309 </span>                :         zend_object           *new_object;
+<span class="lineNum">     310 </span><span class="lineNoCov">              0 :         zend_object_handle     handle = Z_OBJ_HANDLE_P(zobject);</span>
+<span class="lineNum">     311 </span>                :         spl_fixedarray_object  *intern;
+<span class="lineNum">     312 </span>                : 
+<span class="lineNum">     313 </span><span class="lineNoCov">              0 :         old_object  = zend_objects_get_address(zobject TSRMLS_CC);</span>
+<span class="lineNum">     314 </span><span class="lineNoCov">              0 :         new_obj_val = spl_fixedarray_object_new_ex(old_object-&gt;ce, &amp;intern, zobject, 1 TSRMLS_CC);</span>
+<span class="lineNum">     315 </span><span class="lineNoCov">              0 :         new_object  = &amp;intern-&gt;std;</span>
+<span class="lineNum">     316 </span>                : 
+<span class="lineNum">     317 </span><span class="lineNoCov">              0 :         zend_objects_clone_members(new_object, new_obj_val, old_object, handle TSRMLS_CC);</span>
+<span class="lineNum">     318 </span>                : 
+<span class="lineNum">     319 </span><span class="lineNoCov">              0 :         return new_obj_val;</span>
+<span class="lineNum">     320 </span>                : }
+<a name="321"><span class="lineNum">     321 </span>                : /* }}} */</a>
+<span class="lineNum">     322 </span>                : 
+<span class="lineNum">     323 </span><span class="lineNoCov">              0 : static inline zval **spl_fixedarray_object_read_dimension_helper(spl_fixedarray_object *intern, zval *offset TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     324 </span>                : {
+<span class="lineNum">     325 </span>                :         long index;
+<span class="lineNum">     326 </span>                : 
+<span class="lineNum">     327 </span>                :         /* we have to return NULL on error here to avoid memleak because of 
+<span class="lineNum">     328 </span>                :          * ZE duplicating uninitialized_zval_ptr */
+<span class="lineNum">     329 </span><span class="lineNoCov">              0 :         if (!offset) {</span>
+<span class="lineNum">     330 </span><span class="lineNoCov">              0 :                 zend_throw_exception(spl_ce_RuntimeException, &quot;Index invalid or out of range&quot;, 0 TSRMLS_CC);</span>
+<span class="lineNum">     331 </span><span class="lineNoCov">              0 :                 return NULL;</span>
+<span class="lineNum">     332 </span>                :         }
+<span class="lineNum">     333 </span>                : 
+<span class="lineNum">     334 </span><span class="lineNoCov">              0 :         if (Z_TYPE_P(offset) != IS_LONG) {</span>
+<span class="lineNum">     335 </span><span class="lineNoCov">              0 :                 index = spl_offset_convert_to_long(offset TSRMLS_CC);</span>
+<span class="lineNum">     336 </span>                :         } else {
+<span class="lineNum">     337 </span><span class="lineNoCov">              0 :                 index = Z_LVAL_P(offset);</span>
+<span class="lineNum">     338 </span>                :         }
+<span class="lineNum">     339 </span>                :         
+<span class="lineNum">     340 </span><span class="lineNoCov">              0 :         if (index &lt; 0 || intern-&gt;array == NULL || index &gt;= intern-&gt;array-&gt;size) {</span>
+<span class="lineNum">     341 </span><span class="lineNoCov">              0 :                 zend_throw_exception(spl_ce_RuntimeException, &quot;Index invalid or out of range&quot;, 0 TSRMLS_CC);</span>
+<span class="lineNum">     342 </span><span class="lineNoCov">              0 :                 return NULL;</span>
+<span class="lineNum">     343 </span><span class="lineNoCov">              0 :         } else if(!intern-&gt;array-&gt;elements[index]) {</span>
+<span class="lineNum">     344 </span><span class="lineNoCov">              0 :                 return NULL;</span>
+<span class="lineNum">     345 </span>                :         } else {
+<span class="lineNum">     346 </span><span class="lineNoCov">              0 :                 return &amp;intern-&gt;array-&gt;elements[index];</span>
+<span class="lineNum">     347 </span>                :         }
+<span class="lineNum">     348 </span>                : }
+<a name="349"><span class="lineNum">     349 </span>                : /* }}} */</a>
+<span class="lineNum">     350 </span>                : 
+<span class="lineNum">     351 </span><span class="lineNoCov">              0 : static zval *spl_fixedarray_object_read_dimension(zval *object, zval *offset, int type TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     352 </span>                : {
+<span class="lineNum">     353 </span>                :         spl_fixedarray_object *intern;
+<span class="lineNum">     354 </span>                :         zval **retval;
+<span class="lineNum">     355 </span>                : 
+<span class="lineNum">     356 </span><span class="lineNoCov">              0 :         intern = (spl_fixedarray_object *)zend_object_store_get_object(object TSRMLS_CC);</span>
+<span class="lineNum">     357 </span>                : 
+<span class="lineNum">     358 </span><span class="lineNoCov">              0 :         if (intern-&gt;fptr_offset_get) {</span>
+<span class="lineNum">     359 </span>                :                 zval *rv;
+<span class="lineNum">     360 </span><span class="lineNoCov">              0 :                 SEPARATE_ARG_IF_REF(offset);</span>
+<span class="lineNum">     361 </span><span class="lineNoCov">              0 :                 zend_call_method_with_1_params(&amp;object, intern-&gt;std.ce, &amp;intern-&gt;fptr_offset_get, &quot;offsetGet&quot;, &amp;rv, offset);</span>
+<span class="lineNum">     362 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;offset);</span>
+<span class="lineNum">     363 </span><span class="lineNoCov">              0 :                 if (rv) {</span>
+<span class="lineNum">     364 </span><span class="lineNoCov">              0 :                         zval_ptr_dtor(&amp;intern-&gt;retval);</span>
+<span class="lineNum">     365 </span><span class="lineNoCov">              0 :                         MAKE_STD_ZVAL(intern-&gt;retval);</span>
+<span class="lineNum">     366 </span><span class="lineNoCov">              0 :                         ZVAL_ZVAL(intern-&gt;retval, rv, 1, 1);</span>
+<span class="lineNum">     367 </span><span class="lineNoCov">              0 :                         return intern-&gt;retval;</span>
+<span class="lineNum">     368 </span>                :                 }
+<span class="lineNum">     369 </span><span class="lineNoCov">              0 :                 return EG(uninitialized_zval_ptr);</span>
+<span class="lineNum">     370 </span>                :         }
+<span class="lineNum">     371 </span>                : 
+<span class="lineNum">     372 </span><span class="lineNoCov">              0 :         retval = spl_fixedarray_object_read_dimension_helper(intern, offset TSRMLS_CC);</span>
+<span class="lineNum">     373 </span><span class="lineNoCov">              0 :         if (retval) {</span>
+<span class="lineNum">     374 </span><span class="lineNoCov">              0 :                 return *retval;</span>
+<span class="lineNum">     375 </span>                :         }
+<span class="lineNum">     376 </span><span class="lineNoCov">              0 :         return NULL;</span>
+<span class="lineNum">     377 </span>                : }
+<a name="378"><span class="lineNum">     378 </span>                : /* }}} */</a>
+<span class="lineNum">     379 </span>                : 
+<span class="lineNum">     380 </span><span class="lineNoCov">              0 : static inline void spl_fixedarray_object_write_dimension_helper(spl_fixedarray_object *intern, zval *offset, zval *value TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     381 </span>                : {
+<span class="lineNum">     382 </span>                :         long index;
+<span class="lineNum">     383 </span>                : 
+<span class="lineNum">     384 </span><span class="lineNoCov">              0 :         if (!offset) {</span>
+<span class="lineNum">     385 </span>                :                 /* '$array[] = value' syntax is not supported */
+<span class="lineNum">     386 </span><span class="lineNoCov">              0 :                 zend_throw_exception(spl_ce_RuntimeException, &quot;Index invalid or out of range&quot;, 0 TSRMLS_CC);</span>
+<span class="lineNum">     387 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     388 </span>                :         }
+<span class="lineNum">     389 </span>                : 
+<span class="lineNum">     390 </span><span class="lineNoCov">              0 :         if (Z_TYPE_P(offset) != IS_LONG) {</span>
+<span class="lineNum">     391 </span><span class="lineNoCov">              0 :                 index = spl_offset_convert_to_long(offset TSRMLS_CC);</span>
+<span class="lineNum">     392 </span>                :         } else {
+<span class="lineNum">     393 </span><span class="lineNoCov">              0 :                 index = Z_LVAL_P(offset);</span>
+<span class="lineNum">     394 </span>                :         }
+<span class="lineNum">     395 </span>                : 
+<span class="lineNum">     396 </span><span class="lineNoCov">              0 :         if (index &lt; 0 || intern-&gt;array == NULL || index &gt;= intern-&gt;array-&gt;size) {</span>
+<span class="lineNum">     397 </span><span class="lineNoCov">              0 :                 zend_throw_exception(spl_ce_RuntimeException, &quot;Index invalid or out of range&quot;, 0 TSRMLS_CC);</span>
+<span class="lineNum">     398 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     399 </span>                :         } else {
+<span class="lineNum">     400 </span><span class="lineNoCov">              0 :                 if (intern-&gt;array-&gt;elements[index]) {</span>
+<span class="lineNum">     401 </span><span class="lineNoCov">              0 :                         zval_ptr_dtor(&amp;(intern-&gt;array-&gt;elements[index]));</span>
+<span class="lineNum">     402 </span>                :                 }
+<span class="lineNum">     403 </span><span class="lineNoCov">              0 :                 SEPARATE_ARG_IF_REF(value);</span>
+<span class="lineNum">     404 </span><span class="lineNoCov">              0 :                 intern-&gt;array-&gt;elements[index] = value;</span>
+<span class="lineNum">     405 </span>                :         }
+<span class="lineNum">     406 </span>                : }
+<a name="407"><span class="lineNum">     407 </span>                : /* }}} */</a>
+<span class="lineNum">     408 </span>                : 
+<span class="lineNum">     409 </span><span class="lineNoCov">              0 : static void spl_fixedarray_object_write_dimension(zval *object, zval *offset, zval *value TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     410 </span>                : {
+<span class="lineNum">     411 </span>                :         spl_fixedarray_object *intern;
+<span class="lineNum">     412 </span>                : 
+<span class="lineNum">     413 </span><span class="lineNoCov">              0 :         intern = (spl_fixedarray_object *)zend_object_store_get_object(object TSRMLS_CC);</span>
+<span class="lineNum">     414 </span>                : 
+<span class="lineNum">     415 </span><span class="lineNoCov">              0 :         if (intern-&gt;fptr_offset_set) {</span>
+<span class="lineNum">     416 </span><span class="lineNoCov">              0 :                 if (!offset) {</span>
+<span class="lineNum">     417 </span><span class="lineNoCov">              0 :                         ALLOC_INIT_ZVAL(offset);</span>
+<span class="lineNum">     418 </span>                :                 } else {
+<span class="lineNum">     419 </span><span class="lineNoCov">              0 :                         SEPARATE_ARG_IF_REF(offset);</span>
+<span class="lineNum">     420 </span>                :                 }
+<span class="lineNum">     421 </span><span class="lineNoCov">              0 :                 SEPARATE_ARG_IF_REF(value);</span>
+<span class="lineNum">     422 </span><span class="lineNoCov">              0 :                 zend_call_method_with_2_params(&amp;object, intern-&gt;std.ce, &amp;intern-&gt;fptr_offset_set, &quot;offsetSet&quot;, NULL, offset, value);</span>
+<span class="lineNum">     423 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;value);</span>
+<span class="lineNum">     424 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;offset);</span>
+<span class="lineNum">     425 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     426 </span>                :         }
+<span class="lineNum">     427 </span>                : 
+<span class="lineNum">     428 </span><span class="lineNoCov">              0 :         spl_fixedarray_object_write_dimension_helper(intern, offset, value TSRMLS_CC);</span>
+<span class="lineNum">     429 </span>                : }
+<a name="430"><span class="lineNum">     430 </span>                : /* }}} */</a>
+<span class="lineNum">     431 </span>                : 
+<span class="lineNum">     432 </span><span class="lineNoCov">              0 : static inline void spl_fixedarray_object_unset_dimension_helper(spl_fixedarray_object *intern, zval *offset TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     433 </span>                : {
+<span class="lineNum">     434 </span>                :         long index;
+<span class="lineNum">     435 </span>                :         
+<span class="lineNum">     436 </span><span class="lineNoCov">              0 :         if (Z_TYPE_P(offset) != IS_LONG) {</span>
+<span class="lineNum">     437 </span><span class="lineNoCov">              0 :                 index = spl_offset_convert_to_long(offset TSRMLS_CC);</span>
+<span class="lineNum">     438 </span>                :         } else {
+<span class="lineNum">     439 </span><span class="lineNoCov">              0 :                 index = Z_LVAL_P(offset);</span>
+<span class="lineNum">     440 </span>                :         }
+<span class="lineNum">     441 </span>                :         
+<span class="lineNum">     442 </span><span class="lineNoCov">              0 :         if (index &lt; 0 || intern-&gt;array == NULL || index &gt;= intern-&gt;array-&gt;size) {</span>
+<span class="lineNum">     443 </span><span class="lineNoCov">              0 :                 zend_throw_exception(spl_ce_RuntimeException, &quot;Index invalid or out of range&quot;, 0 TSRMLS_CC);</span>
+<span class="lineNum">     444 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     445 </span>                :         } else {
+<span class="lineNum">     446 </span><span class="lineNoCov">              0 :                 if (intern-&gt;array-&gt;elements[index]) {</span>
+<span class="lineNum">     447 </span><span class="lineNoCov">              0 :                         zval_ptr_dtor(&amp;(intern-&gt;array-&gt;elements[index]));</span>
+<span class="lineNum">     448 </span>                :                 }
+<span class="lineNum">     449 </span><span class="lineNoCov">              0 :                 intern-&gt;array-&gt;elements[index] = NULL;</span>
+<span class="lineNum">     450 </span>                :         }
+<span class="lineNum">     451 </span>                : }
+<a name="452"><span class="lineNum">     452 </span>                : /* }}} */</a>
+<span class="lineNum">     453 </span>                : 
+<span class="lineNum">     454 </span><span class="lineNoCov">              0 : static void spl_fixedarray_object_unset_dimension(zval *object, zval *offset TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     455 </span>                : {
+<span class="lineNum">     456 </span>                :         spl_fixedarray_object *intern;
+<span class="lineNum">     457 </span>                : 
+<span class="lineNum">     458 </span><span class="lineNoCov">              0 :         intern = (spl_fixedarray_object *)zend_object_store_get_object(object TSRMLS_CC);</span>
+<span class="lineNum">     459 </span>                : 
+<span class="lineNum">     460 </span><span class="lineNoCov">              0 :         if (intern-&gt;fptr_offset_del) {</span>
+<span class="lineNum">     461 </span><span class="lineNoCov">              0 :                 SEPARATE_ARG_IF_REF(offset);</span>
+<span class="lineNum">     462 </span><span class="lineNoCov">              0 :                 zend_call_method_with_1_params(&amp;object, intern-&gt;std.ce, &amp;intern-&gt;fptr_offset_del, &quot;offsetUnset&quot;, NULL, offset);</span>
+<span class="lineNum">     463 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;offset);</span>
+<span class="lineNum">     464 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     465 </span>                :         }
+<span class="lineNum">     466 </span>                : 
+<span class="lineNum">     467 </span><span class="lineNoCov">              0 :         spl_fixedarray_object_unset_dimension_helper(intern, offset TSRMLS_CC);</span>
+<span class="lineNum">     468 </span>                : 
+<span class="lineNum">     469 </span>                : }
+<a name="470"><span class="lineNum">     470 </span>                : /* }}} */</a>
+<span class="lineNum">     471 </span>                : 
+<span class="lineNum">     472 </span><span class="lineNoCov">              0 : static inline int spl_fixedarray_object_has_dimension_helper(spl_fixedarray_object *intern, zval *offset, int check_empty TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     473 </span>                : {
+<span class="lineNum">     474 </span>                :         long index;
+<span class="lineNum">     475 </span>                :         int retval;
+<span class="lineNum">     476 </span>                :         
+<span class="lineNum">     477 </span><span class="lineNoCov">              0 :         if (Z_TYPE_P(offset) != IS_LONG) {</span>
+<span class="lineNum">     478 </span><span class="lineNoCov">              0 :                 index = spl_offset_convert_to_long(offset TSRMLS_CC);</span>
+<span class="lineNum">     479 </span>                :         } else {
+<span class="lineNum">     480 </span><span class="lineNoCov">              0 :                 index = Z_LVAL_P(offset);</span>
+<span class="lineNum">     481 </span>                :         }
+<span class="lineNum">     482 </span>                :         
+<span class="lineNum">     483 </span><span class="lineNoCov">              0 :         if (index &lt; 0 || intern-&gt;array == NULL || index &gt;= intern-&gt;array-&gt;size) {</span>
+<span class="lineNum">     484 </span><span class="lineNoCov">              0 :                 retval = 0;</span>
+<span class="lineNum">     485 </span>                :         } else {
+<span class="lineNum">     486 </span><span class="lineNoCov">              0 :                 if (!intern-&gt;array-&gt;elements[index]) {</span>
+<span class="lineNum">     487 </span><span class="lineNoCov">              0 :                         retval = 0;</span>
+<span class="lineNum">     488 </span><span class="lineNoCov">              0 :                 } else if (check_empty) {</span>
+<span class="lineNum">     489 </span><span class="lineNoCov">              0 :                         if (zend_is_true(intern-&gt;array-&gt;elements[index])) {</span>
+<span class="lineNum">     490 </span><span class="lineNoCov">              0 :                                 retval = 1;</span>
+<span class="lineNum">     491 </span>                :                         } else {
+<span class="lineNum">     492 </span><span class="lineNoCov">              0 :                                 retval = 0;</span>
+<span class="lineNum">     493 </span>                :                         }
+<span class="lineNum">     494 </span>                :                 } else { /* != NULL and !check_empty */
+<span class="lineNum">     495 </span><span class="lineNoCov">              0 :                         retval = 1;</span>
+<span class="lineNum">     496 </span>                :                 }
+<span class="lineNum">     497 </span>                :         }
+<span class="lineNum">     498 </span>                : 
+<span class="lineNum">     499 </span><span class="lineNoCov">              0 :         return retval;</span>
+<span class="lineNum">     500 </span>                : }
+<a name="501"><span class="lineNum">     501 </span>                : /* }}} */</a>
+<span class="lineNum">     502 </span>                : 
+<span class="lineNum">     503 </span><span class="lineNoCov">              0 : static int spl_fixedarray_object_has_dimension(zval *object, zval *offset, int check_empty TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     504 </span>                : {
+<span class="lineNum">     505 </span>                :         spl_fixedarray_object *intern;
+<span class="lineNum">     506 </span>                : 
+<span class="lineNum">     507 </span><span class="lineNoCov">              0 :         intern = (spl_fixedarray_object *)zend_object_store_get_object(object TSRMLS_CC);</span>
+<span class="lineNum">     508 </span>                : 
+<span class="lineNum">     509 </span><span class="lineNoCov">              0 :         if (intern-&gt;fptr_offset_get) {</span>
+<span class="lineNum">     510 </span>                :                 zval *rv;
+<span class="lineNum">     511 </span><span class="lineNoCov">              0 :                 SEPARATE_ARG_IF_REF(offset);</span>
+<span class="lineNum">     512 </span><span class="lineNoCov">              0 :                 zend_call_method_with_1_params(&amp;object, intern-&gt;std.ce, &amp;intern-&gt;fptr_offset_has, &quot;offsetExists&quot;, &amp;rv, offset);</span>
+<span class="lineNum">     513 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;offset);</span>
+<span class="lineNum">     514 </span><span class="lineNoCov">              0 :                 if (rv) {</span>
+<span class="lineNum">     515 </span><span class="lineNoCov">              0 :                         zval_ptr_dtor(&amp;intern-&gt;retval);</span>
+<span class="lineNum">     516 </span><span class="lineNoCov">              0 :                         MAKE_STD_ZVAL(intern-&gt;retval);</span>
+<span class="lineNum">     517 </span><span class="lineNoCov">              0 :                         ZVAL_ZVAL(intern-&gt;retval, rv, 1, 1);</span>
+<span class="lineNum">     518 </span><span class="lineNoCov">              0 :                         return zend_is_true(intern-&gt;retval);</span>
+<span class="lineNum">     519 </span>                :                 }
+<span class="lineNum">     520 </span><span class="lineNoCov">              0 :                 return 0;</span>
+<span class="lineNum">     521 </span>                :         }
+<span class="lineNum">     522 </span>                : 
+<span class="lineNum">     523 </span><span class="lineNoCov">              0 :         return spl_fixedarray_object_has_dimension_helper(intern, offset, check_empty TSRMLS_CC);</span>
+<span class="lineNum">     524 </span>                : }
+<a name="525"><span class="lineNum">     525 </span>                : /* }}} */</a>
+<span class="lineNum">     526 </span>                : 
+<span class="lineNum">     527 </span><span class="lineNoCov">              0 : static int spl_fixedarray_object_count_elements(zval *object, long *count TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     528 </span>                : {
+<span class="lineNum">     529 </span>                :         spl_fixedarray_object *intern;
+<span class="lineNum">     530 </span>                :         
+<span class="lineNum">     531 </span><span class="lineNoCov">              0 :         intern = (spl_fixedarray_object *)zend_object_store_get_object(object TSRMLS_CC);</span>
+<span class="lineNum">     532 </span><span class="lineNoCov">              0 :         if (intern-&gt;fptr_count) {</span>
+<span class="lineNum">     533 </span>                :                 zval *rv;
+<span class="lineNum">     534 </span><span class="lineNoCov">              0 :                 zend_call_method_with_0_params(&amp;object, intern-&gt;std.ce, &amp;intern-&gt;fptr_count, &quot;count&quot;, &amp;rv);</span>
+<span class="lineNum">     535 </span><span class="lineNoCov">              0 :                 if (rv) {</span>
+<span class="lineNum">     536 </span><span class="lineNoCov">              0 :                         zval_ptr_dtor(&amp;intern-&gt;retval);</span>
+<span class="lineNum">     537 </span><span class="lineNoCov">              0 :                         MAKE_STD_ZVAL(intern-&gt;retval);</span>
+<span class="lineNum">     538 </span><span class="lineNoCov">              0 :                         ZVAL_ZVAL(intern-&gt;retval, rv, 1, 1);</span>
+<span class="lineNum">     539 </span><span class="lineNoCov">              0 :                         convert_to_long(intern-&gt;retval);</span>
+<span class="lineNum">     540 </span><span class="lineNoCov">              0 :                         *count = (long) Z_LVAL_P(intern-&gt;retval);</span>
+<span class="lineNum">     541 </span><span class="lineNoCov">              0 :                         return SUCCESS;</span>
+<span class="lineNum">     542 </span>                :                 }
+<span class="lineNum">     543 </span><span class="lineNoCov">              0 :         } else if (intern-&gt;array) {</span>
+<span class="lineNum">     544 </span><span class="lineNoCov">              0 :                 *count = intern-&gt;array-&gt;size;</span>
+<span class="lineNum">     545 </span><span class="lineNoCov">              0 :                 return SUCCESS;</span>
+<span class="lineNum">     546 </span>                :         }
+<span class="lineNum">     547 </span>                : 
+<span class="lineNum">     548 </span><span class="lineNoCov">              0 :         *count = 0;</span>
+<span class="lineNum">     549 </span><span class="lineNoCov">              0 :         return SUCCESS;</span>
+<span class="lineNum">     550 </span>                : }
+<span class="lineNum">     551 </span>                : /* }}} */
+<span class="lineNum">     552 </span>                : 
+<a name="553"><span class="lineNum">     553 </span>                : /* {{{ proto void SplFixedArray::__construct([int size])</a>
+<span class="lineNum">     554 </span>                : */
+<span class="lineNum">     555 </span><span class="lineNoCov">              0 : SPL_METHOD(SplFixedArray, __construct)</span>
+<span class="lineNum">     556 </span>                : {
+<span class="lineNum">     557 </span><span class="lineNoCov">              0 :         zval *object = getThis();</span>
+<span class="lineNum">     558 </span>                :         spl_fixedarray_object *intern;
+<span class="lineNum">     559 </span><span class="lineNoCov">              0 :         long size = 0;</span>
+<span class="lineNum">     560 </span>                : 
+<span class="lineNum">     561 </span><span class="lineNoCov">              0 :         if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;|l&quot;, &amp;size)) {</span>
+<span class="lineNum">     562 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     563 </span>                :         }
+<span class="lineNum">     564 </span>                : 
+<span class="lineNum">     565 </span><span class="lineNoCov">              0 :         if (size &lt; 0) {</span>
+<span class="lineNum">     566 </span><span class="lineNoCov">              0 :                 zend_throw_exception_ex(spl_ce_InvalidArgumentException, 0 TSRMLS_CC, &quot;array size cannot be less than zero&quot;);</span>
+<span class="lineNum">     567 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     568 </span>                :         }
+<span class="lineNum">     569 </span>                : 
+<span class="lineNum">     570 </span><span class="lineNoCov">              0 :         intern = (spl_fixedarray_object *)zend_object_store_get_object(object TSRMLS_CC);</span>
+<span class="lineNum">     571 </span>                : 
+<span class="lineNum">     572 </span><span class="lineNoCov">              0 :         if (intern-&gt;array) {</span>
+<span class="lineNum">     573 </span>                :                 /* called __construct() twice, bail out */
+<span class="lineNum">     574 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     575 </span>                :         }
+<span class="lineNum">     576 </span>                : 
+<span class="lineNum">     577 </span><span class="lineNoCov">              0 :         intern-&gt;array = emalloc(sizeof(spl_fixedarray));</span>
+<span class="lineNum">     578 </span><span class="lineNoCov">              0 :         spl_fixedarray_init(intern-&gt;array, size TSRMLS_CC);</span>
+<span class="lineNum">     579 </span>                : }
+<span class="lineNum">     580 </span>                : /* }}} */
+<span class="lineNum">     581 </span>                : 
+<a name="582"><span class="lineNum">     582 </span>                : /* {{{ proto int SplFixedArray::count(void)</a>
+<span class="lineNum">     583 </span>                : */
+<span class="lineNum">     584 </span><span class="lineNoCov">              0 : SPL_METHOD(SplFixedArray, count)</span>
+<span class="lineNum">     585 </span>                : {
+<span class="lineNum">     586 </span><span class="lineNoCov">              0 :         zval *object = getThis();</span>
+<span class="lineNum">     587 </span>                :         spl_fixedarray_object *intern;
+<span class="lineNum">     588 </span>                : 
+<span class="lineNum">     589 </span><span class="lineNoCov">              0 :         if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;&quot;)) {</span>
+<span class="lineNum">     590 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     591 </span>                :         }
+<span class="lineNum">     592 </span>                : 
+<span class="lineNum">     593 </span><span class="lineNoCov">              0 :         intern = (spl_fixedarray_object *)zend_object_store_get_object(object TSRMLS_CC);</span>
+<span class="lineNum">     594 </span><span class="lineNoCov">              0 :         if (intern-&gt;array) {</span>
+<span class="lineNum">     595 </span><span class="lineNoCov">              0 :                 RETURN_LONG(intern-&gt;array-&gt;size);</span>
+<span class="lineNum">     596 </span>                :         }
+<span class="lineNum">     597 </span><span class="lineNoCov">              0 :         RETURN_LONG(0);</span>
+<span class="lineNum">     598 </span>                : }
+<span class="lineNum">     599 </span>                : /* }}} */
+<span class="lineNum">     600 </span>                : 
+<a name="601"><span class="lineNum">     601 </span>                : /* {{{ proto object SplFixedArray::toArray()</a>
+<span class="lineNum">     602 </span>                : */
+<span class="lineNum">     603 </span><span class="lineNoCov">              0 : SPL_METHOD(SplFixedArray, toArray)</span>
+<span class="lineNum">     604 </span>                : {
+<span class="lineNum">     605 </span>                :         zval *ret, *tmp;
+<span class="lineNum">     606 </span>                :         HashTable *ret_ht, *obj_ht;
+<span class="lineNum">     607 </span>                : 
+<span class="lineNum">     608 </span><span class="lineNoCov">              0 :         if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;&quot;)) {</span>
+<span class="lineNum">     609 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     610 </span>                :         }
+<span class="lineNum">     611 </span>                : 
+<span class="lineNum">     612 </span><span class="lineNoCov">              0 :         ALLOC_HASHTABLE(ret_ht);</span>
+<span class="lineNum">     613 </span><span class="lineNoCov">              0 :         zend_hash_init(ret_ht, 0, NULL, ZVAL_PTR_DTOR, 0);</span>
+<span class="lineNum">     614 </span><span class="lineNoCov">              0 :         ALLOC_INIT_ZVAL(ret);</span>
+<span class="lineNum">     615 </span><span class="lineNoCov">              0 :         Z_TYPE_P(ret) = IS_ARRAY;</span>
+<span class="lineNum">     616 </span><span class="lineNoCov">              0 :         obj_ht = spl_fixedarray_object_get_properties(getThis() TSRMLS_CC);</span>
+<span class="lineNum">     617 </span><span class="lineNoCov">              0 :         zend_hash_copy(ret_ht, obj_ht, (copy_ctor_func_t) zval_add_ref, (void *) &amp;tmp, sizeof(zval *));</span>
+<span class="lineNum">     618 </span><span class="lineNoCov">              0 :         Z_ARRVAL_P(ret) = ret_ht;</span>
+<span class="lineNum">     619 </span>                : 
+<span class="lineNum">     620 </span><span class="lineNoCov">              0 :         RETURN_ZVAL(ret, 1, 1);</span>
+<span class="lineNum">     621 </span>                : }
+<span class="lineNum">     622 </span>                : /* }}} */
+<span class="lineNum">     623 </span>                : 
+<a name="624"><span class="lineNum">     624 </span>                : /* {{{ proto object SplFixedArray::fromArray(array data[, bool save_indexes])</a>
+<span class="lineNum">     625 </span>                : */
+<span class="lineNum">     626 </span><span class="lineNoCov">              0 : SPL_METHOD(SplFixedArray, fromArray)</span>
+<span class="lineNum">     627 </span>                : {
+<span class="lineNum">     628 </span>                :         zval *data;
+<span class="lineNum">     629 </span>                :         spl_fixedarray *array;
+<span class="lineNum">     630 </span>                :         spl_fixedarray_object *intern;
+<span class="lineNum">     631 </span>                :         int num;
+<span class="lineNum">     632 </span><span class="lineNoCov">              0 :         zend_bool save_indexes = 1;</span>
+<span class="lineNum">     633 </span>                : 
+<span class="lineNum">     634 </span><span class="lineNoCov">              0 :         if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;a|b&quot;, &amp;data, &amp;save_indexes)) {</span>
+<span class="lineNum">     635 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     636 </span>                :         }
+<span class="lineNum">     637 </span>                : 
+<span class="lineNum">     638 </span><span class="lineNoCov">              0 :         array = ecalloc(1, sizeof(*array));</span>
+<span class="lineNum">     639 </span><span class="lineNoCov">              0 :         num = zend_hash_num_elements(Z_ARRVAL_P(data));</span>
+<span class="lineNum">     640 </span>                :         
+<span class="lineNum">     641 </span><span class="lineNoCov">              0 :         if (num &gt; 0 &amp;&amp; save_indexes) {</span>
+<span class="lineNum">     642 </span>                :                 zval **element, *value;
+<span class="lineNum">     643 </span>                :                 char *str_index;
+<span class="lineNum">     644 </span><span class="lineNoCov">              0 :                 ulong num_index, max_index = 0;</span>
+<span class="lineNum">     645 </span>                :                 long tmp;
+<span class="lineNum">     646 </span>                : 
+<span class="lineNum">     647 </span><span class="lineNoCov">              0 :                 for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(data));</span>
+<span class="lineNum">     648 </span><span class="lineNoCov">              0 :                         zend_hash_get_current_data(Z_ARRVAL_P(data), (void **) &amp;element) == SUCCESS;</span>
+<span class="lineNum">     649 </span><span class="lineNoCov">              0 :                         zend_hash_move_forward(Z_ARRVAL_P(data))</span>
+<span class="lineNum">     650 </span><span class="lineNoCov">              0 :                         ) {</span>
+<span class="lineNum">     651 </span><span class="lineNoCov">              0 :                         if (zend_hash_get_current_key(Z_ARRVAL_P(data), &amp;str_index, &amp;num_index, 0) != HASH_KEY_IS_LONG || (long)num_index &lt; 0) {</span>
+<span class="lineNum">     652 </span><span class="lineNoCov">              0 :                                 efree(array);</span>
+<span class="lineNum">     653 </span><span class="lineNoCov">              0 :                                 zend_throw_exception_ex(spl_ce_InvalidArgumentException, 0 TSRMLS_CC, &quot;array must contain only positive integer keys&quot;);</span>
+<span class="lineNum">     654 </span><span class="lineNoCov">              0 :                                 return;</span>
+<span class="lineNum">     655 </span>                :                         }
+<span class="lineNum">     656 </span>                : 
+<span class="lineNum">     657 </span><span class="lineNoCov">              0 :                         if (num_index &gt; max_index) {</span>
+<span class="lineNum">     658 </span><span class="lineNoCov">              0 :                                 max_index = num_index;</span>
+<span class="lineNum">     659 </span>                :                         }
+<span class="lineNum">     660 </span>                :                 }
+<span class="lineNum">     661 </span>                : 
+<span class="lineNum">     662 </span><span class="lineNoCov">              0 :                 tmp = max_index + 1;</span>
+<span class="lineNum">     663 </span><span class="lineNoCov">              0 :                 if (tmp &lt;= 0) {</span>
+<span class="lineNum">     664 </span><span class="lineNoCov">              0 :                         efree(array);</span>
+<span class="lineNum">     665 </span><span class="lineNoCov">              0 :                         zend_throw_exception_ex(spl_ce_InvalidArgumentException, 0 TSRMLS_CC, &quot;integer overflow detected&quot;);</span>
+<span class="lineNum">     666 </span><span class="lineNoCov">              0 :                         return;</span>
+<span class="lineNum">     667 </span>                :                 }
+<span class="lineNum">     668 </span><span class="lineNoCov">              0 :                 spl_fixedarray_init(array, tmp TSRMLS_CC);</span>
+<span class="lineNum">     669 </span>                : 
+<span class="lineNum">     670 </span><span class="lineNoCov">              0 :                 for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(data));</span>
+<span class="lineNum">     671 </span><span class="lineNoCov">              0 :                         zend_hash_get_current_data(Z_ARRVAL_P(data), (void **) &amp;element) == SUCCESS;</span>
+<span class="lineNum">     672 </span><span class="lineNoCov">              0 :                         zend_hash_move_forward(Z_ARRVAL_P(data))</span>
+<span class="lineNum">     673 </span><span class="lineNoCov">              0 :                         ) {</span>
+<span class="lineNum">     674 </span>                :                         
+<span class="lineNum">     675 </span><span class="lineNoCov">              0 :                         zend_hash_get_current_key(Z_ARRVAL_P(data), &amp;str_index, &amp;num_index, 0);</span>
+<span class="lineNum">     676 </span><span class="lineNoCov">              0 :                         value = *element;</span>
+<span class="lineNum">     677 </span>                : 
+<span class="lineNum">     678 </span><span class="lineNoCov">              0 :                         SEPARATE_ARG_IF_REF(value);</span>
+<span class="lineNum">     679 </span><span class="lineNoCov">              0 :                         array-&gt;elements[num_index] = value;</span>
+<span class="lineNum">     680 </span>                :                 }
+<span class="lineNum">     681 </span>                : 
+<span class="lineNum">     682 </span><span class="lineNoCov">              0 :         } else if (num &gt; 0 &amp;&amp; !save_indexes) {</span>
+<span class="lineNum">     683 </span>                :                 zval **element, *value;
+<span class="lineNum">     684 </span><span class="lineNoCov">              0 :                 long i = 0;</span>
+<span class="lineNum">     685 </span>                :                 
+<span class="lineNum">     686 </span><span class="lineNoCov">              0 :                 spl_fixedarray_init(array, num TSRMLS_CC);</span>
+<span class="lineNum">     687 </span>                :                 
+<span class="lineNum">     688 </span><span class="lineNoCov">              0 :                 for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(data));</span>
+<span class="lineNum">     689 </span><span class="lineNoCov">              0 :                         zend_hash_get_current_data(Z_ARRVAL_P(data), (void **) &amp;element) == SUCCESS;</span>
+<span class="lineNum">     690 </span><span class="lineNoCov">              0 :                         zend_hash_move_forward(Z_ARRVAL_P(data))</span>
+<span class="lineNum">     691 </span><span class="lineNoCov">              0 :                         ) {</span>
+<span class="lineNum">     692 </span>                :                         
+<span class="lineNum">     693 </span><span class="lineNoCov">              0 :                         value = *element;</span>
+<span class="lineNum">     694 </span>                : 
+<span class="lineNum">     695 </span><span class="lineNoCov">              0 :                         SEPARATE_ARG_IF_REF(value);</span>
+<span class="lineNum">     696 </span><span class="lineNoCov">              0 :                         array-&gt;elements[i] = value;</span>
+<span class="lineNum">     697 </span><span class="lineNoCov">              0 :                         i++;</span>
+<span class="lineNum">     698 </span>                :                 }
+<span class="lineNum">     699 </span>                :         } else {
+<span class="lineNum">     700 </span><span class="lineNoCov">              0 :                 spl_fixedarray_init(array, 0 TSRMLS_CC);</span>
+<span class="lineNum">     701 </span>                :         }
+<span class="lineNum">     702 </span>                : 
+<span class="lineNum">     703 </span><span class="lineNoCov">              0 :         object_init_ex(return_value, spl_ce_SplFixedArray);</span>
+<span class="lineNum">     704 </span><span class="lineNoCov">              0 :         Z_TYPE_P(return_value) = IS_OBJECT;</span>
+<span class="lineNum">     705 </span>                : 
+<span class="lineNum">     706 </span><span class="lineNoCov">              0 :         intern = (spl_fixedarray_object *)zend_object_store_get_object(return_value TSRMLS_CC);</span>
+<span class="lineNum">     707 </span><span class="lineNoCov">              0 :         intern-&gt;array = array;</span>
+<span class="lineNum">     708 </span>                : }
+<span class="lineNum">     709 </span>                : /* }}} */
+<span class="lineNum">     710 </span>                : 
+<a name="711"><span class="lineNum">     711 </span>                : /* {{{ proto int SplFixedArray::getSize(void)</a>
+<span class="lineNum">     712 </span>                : */
+<span class="lineNum">     713 </span><span class="lineNoCov">              0 : SPL_METHOD(SplFixedArray, getSize)</span>
+<span class="lineNum">     714 </span>                : {
+<span class="lineNum">     715 </span><span class="lineNoCov">              0 :         zval *object = getThis();</span>
+<span class="lineNum">     716 </span>                :         spl_fixedarray_object *intern;
+<span class="lineNum">     717 </span>                : 
+<span class="lineNum">     718 </span><span class="lineNoCov">              0 :         if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;&quot;)) {</span>
+<span class="lineNum">     719 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     720 </span>                :         }
+<span class="lineNum">     721 </span>                : 
+<span class="lineNum">     722 </span><span class="lineNoCov">              0 :         intern = (spl_fixedarray_object *)zend_object_store_get_object(object TSRMLS_CC);</span>
+<span class="lineNum">     723 </span><span class="lineNoCov">              0 :         if (intern-&gt;array) {</span>
+<span class="lineNum">     724 </span><span class="lineNoCov">              0 :                 RETURN_LONG(intern-&gt;array-&gt;size);</span>
+<span class="lineNum">     725 </span>                :         }
+<span class="lineNum">     726 </span><span class="lineNoCov">              0 :         RETURN_LONG(0);</span>
+<span class="lineNum">     727 </span>                : }
+<span class="lineNum">     728 </span>                : /* }}} */
+<span class="lineNum">     729 </span>                : 
+<a name="730"><span class="lineNum">     730 </span>                : /* {{{ proto bool SplFixedArray::setSize(int size)</a>
+<span class="lineNum">     731 </span>                : */
+<span class="lineNum">     732 </span><span class="lineNoCov">              0 : SPL_METHOD(SplFixedArray, setSize)</span>
+<span class="lineNum">     733 </span>                : {
+<span class="lineNum">     734 </span><span class="lineNoCov">              0 :         zval *object = getThis();</span>
+<span class="lineNum">     735 </span>                :         spl_fixedarray_object *intern;
+<span class="lineNum">     736 </span>                :         long size;
+<span class="lineNum">     737 </span>                : 
+<span class="lineNum">     738 </span><span class="lineNoCov">              0 :         if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;l&quot;, &amp;size)) {</span>
+<span class="lineNum">     739 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     740 </span>                :         }
+<span class="lineNum">     741 </span>                : 
+<span class="lineNum">     742 </span><span class="lineNoCov">              0 :         if (size &lt; 0) {</span>
+<span class="lineNum">     743 </span><span class="lineNoCov">              0 :                 zend_throw_exception_ex(spl_ce_InvalidArgumentException, 0 TSRMLS_CC, &quot;array size cannot be less than zero&quot;);</span>
+<span class="lineNum">     744 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     745 </span>                :         }
+<span class="lineNum">     746 </span>                : 
+<span class="lineNum">     747 </span><span class="lineNoCov">              0 :         intern = (spl_fixedarray_object *)zend_object_store_get_object(object TSRMLS_CC);</span>
+<span class="lineNum">     748 </span><span class="lineNoCov">              0 :         if (!intern-&gt;array) {</span>
+<span class="lineNum">     749 </span><span class="lineNoCov">              0 :                 intern-&gt;array = ecalloc(1, sizeof(spl_fixedarray));</span>
+<span class="lineNum">     750 </span>                :         }
+<span class="lineNum">     751 </span>                : 
+<span class="lineNum">     752 </span><span class="lineNoCov">              0 :         spl_fixedarray_resize(intern-&gt;array, size TSRMLS_CC);</span>
+<span class="lineNum">     753 </span><span class="lineNoCov">              0 :         RETURN_TRUE;</span>
+<span class="lineNum">     754 </span>                : }
+<span class="lineNum">     755 </span>                : /* }}} */
+<span class="lineNum">     756 </span>                : 
+<a name="757"><span class="lineNum">     757 </span>                : /* {{{ proto bool SplFixedArray::offsetExists(mixed $index) U</a>
+<span class="lineNum">     758 </span>                :  Returns whether the requested $index exists. */
+<span class="lineNum">     759 </span><span class="lineNoCov">              0 : SPL_METHOD(SplFixedArray, offsetExists)</span>
+<span class="lineNum">     760 </span>                : {
+<span class="lineNum">     761 </span>                :         zval                  *zindex;
+<span class="lineNum">     762 </span>                :         spl_fixedarray_object  *intern;
+<span class="lineNum">     763 </span>                : 
+<span class="lineNum">     764 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;z&quot;, &amp;zindex) == FAILURE) {</span>
+<span class="lineNum">     765 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     766 </span>                :         }
+<span class="lineNum">     767 </span>                : 
+<span class="lineNum">     768 </span><span class="lineNoCov">              0 :         intern = (spl_fixedarray_object *)zend_object_store_get_object(getThis() TSRMLS_CC);</span>
+<span class="lineNum">     769 </span>                : 
+<span class="lineNum">     770 </span><span class="lineNoCov">              0 :         RETURN_BOOL(spl_fixedarray_object_has_dimension_helper(intern, zindex, 0 TSRMLS_CC));</span>
+<span class="lineNum">     771 </span>                : } /* }}} */
+<span class="lineNum">     772 </span>                : 
+<a name="773"><span class="lineNum">     773 </span>                : /* {{{ proto mixed SplFixedArray::offsetGet(mixed $index) U</a>
+<span class="lineNum">     774 </span>                :  Returns the value at the specified $index. */
+<span class="lineNum">     775 </span><span class="lineNoCov">              0 : SPL_METHOD(SplFixedArray, offsetGet)</span>
+<span class="lineNum">     776 </span>                : {
+<span class="lineNum">     777 </span>                :         zval                  *zindex, **value_pp;
+<span class="lineNum">     778 </span>                :         spl_fixedarray_object  *intern;
+<span class="lineNum">     779 </span>                : 
+<span class="lineNum">     780 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;z&quot;, &amp;zindex) == FAILURE) {</span>
+<span class="lineNum">     781 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     782 </span>                :         }
+<span class="lineNum">     783 </span>                : 
+<span class="lineNum">     784 </span><span class="lineNoCov">              0 :         intern    = (spl_fixedarray_object *)zend_object_store_get_object(getThis() TSRMLS_CC);</span>
+<span class="lineNum">     785 </span><span class="lineNoCov">              0 :         value_pp  = spl_fixedarray_object_read_dimension_helper(intern, zindex TSRMLS_CC);</span>
+<span class="lineNum">     786 </span>                : 
+<span class="lineNum">     787 </span><span class="lineNoCov">              0 :         if (value_pp) {</span>
+<span class="lineNum">     788 </span><span class="lineNoCov">              0 :                 RETURN_ZVAL(*value_pp, 1, 0);</span>
+<span class="lineNum">     789 </span>                :         }
+<span class="lineNum">     790 </span><span class="lineNoCov">              0 :         RETURN_NULL();</span>
+<span class="lineNum">     791 </span>                : } /* }}} */
+<span class="lineNum">     792 </span>                : 
+<a name="793"><span class="lineNum">     793 </span>                : /* {{{ proto void SplFixedArray::offsetSet(mixed $index, mixed $newval) U</a>
+<span class="lineNum">     794 </span>                :  Sets the value at the specified $index to $newval. */
+<span class="lineNum">     795 </span><span class="lineNoCov">              0 : SPL_METHOD(SplFixedArray, offsetSet)</span>
+<span class="lineNum">     796 </span>                : {
+<span class="lineNum">     797 </span>                :         zval                  *zindex, *value;
+<span class="lineNum">     798 </span>                :         spl_fixedarray_object  *intern;
+<span class="lineNum">     799 </span>                : 
+<span class="lineNum">     800 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;zz&quot;, &amp;zindex, &amp;value) == FAILURE) {</span>
+<span class="lineNum">     801 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     802 </span>                :         }
+<span class="lineNum">     803 </span>                : 
+<span class="lineNum">     804 </span><span class="lineNoCov">              0 :         intern = (spl_fixedarray_object *)zend_object_store_get_object(getThis() TSRMLS_CC);</span>
+<span class="lineNum">     805 </span><span class="lineNoCov">              0 :         spl_fixedarray_object_write_dimension_helper(intern, zindex, value TSRMLS_CC);</span>
+<span class="lineNum">     806 </span>                : 
+<span class="lineNum">     807 </span>                : } /* }}} */
+<span class="lineNum">     808 </span>                : 
+<a name="809"><span class="lineNum">     809 </span>                : /* {{{ proto void SplFixedArray::offsetUnset(mixed $index) U</a>
+<span class="lineNum">     810 </span>                :  Unsets the value at the specified $index. */
+<span class="lineNum">     811 </span><span class="lineNoCov">              0 : SPL_METHOD(SplFixedArray, offsetUnset)</span>
+<span class="lineNum">     812 </span>                : {
+<span class="lineNum">     813 </span>                :         zval                  *zindex;
+<span class="lineNum">     814 </span>                :         spl_fixedarray_object  *intern;
+<span class="lineNum">     815 </span>                : 
+<span class="lineNum">     816 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;z&quot;, &amp;zindex) == FAILURE) {</span>
+<span class="lineNum">     817 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     818 </span>                :         }
+<span class="lineNum">     819 </span>                : 
+<span class="lineNum">     820 </span><span class="lineNoCov">              0 :         intern = (spl_fixedarray_object *)zend_object_store_get_object(getThis() TSRMLS_CC);</span>
+<span class="lineNum">     821 </span><span class="lineNoCov">              0 :         spl_fixedarray_object_unset_dimension_helper(intern, zindex TSRMLS_CC);</span>
+<span class="lineNum">     822 </span>                : 
+<a name="823"><span class="lineNum">     823 </span>                : } /* }}} */</a>
+<span class="lineNum">     824 </span>                : 
+<span class="lineNum">     825 </span><span class="lineNoCov">              0 : static void spl_fixedarray_it_dtor(zend_object_iterator *iter TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     826 </span>                : {
+<span class="lineNum">     827 </span><span class="lineNoCov">              0 :         spl_fixedarray_it  *iterator = (spl_fixedarray_it *)iter;</span>
+<span class="lineNum">     828 </span>                : 
+<span class="lineNum">     829 </span><span class="lineNoCov">              0 :         zend_user_it_invalidate_current(iter TSRMLS_CC);</span>
+<span class="lineNum">     830 </span><span class="lineNoCov">              0 :         zval_ptr_dtor((zval**)&amp;iterator-&gt;intern.it.data);</span>
+<span class="lineNum">     831 </span>                : 
+<span class="lineNum">     832 </span><span class="lineNoCov">              0 :         efree(iterator);</span>
+<span class="lineNum">     833 </span><span class="lineNoCov">              0 : }</span>
+<a name="834"><span class="lineNum">     834 </span>                : /* }}} */</a>
+<span class="lineNum">     835 </span>                : 
+<span class="lineNum">     836 </span><span class="lineNoCov">              0 : static void spl_fixedarray_it_rewind(zend_object_iterator *iter TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     837 </span>                : {
+<span class="lineNum">     838 </span><span class="lineNoCov">              0 :         spl_fixedarray_it     *iterator = (spl_fixedarray_it *)iter;</span>
+<span class="lineNum">     839 </span><span class="lineNoCov">              0 :         spl_fixedarray_object *intern   = iterator-&gt;object;</span>
+<span class="lineNum">     840 </span>                : 
+<span class="lineNum">     841 </span><span class="lineNoCov">              0 :         if (intern-&gt;flags &amp; SPL_FIXEDARRAY_OVERLOADED_REWIND) {</span>
+<span class="lineNum">     842 </span><span class="lineNoCov">              0 :                 zend_user_it_rewind(iter TSRMLS_CC);</span>
+<span class="lineNum">     843 </span>                :         } else {
+<span class="lineNum">     844 </span><span class="lineNoCov">              0 :                 iterator-&gt;object-&gt;current = 0;</span>
+<span class="lineNum">     845 </span>                :         }
+<span class="lineNum">     846 </span><span class="lineNoCov">              0 : }</span>
+<a name="847"><span class="lineNum">     847 </span>                : /* }}} */</a>
+<span class="lineNum">     848 </span>                : 
+<span class="lineNum">     849 </span><span class="lineNoCov">              0 : static int spl_fixedarray_it_valid(zend_object_iterator *iter TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     850 </span>                : {
+<span class="lineNum">     851 </span><span class="lineNoCov">              0 :         spl_fixedarray_it     *iterator = (spl_fixedarray_it *)iter;</span>
+<span class="lineNum">     852 </span><span class="lineNoCov">              0 :         spl_fixedarray_object *intern   = iterator-&gt;object;</span>
+<span class="lineNum">     853 </span>                : 
+<span class="lineNum">     854 </span><span class="lineNoCov">              0 :         if (intern-&gt;flags &amp; SPL_FIXEDARRAY_OVERLOADED_VALID) {</span>
+<span class="lineNum">     855 </span><span class="lineNoCov">              0 :                 return zend_user_it_valid(iter TSRMLS_CC);</span>
+<span class="lineNum">     856 </span>                :         }
+<span class="lineNum">     857 </span>                : 
+<span class="lineNum">     858 </span><span class="lineNoCov">              0 :         if (iterator-&gt;object-&gt;current &gt;= 0 &amp;&amp; iterator-&gt;object-&gt;array &amp;&amp; iterator-&gt;object-&gt;current &lt; iterator-&gt;object-&gt;array-&gt;size) {</span>
+<span class="lineNum">     859 </span><span class="lineNoCov">              0 :                 return SUCCESS;</span>
+<span class="lineNum">     860 </span>                :         }
+<span class="lineNum">     861 </span>                : 
+<span class="lineNum">     862 </span><span class="lineNoCov">              0 :         return FAILURE;</span>
+<span class="lineNum">     863 </span>                : }
+<a name="864"><span class="lineNum">     864 </span>                : /* }}} */</a>
+<span class="lineNum">     865 </span>                : 
+<span class="lineNum">     866 </span><span class="lineNoCov">              0 : static void spl_fixedarray_it_get_current_data(zend_object_iterator *iter, zval ***data TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     867 </span>                : {
+<span class="lineNum">     868 </span>                :         zval                  *zindex;
+<span class="lineNum">     869 </span><span class="lineNoCov">              0 :         spl_fixedarray_it     *iterator = (spl_fixedarray_it *)iter;</span>
+<span class="lineNum">     870 </span><span class="lineNoCov">              0 :         spl_fixedarray_object *intern   = iterator-&gt;object;</span>
+<span class="lineNum">     871 </span>                : 
+<span class="lineNum">     872 </span><span class="lineNoCov">              0 :         if (intern-&gt;flags &amp; SPL_FIXEDARRAY_OVERLOADED_CURRENT) {</span>
+<span class="lineNum">     873 </span><span class="lineNoCov">              0 :                 zend_user_it_get_current_data(iter, data TSRMLS_CC);</span>
+<span class="lineNum">     874 </span>                :         } else {
+<span class="lineNum">     875 </span><span class="lineNoCov">              0 :                 ALLOC_INIT_ZVAL(zindex);</span>
+<span class="lineNum">     876 </span><span class="lineNoCov">              0 :                 ZVAL_LONG(zindex, iterator-&gt;object-&gt;current);</span>
+<span class="lineNum">     877 </span>                : 
+<span class="lineNum">     878 </span><span class="lineNoCov">              0 :                 *data = spl_fixedarray_object_read_dimension_helper(intern, zindex TSRMLS_CC);</span>
+<span class="lineNum">     879 </span>                : 
+<span class="lineNum">     880 </span><span class="lineNoCov">              0 :                 if (*data == NULL) {</span>
+<span class="lineNum">     881 </span><span class="lineNoCov">              0 :                         *data = &amp;EG(uninitialized_zval_ptr);</span>
+<span class="lineNum">     882 </span>                :                 }
+<span class="lineNum">     883 </span>                : 
+<span class="lineNum">     884 </span><span class="lineNoCov">              0 :                 zval_ptr_dtor(&amp;zindex);</span>
+<span class="lineNum">     885 </span>                :         }
+<span class="lineNum">     886 </span><span class="lineNoCov">              0 : }</span>
+<a name="887"><span class="lineNum">     887 </span>                : /* }}} */</a>
+<span class="lineNum">     888 </span>                : 
+<span class="lineNum">     889 </span><span class="lineNoCov">              0 : static int spl_fixedarray_it_get_current_key(zend_object_iterator *iter, char **str_key, uint *str_key_len, ulong *int_key TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     890 </span>                : {
+<span class="lineNum">     891 </span><span class="lineNoCov">              0 :         spl_fixedarray_it     *iterator = (spl_fixedarray_it *)iter;</span>
+<span class="lineNum">     892 </span><span class="lineNoCov">              0 :         spl_fixedarray_object *intern   = iterator-&gt;object;</span>
+<span class="lineNum">     893 </span>                : 
+<span class="lineNum">     894 </span><span class="lineNoCov">              0 :         if (intern-&gt;flags &amp; SPL_FIXEDARRAY_OVERLOADED_KEY) {</span>
+<span class="lineNum">     895 </span><span class="lineNoCov">              0 :                 return zend_user_it_get_current_key(iter, str_key, str_key_len, int_key TSRMLS_CC);</span>
+<span class="lineNum">     896 </span>                :         } else {
+<span class="lineNum">     897 </span><span class="lineNoCov">              0 :                 *int_key = (ulong) iterator-&gt;object-&gt;current;</span>
+<span class="lineNum">     898 </span><span class="lineNoCov">              0 :                 return HASH_KEY_IS_LONG;</span>
+<span class="lineNum">     899 </span>                :         }
+<span class="lineNum">     900 </span>                : 
+<span class="lineNum">     901 </span>                : }
+<a name="902"><span class="lineNum">     902 </span>                : /* }}} */</a>
+<span class="lineNum">     903 </span>                : 
+<span class="lineNum">     904 </span><span class="lineNoCov">              0 : static void spl_fixedarray_it_move_forward(zend_object_iterator *iter TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     905 </span>                : {
+<span class="lineNum">     906 </span><span class="lineNoCov">              0 :         spl_fixedarray_it     *iterator = (spl_fixedarray_it *)iter;</span>
+<span class="lineNum">     907 </span><span class="lineNoCov">              0 :         spl_fixedarray_object *intern   = iterator-&gt;object;</span>
+<span class="lineNum">     908 </span>                : 
+<span class="lineNum">     909 </span><span class="lineNoCov">              0 :         if (intern-&gt;flags &amp; SPL_FIXEDARRAY_OVERLOADED_NEXT) {</span>
+<span class="lineNum">     910 </span><span class="lineNoCov">              0 :                 zend_user_it_move_forward(iter TSRMLS_CC);</span>
+<span class="lineNum">     911 </span>                :         } else {
+<span class="lineNum">     912 </span><span class="lineNoCov">              0 :                 zend_user_it_invalidate_current(iter TSRMLS_CC);</span>
+<span class="lineNum">     913 </span><span class="lineNoCov">              0 :                 iterator-&gt;object-&gt;current++;</span>
+<span class="lineNum">     914 </span>                :         }
+<span class="lineNum">     915 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     916 </span>                : /* }}} */
+<span class="lineNum">     917 </span>                : 
+<a name="918"><span class="lineNum">     918 </span>                : /* {{{  proto int SplFixedArray::key() U</a>
+<span class="lineNum">     919 </span>                :    Return current array key */
+<span class="lineNum">     920 </span><span class="lineNoCov">              0 : SPL_METHOD(SplFixedArray, key)</span>
+<span class="lineNum">     921 </span>                : {
+<span class="lineNum">     922 </span><span class="lineNoCov">              0 :         spl_fixedarray_object *intern = (spl_fixedarray_object*)zend_object_store_get_object(getThis() TSRMLS_CC);</span>
+<span class="lineNum">     923 </span>                :         
+<span class="lineNum">     924 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters_none() == FAILURE) {</span>
+<span class="lineNum">     925 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     926 </span>                :         }
+<span class="lineNum">     927 </span>                : 
+<span class="lineNum">     928 </span><span class="lineNoCov">              0 :         RETURN_LONG(intern-&gt;current);</span>
+<span class="lineNum">     929 </span>                : }
+<span class="lineNum">     930 </span>                : /* }}} */
+<span class="lineNum">     931 </span>                : 
+<a name="932"><span class="lineNum">     932 </span>                : /* {{{ proto void SplFixedArray::next() U</a>
+<span class="lineNum">     933 </span>                :    Move to next entry */
+<span class="lineNum">     934 </span><span class="lineNoCov">              0 : SPL_METHOD(SplFixedArray, next)</span>
+<span class="lineNum">     935 </span>                : {
+<span class="lineNum">     936 </span><span class="lineNoCov">              0 :         spl_fixedarray_object *intern = (spl_fixedarray_object*)zend_object_store_get_object(getThis() TSRMLS_CC);</span>
+<span class="lineNum">     937 </span>                :         
+<span class="lineNum">     938 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters_none() == FAILURE) {</span>
+<span class="lineNum">     939 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     940 </span>                :         }
+<span class="lineNum">     941 </span>                : 
+<span class="lineNum">     942 </span><span class="lineNoCov">              0 :         intern-&gt;current++;</span>
+<span class="lineNum">     943 </span>                : }
+<span class="lineNum">     944 </span>                : /* }}} */
+<span class="lineNum">     945 </span>                : 
+<a name="946"><span class="lineNum">     946 </span>                : /* {{{ proto bool SplFixedArray::valid() U</a>
+<span class="lineNum">     947 </span>                :    Check whether the datastructure contains more entries */
+<span class="lineNum">     948 </span><span class="lineNoCov">              0 : SPL_METHOD(SplFixedArray, valid)</span>
+<span class="lineNum">     949 </span>                : {
+<span class="lineNum">     950 </span><span class="lineNoCov">              0 :         spl_fixedarray_object *intern = (spl_fixedarray_object*)zend_object_store_get_object(getThis() TSRMLS_CC);</span>
+<span class="lineNum">     951 </span>                :         
+<span class="lineNum">     952 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters_none() == FAILURE) {</span>
+<span class="lineNum">     953 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     954 </span>                :         }
+<span class="lineNum">     955 </span>                : 
+<span class="lineNum">     956 </span><span class="lineNoCov">              0 :         RETURN_BOOL(intern-&gt;current &gt;= 0 &amp;&amp; intern-&gt;array &amp;&amp; intern-&gt;current &lt; intern-&gt;array-&gt;size);</span>
+<span class="lineNum">     957 </span>                : }
+<span class="lineNum">     958 </span>                : /* }}} */
+<span class="lineNum">     959 </span>                : 
+<a name="960"><span class="lineNum">     960 </span>                : /* {{{ proto void SplFixedArray::rewind() U</a>
+<span class="lineNum">     961 </span>                :    Rewind the datastructure back to the start */
+<span class="lineNum">     962 </span><span class="lineNoCov">              0 : SPL_METHOD(SplFixedArray, rewind)</span>
+<span class="lineNum">     963 </span>                : {
+<span class="lineNum">     964 </span><span class="lineNoCov">              0 :         spl_fixedarray_object *intern = (spl_fixedarray_object*)zend_object_store_get_object(getThis() TSRMLS_CC);</span>
+<span class="lineNum">     965 </span>                :         
+<span class="lineNum">     966 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters_none() == FAILURE) {</span>
+<span class="lineNum">     967 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     968 </span>                :         }
+<span class="lineNum">     969 </span>                : 
+<span class="lineNum">     970 </span><span class="lineNoCov">              0 :         intern-&gt;current = 0;</span>
+<span class="lineNum">     971 </span>                : }
+<span class="lineNum">     972 </span>                : /* }}} */
+<span class="lineNum">     973 </span>                : 
+<a name="974"><span class="lineNum">     974 </span>                : /* {{{ proto mixed|NULL SplFixedArray::current() U</a>
+<span class="lineNum">     975 </span>                :    Return current datastructure entry */
+<span class="lineNum">     976 </span><span class="lineNoCov">              0 : SPL_METHOD(SplFixedArray, current)</span>
+<span class="lineNum">     977 </span>                : {
+<span class="lineNum">     978 </span>                :         zval                 *zindex, **value_pp;
+<span class="lineNum">     979 </span><span class="lineNoCov">              0 :         spl_fixedarray_object *intern  = (spl_fixedarray_object*)zend_object_store_get_object(getThis() TSRMLS_CC);</span>
+<span class="lineNum">     980 </span>                :         
+<span class="lineNum">     981 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters_none() == FAILURE) {</span>
+<span class="lineNum">     982 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     983 </span>                :         }
+<span class="lineNum">     984 </span>                : 
+<span class="lineNum">     985 </span><span class="lineNoCov">              0 :         ALLOC_INIT_ZVAL(zindex);</span>
+<span class="lineNum">     986 </span><span class="lineNoCov">              0 :         ZVAL_LONG(zindex, intern-&gt;current);</span>
+<span class="lineNum">     987 </span>                : 
+<span class="lineNum">     988 </span><span class="lineNoCov">              0 :         value_pp  = spl_fixedarray_object_read_dimension_helper(intern, zindex TSRMLS_CC);</span>
+<span class="lineNum">     989 </span>                : 
+<span class="lineNum">     990 </span><span class="lineNoCov">              0 :         zval_ptr_dtor(&amp;zindex);</span>
+<span class="lineNum">     991 </span>                : 
+<span class="lineNum">     992 </span><span class="lineNoCov">              0 :         if (value_pp) {</span>
+<span class="lineNum">     993 </span><span class="lineNoCov">              0 :                 RETURN_ZVAL(*value_pp, 1, 0);</span>
+<span class="lineNum">     994 </span>                :         }
+<span class="lineNum">     995 </span><span class="lineNoCov">              0 :         RETURN_NULL();</span>
+<span class="lineNum">     996 </span>                : }
+<span class="lineNum">     997 </span>                : /* }}} */
+<span class="lineNum">     998 </span>                : 
+<span class="lineNum">     999 </span>                : /* iterator handler table */
+<span class="lineNum">    1000 </span>                : zend_object_iterator_funcs spl_fixedarray_it_funcs = {
+<span class="lineNum">    1001 </span>                :         spl_fixedarray_it_dtor,
+<span class="lineNum">    1002 </span>                :         spl_fixedarray_it_valid,
+<span class="lineNum">    1003 </span>                :         spl_fixedarray_it_get_current_data,
+<span class="lineNum">    1004 </span>                :         spl_fixedarray_it_get_current_key,
+<span class="lineNum">    1005 </span>                :         spl_fixedarray_it_move_forward,
+<span class="lineNum">    1006 </span>                :         spl_fixedarray_it_rewind
+<a name="1007"><span class="lineNum">    1007 </span>                : };</a>
+<span class="lineNum">    1008 </span>                : 
+<span class="lineNum">    1009 </span><span class="lineNoCov">              0 : zend_object_iterator *spl_fixedarray_get_iterator(zend_class_entry *ce, zval *object, int by_ref TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">    1010 </span>                : {
+<span class="lineNum">    1011 </span>                :         spl_fixedarray_it      *iterator;
+<span class="lineNum">    1012 </span><span class="lineNoCov">              0 :         spl_fixedarray_object  *fixedarray_object = (spl_fixedarray_object*)zend_object_store_get_object(object TSRMLS_CC);</span>
+<span class="lineNum">    1013 </span>                : 
+<span class="lineNum">    1014 </span><span class="lineNoCov">              0 :         if (by_ref) {</span>
+<span class="lineNum">    1015 </span><span class="lineNoCov">              0 :                 zend_throw_exception(spl_ce_RuntimeException, &quot;An iterator cannot be used with foreach by reference&quot;, 0 TSRMLS_CC);</span>
+<span class="lineNum">    1016 </span><span class="lineNoCov">              0 :                 return NULL;</span>
+<span class="lineNum">    1017 </span>                :         }
+<span class="lineNum">    1018 </span>                : 
+<span class="lineNum">    1019 </span>                :         Z_ADDREF_P(object);
+<span class="lineNum">    1020 </span>                : 
+<span class="lineNum">    1021 </span><span class="lineNoCov">              0 :         iterator                     = emalloc(sizeof(spl_fixedarray_it));</span>
+<span class="lineNum">    1022 </span><span class="lineNoCov">              0 :         iterator-&gt;intern.it.data     = (void*)object;</span>
+<span class="lineNum">    1023 </span><span class="lineNoCov">              0 :         iterator-&gt;intern.it.funcs    = &amp;spl_fixedarray_it_funcs;</span>
+<span class="lineNum">    1024 </span><span class="lineNoCov">              0 :         iterator-&gt;intern.ce          = ce;</span>
+<span class="lineNum">    1025 </span><span class="lineNoCov">              0 :         iterator-&gt;intern.value       = NULL;</span>
+<span class="lineNum">    1026 </span><span class="lineNoCov">              0 :         iterator-&gt;object             = fixedarray_object;</span>
+<span class="lineNum">    1027 </span>                : 
+<span class="lineNum">    1028 </span><span class="lineNoCov">              0 :         return (zend_object_iterator*)iterator;</span>
+<span class="lineNum">    1029 </span>                : }
+<span class="lineNum">    1030 </span>                : /* }}} */
+<span class="lineNum">    1031 </span>                : 
+<span class="lineNum">    1032 </span>                : ZEND_BEGIN_ARG_INFO_EX(arginfo_splfixedarray_construct, 0, 0, 0)
+<span class="lineNum">    1033 </span>                :         ZEND_ARG_INFO(0, size)
+<span class="lineNum">    1034 </span>                : ZEND_END_ARG_INFO()
+<span class="lineNum">    1035 </span>                : 
+<span class="lineNum">    1036 </span>                : ZEND_BEGIN_ARG_INFO_EX(arginfo_fixedarray_offsetGet, 0, 0, 1)
+<span class="lineNum">    1037 </span>                :         ZEND_ARG_INFO(0, index)
+<span class="lineNum">    1038 </span>                : ZEND_END_ARG_INFO()
+<span class="lineNum">    1039 </span>                : 
+<span class="lineNum">    1040 </span>                : ZEND_BEGIN_ARG_INFO_EX(arginfo_fixedarray_offsetSet, 0, 0, 2)
+<span class="lineNum">    1041 </span>                :         ZEND_ARG_INFO(0, index)
+<span class="lineNum">    1042 </span>                :         ZEND_ARG_INFO(0, newval)
+<span class="lineNum">    1043 </span>                : ZEND_END_ARG_INFO()
+<span class="lineNum">    1044 </span>                : 
+<span class="lineNum">    1045 </span>                : ZEND_BEGIN_ARG_INFO(arginfo_fixedarray_setSize, 0)
+<span class="lineNum">    1046 </span>                :         ZEND_ARG_INFO(0, value)
+<span class="lineNum">    1047 </span>                : ZEND_END_ARG_INFO()
+<span class="lineNum">    1048 </span>                : 
+<span class="lineNum">    1049 </span>                : ZEND_BEGIN_ARG_INFO_EX(arginfo_fixedarray_fromArray, 0, 0, 1)
+<span class="lineNum">    1050 </span>                :         ZEND_ARG_INFO(0, data)
+<span class="lineNum">    1051 </span>                :         ZEND_ARG_INFO(0, save_indexes)
+<span class="lineNum">    1052 </span>                : ZEND_END_ARG_INFO()
+<span class="lineNum">    1053 </span>                : 
+<span class="lineNum">    1054 </span>                : ZEND_BEGIN_ARG_INFO(arginfo_splfixedarray_void, 0)
+<span class="lineNum">    1055 </span>                : ZEND_END_ARG_INFO()
+<span class="lineNum">    1056 </span>                : 
+<span class="lineNum">    1057 </span>                : static zend_function_entry spl_funcs_SplFixedArray[] = { /* {{{ */
+<span class="lineNum">    1058 </span>                :         SPL_ME(SplFixedArray, __construct,     arginfo_splfixedarray_construct,ZEND_ACC_PUBLIC)
+<span class="lineNum">    1059 </span>                :         SPL_ME(SplFixedArray, count,           arginfo_splfixedarray_void,     ZEND_ACC_PUBLIC)
+<span class="lineNum">    1060 </span>                :         SPL_ME(SplFixedArray, toArray,         arginfo_splfixedarray_void,     ZEND_ACC_PUBLIC)
+<span class="lineNum">    1061 </span>                :         SPL_ME(SplFixedArray, fromArray,       arginfo_fixedarray_fromArray,   ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
+<span class="lineNum">    1062 </span>                :         SPL_ME(SplFixedArray, getSize,         arginfo_splfixedarray_void,     ZEND_ACC_PUBLIC)
+<span class="lineNum">    1063 </span>                :         SPL_ME(SplFixedArray, setSize,         arginfo_fixedarray_setSize,     ZEND_ACC_PUBLIC)
+<span class="lineNum">    1064 </span>                :         SPL_ME(SplFixedArray, offsetExists,    arginfo_fixedarray_offsetGet,   ZEND_ACC_PUBLIC)
+<span class="lineNum">    1065 </span>                :         SPL_ME(SplFixedArray, offsetGet,       arginfo_fixedarray_offsetGet,   ZEND_ACC_PUBLIC)
+<span class="lineNum">    1066 </span>                :         SPL_ME(SplFixedArray, offsetSet,       arginfo_fixedarray_offsetSet,   ZEND_ACC_PUBLIC)
+<span class="lineNum">    1067 </span>                :         SPL_ME(SplFixedArray, offsetUnset,     arginfo_fixedarray_offsetGet,   ZEND_ACC_PUBLIC)
+<span class="lineNum">    1068 </span>                :         SPL_ME(SplFixedArray, rewind,          arginfo_splfixedarray_void,     ZEND_ACC_PUBLIC)
+<span class="lineNum">    1069 </span>                :         SPL_ME(SplFixedArray, current,         arginfo_splfixedarray_void,     ZEND_ACC_PUBLIC)
+<span class="lineNum">    1070 </span>                :         SPL_ME(SplFixedArray, key,             arginfo_splfixedarray_void,     ZEND_ACC_PUBLIC)
+<span class="lineNum">    1071 </span>                :         SPL_ME(SplFixedArray, next,            arginfo_splfixedarray_void,     ZEND_ACC_PUBLIC)
+<span class="lineNum">    1072 </span>                :         SPL_ME(SplFixedArray, valid,           arginfo_splfixedarray_void,     ZEND_ACC_PUBLIC)
+<span class="lineNum">    1073 </span>                :         PHP_FE_END
+<span class="lineNum">    1074 </span>                : };
+<span class="lineNum">    1075 </span>                : /* }}} */
+<a name="1076"><span class="lineNum">    1076 </span>                : </a>
+<span class="lineNum">    1077 </span>                : /* {{{ PHP_MINIT_FUNCTION */
+<span class="lineNum">    1078 </span><span class="lineCov">             48 : PHP_MINIT_FUNCTION(spl_fixedarray)</span>
+<span class="lineNum">    1079 </span>                : {
+<span class="lineNum">    1080 </span><span class="lineCov">             48 :         REGISTER_SPL_STD_CLASS_EX(SplFixedArray, spl_fixedarray_new, spl_funcs_SplFixedArray);</span>
+<span class="lineNum">    1081 </span><span class="lineCov">             48 :         memcpy(&amp;spl_handler_SplFixedArray, zend_get_std_object_handlers(), sizeof(zend_object_handlers));</span>
+<span class="lineNum">    1082 </span>                : 
+<span class="lineNum">    1083 </span><span class="lineCov">             48 :         spl_handler_SplFixedArray.clone_obj       = spl_fixedarray_object_clone;</span>
+<span class="lineNum">    1084 </span><span class="lineCov">             48 :         spl_handler_SplFixedArray.read_dimension  = spl_fixedarray_object_read_dimension;</span>
+<span class="lineNum">    1085 </span><span class="lineCov">             48 :         spl_handler_SplFixedArray.write_dimension = spl_fixedarray_object_write_dimension;</span>
+<span class="lineNum">    1086 </span><span class="lineCov">             48 :         spl_handler_SplFixedArray.unset_dimension = spl_fixedarray_object_unset_dimension;</span>
+<span class="lineNum">    1087 </span><span class="lineCov">             48 :         spl_handler_SplFixedArray.has_dimension   = spl_fixedarray_object_has_dimension;</span>
+<span class="lineNum">    1088 </span><span class="lineCov">             48 :         spl_handler_SplFixedArray.count_elements  = spl_fixedarray_object_count_elements;</span>
+<span class="lineNum">    1089 </span><span class="lineCov">             48 :         spl_handler_SplFixedArray.get_properties  = spl_fixedarray_object_get_properties;</span>
+<span class="lineNum">    1090 </span>                : 
+<span class="lineNum">    1091 </span><span class="lineCov">             48 :         REGISTER_SPL_IMPLEMENTS(SplFixedArray, Iterator);</span>
+<span class="lineNum">    1092 </span><span class="lineCov">             48 :         REGISTER_SPL_IMPLEMENTS(SplFixedArray, ArrayAccess);</span>
+<span class="lineNum">    1093 </span><span class="lineCov">             48 :         REGISTER_SPL_IMPLEMENTS(SplFixedArray, Countable);</span>
+<span class="lineNum">    1094 </span>                : 
+<span class="lineNum">    1095 </span><span class="lineCov">             48 :         spl_ce_SplFixedArray-&gt;get_iterator = spl_fixedarray_get_iterator;</span>
+<span class="lineNum">    1096 </span>                : 
+<span class="lineNum">    1097 </span><span class="lineCov">             48 :         return SUCCESS;</span>
+<span class="lineNum">    1098 </span>                : }
+<span class="lineNum">    1099 </span>                : /* }}} */
+<span class="lineNum">    1100 </span>                : 
+<span class="lineNum">    1101 </span>                : 
+<span class="lineNum">    1102 </span>                : /*
+<span class="lineNum">    1103 </span>                :  * Local variables:
+<span class="lineNum">    1104 </span>                :  * tab-width: 4
+<span class="lineNum">    1105 </span>                :  * c-basic-offset: 4
+<span class="lineNum">    1106 </span>                :  * End:
+<span class="lineNum">    1107 </span>                :  * vim600: noet sw=4 ts=4 fdm=marker
+<span class="lineNum">    1108 </span>                :  * vim&lt;600: noet sw=4 ts=4
+<span class="lineNum">    1109 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

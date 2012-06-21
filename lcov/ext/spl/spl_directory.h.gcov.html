@@ -1,0 +1,231 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - ext/spl/spl_directory.h</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../index.html">directory</a> - <a href="index.html">ext/spl</a> - spl_directory.h (source / <a href="spl_directory.h.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">4</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">2</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Authors: Marcus Boerger &lt;helly@php.net&gt;                              |
+<span class="lineNum">      16 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      17 </span>                :  */
+<span class="lineNum">      18 </span>                : 
+<span class="lineNum">      19 </span>                : /* $Id$ */
+<span class="lineNum">      20 </span>                : 
+<span class="lineNum">      21 </span>                : #ifndef SPL_DIRECTORY_H
+<span class="lineNum">      22 </span>                : #define SPL_DIRECTORY_H
+<span class="lineNum">      23 </span>                : 
+<span class="lineNum">      24 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">      25 </span>                : #include &quot;php_spl.h&quot;
+<span class="lineNum">      26 </span>                : 
+<span class="lineNum">      27 </span>                : extern PHPAPI zend_class_entry *spl_ce_SplFileInfo;
+<span class="lineNum">      28 </span>                : extern PHPAPI zend_class_entry *spl_ce_DirectoryIterator;
+<span class="lineNum">      29 </span>                : extern PHPAPI zend_class_entry *spl_ce_FilesystemIterator;
+<span class="lineNum">      30 </span>                : extern PHPAPI zend_class_entry *spl_ce_RecursiveDirectoryIterator;
+<span class="lineNum">      31 </span>                : extern PHPAPI zend_class_entry *spl_ce_GlobIterator;
+<span class="lineNum">      32 </span>                : extern PHPAPI zend_class_entry *spl_ce_SplFileObject;
+<span class="lineNum">      33 </span>                : extern PHPAPI zend_class_entry *spl_ce_SplTempFileObject;
+<span class="lineNum">      34 </span>                : 
+<span class="lineNum">      35 </span>                : PHP_MINIT_FUNCTION(spl_directory);
+<span class="lineNum">      36 </span>                : 
+<span class="lineNum">      37 </span>                : typedef enum {
+<span class="lineNum">      38 </span>                :         SPL_FS_INFO, /* must be 0 */
+<span class="lineNum">      39 </span>                :         SPL_FS_DIR,
+<span class="lineNum">      40 </span>                :         SPL_FS_FILE
+<span class="lineNum">      41 </span>                : } SPL_FS_OBJ_TYPE;
+<span class="lineNum">      42 </span>                : 
+<span class="lineNum">      43 </span>                : typedef struct _spl_filesystem_object  spl_filesystem_object;
+<span class="lineNum">      44 </span>                : 
+<span class="lineNum">      45 </span>                : typedef void (*spl_foreign_dtor_t)(spl_filesystem_object *object TSRMLS_DC);
+<span class="lineNum">      46 </span>                : typedef void (*spl_foreign_clone_t)(spl_filesystem_object *src, spl_filesystem_object *dst TSRMLS_DC);
+<span class="lineNum">      47 </span>                : 
+<span class="lineNum">      48 </span>                : PHPAPI char* spl_filesystem_object_get_path(spl_filesystem_object *intern, int *len TSRMLS_DC);
+<span class="lineNum">      49 </span>                : 
+<span class="lineNum">      50 </span>                : typedef struct _spl_other_handler {
+<span class="lineNum">      51 </span>                :         spl_foreign_dtor_t     dtor;
+<span class="lineNum">      52 </span>                :         spl_foreign_clone_t    clone;
+<span class="lineNum">      53 </span>                : } spl_other_handler;
+<span class="lineNum">      54 </span>                : 
+<span class="lineNum">      55 </span>                : /* define an overloaded iterator structure */
+<span class="lineNum">      56 </span>                : typedef struct {
+<span class="lineNum">      57 </span>                :         zend_object_iterator  intern;
+<span class="lineNum">      58 </span>                :         zval                  *current;
+<span class="lineNum">      59 </span>                :         spl_filesystem_object *object;
+<span class="lineNum">      60 </span>                : } spl_filesystem_iterator;
+<span class="lineNum">      61 </span>                : 
+<span class="lineNum">      62 </span>                : struct _spl_filesystem_object {
+<span class="lineNum">      63 </span>                :         zend_object        std;
+<span class="lineNum">      64 </span>                :         void               *oth;
+<span class="lineNum">      65 </span>                :         spl_other_handler  *oth_handler;
+<span class="lineNum">      66 </span>                :         char               *_path;
+<span class="lineNum">      67 </span>                :         int                _path_len;
+<span class="lineNum">      68 </span>                :         char               *orig_path;
+<span class="lineNum">      69 </span>                :         char               *file_name;
+<span class="lineNum">      70 </span>                :         int                file_name_len;
+<span class="lineNum">      71 </span>                :         SPL_FS_OBJ_TYPE    type;
+<span class="lineNum">      72 </span>                :         long               flags;
+<span class="lineNum">      73 </span>                :         zend_class_entry   *file_class;
+<span class="lineNum">      74 </span>                :         zend_class_entry   *info_class;
+<span class="lineNum">      75 </span>                :         union {
+<span class="lineNum">      76 </span>                :                 struct {
+<span class="lineNum">      77 </span>                :                         php_stream         *dirp;
+<span class="lineNum">      78 </span>                :                         php_stream_dirent  entry;
+<span class="lineNum">      79 </span>                :                         char               *sub_path;
+<span class="lineNum">      80 </span>                :                         int                sub_path_len;
+<span class="lineNum">      81 </span>                :                         int                index;
+<span class="lineNum">      82 </span>                :                         int                is_recursive;
+<span class="lineNum">      83 </span>                :                         zend_function      *func_rewind;
+<span class="lineNum">      84 </span>                :                         zend_function      *func_next;
+<span class="lineNum">      85 </span>                :                         zend_function      *func_valid;
+<span class="lineNum">      86 </span>                :                 } dir;
+<span class="lineNum">      87 </span>                :                 struct {
+<span class="lineNum">      88 </span>                :                         php_stream         *stream;
+<span class="lineNum">      89 </span>                :                         php_stream_context *context;
+<span class="lineNum">      90 </span>                :                         zval               *zcontext;
+<span class="lineNum">      91 </span>                :                         char               *open_mode;
+<span class="lineNum">      92 </span>                :                         int                open_mode_len;
+<span class="lineNum">      93 </span>                :                         zval               *current_zval;
+<span class="lineNum">      94 </span>                :                         char               *current_line;
+<span class="lineNum">      95 </span>                :                         size_t             current_line_len;
+<span class="lineNum">      96 </span>                :                         size_t             max_line_len;
+<span class="lineNum">      97 </span>                :                         long               current_line_num;
+<span class="lineNum">      98 </span>                :                         zval               zresource;
+<span class="lineNum">      99 </span>                :                         zend_function      *func_getCurr;
+<span class="lineNum">     100 </span>                :                         char               delimiter;
+<span class="lineNum">     101 </span>                :                         char               enclosure;
+<span class="lineNum">     102 </span>                :                         char               escape;
+<span class="lineNum">     103 </span>                :                 } file;
+<span class="lineNum">     104 </span>                :         } u;
+<span class="lineNum">     105 </span>                :         spl_filesystem_iterator    it;
+<a name="106"><span class="lineNum">     106 </span>                : };</a>
+<span class="lineNum">     107 </span>                : 
+<span class="lineNum">     108 </span><span class="lineNoCov">              0 : static inline spl_filesystem_iterator* spl_filesystem_object_to_iterator(spl_filesystem_object *obj)</span>
+<span class="lineNum">     109 </span>                : {
+<span class="lineNum">     110 </span><span class="lineNoCov">              0 :         return &amp;obj-&gt;it;</span>
+<a name="111"><span class="lineNum">     111 </span>                : }</a>
+<span class="lineNum">     112 </span>                : 
+<span class="lineNum">     113 </span><span class="lineNoCov">              0 : static inline spl_filesystem_object* spl_filesystem_iterator_to_object(spl_filesystem_iterator *it)</span>
+<span class="lineNum">     114 </span>                : {
+<span class="lineNum">     115 </span><span class="lineNoCov">              0 :         return (spl_filesystem_object*)((char*)it - XtOffsetOf(spl_filesystem_object, it));</span>
+<span class="lineNum">     116 </span>                : }
+<span class="lineNum">     117 </span>                : 
+<span class="lineNum">     118 </span>                : #define SPL_FILE_OBJECT_DROP_NEW_LINE      0x00000001 /* drop new lines */
+<span class="lineNum">     119 </span>                : #define SPL_FILE_OBJECT_READ_AHEAD         0x00000002 /* read on rewind/next */
+<span class="lineNum">     120 </span>                : #define SPL_FILE_OBJECT_SKIP_EMPTY         0x00000004 /* skip empty lines */
+<span class="lineNum">     121 </span>                : #define SPL_FILE_OBJECT_READ_CSV           0x00000008 /* read via fgetcsv */
+<span class="lineNum">     122 </span>                : #define SPL_FILE_OBJECT_MASK               0x0000000F /* read via fgetcsv */
+<span class="lineNum">     123 </span>                : 
+<span class="lineNum">     124 </span>                : #define SPL_FILE_DIR_CURRENT_AS_FILEINFO   0x00000000 /* make RecursiveDirectoryTree::current() return SplFileInfo */
+<span class="lineNum">     125 </span>                : #define SPL_FILE_DIR_CURRENT_AS_SELF       0x00000010 /* make RecursiveDirectoryTree::current() return getSelf() */
+<span class="lineNum">     126 </span>                : #define SPL_FILE_DIR_CURRENT_AS_PATHNAME   0x00000020 /* make RecursiveDirectoryTree::current() return getPathname() */
+<span class="lineNum">     127 </span>                : #define SPL_FILE_DIR_CURRENT_MODE_MASK     0x000000F0 /* mask RecursiveDirectoryTree::current() */
+<span class="lineNum">     128 </span>                : #define SPL_FILE_DIR_CURRENT(intern,mode)  ((intern-&gt;flags&amp;SPL_FILE_DIR_CURRENT_MODE_MASK)==mode)
+<span class="lineNum">     129 </span>                : 
+<span class="lineNum">     130 </span>                : #define SPL_FILE_DIR_KEY_AS_PATHNAME       0x00000000 /* make RecursiveDirectoryTree::key() return getPathname() */
+<span class="lineNum">     131 </span>                : #define SPL_FILE_DIR_KEY_AS_FILENAME       0x00000100 /* make RecursiveDirectoryTree::key() return getFilename() */
+<span class="lineNum">     132 </span>                : #define SPL_FILE_DIR_FOLLOW_SYMLINKS       0x00000200 /* make RecursiveDirectoryTree::hasChildren() follow symlinks */
+<span class="lineNum">     133 </span>                : #define SPL_FILE_DIR_KEY_MODE_MASK         0x00000F00 /* mask RecursiveDirectoryTree::key() */
+<span class="lineNum">     134 </span>                : #define SPL_FILE_DIR_KEY(intern,mode)      ((intern-&gt;flags&amp;SPL_FILE_DIR_KEY_MODE_MASK)==mode)
+<span class="lineNum">     135 </span>                : 
+<span class="lineNum">     136 </span>                : #define SPL_FILE_DIR_SKIPDOTS              0x00001000 /* Tells whether it should skip dots or not */
+<span class="lineNum">     137 </span>                : #define SPL_FILE_DIR_UNIXPATHS             0x00002000 /* Whether to unixify path separators */
+<span class="lineNum">     138 </span>                : #define SPL_FILE_DIR_OTHERS_MASK           0x00003000 /* mask used for get/setFlags */
+<span class="lineNum">     139 </span>                : 
+<span class="lineNum">     140 </span>                : #endif /* SPL_DIRECTORY_H */
+<span class="lineNum">     141 </span>                : 
+<span class="lineNum">     142 </span>                : /*
+<span class="lineNum">     143 </span>                :  * Local Variables:
+<span class="lineNum">     144 </span>                :  * c-basic-offset: 4
+<span class="lineNum">     145 </span>                :  * tab-width: 4
+<span class="lineNum">     146 </span>                :  * End:
+<span class="lineNum">     147 </span>                :  * vim600: fdm=marker
+<span class="lineNum">     148 </span>                :  * vim: noet sw=4 ts=4
+<span class="lineNum">     149 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

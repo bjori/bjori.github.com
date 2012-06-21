@@ -1,0 +1,214 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - ext/standard/lcg.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../index.html">directory</a> - <a href="index.html">ext/standard</a> - lcg.c (source / <a href="lcg.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">26</td>
+          <td class="headerCovTableEntry">23</td>
+          <td class="headerCovTableEntryHi">88.5 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">5</td>
+          <td class="headerCovTableEntry">4</td>
+          <td class="headerCovTableEntryMed">80.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Author: Sascha Schumann &lt;sascha@schumann.cx&gt;                         |
+<span class="lineNum">      16 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      17 </span>                : */
+<span class="lineNum">      18 </span>                : 
+<span class="lineNum">      19 </span>                : /* $Id$ */
+<span class="lineNum">      20 </span>                : 
+<span class="lineNum">      21 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">      22 </span>                : #include &quot;php_lcg.h&quot;
+<span class="lineNum">      23 </span>                : 
+<span class="lineNum">      24 </span>                : #if HAVE_UNISTD_H
+<span class="lineNum">      25 </span>                : #include &lt;unistd.h&gt;
+<span class="lineNum">      26 </span>                : #endif
+<span class="lineNum">      27 </span>                : 
+<span class="lineNum">      28 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">      29 </span>                : #include &quot;win32/time.h&quot;
+<span class="lineNum">      30 </span>                : #else
+<span class="lineNum">      31 </span>                : #include &lt;sys/time.h&gt;
+<span class="lineNum">      32 </span>                : #endif
+<span class="lineNum">      33 </span>                : 
+<span class="lineNum">      34 </span>                : #ifdef ZTS
+<span class="lineNum">      35 </span>                : int lcg_globals_id;
+<span class="lineNum">      36 </span>                : #else
+<span class="lineNum">      37 </span>                : static php_lcg_globals lcg_globals;
+<span class="lineNum">      38 </span>                : #endif
+<span class="lineNum">      39 </span>                : 
+<span class="lineNum">      40 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">      41 </span>                : #include &lt;process.h&gt;
+<span class="lineNum">      42 </span>                : #endif
+<span class="lineNum">      43 </span>                : 
+<span class="lineNum">      44 </span>                : /*
+<span class="lineNum">      45 </span>                :  * combinedLCG() returns a pseudo random number in the range of (0, 1).
+<span class="lineNum">      46 </span>                :  * The function combines two CGs with periods of
+<span class="lineNum">      47 </span>                :  * 2^31 - 85 and 2^31 - 249. The period of this function
+<span class="lineNum">      48 </span>                :  * is equal to the product of both primes.
+<span class="lineNum">      49 </span>                :  */
+<span class="lineNum">      50 </span>                : 
+<span class="lineNum">      51 </span>                : #define MODMULT(a, b, c, m, s) q = s/a;s=b*(s-a*q)-c*q;if(s&lt;0)s+=m
+<span class="lineNum">      52 </span>                : 
+<a name="53"><span class="lineNum">      53 </span>                : static void lcg_seed(TSRMLS_D);</a>
+<span class="lineNum">      54 </span>                : 
+<span class="lineNum">      55 </span><span class="lineCov">              2 : PHPAPI double php_combined_lcg(TSRMLS_D) /* {{{ */</span>
+<span class="lineNum">      56 </span>                : {
+<span class="lineNum">      57 </span>                :         php_int32 q;
+<span class="lineNum">      58 </span>                :         php_int32 z;
+<span class="lineNum">      59 </span>                : 
+<span class="lineNum">      60 </span><span class="lineCov">              2 :         if (!LCG(seeded)) {</span>
+<span class="lineNum">      61 </span><span class="lineCov">              2 :                 lcg_seed(TSRMLS_C);</span>
+<span class="lineNum">      62 </span>                :         }
+<span class="lineNum">      63 </span>                : 
+<span class="lineNum">      64 </span><span class="lineCov">              2 :         MODMULT(53668, 40014, 12211, 2147483563L, LCG(s1));</span>
+<span class="lineNum">      65 </span><span class="lineCov">              2 :         MODMULT(52774, 40692, 3791, 2147483399L, LCG(s2));</span>
+<span class="lineNum">      66 </span>                : 
+<span class="lineNum">      67 </span><span class="lineCov">              2 :         z = LCG(s1) - LCG(s2);</span>
+<span class="lineNum">      68 </span><span class="lineCov">              2 :         if (z &lt; 1) {</span>
+<span class="lineNum">      69 </span><span class="lineCov">              1 :                 z += 2147483562;</span>
+<span class="lineNum">      70 </span>                :         }
+<span class="lineNum">      71 </span>                : 
+<span class="lineNum">      72 </span><span class="lineCov">              2 :         return z * 4.656613e-10;</span>
+<span class="lineNum">      73 </span>                : }
+<a name="74"><span class="lineNum">      74 </span>                : /* }}} */</a>
+<span class="lineNum">      75 </span>                : 
+<span class="lineNum">      76 </span><span class="lineCov">              2 : static void lcg_seed(TSRMLS_D) /* {{{ */</span>
+<span class="lineNum">      77 </span>                : {
+<span class="lineNum">      78 </span>                :         struct timeval tv;
+<span class="lineNum">      79 </span>                : 
+<span class="lineNum">      80 </span><span class="lineCov">              2 :         if (gettimeofday(&amp;tv, NULL) == 0) {</span>
+<span class="lineNum">      81 </span><span class="lineCov">              2 :                 LCG(s1) = tv.tv_sec ^ (tv.tv_usec&lt;&lt;11);</span>
+<span class="lineNum">      82 </span>                :         } else {
+<span class="lineNum">      83 </span><span class="lineNoCov">              0 :                 LCG(s1) = 1;</span>
+<span class="lineNum">      84 </span>                :         }
+<span class="lineNum">      85 </span>                : #ifdef ZTS
+<span class="lineNum">      86 </span>                :         LCG(s2) = (long) tsrm_thread_id();
+<span class="lineNum">      87 </span>                : #else
+<span class="lineNum">      88 </span><span class="lineCov">              2 :         LCG(s2) = (long) getpid();</span>
+<span class="lineNum">      89 </span>                : #endif
+<span class="lineNum">      90 </span>                : 
+<span class="lineNum">      91 </span>                :         /* Add entropy to s2 by calling gettimeofday() again */
+<span class="lineNum">      92 </span><span class="lineCov">              2 :         if (gettimeofday(&amp;tv, NULL) == 0) {</span>
+<span class="lineNum">      93 </span><span class="lineCov">              2 :                 LCG(s2) ^= (tv.tv_usec&lt;&lt;11);</span>
+<span class="lineNum">      94 </span>                :         }
+<span class="lineNum">      95 </span>                : 
+<span class="lineNum">      96 </span><span class="lineCov">              2 :         LCG(seeded) = 1;</span>
+<span class="lineNum">      97 </span><span class="lineCov">              2 : }</span>
+<a name="98"><span class="lineNum">      98 </span>                : /* }}} */</a>
+<span class="lineNum">      99 </span>                : 
+<span class="lineNum">     100 </span><span class="lineCov">             48 : static void lcg_init_globals(php_lcg_globals *lcg_globals_p TSRMLS_DC) /* {{{ */</span>
+<span class="lineNum">     101 </span>                : {
+<span class="lineNum">     102 </span><span class="lineCov">             48 :         LCG(seeded) = 0;</span>
+<span class="lineNum">     103 </span><span class="lineCov">             48 : }</span>
+<a name="104"><span class="lineNum">     104 </span>                : /* }}} */</a>
+<span class="lineNum">     105 </span>                : 
+<span class="lineNum">     106 </span><span class="lineCov">             48 : PHP_MINIT_FUNCTION(lcg) /* {{{ */</span>
+<span class="lineNum">     107 </span>                : {
+<span class="lineNum">     108 </span>                : #ifdef ZTS
+<span class="lineNum">     109 </span>                :         ts_allocate_id(&amp;lcg_globals_id, sizeof(php_lcg_globals), (ts_allocate_ctor) lcg_init_globals, NULL);
+<span class="lineNum">     110 </span>                : #else
+<span class="lineNum">     111 </span><span class="lineCov">             48 :         lcg_init_globals(&amp;lcg_globals);</span>
+<span class="lineNum">     112 </span>                : #endif
+<span class="lineNum">     113 </span><span class="lineCov">             48 :         return SUCCESS;</span>
+<span class="lineNum">     114 </span>                : }
+<span class="lineNum">     115 </span>                : /* }}} */
+<span class="lineNum">     116 </span>                : 
+<a name="117"><span class="lineNum">     117 </span>                : /* {{{ proto float lcg_value()</a>
+<span class="lineNum">     118 </span>                :    Returns a value from the combined linear congruential generator */
+<span class="lineNum">     119 </span><span class="lineNoCov">              0 : PHP_FUNCTION(lcg_value)</span>
+<span class="lineNum">     120 </span>                : {
+<span class="lineNum">     121 </span><span class="lineNoCov">              0 :         RETURN_DOUBLE(php_combined_lcg(TSRMLS_C));</span>
+<span class="lineNum">     122 </span>                : }
+<span class="lineNum">     123 </span>                : /* }}} */
+<span class="lineNum">     124 </span>                : 
+<span class="lineNum">     125 </span>                : /*
+<span class="lineNum">     126 </span>                :  * Local variables:
+<span class="lineNum">     127 </span>                :  * tab-width: 4
+<span class="lineNum">     128 </span>                :  * c-basic-offset: 4
+<span class="lineNum">     129 </span>                :  * End:
+<span class="lineNum">     130 </span>                :  * vim600: sw=4 ts=4 fdm=marker
+<span class="lineNum">     131 </span>                :  * vim&lt;600: sw=4 ts=4
+<span class="lineNum">     132 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

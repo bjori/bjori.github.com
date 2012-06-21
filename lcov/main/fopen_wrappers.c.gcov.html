@@ -1,0 +1,899 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - main/fopen_wrappers.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../index.html">directory</a> - <a href="index.html">main</a> - fopen_wrappers.c (source / <a href="fopen_wrappers.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">325</td>
+          <td class="headerCovTableEntry">68</td>
+          <td class="headerCovTableEntryMed">20.9 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">12</td>
+          <td class="headerCovTableEntry">9</td>
+          <td class="headerCovTableEntryMed">75.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Authors: Rasmus Lerdorf &lt;rasmus@lerdorf.on.ca&gt;                       |
+<span class="lineNum">      16 </span>                :    |          Jim Winstead &lt;jimw@php.net&gt;                                 |
+<span class="lineNum">      17 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      18 </span>                :  */
+<span class="lineNum">      19 </span>                : 
+<span class="lineNum">      20 </span>                : /* $Id$ */
+<span class="lineNum">      21 </span>                : 
+<span class="lineNum">      22 </span>                : /* {{{ includes
+<span class="lineNum">      23 </span>                :  */
+<span class="lineNum">      24 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">      25 </span>                : #include &quot;php_globals.h&quot;
+<span class="lineNum">      26 </span>                : #include &quot;SAPI.h&quot;
+<span class="lineNum">      27 </span>                : 
+<span class="lineNum">      28 </span>                : #include &lt;stdio.h&gt;
+<span class="lineNum">      29 </span>                : #include &lt;stdlib.h&gt;
+<span class="lineNum">      30 </span>                : #include &lt;errno.h&gt;
+<span class="lineNum">      31 </span>                : #include &lt;sys/types.h&gt;
+<span class="lineNum">      32 </span>                : #include &lt;sys/stat.h&gt;
+<span class="lineNum">      33 </span>                : #include &lt;fcntl.h&gt;
+<span class="lineNum">      34 </span>                : 
+<span class="lineNum">      35 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">      36 </span>                : #define O_RDONLY _O_RDONLY
+<span class="lineNum">      37 </span>                : #include &quot;win32/param.h&quot;
+<span class="lineNum">      38 </span>                : #else
+<span class="lineNum">      39 </span>                : #include &lt;sys/param.h&gt;
+<span class="lineNum">      40 </span>                : #endif
+<span class="lineNum">      41 </span>                : 
+<span class="lineNum">      42 </span>                : #include &quot;ext/standard/head.h&quot;
+<span class="lineNum">      43 </span>                : #include &quot;ext/standard/php_standard.h&quot;
+<span class="lineNum">      44 </span>                : #include &quot;zend_compile.h&quot;
+<span class="lineNum">      45 </span>                : #include &quot;php_network.h&quot;
+<span class="lineNum">      46 </span>                : 
+<span class="lineNum">      47 </span>                : #if HAVE_PWD_H
+<span class="lineNum">      48 </span>                : #include &lt;pwd.h&gt;
+<span class="lineNum">      49 </span>                : #endif
+<span class="lineNum">      50 </span>                : 
+<span class="lineNum">      51 </span>                : #include &lt;sys/types.h&gt;
+<span class="lineNum">      52 </span>                : #if HAVE_SYS_SOCKET_H
+<span class="lineNum">      53 </span>                : #include &lt;sys/socket.h&gt;
+<span class="lineNum">      54 </span>                : #endif
+<span class="lineNum">      55 </span>                : 
+<span class="lineNum">      56 </span>                : #ifndef S_ISREG
+<span class="lineNum">      57 </span>                : #define S_ISREG(mode)   (((mode) &amp; S_IFMT) == S_IFREG)
+<span class="lineNum">      58 </span>                : #endif
+<span class="lineNum">      59 </span>                : 
+<span class="lineNum">      60 </span>                : #ifdef PHP_WIN32
+<span class="lineNum">      61 </span>                : #include &lt;winsock2.h&gt;
+<span class="lineNum">      62 </span>                : #elif defined(NETWARE) &amp;&amp; defined(USE_WINSOCK)
+<span class="lineNum">      63 </span>                : #include &lt;novsock2.h&gt;
+<span class="lineNum">      64 </span>                : #else
+<span class="lineNum">      65 </span>                : #include &lt;netinet/in.h&gt;
+<span class="lineNum">      66 </span>                : #include &lt;netdb.h&gt;
+<span class="lineNum">      67 </span>                : #if HAVE_ARPA_INET_H
+<span class="lineNum">      68 </span>                : #include &lt;arpa/inet.h&gt;
+<span class="lineNum">      69 </span>                : #endif
+<span class="lineNum">      70 </span>                : #endif
+<span class="lineNum">      71 </span>                : 
+<span class="lineNum">      72 </span>                : #if defined(PHP_WIN32) || defined(__riscos__) || defined(NETWARE)
+<span class="lineNum">      73 </span>                : #undef AF_UNIX
+<span class="lineNum">      74 </span>                : #endif
+<span class="lineNum">      75 </span>                : 
+<span class="lineNum">      76 </span>                : #if defined(AF_UNIX)
+<span class="lineNum">      77 </span>                : #include &lt;sys/un.h&gt;
+<span class="lineNum">      78 </span>                : #endif
+<span class="lineNum">      79 </span>                : /* }}} */
+<span class="lineNum">      80 </span>                : 
+<span class="lineNum">      81 </span>                : /* {{{ OnUpdateBaseDir
+<a name="82"><span class="lineNum">      82 </span>                : Allows any change to open_basedir setting in during Startup and Shutdown events,</a>
+<span class="lineNum">      83 </span>                : or a tightening during activation/runtime/deactivation */
+<span class="lineNum">      84 </span><span class="lineCov">             48 : PHPAPI ZEND_INI_MH(OnUpdateBaseDir)</span>
+<span class="lineNum">      85 </span>                : {
+<span class="lineNum">      86 </span>                :         char **p, *pathbuf, *ptr, *end;
+<span class="lineNum">      87 </span>                : #ifndef ZTS
+<span class="lineNum">      88 </span><span class="lineCov">             48 :         char *base = (char *) mh_arg2;</span>
+<span class="lineNum">      89 </span>                : #else
+<span class="lineNum">      90 </span>                :         char *base = (char *) ts_resource(*((int *) mh_arg2));
+<span class="lineNum">      91 </span>                : #endif
+<span class="lineNum">      92 </span>                : 
+<span class="lineNum">      93 </span><span class="lineCov">             48 :         p = (char **) (base + (size_t) mh_arg1);</span>
+<span class="lineNum">      94 </span>                : 
+<span class="lineNum">      95 </span><span class="lineCov">             48 :         if (stage == PHP_INI_STAGE_STARTUP || stage == PHP_INI_STAGE_SHUTDOWN || stage == PHP_INI_STAGE_ACTIVATE || stage == PHP_INI_STAGE_DEACTIVATE) {</span>
+<span class="lineNum">      96 </span>                :                 /* We're in a PHP_INI_SYSTEM context, no restrictions */
+<span class="lineNum">      97 </span><span class="lineCov">             48 :                 *p = new_value;</span>
+<span class="lineNum">      98 </span><span class="lineCov">             48 :                 return SUCCESS;</span>
+<span class="lineNum">      99 </span>                :         }
+<span class="lineNum">     100 </span>                : 
+<span class="lineNum">     101 </span>                :         /* Otherwise we're in runtime */
+<span class="lineNum">     102 </span><span class="lineNoCov">              0 :         if (!*p || !**p) {</span>
+<span class="lineNum">     103 </span>                :                 /* open_basedir not set yet, go ahead and give it a value */
+<span class="lineNum">     104 </span><span class="lineNoCov">              0 :                 *p = new_value;</span>
+<span class="lineNum">     105 </span><span class="lineNoCov">              0 :                 return SUCCESS;</span>
+<span class="lineNum">     106 </span>                :         }
+<span class="lineNum">     107 </span>                : 
+<span class="lineNum">     108 </span>                :         /* Shortcut: When we have a open_basedir and someone tries to unset, we know it'll fail */
+<span class="lineNum">     109 </span><span class="lineNoCov">              0 :         if (!new_value || !*new_value) {</span>
+<span class="lineNum">     110 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">     111 </span>                :         }
+<span class="lineNum">     112 </span>                : 
+<span class="lineNum">     113 </span>                :         /* Is the proposed open_basedir at least as restrictive as the current setting? */
+<span class="lineNum">     114 </span><span class="lineNoCov">              0 :         ptr = pathbuf = estrdup(new_value);</span>
+<span class="lineNum">     115 </span><span class="lineNoCov">              0 :         while (ptr &amp;&amp; *ptr) {</span>
+<span class="lineNum">     116 </span><span class="lineNoCov">              0 :                 end = strchr(ptr, DEFAULT_DIR_SEPARATOR);</span>
+<span class="lineNum">     117 </span><span class="lineNoCov">              0 :                 if (end != NULL) {</span>
+<span class="lineNum">     118 </span><span class="lineNoCov">              0 :                         *end = '\0';</span>
+<span class="lineNum">     119 </span><span class="lineNoCov">              0 :                         end++;</span>
+<span class="lineNum">     120 </span>                :                 }
+<span class="lineNum">     121 </span><span class="lineNoCov">              0 :                 if (php_check_open_basedir_ex(ptr, 0 TSRMLS_CC) != 0) {</span>
+<span class="lineNum">     122 </span>                :                         /* At least one portion of this open_basedir is less restrictive than the prior one, FAIL */
+<span class="lineNum">     123 </span><span class="lineNoCov">              0 :                         efree(pathbuf);</span>
+<span class="lineNum">     124 </span><span class="lineNoCov">              0 :                         return FAILURE;</span>
+<span class="lineNum">     125 </span>                :                 }
+<span class="lineNum">     126 </span><span class="lineNoCov">              0 :                 ptr = end;</span>
+<span class="lineNum">     127 </span>                :         }
+<span class="lineNum">     128 </span><span class="lineNoCov">              0 :         efree(pathbuf);</span>
+<span class="lineNum">     129 </span>                : 
+<span class="lineNum">     130 </span>                :         /* Everything checks out, set it */
+<span class="lineNum">     131 </span><span class="lineNoCov">              0 :         *p = new_value;</span>
+<span class="lineNum">     132 </span>                : 
+<span class="lineNum">     133 </span><span class="lineNoCov">              0 :         return SUCCESS;</span>
+<span class="lineNum">     134 </span>                : }
+<span class="lineNum">     135 </span>                : /* }}} */
+<span class="lineNum">     136 </span>                : 
+<span class="lineNum">     137 </span>                : /* {{{ php_check_specific_open_basedir
+<span class="lineNum">     138 </span>                :         When open_basedir is not NULL, check if the given filename is located in
+<span class="lineNum">     139 </span>                :         open_basedir. Returns -1 if error or not in the open_basedir, else 0.
+<a name="140"><span class="lineNum">     140 </span>                :         When open_basedir is NULL, always return 0.</a>
+<span class="lineNum">     141 </span>                : */
+<span class="lineNum">     142 </span><span class="lineNoCov">              0 : PHPAPI int php_check_specific_open_basedir(const char *basedir, const char *path TSRMLS_DC)</span>
+<span class="lineNum">     143 </span>                : {
+<span class="lineNum">     144 </span>                :         char resolved_name[MAXPATHLEN];
+<span class="lineNum">     145 </span>                :         char resolved_basedir[MAXPATHLEN];
+<span class="lineNum">     146 </span>                :         char local_open_basedir[MAXPATHLEN];
+<span class="lineNum">     147 </span>                :         char path_tmp[MAXPATHLEN];
+<span class="lineNum">     148 </span>                :         char *path_file;
+<span class="lineNum">     149 </span>                :         int resolved_basedir_len;
+<span class="lineNum">     150 </span>                :         int resolved_name_len;
+<span class="lineNum">     151 </span>                :         int path_len;
+<span class="lineNum">     152 </span><span class="lineNoCov">              0 :         int nesting_level = 0;</span>
+<span class="lineNum">     153 </span>                : 
+<span class="lineNum">     154 </span>                :         /* Special case basedir==&quot;.&quot;: Use script-directory */
+<span class="lineNum">     155 </span><span class="lineNoCov">              0 :         if (strcmp(basedir, &quot;.&quot;) || !VCWD_GETCWD(local_open_basedir, MAXPATHLEN)) {</span>
+<span class="lineNum">     156 </span>                :                 /* Else use the unmodified path */
+<span class="lineNum">     157 </span><span class="lineNoCov">              0 :                 strlcpy(local_open_basedir, basedir, sizeof(local_open_basedir));</span>
+<span class="lineNum">     158 </span>                :         }
+<span class="lineNum">     159 </span>                : 
+<span class="lineNum">     160 </span><span class="lineNoCov">              0 :         path_len = strlen(path);</span>
+<span class="lineNum">     161 </span><span class="lineNoCov">              0 :         if (path_len &gt; (MAXPATHLEN - 1)) {</span>
+<span class="lineNum">     162 </span>                :                 /* empty and too long paths are invalid */
+<span class="lineNum">     163 </span><span class="lineNoCov">              0 :                 return -1;</span>
+<span class="lineNum">     164 </span>                :         }
+<span class="lineNum">     165 </span>                : 
+<span class="lineNum">     166 </span>                :         /* normalize and expand path */
+<span class="lineNum">     167 </span><span class="lineNoCov">              0 :         if (expand_filepath(path, resolved_name TSRMLS_CC) == NULL) {</span>
+<span class="lineNum">     168 </span><span class="lineNoCov">              0 :                 return -1;</span>
+<span class="lineNum">     169 </span>                :         }
+<span class="lineNum">     170 </span>                : 
+<span class="lineNum">     171 </span><span class="lineNoCov">              0 :         path_len = strlen(resolved_name);</span>
+<span class="lineNum">     172 </span><span class="lineNoCov">              0 :         memcpy(path_tmp, resolved_name, path_len + 1); /* safe */</span>
+<span class="lineNum">     173 </span>                : 
+<span class="lineNum">     174 </span><span class="lineNoCov">              0 :         while (VCWD_REALPATH(path_tmp, resolved_name) == NULL) {</span>
+<span class="lineNum">     175 </span>                : #if defined(PHP_WIN32) || defined(HAVE_SYMLINK)
+<span class="lineNum">     176 </span>                : #if defined(PHP_WIN32)
+<span class="lineNum">     177 </span>                :                 if (EG(windows_version_info).dwMajorVersion &gt; 5) {
+<span class="lineNum">     178 </span>                : #endif
+<span class="lineNum">     179 </span><span class="lineNoCov">              0 :                         if (nesting_level == 0) {</span>
+<span class="lineNum">     180 </span>                :                                 int ret;
+<span class="lineNum">     181 </span>                :                                 char buf[MAXPATHLEN];
+<span class="lineNum">     182 </span>                : 
+<span class="lineNum">     183 </span><span class="lineNoCov">              0 :                                 ret = php_sys_readlink(path_tmp, buf, MAXPATHLEN - 1);</span>
+<span class="lineNum">     184 </span><span class="lineNoCov">              0 :                                 if (ret &lt; 0) {</span>
+<span class="lineNum">     185 </span>                :                                         /* not a broken symlink, move along.. */
+<span class="lineNum">     186 </span>                :                                 } else {
+<span class="lineNum">     187 </span>                :                                         /* put the real path into the path buffer */
+<span class="lineNum">     188 </span><span class="lineNoCov">              0 :                                         memcpy(path_tmp, buf, ret);</span>
+<span class="lineNum">     189 </span><span class="lineNoCov">              0 :                                         path_tmp[ret] = '\0';</span>
+<span class="lineNum">     190 </span>                :                                 }
+<span class="lineNum">     191 </span>                :                         }
+<span class="lineNum">     192 </span>                : #if defined(PHP_WIN32)
+<span class="lineNum">     193 </span>                :                 }
+<span class="lineNum">     194 </span>                : #endif
+<span class="lineNum">     195 </span>                : #endif
+<span class="lineNum">     196 </span>                : 
+<span class="lineNum">     197 </span>                : #if defined(PHP_WIN32) || defined(NETWARE)
+<span class="lineNum">     198 </span>                :                 path_file = strrchr(path_tmp, DEFAULT_SLASH);
+<span class="lineNum">     199 </span>                :                 if (!path_file) {
+<span class="lineNum">     200 </span>                :                         path_file = strrchr(path_tmp, '/');
+<span class="lineNum">     201 </span>                :                 }
+<span class="lineNum">     202 </span>                : #else
+<span class="lineNum">     203 </span><span class="lineNoCov">              0 :                 path_file = strrchr(path_tmp, DEFAULT_SLASH);</span>
+<span class="lineNum">     204 </span>                : #endif
+<span class="lineNum">     205 </span><span class="lineNoCov">              0 :                 if (!path_file) {</span>
+<span class="lineNum">     206 </span>                :                         /* none of the path components exist. definitely not in open_basedir.. */
+<span class="lineNum">     207 </span><span class="lineNoCov">              0 :                         return -1;</span>
+<span class="lineNum">     208 </span>                :                 } else {
+<span class="lineNum">     209 </span><span class="lineNoCov">              0 :                         path_len = path_file - path_tmp + 1;</span>
+<span class="lineNum">     210 </span>                : #if defined(PHP_WIN32) || defined(NETWARE)
+<span class="lineNum">     211 </span>                :                         if (path_len &gt; 1 &amp;&amp; path_tmp[path_len - 2] == ':') {
+<span class="lineNum">     212 </span>                :                                 if (path_len != 3) {
+<span class="lineNum">     213 </span>                :                                         return -1;
+<span class="lineNum">     214 </span>                :                                 } 
+<span class="lineNum">     215 </span>                :                                 /* this is c:\ */
+<span class="lineNum">     216 </span>                :                                 path_tmp[path_len] = '\0';
+<span class="lineNum">     217 </span>                :                         } else {
+<span class="lineNum">     218 </span>                :                                 path_tmp[path_len - 1] = '\0';
+<span class="lineNum">     219 </span>                :                         }
+<span class="lineNum">     220 </span>                : #else
+<span class="lineNum">     221 </span><span class="lineNoCov">              0 :                         path_tmp[path_len - 1] = '\0';</span>
+<span class="lineNum">     222 </span>                : #endif
+<span class="lineNum">     223 </span>                :                 }
+<span class="lineNum">     224 </span><span class="lineNoCov">              0 :                 nesting_level++;</span>
+<span class="lineNum">     225 </span>                :         }
+<span class="lineNum">     226 </span>                : 
+<span class="lineNum">     227 </span>                :         /* Resolve open_basedir to resolved_basedir */
+<span class="lineNum">     228 </span><span class="lineNoCov">              0 :         if (expand_filepath(local_open_basedir, resolved_basedir TSRMLS_CC) != NULL) {</span>
+<span class="lineNum">     229 </span>                :                 /* Handler for basedirs that end with a / */
+<span class="lineNum">     230 </span><span class="lineNoCov">              0 :                 resolved_basedir_len = strlen(resolved_basedir);</span>
+<span class="lineNum">     231 </span>                : #if defined(PHP_WIN32) || defined(NETWARE)
+<span class="lineNum">     232 </span>                :                 if (basedir[strlen(basedir) - 1] == PHP_DIR_SEPARATOR || basedir[strlen(basedir) - 1] == '/') {
+<span class="lineNum">     233 </span>                : #else
+<span class="lineNum">     234 </span><span class="lineNoCov">              0 :                 if (basedir[strlen(basedir) - 1] == PHP_DIR_SEPARATOR) {</span>
+<span class="lineNum">     235 </span>                : #endif
+<span class="lineNum">     236 </span><span class="lineNoCov">              0 :                         if (resolved_basedir[resolved_basedir_len - 1] != PHP_DIR_SEPARATOR) {</span>
+<span class="lineNum">     237 </span><span class="lineNoCov">              0 :                                 resolved_basedir[resolved_basedir_len] = PHP_DIR_SEPARATOR;</span>
+<span class="lineNum">     238 </span><span class="lineNoCov">              0 :                                 resolved_basedir[++resolved_basedir_len] = '\0';</span>
+<span class="lineNum">     239 </span>                :                         }
+<span class="lineNum">     240 </span>                :                 } else {
+<span class="lineNum">     241 </span><span class="lineNoCov">              0 :                                 resolved_basedir[resolved_basedir_len++] = PHP_DIR_SEPARATOR;</span>
+<span class="lineNum">     242 </span><span class="lineNoCov">              0 :                                 resolved_basedir[resolved_basedir_len] = '\0';</span>
+<span class="lineNum">     243 </span>                :                 }
+<span class="lineNum">     244 </span>                : 
+<span class="lineNum">     245 </span><span class="lineNoCov">              0 :                 resolved_name_len = strlen(resolved_name);</span>
+<span class="lineNum">     246 </span><span class="lineNoCov">              0 :                 if (path_tmp[path_len - 1] == PHP_DIR_SEPARATOR) {</span>
+<span class="lineNum">     247 </span><span class="lineNoCov">              0 :                         if (resolved_name[resolved_name_len - 1] != PHP_DIR_SEPARATOR) {</span>
+<span class="lineNum">     248 </span><span class="lineNoCov">              0 :                                 resolved_name[resolved_name_len] = PHP_DIR_SEPARATOR;</span>
+<span class="lineNum">     249 </span><span class="lineNoCov">              0 :                                 resolved_name[++resolved_name_len] = '\0';</span>
+<span class="lineNum">     250 </span>                :                         }
+<span class="lineNum">     251 </span>                :                 }
+<span class="lineNum">     252 </span>                : 
+<span class="lineNum">     253 </span>                :                 /* Check the path */
+<span class="lineNum">     254 </span>                : #if defined(PHP_WIN32) || defined(NETWARE)
+<span class="lineNum">     255 </span>                :                 if (strncasecmp(resolved_basedir, resolved_name, resolved_basedir_len) == 0) {
+<span class="lineNum">     256 </span>                : #else
+<span class="lineNum">     257 </span><span class="lineNoCov">              0 :                 if (strncmp(resolved_basedir, resolved_name, resolved_basedir_len) == 0) {</span>
+<span class="lineNum">     258 </span>                : #endif
+<span class="lineNum">     259 </span><span class="lineNoCov">              0 :                         if (resolved_name_len &gt; resolved_basedir_len &amp;&amp;</span>
+<span class="lineNum">     260 </span><span class="lineNoCov">              0 :                                 resolved_name[resolved_basedir_len - 1] != PHP_DIR_SEPARATOR) {</span>
+<span class="lineNum">     261 </span><span class="lineNoCov">              0 :                                 return -1;</span>
+<span class="lineNum">     262 </span>                :                         } else {
+<span class="lineNum">     263 </span>                :                                 /* File is in the right directory */
+<span class="lineNum">     264 </span><span class="lineNoCov">              0 :                                 return 0;</span>
+<span class="lineNum">     265 </span>                :                         }
+<span class="lineNum">     266 </span>                :                 } else {
+<span class="lineNum">     267 </span>                :                         /* /openbasedir/ and /openbasedir are the same directory */
+<span class="lineNum">     268 </span><span class="lineNoCov">              0 :                         if (resolved_basedir_len == (resolved_name_len + 1) &amp;&amp; resolved_basedir[resolved_basedir_len - 1] == PHP_DIR_SEPARATOR) {</span>
+<span class="lineNum">     269 </span>                : #if defined(PHP_WIN32) || defined(NETWARE)
+<span class="lineNum">     270 </span>                :                                 if (strncasecmp(resolved_basedir, resolved_name, resolved_name_len) == 0) {
+<span class="lineNum">     271 </span>                : #else
+<span class="lineNum">     272 </span><span class="lineNoCov">              0 :                                 if (strncmp(resolved_basedir, resolved_name, resolved_name_len) == 0) {</span>
+<span class="lineNum">     273 </span>                : #endif
+<span class="lineNum">     274 </span><span class="lineNoCov">              0 :                                         return 0;</span>
+<span class="lineNum">     275 </span>                :                                 }
+<span class="lineNum">     276 </span>                :                         }
+<span class="lineNum">     277 </span><span class="lineNoCov">              0 :                         return -1;</span>
+<span class="lineNum">     278 </span>                :                 }
+<span class="lineNum">     279 </span>                :         } else {
+<span class="lineNum">     280 </span>                :                 /* Unable to resolve the real path, return -1 */
+<span class="lineNum">     281 </span><span class="lineNoCov">              0 :                 return -1;</span>
+<span class="lineNum">     282 </span>                :         }
+<span class="lineNum">     283 </span>                : }
+<a name="284"><span class="lineNum">     284 </span>                : /* }}} */</a>
+<span class="lineNum">     285 </span>                : 
+<span class="lineNum">     286 </span><span class="lineCov">           2219 : PHPAPI int php_check_open_basedir(const char *path TSRMLS_DC)</span>
+<span class="lineNum">     287 </span>                : {
+<span class="lineNum">     288 </span><span class="lineCov">           2219 :         return php_check_open_basedir_ex(path, 1 TSRMLS_CC);</span>
+<span class="lineNum">     289 </span>                : }
+<span class="lineNum">     290 </span>                : 
+<a name="291"><span class="lineNum">     291 </span>                : /* {{{ php_check_open_basedir</a>
+<span class="lineNum">     292 </span>                :  */
+<span class="lineNum">     293 </span><span class="lineCov">           3402 : PHPAPI int php_check_open_basedir_ex(const char *path, int warn TSRMLS_DC)</span>
+<span class="lineNum">     294 </span>                : {
+<span class="lineNum">     295 </span>                :         /* Only check when open_basedir is available */
+<span class="lineNum">     296 </span><span class="lineCov">           3402 :         if (PG(open_basedir) &amp;&amp; *PG(open_basedir)) {</span>
+<span class="lineNum">     297 </span>                :                 char *pathbuf;
+<span class="lineNum">     298 </span>                :                 char *ptr;
+<span class="lineNum">     299 </span>                :                 char *end;
+<span class="lineNum">     300 </span>                : 
+<span class="lineNum">     301 </span>                :                 /* Check if the path is too long so we can give a more useful error
+<span class="lineNum">     302 </span>                :                 * message. */
+<span class="lineNum">     303 </span><span class="lineNoCov">              0 :                 if (strlen(path) &gt; (MAXPATHLEN - 1)) {</span>
+<span class="lineNum">     304 </span><span class="lineNoCov">              0 :                         php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;File name is longer than the maximum allowed path length on this platform (%d): %s&quot;, MAXPATHLEN, path);</span>
+<span class="lineNum">     305 </span><span class="lineNoCov">              0 :                         errno = EINVAL;</span>
+<span class="lineNum">     306 </span><span class="lineNoCov">              0 :                         return -1;</span>
+<span class="lineNum">     307 </span>                :                 }
+<span class="lineNum">     308 </span>                : 
+<span class="lineNum">     309 </span><span class="lineNoCov">              0 :                 pathbuf = estrdup(PG(open_basedir));</span>
+<span class="lineNum">     310 </span>                : 
+<span class="lineNum">     311 </span><span class="lineNoCov">              0 :                 ptr = pathbuf;</span>
+<span class="lineNum">     312 </span>                : 
+<span class="lineNum">     313 </span><span class="lineNoCov">              0 :                 while (ptr &amp;&amp; *ptr) {</span>
+<span class="lineNum">     314 </span><span class="lineNoCov">              0 :                         end = strchr(ptr, DEFAULT_DIR_SEPARATOR);</span>
+<span class="lineNum">     315 </span><span class="lineNoCov">              0 :                         if (end != NULL) {</span>
+<span class="lineNum">     316 </span><span class="lineNoCov">              0 :                                 *end = '\0';</span>
+<span class="lineNum">     317 </span><span class="lineNoCov">              0 :                                 end++;</span>
+<span class="lineNum">     318 </span>                :                         }
+<span class="lineNum">     319 </span>                : 
+<span class="lineNum">     320 </span><span class="lineNoCov">              0 :                         if (php_check_specific_open_basedir(ptr, path TSRMLS_CC) == 0) {</span>
+<span class="lineNum">     321 </span><span class="lineNoCov">              0 :                                 efree(pathbuf);</span>
+<span class="lineNum">     322 </span><span class="lineNoCov">              0 :                                 return 0;</span>
+<span class="lineNum">     323 </span>                :                         }
+<span class="lineNum">     324 </span>                : 
+<span class="lineNum">     325 </span><span class="lineNoCov">              0 :                         ptr = end;</span>
+<span class="lineNum">     326 </span>                :                 }
+<span class="lineNum">     327 </span><span class="lineNoCov">              0 :                 if (warn) {</span>
+<span class="lineNum">     328 </span><span class="lineNoCov">              0 :                         php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;open_basedir restriction in effect. File(%s) is not within the allowed path(s): (%s)&quot;, path, PG(open_basedir));</span>
+<span class="lineNum">     329 </span>                :                 }
+<span class="lineNum">     330 </span><span class="lineNoCov">              0 :                 efree(pathbuf);</span>
+<span class="lineNum">     331 </span><span class="lineNoCov">              0 :                 errno = EPERM; /* we deny permission to open it */</span>
+<span class="lineNum">     332 </span><span class="lineNoCov">              0 :                 return -1;</span>
+<span class="lineNum">     333 </span>                :         }
+<span class="lineNum">     334 </span>                : 
+<span class="lineNum">     335 </span>                :         /* Nothing to check... */
+<span class="lineNum">     336 </span><span class="lineCov">           3402 :         return 0;</span>
+<span class="lineNum">     337 </span>                : }
+<span class="lineNum">     338 </span>                : /* }}} */
+<span class="lineNum">     339 </span>                : 
+<a name="340"><span class="lineNum">     340 </span>                : /* {{{ php_fopen_and_set_opened_path</a>
+<span class="lineNum">     341 </span>                :  */
+<span class="lineNum">     342 </span><span class="lineCov">              8 : static FILE *php_fopen_and_set_opened_path(const char *path, const char *mode, char **opened_path TSRMLS_DC)</span>
+<span class="lineNum">     343 </span>                : {
+<span class="lineNum">     344 </span>                :         FILE *fp;
+<span class="lineNum">     345 </span>                : 
+<span class="lineNum">     346 </span><span class="lineCov">              8 :         if (php_check_open_basedir((char *)path TSRMLS_CC)) {</span>
+<span class="lineNum">     347 </span><span class="lineNoCov">              0 :                 return NULL;</span>
+<span class="lineNum">     348 </span>                :         }
+<span class="lineNum">     349 </span><span class="lineCov">              8 :         fp = VCWD_FOPEN(path, mode);</span>
+<span class="lineNum">     350 </span><span class="lineCov">              8 :         if (fp &amp;&amp; opened_path) {</span>
+<span class="lineNum">     351 </span><span class="lineNoCov">              0 :                 *opened_path = expand_filepath_with_mode(path, NULL, NULL, 0, CWD_EXPAND TSRMLS_CC);</span>
+<span class="lineNum">     352 </span>                :         }
+<span class="lineNum">     353 </span><span class="lineCov">              8 :         return fp;</span>
+<span class="lineNum">     354 </span>                : }
+<span class="lineNum">     355 </span>                : /* }}} */
+<span class="lineNum">     356 </span>                : 
+<a name="357"><span class="lineNum">     357 </span>                : /* {{{ php_fopen_primary_script</a>
+<span class="lineNum">     358 </span>                :  */
+<span class="lineNum">     359 </span><span class="lineNoCov">              0 : PHPAPI int php_fopen_primary_script(zend_file_handle *file_handle TSRMLS_DC)</span>
+<span class="lineNum">     360 </span>                : {
+<span class="lineNum">     361 </span>                :         char *path_info;
+<span class="lineNum">     362 </span><span class="lineNoCov">              0 :         char *filename = NULL;</span>
+<span class="lineNum">     363 </span><span class="lineNoCov">              0 :         char *resolved_path = NULL;</span>
+<span class="lineNum">     364 </span>                :         int length;
+<span class="lineNum">     365 </span>                :         zend_bool orig_display_errors;
+<span class="lineNum">     366 </span>                : 
+<span class="lineNum">     367 </span><span class="lineNoCov">              0 :         path_info = SG(request_info).request_uri;</span>
+<span class="lineNum">     368 </span>                : #if HAVE_PWD_H
+<span class="lineNum">     369 </span><span class="lineNoCov">              0 :         if (PG(user_dir) &amp;&amp; *PG(user_dir) &amp;&amp; path_info &amp;&amp; '/' == path_info[0] &amp;&amp; '~' == path_info[1]) {</span>
+<span class="lineNum">     370 </span><span class="lineNoCov">              0 :                 char *s = strchr(path_info + 2, '/');</span>
+<span class="lineNum">     371 </span>                : 
+<span class="lineNum">     372 </span><span class="lineNoCov">              0 :                 if (s) {                        /* if there is no path name after the file, do not bother */</span>
+<span class="lineNum">     373 </span>                :                         char user[32];                  /* to try open the directory */
+<span class="lineNum">     374 </span>                :                         struct passwd *pw;
+<span class="lineNum">     375 </span>                : #if defined(ZTS) &amp;&amp; defined(HAVE_GETPWNAM_R) &amp;&amp; defined(_SC_GETPW_R_SIZE_MAX)
+<span class="lineNum">     376 </span>                :                         struct passwd pwstruc;
+<span class="lineNum">     377 </span>                :                         long pwbuflen = sysconf(_SC_GETPW_R_SIZE_MAX);
+<span class="lineNum">     378 </span>                :                         char *pwbuf;
+<span class="lineNum">     379 </span>                : 
+<span class="lineNum">     380 </span>                :                         if (pwbuflen &lt; 1) {
+<span class="lineNum">     381 </span>                :                                 return FAILURE;
+<span class="lineNum">     382 </span>                :                         }
+<span class="lineNum">     383 </span>                : 
+<span class="lineNum">     384 </span>                :                         pwbuf = emalloc(pwbuflen);
+<span class="lineNum">     385 </span>                : #endif
+<span class="lineNum">     386 </span><span class="lineNoCov">              0 :                         length = s - (path_info + 2);</span>
+<span class="lineNum">     387 </span><span class="lineNoCov">              0 :                         if (length &gt; (int)sizeof(user) - 1) {</span>
+<span class="lineNum">     388 </span><span class="lineNoCov">              0 :                                 length = sizeof(user) - 1;</span>
+<span class="lineNum">     389 </span>                :                         }
+<span class="lineNum">     390 </span><span class="lineNoCov">              0 :                         memcpy(user, path_info + 2, length);</span>
+<span class="lineNum">     391 </span><span class="lineNoCov">              0 :                         user[length] = '\0';</span>
+<span class="lineNum">     392 </span>                : #if defined(ZTS) &amp;&amp; defined(HAVE_GETPWNAM_R) &amp;&amp; defined(_SC_GETPW_R_SIZE_MAX)
+<span class="lineNum">     393 </span>                :                         if (getpwnam_r(user, &amp;pwstruc, pwbuf, pwbuflen, &amp;pw)) {
+<span class="lineNum">     394 </span>                :                                 efree(pwbuf);
+<span class="lineNum">     395 </span>                :                                 return FAILURE;
+<span class="lineNum">     396 </span>                :                         }
+<span class="lineNum">     397 </span>                : #else
+<span class="lineNum">     398 </span><span class="lineNoCov">              0 :                         pw = getpwnam(user);</span>
+<span class="lineNum">     399 </span>                : #endif
+<span class="lineNum">     400 </span><span class="lineNoCov">              0 :                         if (pw &amp;&amp; pw-&gt;pw_dir) {</span>
+<span class="lineNum">     401 </span><span class="lineNoCov">              0 :                                 spprintf(&amp;filename, 0, &quot;%s%c%s%c%s&quot;, pw-&gt;pw_dir, PHP_DIR_SEPARATOR, PG(user_dir), PHP_DIR_SEPARATOR, s + 1); /* Safe */</span>
+<span class="lineNum">     402 </span>                :                         } else {
+<span class="lineNum">     403 </span><span class="lineNoCov">              0 :                                 filename = SG(request_info).path_translated;</span>
+<span class="lineNum">     404 </span>                :                         } 
+<span class="lineNum">     405 </span>                : #if defined(ZTS) &amp;&amp; defined(HAVE_GETPWNAM_R) &amp;&amp; defined(_SC_GETPW_R_SIZE_MAX)
+<span class="lineNum">     406 </span>                :                         efree(pwbuf);
+<span class="lineNum">     407 </span>                : #endif
+<span class="lineNum">     408 </span>                :                 }
+<span class="lineNum">     409 </span>                :         } else
+<span class="lineNum">     410 </span>                : #endif
+<span class="lineNum">     411 </span><span class="lineNoCov">              0 :         if (PG(doc_root) &amp;&amp; path_info &amp;&amp; (length = strlen(PG(doc_root))) &amp;&amp;</span>
+<span class="lineNum">     412 </span><span class="lineNoCov">              0 :                 IS_ABSOLUTE_PATH(PG(doc_root), length)) {</span>
+<span class="lineNum">     413 </span><span class="lineNoCov">              0 :                 int path_len = strlen(path_info);</span>
+<span class="lineNum">     414 </span><span class="lineNoCov">              0 :                 filename = emalloc(length + path_len + 2);</span>
+<span class="lineNum">     415 </span><span class="lineNoCov">              0 :                 if (filename) {</span>
+<span class="lineNum">     416 </span><span class="lineNoCov">              0 :                         memcpy(filename, PG(doc_root), length);</span>
+<span class="lineNum">     417 </span><span class="lineNoCov">              0 :                         if (!IS_SLASH(filename[length - 1])) {  /* length is never 0 */</span>
+<span class="lineNum">     418 </span><span class="lineNoCov">              0 :                                 filename[length++] = PHP_DIR_SEPARATOR;</span>
+<span class="lineNum">     419 </span>                :                         }
+<span class="lineNum">     420 </span><span class="lineNoCov">              0 :                         if (IS_SLASH(path_info[0])) {</span>
+<span class="lineNum">     421 </span><span class="lineNoCov">              0 :                                 length--;</span>
+<span class="lineNum">     422 </span>                :                         }
+<span class="lineNum">     423 </span><span class="lineNoCov">              0 :                         strncpy(filename + length, path_info, path_len + 1);</span>
+<span class="lineNum">     424 </span>                :                 }
+<span class="lineNum">     425 </span>                :         } else {
+<span class="lineNum">     426 </span><span class="lineNoCov">              0 :                 filename = SG(request_info).path_translated;</span>
+<span class="lineNum">     427 </span>                :         }
+<span class="lineNum">     428 </span>                : 
+<span class="lineNum">     429 </span>                : 
+<span class="lineNum">     430 </span><span class="lineNoCov">              0 :         if (filename) {</span>
+<span class="lineNum">     431 </span><span class="lineNoCov">              0 :                 resolved_path = zend_resolve_path(filename, strlen(filename) TSRMLS_CC);</span>
+<span class="lineNum">     432 </span>                :         }
+<span class="lineNum">     433 </span>                : 
+<span class="lineNum">     434 </span><span class="lineNoCov">              0 :         if (!resolved_path) {</span>
+<span class="lineNum">     435 </span><span class="lineNoCov">              0 :                 if (SG(request_info).path_translated != filename) {</span>
+<span class="lineNum">     436 </span><span class="lineNoCov">              0 :                         STR_FREE(filename);</span>
+<span class="lineNum">     437 </span>                :                 }
+<span class="lineNum">     438 </span>                :                 /* we have to free SG(request_info).path_translated here because
+<span class="lineNum">     439 </span>                :                  * php_destroy_request_info assumes that it will get
+<span class="lineNum">     440 </span>                :                  * freed when the include_names hash is emptied, but
+<span class="lineNum">     441 </span>                :                  * we're not adding it in this case */
+<span class="lineNum">     442 </span><span class="lineNoCov">              0 :                 STR_FREE(SG(request_info).path_translated);</span>
+<span class="lineNum">     443 </span><span class="lineNoCov">              0 :                 SG(request_info).path_translated = NULL;</span>
+<span class="lineNum">     444 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">     445 </span>                :         }
+<span class="lineNum">     446 </span><span class="lineNoCov">              0 :         efree(resolved_path);</span>
+<span class="lineNum">     447 </span>                : 
+<span class="lineNum">     448 </span><span class="lineNoCov">              0 :         orig_display_errors = PG(display_errors);</span>
+<span class="lineNum">     449 </span><span class="lineNoCov">              0 :         PG(display_errors) = 0;</span>
+<span class="lineNum">     450 </span><span class="lineNoCov">              0 :         if (zend_stream_open(filename, file_handle TSRMLS_CC) == FAILURE) {</span>
+<span class="lineNum">     451 </span><span class="lineNoCov">              0 :                 PG(display_errors) = orig_display_errors;</span>
+<span class="lineNum">     452 </span><span class="lineNoCov">              0 :                 if (SG(request_info).path_translated != filename) {</span>
+<span class="lineNum">     453 </span><span class="lineNoCov">              0 :                         STR_FREE(filename);</span>
+<span class="lineNum">     454 </span>                :                 }
+<span class="lineNum">     455 </span><span class="lineNoCov">              0 :                 STR_FREE(SG(request_info).path_translated);     /* for same reason as above */</span>
+<span class="lineNum">     456 </span><span class="lineNoCov">              0 :                 SG(request_info).path_translated = NULL;</span>
+<span class="lineNum">     457 </span><span class="lineNoCov">              0 :                 return FAILURE;</span>
+<span class="lineNum">     458 </span>                :         }
+<span class="lineNum">     459 </span><span class="lineNoCov">              0 :         PG(display_errors) = orig_display_errors;</span>
+<span class="lineNum">     460 </span>                : 
+<span class="lineNum">     461 </span><span class="lineNoCov">              0 :         if (SG(request_info).path_translated != filename) {</span>
+<span class="lineNum">     462 </span><span class="lineNoCov">              0 :                 STR_FREE(SG(request_info).path_translated);     /* for same reason as above */</span>
+<span class="lineNum">     463 </span><span class="lineNoCov">              0 :                 SG(request_info).path_translated = filename;</span>
+<span class="lineNum">     464 </span>                :         }
+<span class="lineNum">     465 </span>                : 
+<span class="lineNum">     466 </span><span class="lineNoCov">              0 :         return SUCCESS;</span>
+<span class="lineNum">     467 </span>                : }
+<span class="lineNum">     468 </span>                : /* }}} */
+<span class="lineNum">     469 </span>                : 
+<span class="lineNum">     470 </span>                : /* {{{ php_resolve_path
+<a name="471"><span class="lineNum">     471 </span>                :  * Returns the realpath for given filename according to include path</a>
+<span class="lineNum">     472 </span>                :  */
+<span class="lineNum">     473 </span><span class="lineNoCov">              0 : PHPAPI char *php_resolve_path(const char *filename, int filename_length, const char *path TSRMLS_DC)</span>
+<span class="lineNum">     474 </span>                : {
+<span class="lineNum">     475 </span>                :         char resolved_path[MAXPATHLEN];
+<span class="lineNum">     476 </span>                :         char trypath[MAXPATHLEN];
+<span class="lineNum">     477 </span>                :         const char *ptr, *end, *p;
+<span class="lineNum">     478 </span>                :         char *actual_path;
+<span class="lineNum">     479 </span>                :         php_stream_wrapper *wrapper;
+<span class="lineNum">     480 </span>                : 
+<span class="lineNum">     481 </span><span class="lineNoCov">              0 :         if (!filename || CHECK_NULL_PATH(filename, filename_length)) {</span>
+<span class="lineNum">     482 </span><span class="lineNoCov">              0 :                 return NULL;</span>
+<span class="lineNum">     483 </span>                :         }
+<span class="lineNum">     484 </span>                : 
+<span class="lineNum">     485 </span>                :         /* Don't resolve paths which contain protocol (except of file://) */
+<span class="lineNum">     486 </span><span class="lineNoCov">              0 :         for (p = filename; isalnum((int)*p) || *p == '+' || *p == '-' || *p == '.'; p++);</span>
+<span class="lineNum">     487 </span><span class="lineNoCov">              0 :         if ((*p == ':') &amp;&amp; (p - filename &gt; 1) &amp;&amp; (p[1] == '/') &amp;&amp; (p[2] == '/')) {</span>
+<span class="lineNum">     488 </span><span class="lineNoCov">              0 :                 wrapper = php_stream_locate_url_wrapper(filename, &amp;actual_path, STREAM_OPEN_FOR_INCLUDE TSRMLS_CC);</span>
+<span class="lineNum">     489 </span><span class="lineNoCov">              0 :                 if (wrapper == &amp;php_plain_files_wrapper) {</span>
+<span class="lineNum">     490 </span><span class="lineNoCov">              0 :                         if (tsrm_realpath(actual_path, resolved_path TSRMLS_CC)) {</span>
+<span class="lineNum">     491 </span><span class="lineNoCov">              0 :                                 return estrdup(resolved_path);</span>
+<span class="lineNum">     492 </span>                :                         }
+<span class="lineNum">     493 </span>                :                 }
+<span class="lineNum">     494 </span><span class="lineNoCov">              0 :                 return NULL;</span>
+<span class="lineNum">     495 </span>                :         }
+<span class="lineNum">     496 </span>                : 
+<span class="lineNum">     497 </span><span class="lineNoCov">              0 :         if ((*filename == '.' &amp;&amp; </span>
+<span class="lineNum">     498 </span><span class="lineNoCov">              0 :              (IS_SLASH(filename[1]) || </span>
+<span class="lineNum">     499 </span><span class="lineNoCov">              0 :               ((filename[1] == '.') &amp;&amp; IS_SLASH(filename[2])))) ||</span>
+<span class="lineNum">     500 </span><span class="lineNoCov">              0 :             IS_ABSOLUTE_PATH(filename, filename_length) ||</span>
+<span class="lineNum">     501 </span>                :             !path ||
+<span class="lineNum">     502 </span><span class="lineNoCov">              0 :             !*path) {</span>
+<span class="lineNum">     503 </span><span class="lineNoCov">              0 :                 if (tsrm_realpath(filename, resolved_path TSRMLS_CC)) {</span>
+<span class="lineNum">     504 </span><span class="lineNoCov">              0 :                         return estrdup(resolved_path);</span>
+<span class="lineNum">     505 </span>                :                 } else {
+<span class="lineNum">     506 </span><span class="lineNoCov">              0 :                         return NULL;</span>
+<span class="lineNum">     507 </span>                :                 }
+<span class="lineNum">     508 </span>                :         }
+<span class="lineNum">     509 </span>                : 
+<span class="lineNum">     510 </span><span class="lineNoCov">              0 :         ptr = path;</span>
+<span class="lineNum">     511 </span><span class="lineNoCov">              0 :         while (ptr &amp;&amp; *ptr) {</span>
+<span class="lineNum">     512 </span>                :                 /* Check for stream wrapper */
+<span class="lineNum">     513 </span><span class="lineNoCov">              0 :                 int is_stream_wrapper = 0;</span>
+<span class="lineNum">     514 </span>                : 
+<span class="lineNum">     515 </span><span class="lineNoCov">              0 :                 for (p = ptr; isalnum((int)*p) || *p == '+' || *p == '-' || *p == '.'; p++);</span>
+<span class="lineNum">     516 </span><span class="lineNoCov">              0 :                 if ((*p == ':') &amp;&amp; (p - ptr &gt; 1) &amp;&amp; (p[1] == '/') &amp;&amp; (p[2] == '/')) {</span>
+<span class="lineNum">     517 </span>                :                         /* .:// or ..:// is not a stream wrapper */
+<span class="lineNum">     518 </span><span class="lineNoCov">              0 :                         if (p[-1] != '.' || p[-2] != '.' || p - 2 != ptr) {</span>
+<span class="lineNum">     519 </span><span class="lineNoCov">              0 :                                 p += 3;</span>
+<span class="lineNum">     520 </span><span class="lineNoCov">              0 :                                 is_stream_wrapper = 1;</span>
+<span class="lineNum">     521 </span>                :                         }
+<span class="lineNum">     522 </span>                :                 }
+<span class="lineNum">     523 </span><span class="lineNoCov">              0 :                 end = strchr(p, DEFAULT_DIR_SEPARATOR);</span>
+<span class="lineNum">     524 </span><span class="lineNoCov">              0 :                 if (end) {</span>
+<span class="lineNum">     525 </span><span class="lineNoCov">              0 :                         if ((end-ptr) + 1 + filename_length + 1 &gt;= MAXPATHLEN) {</span>
+<span class="lineNum">     526 </span><span class="lineNoCov">              0 :                                 ptr = end + 1;</span>
+<span class="lineNum">     527 </span><span class="lineNoCov">              0 :                                 continue;</span>
+<span class="lineNum">     528 </span>                :                         }
+<span class="lineNum">     529 </span><span class="lineNoCov">              0 :                         memcpy(trypath, ptr, end-ptr);</span>
+<span class="lineNum">     530 </span><span class="lineNoCov">              0 :                         trypath[end-ptr] = '/';</span>
+<span class="lineNum">     531 </span><span class="lineNoCov">              0 :                         memcpy(trypath+(end-ptr)+1, filename, filename_length+1);</span>
+<span class="lineNum">     532 </span><span class="lineNoCov">              0 :                         ptr = end+1;</span>
+<span class="lineNum">     533 </span>                :                 } else {
+<span class="lineNum">     534 </span><span class="lineNoCov">              0 :                         int len = strlen(ptr);</span>
+<span class="lineNum">     535 </span>                : 
+<span class="lineNum">     536 </span><span class="lineNoCov">              0 :                         if (len + 1 + filename_length + 1 &gt;= MAXPATHLEN) {</span>
+<span class="lineNum">     537 </span><span class="lineNoCov">              0 :                                 break;</span>
+<span class="lineNum">     538 </span>                :                         }
+<span class="lineNum">     539 </span><span class="lineNoCov">              0 :                         memcpy(trypath, ptr, len);</span>
+<span class="lineNum">     540 </span><span class="lineNoCov">              0 :                         trypath[len] = '/';</span>
+<span class="lineNum">     541 </span><span class="lineNoCov">              0 :                         memcpy(trypath+len+1, filename, filename_length+1);</span>
+<span class="lineNum">     542 </span><span class="lineNoCov">              0 :                         ptr = NULL;</span>
+<span class="lineNum">     543 </span>                :                 }
+<span class="lineNum">     544 </span><span class="lineNoCov">              0 :                 actual_path = trypath;</span>
+<span class="lineNum">     545 </span><span class="lineNoCov">              0 :                 if (is_stream_wrapper) {</span>
+<span class="lineNum">     546 </span><span class="lineNoCov">              0 :                         wrapper = php_stream_locate_url_wrapper(trypath, &amp;actual_path, STREAM_OPEN_FOR_INCLUDE TSRMLS_CC);</span>
+<span class="lineNum">     547 </span><span class="lineNoCov">              0 :                         if (!wrapper) {</span>
+<span class="lineNum">     548 </span><span class="lineNoCov">              0 :                                 continue;</span>
+<span class="lineNum">     549 </span><span class="lineNoCov">              0 :                         } else if (wrapper != &amp;php_plain_files_wrapper) {</span>
+<span class="lineNum">     550 </span><span class="lineNoCov">              0 :                                 if (wrapper-&gt;wops-&gt;url_stat) {</span>
+<span class="lineNum">     551 </span>                :                                         php_stream_statbuf ssb;
+<span class="lineNum">     552 </span>                : 
+<span class="lineNum">     553 </span><span class="lineNoCov">              0 :                                         if (SUCCESS == wrapper-&gt;wops-&gt;url_stat(wrapper, trypath, 0, &amp;ssb, NULL TSRMLS_CC)) {</span>
+<span class="lineNum">     554 </span><span class="lineNoCov">              0 :                                                 return estrdup(trypath);</span>
+<span class="lineNum">     555 </span>                :                                         }
+<span class="lineNum">     556 </span>                :                                 }
+<span class="lineNum">     557 </span><span class="lineNoCov">              0 :                                 continue;</span>
+<span class="lineNum">     558 </span>                :                         }
+<span class="lineNum">     559 </span>                :                 }
+<span class="lineNum">     560 </span><span class="lineNoCov">              0 :                 if (tsrm_realpath(actual_path, resolved_path TSRMLS_CC)) {</span>
+<span class="lineNum">     561 </span><span class="lineNoCov">              0 :                         return estrdup(resolved_path);</span>
+<span class="lineNum">     562 </span>                :                 }
+<span class="lineNum">     563 </span>                :         } /* end provided path */
+<span class="lineNum">     564 </span>                : 
+<span class="lineNum">     565 </span>                :         /* check in calling scripts' current working directory as a fall back case
+<span class="lineNum">     566 </span>                :          */
+<span class="lineNum">     567 </span><span class="lineNoCov">              0 :         if (zend_is_executing(TSRMLS_C)) {</span>
+<span class="lineNum">     568 </span><span class="lineNoCov">              0 :                 const char *exec_fname = zend_get_executed_filename(TSRMLS_C);</span>
+<span class="lineNum">     569 </span><span class="lineNoCov">              0 :                 int exec_fname_length = strlen(exec_fname);</span>
+<span class="lineNum">     570 </span>                : 
+<span class="lineNum">     571 </span><span class="lineNoCov">              0 :                 while ((--exec_fname_length &gt;= 0) &amp;&amp; !IS_SLASH(exec_fname[exec_fname_length]));</span>
+<span class="lineNum">     572 </span><span class="lineNoCov">              0 :                 if (exec_fname &amp;&amp; exec_fname[0] != '[' &amp;&amp;</span>
+<span class="lineNum">     573 </span>                :                     exec_fname_length &gt; 0 &amp;&amp;
+<span class="lineNum">     574 </span><span class="lineNoCov">              0 :                     exec_fname_length + 1 + filename_length + 1 &lt; MAXPATHLEN) {</span>
+<span class="lineNum">     575 </span><span class="lineNoCov">              0 :                         memcpy(trypath, exec_fname, exec_fname_length + 1);</span>
+<span class="lineNum">     576 </span><span class="lineNoCov">              0 :                         memcpy(trypath+exec_fname_length + 1, filename, filename_length+1);</span>
+<span class="lineNum">     577 </span><span class="lineNoCov">              0 :                         actual_path = trypath;</span>
+<span class="lineNum">     578 </span>                : 
+<span class="lineNum">     579 </span>                :                         /* Check for stream wrapper */
+<span class="lineNum">     580 </span><span class="lineNoCov">              0 :                         for (p = trypath; isalnum((int)*p) || *p == '+' || *p == '-' || *p == '.'; p++);</span>
+<span class="lineNum">     581 </span><span class="lineNoCov">              0 :                         if ((*p == ':') &amp;&amp; (p - trypath &gt; 1) &amp;&amp; (p[1] == '/') &amp;&amp; (p[2] == '/')) {</span>
+<span class="lineNum">     582 </span><span class="lineNoCov">              0 :                                 wrapper = php_stream_locate_url_wrapper(trypath, &amp;actual_path, STREAM_OPEN_FOR_INCLUDE TSRMLS_CC);</span>
+<span class="lineNum">     583 </span><span class="lineNoCov">              0 :                                 if (!wrapper) {</span>
+<span class="lineNum">     584 </span><span class="lineNoCov">              0 :                                         return NULL;</span>
+<span class="lineNum">     585 </span><span class="lineNoCov">              0 :                                 } else if (wrapper != &amp;php_plain_files_wrapper) {</span>
+<span class="lineNum">     586 </span><span class="lineNoCov">              0 :                                         if (wrapper-&gt;wops-&gt;url_stat) {</span>
+<span class="lineNum">     587 </span>                :                                                 php_stream_statbuf ssb;
+<span class="lineNum">     588 </span>                : 
+<span class="lineNum">     589 </span><span class="lineNoCov">              0 :                                                 if (SUCCESS == wrapper-&gt;wops-&gt;url_stat(wrapper, trypath, 0, &amp;ssb, NULL TSRMLS_CC)) {</span>
+<span class="lineNum">     590 </span><span class="lineNoCov">              0 :                                                         return estrdup(trypath);</span>
+<span class="lineNum">     591 </span>                :                                                 }
+<span class="lineNum">     592 </span>                :                                         }
+<span class="lineNum">     593 </span><span class="lineNoCov">              0 :                                         return NULL;</span>
+<span class="lineNum">     594 </span>                :                                 }
+<span class="lineNum">     595 </span>                :                         }
+<span class="lineNum">     596 </span>                : 
+<span class="lineNum">     597 </span><span class="lineNoCov">              0 :                         if (tsrm_realpath(actual_path, resolved_path TSRMLS_CC)) {</span>
+<span class="lineNum">     598 </span><span class="lineNoCov">              0 :                                 return estrdup(resolved_path);</span>
+<span class="lineNum">     599 </span>                :                         }
+<span class="lineNum">     600 </span>                :                 }
+<span class="lineNum">     601 </span>                :         }
+<span class="lineNum">     602 </span>                : 
+<span class="lineNum">     603 </span><span class="lineNoCov">              0 :         return NULL;</span>
+<span class="lineNum">     604 </span>                : }
+<span class="lineNum">     605 </span>                : /* }}} */
+<span class="lineNum">     606 </span>                : 
+<span class="lineNum">     607 </span>                : /* {{{ php_fopen_with_path
+<span class="lineNum">     608 </span>                :  * Tries to open a file with a PATH-style list of directories.
+<a name="609"><span class="lineNum">     609 </span>                :  * If the filename starts with &quot;.&quot; or &quot;/&quot;, the path is ignored.</a>
+<span class="lineNum">     610 </span>                :  */
+<span class="lineNum">     611 </span><span class="lineCov">              4 : PHPAPI FILE *php_fopen_with_path(const char *filename, const char *mode, const char *path, char **opened_path TSRMLS_DC)</span>
+<span class="lineNum">     612 </span>                : {
+<span class="lineNum">     613 </span>                :         char *pathbuf, *ptr, *end;
+<span class="lineNum">     614 </span>                :         const char *exec_fname;
+<span class="lineNum">     615 </span>                :         char trypath[MAXPATHLEN];
+<span class="lineNum">     616 </span>                :         FILE *fp;
+<span class="lineNum">     617 </span>                :         int path_length;
+<span class="lineNum">     618 </span>                :         int filename_length;
+<span class="lineNum">     619 </span>                :         int exec_fname_length;
+<span class="lineNum">     620 </span>                : 
+<span class="lineNum">     621 </span><span class="lineCov">              4 :         if (opened_path) {</span>
+<span class="lineNum">     622 </span><span class="lineCov">              4 :                 *opened_path = NULL;</span>
+<span class="lineNum">     623 </span>                :         }
+<span class="lineNum">     624 </span>                : 
+<span class="lineNum">     625 </span><span class="lineCov">              4 :         if (!filename) {</span>
+<span class="lineNum">     626 </span><span class="lineNoCov">              0 :                 return NULL;</span>
+<span class="lineNum">     627 </span>                :         }
+<span class="lineNum">     628 </span>                : 
+<span class="lineNum">     629 </span><span class="lineCov">              4 :         filename_length = strlen(filename);</span>
+<span class="lineNum">     630 </span>                : 
+<span class="lineNum">     631 </span>                :         /* Relative path open */
+<span class="lineNum">     632 </span><span class="lineCov">             12 :         if ((*filename == '.')</span>
+<span class="lineNum">     633 </span>                :         /* Absolute path open */
+<span class="lineNum">     634 </span><span class="lineCov">              4 :          || IS_ABSOLUTE_PATH(filename, filename_length)</span>
+<span class="lineNum">     635 </span><span class="lineCov">              4 :          || (!path || (path &amp;&amp; !*path))</span>
+<span class="lineNum">     636 </span>                :         ) {
+<span class="lineNum">     637 </span><span class="lineNoCov">              0 :                 return php_fopen_and_set_opened_path(filename, mode, opened_path TSRMLS_CC);</span>
+<span class="lineNum">     638 </span>                :         }
+<span class="lineNum">     639 </span>                : 
+<span class="lineNum">     640 </span>                :         /* check in provided path */
+<span class="lineNum">     641 </span>                :         /* append the calling scripts' current working directory
+<span class="lineNum">     642 </span>                :          * as a fall back case
+<span class="lineNum">     643 </span>                :          */
+<span class="lineNum">     644 </span><span class="lineCov">              4 :         if (zend_is_executing(TSRMLS_C)) {</span>
+<span class="lineNum">     645 </span><span class="lineNoCov">              0 :                 exec_fname = zend_get_executed_filename(TSRMLS_C);</span>
+<span class="lineNum">     646 </span><span class="lineNoCov">              0 :                 exec_fname_length = strlen(exec_fname);</span>
+<span class="lineNum">     647 </span><span class="lineNoCov">              0 :                 path_length = strlen(path);</span>
+<span class="lineNum">     648 </span>                : 
+<span class="lineNum">     649 </span><span class="lineNoCov">              0 :                 while ((--exec_fname_length &gt;= 0) &amp;&amp; !IS_SLASH(exec_fname[exec_fname_length]));</span>
+<span class="lineNum">     650 </span><span class="lineNoCov">              0 :                 if ((exec_fname &amp;&amp; exec_fname[0] == '[') || exec_fname_length &lt;= 0) {</span>
+<span class="lineNum">     651 </span>                :                         /* [no active file] or no path */
+<span class="lineNum">     652 </span><span class="lineNoCov">              0 :                         pathbuf = estrdup(path);</span>
+<span class="lineNum">     653 </span>                :                 } else {
+<span class="lineNum">     654 </span><span class="lineNoCov">              0 :                         pathbuf = (char *) emalloc(exec_fname_length + path_length + 1 + 1);</span>
+<span class="lineNum">     655 </span><span class="lineNoCov">              0 :                         memcpy(pathbuf, path, path_length);</span>
+<span class="lineNum">     656 </span><span class="lineNoCov">              0 :                         pathbuf[path_length] = DEFAULT_DIR_SEPARATOR;</span>
+<span class="lineNum">     657 </span><span class="lineNoCov">              0 :                         memcpy(pathbuf + path_length + 1, exec_fname, exec_fname_length);</span>
+<span class="lineNum">     658 </span><span class="lineNoCov">              0 :                         pathbuf[path_length + exec_fname_length + 1] = '\0';</span>
+<span class="lineNum">     659 </span>                :                 }
+<span class="lineNum">     660 </span>                :         } else {
+<span class="lineNum">     661 </span><span class="lineCov">              4 :                 pathbuf = estrdup(path);</span>
+<span class="lineNum">     662 </span>                :         }
+<span class="lineNum">     663 </span>                : 
+<span class="lineNum">     664 </span><span class="lineCov">              4 :         ptr = pathbuf;</span>
+<span class="lineNum">     665 </span>                : 
+<span class="lineNum">     666 </span><span class="lineCov">             16 :         while (ptr &amp;&amp; *ptr) {</span>
+<span class="lineNum">     667 </span><span class="lineCov">              8 :                 end = strchr(ptr, DEFAULT_DIR_SEPARATOR);</span>
+<span class="lineNum">     668 </span><span class="lineCov">              8 :                 if (end != NULL) {</span>
+<span class="lineNum">     669 </span><span class="lineCov">              4 :                         *end = '\0';</span>
+<span class="lineNum">     670 </span><span class="lineCov">              4 :                         end++;</span>
+<span class="lineNum">     671 </span>                :                 }
+<span class="lineNum">     672 </span><span class="lineCov">              8 :                 if (snprintf(trypath, MAXPATHLEN, &quot;%s/%s&quot;, ptr, filename) &gt;= MAXPATHLEN) {</span>
+<span class="lineNum">     673 </span><span class="lineNoCov">              0 :                         php_error_docref(NULL TSRMLS_CC, E_NOTICE, &quot;%s/%s path was truncated to %d&quot;, ptr, filename, MAXPATHLEN);</span>
+<span class="lineNum">     674 </span>                :                 }
+<span class="lineNum">     675 </span><span class="lineCov">              8 :                 fp = php_fopen_and_set_opened_path(trypath, mode, opened_path TSRMLS_CC);</span>
+<span class="lineNum">     676 </span><span class="lineCov">              8 :                 if (fp) {</span>
+<span class="lineNum">     677 </span><span class="lineNoCov">              0 :                         efree(pathbuf);</span>
+<span class="lineNum">     678 </span><span class="lineNoCov">              0 :                         return fp;</span>
+<span class="lineNum">     679 </span>                :                 }
+<span class="lineNum">     680 </span><span class="lineCov">              8 :                 ptr = end;</span>
+<span class="lineNum">     681 </span>                :         } /* end provided path */
+<span class="lineNum">     682 </span>                : 
+<span class="lineNum">     683 </span><span class="lineCov">              4 :         efree(pathbuf);</span>
+<span class="lineNum">     684 </span><span class="lineCov">              4 :         return NULL;</span>
+<span class="lineNum">     685 </span>                : }
+<span class="lineNum">     686 </span>                : /* }}} */
+<span class="lineNum">     687 </span>                : 
+<a name="688"><span class="lineNum">     688 </span>                : /* {{{ php_strip_url_passwd</a>
+<span class="lineNum">     689 </span>                :  */
+<span class="lineNum">     690 </span><span class="lineCov">              1 : PHPAPI char *php_strip_url_passwd(char *url)</span>
+<span class="lineNum">     691 </span>                : {
+<span class="lineNum">     692 </span>                :         register char *p, *url_start;
+<span class="lineNum">     693 </span>                : 
+<span class="lineNum">     694 </span><span class="lineCov">              1 :         if (url == NULL) {</span>
+<span class="lineNum">     695 </span><span class="lineNoCov">              0 :                 return &quot;&quot;;</span>
+<span class="lineNum">     696 </span>                :         }
+<span class="lineNum">     697 </span>                : 
+<span class="lineNum">     698 </span><span class="lineCov">              1 :         p = url;</span>
+<span class="lineNum">     699 </span>                : 
+<span class="lineNum">     700 </span><span class="lineCov">             23 :         while (*p) {</span>
+<span class="lineNum">     701 </span><span class="lineCov">             21 :                 if (*p == ':' &amp;&amp; *(p + 1) == '/' &amp;&amp; *(p + 2) == '/') {</span>
+<span class="lineNum">     702 </span>                :                         /* found protocol */
+<span class="lineNum">     703 </span><span class="lineNoCov">              0 :                         url_start = p = p + 3;</span>
+<span class="lineNum">     704 </span>                : 
+<span class="lineNum">     705 </span><span class="lineNoCov">              0 :                         while (*p) {</span>
+<span class="lineNum">     706 </span><span class="lineNoCov">              0 :                                 if (*p == '@') {</span>
+<span class="lineNum">     707 </span>                :                                         int i;
+<span class="lineNum">     708 </span>                : 
+<span class="lineNum">     709 </span><span class="lineNoCov">              0 :                                         for (i = 0; i &lt; 3 &amp;&amp; url_start &lt; p; i++, url_start++) {</span>
+<span class="lineNum">     710 </span><span class="lineNoCov">              0 :                                                 *url_start = '.';</span>
+<span class="lineNum">     711 </span>                :                                         }
+<span class="lineNum">     712 </span><span class="lineNoCov">              0 :                                         for (; *p; p++) {</span>
+<span class="lineNum">     713 </span><span class="lineNoCov">              0 :                                                 *url_start++ = *p;</span>
+<span class="lineNum">     714 </span>                :                                         }
+<span class="lineNum">     715 </span><span class="lineNoCov">              0 :                                         *url_start=0;</span>
+<span class="lineNum">     716 </span><span class="lineNoCov">              0 :                                         break;</span>
+<span class="lineNum">     717 </span>                :                                 }
+<span class="lineNum">     718 </span><span class="lineNoCov">              0 :                                 p++;</span>
+<span class="lineNum">     719 </span>                :                         }
+<span class="lineNum">     720 </span><span class="lineNoCov">              0 :                         return url;</span>
+<span class="lineNum">     721 </span>                :                 }
+<span class="lineNum">     722 </span><span class="lineCov">             21 :                 p++;</span>
+<span class="lineNum">     723 </span>                :         }
+<span class="lineNum">     724 </span><span class="lineCov">              1 :         return url;</span>
+<span class="lineNum">     725 </span>                : }
+<span class="lineNum">     726 </span>                : /* }}} */
+<span class="lineNum">     727 </span>                : 
+<a name="728"><span class="lineNum">     728 </span>                : /* {{{ expand_filepath</a>
+<span class="lineNum">     729 </span>                :  */
+<span class="lineNum">     730 </span><span class="lineCov">            235 : PHPAPI char *expand_filepath(const char *filepath, char *real_path TSRMLS_DC)</span>
+<span class="lineNum">     731 </span>                : {
+<span class="lineNum">     732 </span><span class="lineCov">            235 :         return expand_filepath_ex(filepath, real_path, NULL, 0 TSRMLS_CC);</span>
+<span class="lineNum">     733 </span>                : }
+<span class="lineNum">     734 </span>                : /* }}} */
+<span class="lineNum">     735 </span>                : 
+<a name="736"><span class="lineNum">     736 </span>                : /* {{{ expand_filepath_ex</a>
+<span class="lineNum">     737 </span>                :  */
+<span class="lineNum">     738 </span><span class="lineCov">            235 : PHPAPI char *expand_filepath_ex(const char *filepath, char *real_path, const char *relative_to, size_t relative_to_len TSRMLS_DC)</span>
+<span class="lineNum">     739 </span>                : {
+<span class="lineNum">     740 </span><span class="lineCov">            235 :         return expand_filepath_with_mode(filepath, real_path, relative_to, relative_to_len, CWD_FILEPATH TSRMLS_CC);</span>
+<span class="lineNum">     741 </span>                : }
+<span class="lineNum">     742 </span>                : /* }}} */
+<span class="lineNum">     743 </span>                : 
+<a name="744"><span class="lineNum">     744 </span>                : /* {{{ expand_filepath_use_realpath</a>
+<span class="lineNum">     745 </span>                :  */
+<span class="lineNum">     746 </span><span class="lineCov">            235 : PHPAPI char *expand_filepath_with_mode(const char *filepath, char *real_path, const char *relative_to, size_t relative_to_len, int realpath_mode TSRMLS_DC)</span>
+<span class="lineNum">     747 </span>                : {
+<span class="lineNum">     748 </span>                :         cwd_state new_state;
+<span class="lineNum">     749 </span>                :         char cwd[MAXPATHLEN];
+<span class="lineNum">     750 </span>                :         int copy_len;
+<span class="lineNum">     751 </span>                : 
+<span class="lineNum">     752 </span><span class="lineCov">            235 :         if (!filepath[0]) {</span>
+<span class="lineNum">     753 </span><span class="lineNoCov">              0 :                 return NULL;</span>
+<span class="lineNum">     754 </span><span class="lineCov">            235 :         } else if (IS_ABSOLUTE_PATH(filepath, strlen(filepath))) {</span>
+<span class="lineNum">     755 </span><span class="lineCov">            234 :                 cwd[0] = '\0';</span>
+<span class="lineNum">     756 </span>                :         } else {
+<span class="lineNum">     757 </span><span class="lineCov">              1 :                 const char *iam = SG(request_info).path_translated;</span>
+<span class="lineNum">     758 </span>                :                 const char *result;
+<span class="lineNum">     759 </span><span class="lineCov">              1 :                 if (relative_to) {</span>
+<span class="lineNum">     760 </span><span class="lineNoCov">              0 :                         if (relative_to_len &gt; MAXPATHLEN-1U) {</span>
+<span class="lineNum">     761 </span><span class="lineNoCov">              0 :                                 return NULL;</span>
+<span class="lineNum">     762 </span>                :                         }
+<span class="lineNum">     763 </span><span class="lineNoCov">              0 :                         result = relative_to;</span>
+<span class="lineNum">     764 </span><span class="lineNoCov">              0 :                         memcpy(cwd, relative_to, relative_to_len+1U);</span>
+<span class="lineNum">     765 </span>                :                 } else {
+<span class="lineNum">     766 </span><span class="lineCov">              1 :                         result = VCWD_GETCWD(cwd, MAXPATHLEN);</span>
+<span class="lineNum">     767 </span>                :                 }
+<span class="lineNum">     768 </span>                : 
+<span class="lineNum">     769 </span><span class="lineCov">              1 :                 if (!result &amp;&amp; (iam != filepath)) {</span>
+<span class="lineNum">     770 </span><span class="lineNoCov">              0 :                         int fdtest = -1;</span>
+<span class="lineNum">     771 </span>                : 
+<span class="lineNum">     772 </span><span class="lineNoCov">              0 :                         fdtest = VCWD_OPEN(filepath, O_RDONLY);</span>
+<span class="lineNum">     773 </span><span class="lineNoCov">              0 :                         if (fdtest != -1) {</span>
+<span class="lineNum">     774 </span>                :                                 /* return a relative file path if for any reason
+<span class="lineNum">     775 </span>                :                                  * we cannot cannot getcwd() and the requested,
+<span class="lineNum">     776 </span>                :                                  * relatively referenced file is accessible */
+<span class="lineNum">     777 </span><span class="lineNoCov">              0 :                                 copy_len = strlen(filepath) &gt; MAXPATHLEN - 1 ? MAXPATHLEN - 1 : strlen(filepath);</span>
+<span class="lineNum">     778 </span><span class="lineNoCov">              0 :                                 real_path = estrndup(filepath, copy_len);</span>
+<span class="lineNum">     779 </span><span class="lineNoCov">              0 :                                 close(fdtest);</span>
+<span class="lineNum">     780 </span><span class="lineNoCov">              0 :                                 return real_path;</span>
+<span class="lineNum">     781 </span>                :                         } else {
+<span class="lineNum">     782 </span><span class="lineNoCov">              0 :                                 cwd[0] = '\0';</span>
+<span class="lineNum">     783 </span>                :                         }
+<span class="lineNum">     784 </span><span class="lineCov">              1 :                 } else if (!result) {</span>
+<span class="lineNum">     785 </span><span class="lineNoCov">              0 :                         cwd[0] = '\0';</span>
+<span class="lineNum">     786 </span>                :                 }
+<span class="lineNum">     787 </span>                :         }
+<span class="lineNum">     788 </span>                : 
+<span class="lineNum">     789 </span><span class="lineCov">            235 :         new_state.cwd = strdup(cwd);</span>
+<span class="lineNum">     790 </span><span class="lineCov">            235 :         new_state.cwd_length = strlen(cwd);</span>
+<span class="lineNum">     791 </span>                : 
+<span class="lineNum">     792 </span><span class="lineCov">            235 :         if (virtual_file_ex(&amp;new_state, filepath, NULL, realpath_mode TSRMLS_CC)) {</span>
+<span class="lineNum">     793 </span><span class="lineNoCov">              0 :                 free(new_state.cwd);</span>
+<span class="lineNum">     794 </span><span class="lineNoCov">              0 :                 return NULL;</span>
+<span class="lineNum">     795 </span>                :         }
+<span class="lineNum">     796 </span>                : 
+<span class="lineNum">     797 </span><span class="lineCov">            235 :         if (real_path) {</span>
+<span class="lineNum">     798 </span><span class="lineCov">             45 :                 copy_len = new_state.cwd_length &gt; MAXPATHLEN - 1 ? MAXPATHLEN - 1 : new_state.cwd_length;</span>
+<span class="lineNum">     799 </span><span class="lineCov">             45 :                 memcpy(real_path, new_state.cwd, copy_len);</span>
+<span class="lineNum">     800 </span><span class="lineCov">             45 :                 real_path[copy_len] = '\0';</span>
+<span class="lineNum">     801 </span>                :         } else {
+<span class="lineNum">     802 </span><span class="lineCov">            190 :                 real_path = estrndup(new_state.cwd, new_state.cwd_length);</span>
+<span class="lineNum">     803 </span>                :         }
+<span class="lineNum">     804 </span><span class="lineCov">            235 :         free(new_state.cwd);</span>
+<span class="lineNum">     805 </span>                : 
+<span class="lineNum">     806 </span><span class="lineCov">            235 :         return real_path;</span>
+<span class="lineNum">     807 </span>                : }
+<span class="lineNum">     808 </span>                : /* }}} */
+<span class="lineNum">     809 </span>                : 
+<span class="lineNum">     810 </span>                : /*
+<span class="lineNum">     811 </span>                :  * Local variables:
+<span class="lineNum">     812 </span>                :  * tab-width: 4
+<span class="lineNum">     813 </span>                :  * c-basic-offset: 4
+<span class="lineNum">     814 </span>                :  * End:
+<span class="lineNum">     815 </span>                :  * vim600: sw=4 ts=4 fdm=marker
+<span class="lineNum">     816 </span>                :  * vim&lt;600: sw=4 ts=4
+<span class="lineNum">     817 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

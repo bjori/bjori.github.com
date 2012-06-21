@@ -1,0 +1,981 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - ext/mongo/mongo_types.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../index.html">directory</a> - <a href="index.html">ext/mongo</a> - mongo_types.c (source / <a href="mongo_types.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">358</td>
+          <td class="headerCovTableEntry">153</td>
+          <td class="headerCovTableEntryMed">42.7 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">39</td>
+          <td class="headerCovTableEntry">16</td>
+          <td class="headerCovTableEntryLo">41.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : //mongo_types.c</a>
+<span class="lineNum">       2 </span>                : /**
+<span class="lineNum">       3 </span>                :  *  Copyright 2009-2011 10gen, Inc.
+<span class="lineNum">       4 </span>                :  *
+<span class="lineNum">       5 </span>                :  *  Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+<span class="lineNum">       6 </span>                :  *  you may not use this file except in compliance with the License.
+<span class="lineNum">       7 </span>                :  *  You may obtain a copy of the License at
+<span class="lineNum">       8 </span>                :  *
+<span class="lineNum">       9 </span>                :  *  http://www.apache.org/licenses/LICENSE-2.0
+<span class="lineNum">      10 </span>                :  *
+<span class="lineNum">      11 </span>                :  *  Unless required by applicable law or agreed to in writing, software
+<span class="lineNum">      12 </span>                :  *  distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+<span class="lineNum">      13 </span>                :  *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+<span class="lineNum">      14 </span>                :  *  See the License for the specific language governing permissions and
+<span class="lineNum">      15 </span>                :  *  limitations under the License.
+<span class="lineNum">      16 </span>                :  */
+<span class="lineNum">      17 </span>                : 
+<span class="lineNum">      18 </span>                : #include &lt;stdlib.h&gt;
+<span class="lineNum">      19 </span>                : 
+<span class="lineNum">      20 </span>                : #ifdef WIN32
+<span class="lineNum">      21 </span>                : #include &lt;time.h&gt;
+<span class="lineNum">      22 </span>                : #else
+<span class="lineNum">      23 </span>                : #include &lt;string.h&gt;
+<span class="lineNum">      24 </span>                : #include &lt;sys/time.h&gt;
+<span class="lineNum">      25 </span>                : #endif
+<span class="lineNum">      26 </span>                : 
+<span class="lineNum">      27 </span>                : #include &lt;php.h&gt;
+<span class="lineNum">      28 </span>                : #include &lt;zend_exceptions.h&gt;
+<span class="lineNum">      29 </span>                : #include &lt;ext/standard/php_rand.h&gt;
+<span class="lineNum">      30 </span>                : 
+<span class="lineNum">      31 </span>                : #include &quot;php_mongo.h&quot;
+<span class="lineNum">      32 </span>                : #include &quot;mongo.h&quot;
+<span class="lineNum">      33 </span>                : #include &quot;mongo_types.h&quot;
+<span class="lineNum">      34 </span>                : #include &quot;php_mongo.h&quot;
+<span class="lineNum">      35 </span>                : #include &quot;db.h&quot;
+<span class="lineNum">      36 </span>                : #include &quot;collection.h&quot;
+<span class="lineNum">      37 </span>                : #include &quot;bson.h&quot;
+<span class="lineNum">      38 </span>                : 
+<span class="lineNum">      39 </span>                : extern zend_class_entry *mongo_ce_DB,
+<span class="lineNum">      40 </span>                :   *mongo_ce_Exception;
+<span class="lineNum">      41 </span>                : 
+<span class="lineNum">      42 </span>                : zend_object_handlers mongo_id_handlers;
+<span class="lineNum">      43 </span>                : 
+<span class="lineNum">      44 </span>                : ZEND_EXTERN_MODULE_GLOBALS(mongo);
+<span class="lineNum">      45 </span>                : 
+<span class="lineNum">      46 </span>                : zend_class_entry *mongo_ce_Date = NULL,
+<span class="lineNum">      47 </span>                :   *mongo_ce_BinData = NULL,
+<span class="lineNum">      48 </span>                :   *mongo_ce_DBRef = NULL,
+<span class="lineNum">      49 </span>                :   *mongo_ce_Id = NULL,
+<span class="lineNum">      50 </span>                :   *mongo_ce_Code = NULL,
+<span class="lineNum">      51 </span>                :   *mongo_ce_Regex = NULL,
+<span class="lineNum">      52 </span>                :   *mongo_ce_Timestamp = NULL,
+<span class="lineNum">      53 </span>                :   *mongo_ce_Int32 = NULL,
+<a name="54"><span class="lineNum">      54 </span>                :   *mongo_ce_Int64 = NULL;</a>
+<span class="lineNum">      55 </span>                : 
+<span class="lineNum">      56 </span><span class="lineCov">            157 : void generate_id(char *data TSRMLS_DC) {</span>
+<span class="lineNum">      57 </span>                :   int inc;
+<span class="lineNum">      58 </span>                : 
+<span class="lineNum">      59 </span>                : #ifdef WIN32
+<span class="lineNum">      60 </span>                :   int pid = GetCurrentThreadId();
+<span class="lineNum">      61 </span>                : #else
+<span class="lineNum">      62 </span><span class="lineCov">            157 :   int pid = (int)getpid();</span>
+<span class="lineNum">      63 </span>                : #endif
+<span class="lineNum">      64 </span>                : 
+<span class="lineNum">      65 </span><span class="lineCov">            157 :   unsigned t = (unsigned) time(0);</span>
+<span class="lineNum">      66 </span><span class="lineCov">            157 :   char *T = (char*)&amp;t,</span>
+<span class="lineNum">      67 </span><span class="lineCov">            157 :     *M = (char*)&amp;MonGlo(machine),</span>
+<span class="lineNum">      68 </span><span class="lineCov">            157 :     *P = (char*)&amp;pid,</span>
+<span class="lineNum">      69 </span><span class="lineCov">            157 :     *I = (char*)&amp;inc;</span>
+<span class="lineNum">      70 </span>                : 
+<span class="lineNum">      71 </span>                :   // inc
+<span class="lineNum">      72 </span><span class="lineCov">            157 :   inc = MonGlo(inc);</span>
+<span class="lineNum">      73 </span><span class="lineCov">            157 :   MonGlo(inc)++;</span>
+<span class="lineNum">      74 </span>                : 
+<span class="lineNum">      75 </span>                :   // actually generate the MongoId
+<span class="lineNum">      76 </span>                : #if PHP_C_BIGENDIAN
+<span class="lineNum">      77 </span>                :   // 4 bytes ts
+<span class="lineNum">      78 </span>                :   memcpy(data, T, 4);
+<span class="lineNum">      79 </span>                : 
+<span class="lineNum">      80 </span>                :   // we add 1 or 2 to the pointers so we don't end up with all 0s, as the
+<span class="lineNum">      81 </span>                :   // interesting stuff is at the end for big endian systems
+<span class="lineNum">      82 </span>                : 
+<span class="lineNum">      83 </span>                :   // 3 bytes machine
+<span class="lineNum">      84 </span>                :   memcpy(data+4, M+1, 3);
+<span class="lineNum">      85 </span>                : 
+<span class="lineNum">      86 </span>                :   // 2 bytes pid
+<span class="lineNum">      87 </span>                :   memcpy(data+7, P+2, 2);
+<span class="lineNum">      88 </span>                : 
+<span class="lineNum">      89 </span>                :   // 3 bytes inc
+<span class="lineNum">      90 </span>                :   memcpy(data+9, I+1, 3);
+<span class="lineNum">      91 </span>                : #else
+<span class="lineNum">      92 </span>                :   // 4 bytes ts
+<span class="lineNum">      93 </span><span class="lineCov">            157 :   data[0] = T[3];</span>
+<span class="lineNum">      94 </span><span class="lineCov">            157 :   data[1] = T[2];</span>
+<span class="lineNum">      95 </span><span class="lineCov">            157 :   data[2] = T[1];</span>
+<span class="lineNum">      96 </span><span class="lineCov">            157 :   data[3] = T[0];</span>
+<span class="lineNum">      97 </span>                : 
+<span class="lineNum">      98 </span>                :   // 3 bytes machine
+<span class="lineNum">      99 </span><span class="lineCov">            157 :   memcpy(data+4, M, 3);</span>
+<span class="lineNum">     100 </span>                : 
+<span class="lineNum">     101 </span>                :   // 2 bytes pid
+<span class="lineNum">     102 </span><span class="lineCov">            157 :   memcpy(data+7, P, 2);</span>
+<span class="lineNum">     103 </span>                : 
+<span class="lineNum">     104 </span>                :   // 3 bytes inc
+<span class="lineNum">     105 </span><span class="lineCov">            157 :   data[9] = I[2];</span>
+<span class="lineNum">     106 </span><span class="lineCov">            157 :   data[10] = I[1];</span>
+<span class="lineNum">     107 </span><span class="lineCov">            157 :   data[11] = I[0];</span>
+<span class="lineNum">     108 </span>                : #endif /* PHP_C_BIGENDIAN */
+<a name="109"><span class="lineNum">     109 </span><span class="lineCov">            157 : }</span></a>
+<span class="lineNum">     110 </span>                : 
+<span class="lineNum">     111 </span><span class="lineNoCov">              0 : int php_mongo_id_serialize(zval *struc, unsigned char **serialized_data, zend_uint *serialized_length, zend_serialize_data *var_hash TSRMLS_DC) {</span>
+<span class="lineNum">     112 </span>                :   zval str;
+<span class="lineNum">     113 </span><span class="lineNoCov">              0 :   MONGO_METHOD(MongoId, __toString, &amp;str, struc);</span>
+<span class="lineNum">     114 </span><span class="lineNoCov">              0 :   *(serialized_length) = Z_STRLEN(str);</span>
+<span class="lineNum">     115 </span><span class="lineNoCov">              0 :   *(serialized_data) = (unsigned char*)Z_STRVAL(str);</span>
+<span class="lineNum">     116 </span><span class="lineNoCov">              0 :   return SUCCESS;</span>
+<a name="117"><span class="lineNum">     117 </span>                : }</a>
+<span class="lineNum">     118 </span>                : 
+<span class="lineNum">     119 </span><span class="lineNoCov">              0 : int php_mongo_id_unserialize(zval **rval, zend_class_entry *ce, const unsigned char* p, zend_uint datalen, zend_unserialize_data* var_hash TSRMLS_DC) {</span>
+<span class="lineNum">     120 </span>                :   zval temp, *str;
+<span class="lineNum">     121 </span>                : 
+<span class="lineNum">     122 </span><span class="lineNoCov">              0 :   MAKE_STD_ZVAL(str);</span>
+<span class="lineNum">     123 </span><span class="lineNoCov">              0 :   ZVAL_STRINGL(str, (const char*)p, 24, 1);</span>
+<span class="lineNum">     124 </span>                : 
+<span class="lineNum">     125 </span><span class="lineNoCov">              0 :   object_init_ex(*rval, mongo_ce_Id);</span>
+<span class="lineNum">     126 </span>                : 
+<span class="lineNum">     127 </span><span class="lineNoCov">              0 :   MONGO_METHOD1(MongoId, __construct, &amp;temp, *rval, str);</span>
+<span class="lineNum">     128 </span><span class="lineNoCov">              0 :   zval_ptr_dtor(&amp;str);</span>
+<span class="lineNum">     129 </span>                : 
+<span class="lineNum">     130 </span><span class="lineNoCov">              0 :   return SUCCESS;</span>
+<a name="131"><span class="lineNum">     131 </span>                : }</a>
+<span class="lineNum">     132 </span>                : 
+<span class="lineNum">     133 </span><span class="lineNoCov">              0 : int php_mongo_compare_ids(zval *o1, zval *o2 TSRMLS_DC) {</span>
+<span class="lineNum">     134 </span>                : 
+<span class="lineNum">     135 </span><span class="lineNoCov">              0 :   if (Z_TYPE_P(o1) == IS_OBJECT &amp;&amp; Z_TYPE_P(o2) == IS_OBJECT &amp;&amp;</span>
+<span class="lineNum">     136 </span><span class="lineNoCov">              0 :       instanceof_function(Z_OBJCE_P(o1), mongo_ce_Id TSRMLS_CC) &amp;&amp;</span>
+<span class="lineNum">     137 </span><span class="lineNoCov">              0 :       instanceof_function(Z_OBJCE_P(o2), mongo_ce_Id TSRMLS_CC)) {</span>
+<span class="lineNum">     138 </span>                :     int i;
+<span class="lineNum">     139 </span>                : 
+<span class="lineNum">     140 </span><span class="lineNoCov">              0 :     mongo_id *id1 = (mongo_id*)zend_object_store_get_object(o1 TSRMLS_CC);</span>
+<span class="lineNum">     141 </span><span class="lineNoCov">              0 :     mongo_id *id2 = (mongo_id*)zend_object_store_get_object(o2 TSRMLS_CC);</span>
+<span class="lineNum">     142 </span>                : 
+<span class="lineNum">     143 </span><span class="lineNoCov">              0 :     for (i=0; i&lt;12; i++) {</span>
+<span class="lineNum">     144 </span><span class="lineNoCov">              0 :       if (id1-&gt;id[i] &lt; id2-&gt;id[i]) {</span>
+<span class="lineNum">     145 </span><span class="lineNoCov">              0 :         return -1;</span>
+<span class="lineNum">     146 </span>                :       }
+<span class="lineNum">     147 </span><span class="lineNoCov">              0 :       else if (id1-&gt;id[i] &gt; id2-&gt;id[i]) {</span>
+<span class="lineNum">     148 </span><span class="lineNoCov">              0 :         return 1;</span>
+<span class="lineNum">     149 </span>                :       }
+<span class="lineNum">     150 </span>                :     }
+<span class="lineNum">     151 </span><span class="lineNoCov">              0 :     return 0;</span>
+<span class="lineNum">     152 </span>                :   }
+<span class="lineNum">     153 </span>                : 
+<span class="lineNum">     154 </span><span class="lineNoCov">              0 :   return 1;</span>
+<a name="155"><span class="lineNum">     155 </span>                : }</a>
+<span class="lineNum">     156 </span>                : 
+<span class="lineNum">     157 </span><span class="lineCov">            176 : static void php_mongo_id_free(void *object TSRMLS_DC) {</span>
+<span class="lineNum">     158 </span><span class="lineCov">            176 :   mongo_id *id = (mongo_id*)object;</span>
+<span class="lineNum">     159 </span><span class="lineCov">            176 :   if (id) {</span>
+<span class="lineNum">     160 </span><span class="lineCov">            176 :     if (id-&gt;id) {</span>
+<span class="lineNum">     161 </span><span class="lineCov">            176 :       efree(id-&gt;id);</span>
+<span class="lineNum">     162 </span>                :     }
+<span class="lineNum">     163 </span><span class="lineCov">            176 :     zend_object_std_dtor(&amp;id-&gt;std TSRMLS_CC);</span>
+<span class="lineNum">     164 </span><span class="lineCov">            176 :     efree(id);</span>
+<span class="lineNum">     165 </span>                :   }
+<a name="166"><span class="lineNum">     166 </span><span class="lineCov">            176 : }</span></a>
+<span class="lineNum">     167 </span>                : 
+<span class="lineNum">     168 </span><span class="lineCov">            176 : static zend_object_value php_mongo_id_new(zend_class_entry *class_type TSRMLS_DC) {</span>
+<span class="lineNum">     169 </span>                :   zend_object_value retval;
+<span class="lineNum">     170 </span>                :   mongo_id *intern;
+<span class="lineNum">     171 </span>                :   zval *tmp;
+<span class="lineNum">     172 </span>                : 
+<span class="lineNum">     173 </span><span class="lineCov">            176 :   intern = (mongo_id*)emalloc(sizeof(mongo_id));</span>
+<span class="lineNum">     174 </span><span class="lineCov">            176 :   memset(intern, 0, sizeof(mongo_id));</span>
+<span class="lineNum">     175 </span>                : 
+<span class="lineNum">     176 </span><span class="lineCov">            176 :   zend_object_std_init(&amp;intern-&gt;std, class_type TSRMLS_CC);</span>
+<span class="lineNum">     177 </span><span class="lineCov">            176 :   init_properties(intern);</span>
+<span class="lineNum">     178 </span>                : 
+<span class="lineNum">     179 </span><span class="lineCov">            176 :   retval.handle = zend_objects_store_put(intern,</span>
+<span class="lineNum">     180 </span>                :      (zend_objects_store_dtor_t) zend_objects_destroy_object,
+<span class="lineNum">     181 </span>                :      php_mongo_id_free, NULL TSRMLS_CC);
+<span class="lineNum">     182 </span><span class="lineCov">            176 :   retval.handlers = &amp;mongo_id_handlers;</span>
+<span class="lineNum">     183 </span>                : 
+<span class="lineNum">     184 </span><span class="lineCov">            176 :   return retval;</span>
+<span class="lineNum">     185 </span>                : }
+<span class="lineNum">     186 </span>                : 
+<span class="lineNum">     187 </span>                : static zend_function_entry MongoId_methods[] = {
+<span class="lineNum">     188 </span>                :   PHP_ME(MongoId, __construct, NULL, ZEND_ACC_PUBLIC)
+<span class="lineNum">     189 </span>                :   PHP_ME(MongoId, __toString, NULL, ZEND_ACC_PUBLIC)
+<span class="lineNum">     190 </span>                :   PHP_ME(MongoId, __set_state, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
+<span class="lineNum">     191 </span>                :   PHP_ME(MongoId, getTimestamp, NULL, ZEND_ACC_PUBLIC)
+<span class="lineNum">     192 </span>                :   PHP_ME(MongoId, getHostname, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
+<span class="lineNum">     193 </span>                :   PHP_ME(MongoId, getPID, NULL, ZEND_ACC_PUBLIC)
+<span class="lineNum">     194 </span>                :   PHP_ME(MongoId, getInc, NULL, ZEND_ACC_PUBLIC)
+<span class="lineNum">     195 </span>                :   { NULL, NULL, NULL }
+<a name="196"><span class="lineNum">     196 </span>                : };</a>
+<span class="lineNum">     197 </span>                : 
+<span class="lineNum">     198 </span><span class="lineCov">             48 : void mongo_init_MongoId(TSRMLS_D) {</span>
+<span class="lineNum">     199 </span>                :   zend_class_entry id;
+<span class="lineNum">     200 </span><span class="lineCov">             48 :   INIT_CLASS_ENTRY(id, &quot;MongoId&quot;, MongoId_methods);</span>
+<span class="lineNum">     201 </span>                : 
+<span class="lineNum">     202 </span><span class="lineCov">             48 :   id.create_object = php_mongo_id_new;</span>
+<span class="lineNum">     203 </span><span class="lineCov">             48 :   id.serialize = php_mongo_id_serialize;</span>
+<span class="lineNum">     204 </span><span class="lineCov">             48 :   id.unserialize = php_mongo_id_unserialize;</span>
+<span class="lineNum">     205 </span>                : 
+<span class="lineNum">     206 </span><span class="lineCov">             48 :   mongo_ce_Id = zend_register_internal_class(&amp;id TSRMLS_CC);</span>
+<span class="lineNum">     207 </span>                : 
+<span class="lineNum">     208 </span><span class="lineCov">             48 :   if (!MonGlo(no_id)) {</span>
+<span class="lineNum">     209 </span><span class="lineCov">             48 :     zend_declare_property_null(mongo_ce_Id, &quot;$id&quot;, strlen(&quot;$id&quot;), ZEND_ACC_PUBLIC TSRMLS_CC);</span>
+<span class="lineNum">     210 </span>                :   }
+<span class="lineNum">     211 </span><span class="lineCov">             48 : }</span>
+<span class="lineNum">     212 </span>                : 
+<a name="213"><span class="lineNum">     213 </span>                : /* {{{ MongoId::__construct()</a>
+<span class="lineNum">     214 </span>                :  */
+<span class="lineNum">     215 </span><span class="lineCov">            163 : PHP_METHOD(MongoId, __construct) {</span>
+<span class="lineNum">     216 </span><span class="lineCov">            163 :   zval *id = 0, *str = 0;</span>
+<span class="lineNum">     217 </span><span class="lineCov">            163 :   mongo_id *this_id = (mongo_id*)zend_object_store_get_object(getThis() TSRMLS_CC);</span>
+<span class="lineNum">     218 </span><span class="lineCov">            163 :   this_id-&gt;id = (char*)emalloc(OID_SIZE+1);</span>
+<span class="lineNum">     219 </span><span class="lineCov">            163 :   this_id-&gt;id[OID_SIZE] = '\0';</span>
+<span class="lineNum">     220 </span>                : 
+<span class="lineNum">     221 </span><span class="lineCov">            163 :   if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;|z&quot;, &amp;id) == FAILURE) {</span>
+<span class="lineNum">     222 </span><span class="lineNoCov">              0 :     return;</span>
+<span class="lineNum">     223 </span>                :   }
+<span class="lineNum">     224 </span>                : 
+<span class="lineNum">     225 </span><span class="lineCov">            183 :   if (id &amp;&amp;</span>
+<span class="lineNum">     226 </span><span class="lineCov">              7 :       Z_TYPE_P(id) == IS_STRING &amp;&amp;</span>
+<span class="lineNum">     227 </span><span class="lineCov">              7 :       Z_STRLEN_P(id) == 24) {</span>
+<span class="lineNum">     228 </span>                :     int i;
+<span class="lineNum">     229 </span><span class="lineCov">             78 :     for(i=0;i&lt;12;i++) {</span>
+<span class="lineNum">     230 </span><span class="lineCov">             72 :       char digit1 = Z_STRVAL_P(id)[i*2], digit2 = Z_STRVAL_P(id)[i*2+1];</span>
+<span class="lineNum">     231 </span><span class="lineCov">             72 :       digit1 = digit1 &gt;= 'a' &amp;&amp; digit1 &lt;= 'f' ? digit1 - 87 : digit1;</span>
+<span class="lineNum">     232 </span><span class="lineCov">             72 :       digit1 = digit1 &gt;= 'A' &amp;&amp; digit1 &lt;= 'F' ? digit1 - 55 : digit1;</span>
+<span class="lineNum">     233 </span><span class="lineCov">             72 :       digit1 = digit1 &gt;= '0' &amp;&amp; digit1 &lt;= '9' ? digit1 - 48 : digit1;</span>
+<span class="lineNum">     234 </span>                : 
+<span class="lineNum">     235 </span><span class="lineCov">             72 :       digit2 = digit2 &gt;= 'a' &amp;&amp; digit2 &lt;= 'f' ? digit2 - 87 : digit2;</span>
+<span class="lineNum">     236 </span><span class="lineCov">             72 :       digit2 = digit2 &gt;= 'A' &amp;&amp; digit2 &lt;= 'F' ? digit2 - 55 : digit2;</span>
+<span class="lineNum">     237 </span><span class="lineCov">             72 :       digit2 = digit2 &gt;= '0' &amp;&amp; digit2 &lt;= '9' ? digit2 - 48 : digit2;</span>
+<span class="lineNum">     238 </span>                : 
+<span class="lineNum">     239 </span><span class="lineCov">             72 :       this_id-&gt;id[i] = digit1*16+digit2;</span>
+<span class="lineNum">     240 </span>                :     }
+<span class="lineNum">     241 </span>                : 
+<span class="lineNum">     242 </span><span class="lineCov">              6 :     if (!MonGlo(no_id)) {</span>
+<span class="lineNum">     243 </span><span class="lineCov">              6 :       zend_update_property(mongo_ce_Id, getThis(), &quot;$id&quot;, strlen(&quot;$id&quot;), id TSRMLS_CC);</span>
+<span class="lineNum">     244 </span>                :     }
+<span class="lineNum">     245 </span>                :   }
+<span class="lineNum">     246 </span><span class="lineCov">            158 :   else if (id &amp;&amp;</span>
+<span class="lineNum">     247 </span><span class="lineCov">              1 :            Z_TYPE_P(id) == IS_OBJECT &amp;&amp;</span>
+<span class="lineNum">     248 </span><span class="lineNoCov">              0 :            Z_OBJCE_P(id) == mongo_ce_Id) {</span>
+<span class="lineNum">     249 </span><span class="lineNoCov">              0 :     mongo_id *that_id = (mongo_id*)zend_object_store_get_object(id TSRMLS_CC);</span>
+<span class="lineNum">     250 </span><span class="lineNoCov">              0 :     memcpy(this_id-&gt;id, that_id-&gt;id, OID_SIZE);</span>
+<span class="lineNum">     251 </span>                : 
+<span class="lineNum">     252 </span><span class="lineNoCov">              0 :     if (!MonGlo(no_id)) {</span>
+<span class="lineNum">     253 </span><span class="lineNoCov">              0 :       zval *str = zend_read_property(mongo_ce_Id, id, &quot;$id&quot;, strlen(&quot;$id&quot;), NOISY TSRMLS_CC);</span>
+<span class="lineNum">     254 </span><span class="lineNoCov">              0 :       zend_update_property(mongo_ce_Id, getThis(), &quot;$id&quot;, strlen(&quot;$id&quot;), str TSRMLS_CC);</span>
+<span class="lineNum">     255 </span>                :     }
+<span class="lineNum">     256 </span>                :   }
+<span class="lineNum">     257 </span>                :   else {
+<span class="lineNum">     258 </span><span class="lineCov">            157 :     generate_id(this_id-&gt;id TSRMLS_CC);</span>
+<span class="lineNum">     259 </span>                : 
+<span class="lineNum">     260 </span><span class="lineCov">            157 :     if (!MonGlo(no_id)) {</span>
+<span class="lineNum">     261 </span><span class="lineCov">            157 :       MAKE_STD_ZVAL(str);</span>
+<span class="lineNum">     262 </span><span class="lineCov">            157 :       ZVAL_NULL(str);</span>
+<span class="lineNum">     263 </span>                : 
+<span class="lineNum">     264 </span><span class="lineCov">            157 :       MONGO_METHOD(MongoId, __toString, str, getThis());</span>
+<span class="lineNum">     265 </span><span class="lineCov">            157 :       zend_update_property(mongo_ce_Id, getThis(), &quot;$id&quot;, strlen(&quot;$id&quot;), str TSRMLS_CC);</span>
+<span class="lineNum">     266 </span><span class="lineCov">            157 :       zval_ptr_dtor(&amp;str);</span>
+<span class="lineNum">     267 </span>                :     }
+<span class="lineNum">     268 </span>                :   }
+<span class="lineNum">     269 </span>                : }
+<span class="lineNum">     270 </span>                : /* }}} */
+<span class="lineNum">     271 </span>                : 
+<span class="lineNum">     272 </span>                : 
+<a name="273"><span class="lineNum">     273 </span>                : /* {{{ MongoId::__toString()</a>
+<span class="lineNum">     274 </span>                :  */
+<span class="lineNum">     275 </span><span class="lineCov">            172 : PHP_METHOD(MongoId, __toString) {</span>
+<span class="lineNum">     276 </span>                :   int i;
+<span class="lineNum">     277 </span>                :   mongo_id *this_id;
+<span class="lineNum">     278 </span>                :   char *id_str, *movable;
+<span class="lineNum">     279 </span>                :   char *id;
+<span class="lineNum">     280 </span>                : 
+<span class="lineNum">     281 </span><span class="lineCov">            172 :   this_id = (mongo_id*)zend_object_store_get_object(getThis() TSRMLS_CC);</span>
+<span class="lineNum">     282 </span><span class="lineCov">            172 :   MONGO_CHECK_INITIALIZED_STRING(this_id-&gt;id, MongoId);</span>
+<span class="lineNum">     283 </span>                : 
+<span class="lineNum">     284 </span><span class="lineCov">            172 :   id = (char*)emalloc(25);</span>
+<span class="lineNum">     285 </span><span class="lineCov">            172 :   id_str = this_id-&gt;id;</span>
+<span class="lineNum">     286 </span>                : 
+<span class="lineNum">     287 </span><span class="lineCov">            172 :   movable = id;</span>
+<span class="lineNum">     288 </span><span class="lineCov">           2236 :   for(i=0; i&lt;12; i++) {</span>
+<span class="lineNum">     289 </span><span class="lineCov">           2064 :     int x = *id_str;</span>
+<span class="lineNum">     290 </span>                :     char digit1, digit2;
+<span class="lineNum">     291 </span>                : 
+<span class="lineNum">     292 </span><span class="lineCov">           2064 :     if (*id_str &lt; 0) {</span>
+<span class="lineNum">     293 </span><span class="lineCov">            840 :       x = 256 + *id_str;</span>
+<span class="lineNum">     294 </span>                :     }
+<span class="lineNum">     295 </span>                : 
+<span class="lineNum">     296 </span><span class="lineCov">           2064 :     digit1 = x / 16;</span>
+<span class="lineNum">     297 </span><span class="lineCov">           2064 :     digit2 = x % 16;</span>
+<span class="lineNum">     298 </span>                : 
+<span class="lineNum">     299 </span><span class="lineCov">           2064 :     id[2*i]   = (digit1 &lt; 10) ? '0' + digit1 : digit1 - 10 + 'a';</span>
+<span class="lineNum">     300 </span><span class="lineCov">           2064 :     id[2*i+1] = (digit2 &lt; 10) ? '0' + digit2 : digit2 - 10 + 'a';</span>
+<span class="lineNum">     301 </span>                : 
+<span class="lineNum">     302 </span><span class="lineCov">           2064 :     id_str++;</span>
+<span class="lineNum">     303 </span>                :   }
+<span class="lineNum">     304 </span>                : 
+<span class="lineNum">     305 </span><span class="lineCov">            172 :   id[24] = '\0';</span>
+<span class="lineNum">     306 </span>                : 
+<span class="lineNum">     307 </span><span class="lineCov">            172 :   RETURN_STRING(id, NO_DUP);</span>
+<span class="lineNum">     308 </span>                : }
+<span class="lineNum">     309 </span>                : /* }}} */
+<span class="lineNum">     310 </span>                : 
+<a name="311"><span class="lineNum">     311 </span>                : /* {{{ MongoId::__set_state()</a>
+<span class="lineNum">     312 </span>                :  */
+<span class="lineNum">     313 </span><span class="lineCov">              1 : PHP_METHOD(MongoId, __set_state) {</span>
+<span class="lineNum">     314 </span>                :         zval temp, *state, **id;
+<span class="lineNum">     315 </span>                : 
+<span class="lineNum">     316 </span><span class="lineCov">              1 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;a&quot;, &amp;state) == FAILURE) {</span>
+<span class="lineNum">     317 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     318 </span>                :         }
+<span class="lineNum">     319 </span>                : 
+<span class="lineNum">     320 </span><span class="lineCov">              1 :         if (zend_hash_find(HASH_P(state), &quot;$id&quot;, strlen(&quot;$id&quot;)+1, (void**) &amp;id) == FAILURE) {</span>
+<span class="lineNum">     321 </span><span class="lineNoCov">              0 :                 return;</span>
+<span class="lineNum">     322 </span>                :         }
+<span class="lineNum">     323 </span>                : 
+<span class="lineNum">     324 </span><span class="lineCov">              1 :         object_init_ex(return_value, mongo_ce_Id);</span>
+<span class="lineNum">     325 </span><span class="lineCov">              2 :         MONGO_METHOD1(MongoId, __construct, &amp;temp, return_value, *id);</span>
+<span class="lineNum">     326 </span>                : }
+<span class="lineNum">     327 </span>                : /* }}} */
+<span class="lineNum">     328 </span>                : 
+<a name="329"><span class="lineNum">     329 </span>                : /* {{{ MongoId::getTimestamp</a>
+<span class="lineNum">     330 </span>                :  */
+<span class="lineNum">     331 </span><span class="lineNoCov">              0 : PHP_METHOD(MongoId, getTimestamp) {</span>
+<span class="lineNum">     332 </span><span class="lineNoCov">              0 :   int ts = 0, i;</span>
+<span class="lineNum">     333 </span><span class="lineNoCov">              0 :   mongo_id *id = (mongo_id*)zend_object_store_get_object(getThis() TSRMLS_CC);</span>
+<span class="lineNum">     334 </span><span class="lineNoCov">              0 :   MONGO_CHECK_INITIALIZED_STRING(id-&gt;id, MongoId);</span>
+<span class="lineNum">     335 </span>                : 
+<span class="lineNum">     336 </span><span class="lineNoCov">              0 :   for (i=0; i&lt;4; i++) {</span>
+<span class="lineNum">     337 </span><span class="lineNoCov">              0 :     int x = ((int)id-&gt;id[i] &lt; 0) ? 256+id-&gt;id[i] : id-&gt;id[i];</span>
+<span class="lineNum">     338 </span><span class="lineNoCov">              0 :     ts = (ts*256) + x;</span>
+<span class="lineNum">     339 </span>                :   }
+<span class="lineNum">     340 </span>                : 
+<span class="lineNum">     341 </span><span class="lineNoCov">              0 :   RETURN_LONG(ts);</span>
+<span class="lineNum">     342 </span>                : }
+<span class="lineNum">     343 </span>                : /* }}} */
+<span class="lineNum">     344 </span>                : 
+<a name="345"><span class="lineNum">     345 </span>                : /* {{{ MongoId::getPID</a>
+<span class="lineNum">     346 </span>                :  */
+<span class="lineNum">     347 </span><span class="lineNoCov">              0 : PHP_METHOD(MongoId, getPID) {</span>
+<span class="lineNum">     348 </span>                :   int pid;
+<span class="lineNum">     349 </span>                : 
+<span class="lineNum">     350 </span>                : #ifdef WIN32
+<span class="lineNum">     351 </span>                :   pid = GetCurrentThreadId();
+<span class="lineNum">     352 </span>                : #else
+<span class="lineNum">     353 </span><span class="lineNoCov">              0 :   pid = (int)getpid();</span>
+<span class="lineNum">     354 </span>                : #endif
+<span class="lineNum">     355 </span>                : 
+<span class="lineNum">     356 </span><span class="lineNoCov">              0 :   RETURN_LONG(pid);</span>
+<span class="lineNum">     357 </span>                : }
+<a name="358"><span class="lineNum">     358 </span>                : /* }}} */</a>
+<span class="lineNum">     359 </span>                : 
+<span class="lineNum">     360 </span><span class="lineNoCov">              0 : PHP_METHOD(MongoId, getInc) {</span>
+<span class="lineNum">     361 </span><span class="lineNoCov">              0 :   int inc = 0;</span>
+<span class="lineNum">     362 </span><span class="lineNoCov">              0 :   char *ptr = (char*)&amp;inc;</span>
+<span class="lineNum">     363 </span><span class="lineNoCov">              0 :   mongo_id *id = (mongo_id*)zend_object_store_get_object(getThis() TSRMLS_CC);</span>
+<span class="lineNum">     364 </span><span class="lineNoCov">              0 :   MONGO_CHECK_INITIALIZED_STRING(id-&gt;id, MongoId);</span>
+<span class="lineNum">     365 </span>                : 
+<span class="lineNum">     366 </span>                :   // 11, 10, 9, '\0'
+<span class="lineNum">     367 </span><span class="lineNoCov">              0 :   ptr[0] = id-&gt;id[11];</span>
+<span class="lineNum">     368 </span><span class="lineNoCov">              0 :   ptr[1] = id-&gt;id[10];</span>
+<span class="lineNum">     369 </span><span class="lineNoCov">              0 :   ptr[2] = id-&gt;id[9];</span>
+<span class="lineNum">     370 </span>                : 
+<span class="lineNum">     371 </span><span class="lineNoCov">              0 :   RETURN_LONG(inc);</span>
+<span class="lineNum">     372 </span>                : }
+<span class="lineNum">     373 </span>                : 
+<a name="374"><span class="lineNum">     374 </span>                : /* {{{ MongoId::getHostname</a>
+<span class="lineNum">     375 </span>                :  */
+<span class="lineNum">     376 </span><span class="lineNoCov">              0 : PHP_METHOD(MongoId, getHostname) {</span>
+<span class="lineNum">     377 </span>                :   char hostname[256];
+<span class="lineNum">     378 </span><span class="lineNoCov">              0 :   gethostname(hostname, 256);</span>
+<span class="lineNum">     379 </span><span class="lineNoCov">              0 :   RETURN_STRING(hostname, 1);</span>
+<span class="lineNum">     380 </span>                : }
+<span class="lineNum">     381 </span>                : /* }}} */
+<span class="lineNum">     382 </span>                : 
+<a name="383"><span class="lineNum">     383 </span>                : /* {{{ MongoDate::__construct</a>
+<span class="lineNum">     384 </span>                :  */
+<span class="lineNum">     385 </span><span class="lineCov">             16 : PHP_METHOD(MongoDate, __construct) {</span>
+<span class="lineNum">     386 </span><span class="lineCov">             16 :   long arg1 = 0, arg2 = 0;</span>
+<span class="lineNum">     387 </span>                : 
+<span class="lineNum">     388 </span><span class="lineCov">             16 :   if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;|ll&quot;, &amp;arg1, &amp;arg2) == FAILURE) {</span>
+<span class="lineNum">     389 </span><span class="lineNoCov">              0 :     return;</span>
+<span class="lineNum">     390 </span>                :   }
+<span class="lineNum">     391 </span>                : 
+<span class="lineNum">     392 </span><span class="lineCov">             16 :   switch (ZEND_NUM_ARGS()) {</span>
+<span class="lineNum">     393 </span>                :   case 2:
+<span class="lineNum">     394 </span><span class="lineNoCov">              0 :     zend_update_property_long(mongo_ce_Date, getThis(), &quot;usec&quot;, strlen(&quot;usec&quot;), arg2 TSRMLS_CC);</span>
+<span class="lineNum">     395 </span>                : 
+<span class="lineNum">     396 </span>                :     // fallthrough
+<span class="lineNum">     397 </span>                :   case 1:
+<span class="lineNum">     398 </span><span class="lineNoCov">              0 :     zend_update_property_long(mongo_ce_Date, getThis(), &quot;sec&quot;, strlen(&quot;sec&quot;), arg1 TSRMLS_CC);</span>
+<span class="lineNum">     399 </span>                :     // usec is already 0, if not set above
+<span class="lineNum">     400 </span><span class="lineNoCov">              0 :     break;</span>
+<span class="lineNum">     401 </span>                :   case 0: {
+<span class="lineNum">     402 </span>                : #ifdef WIN32
+<span class="lineNum">     403 </span>                :     time_t sec = time(0);
+<span class="lineNum">     404 </span>                :     zend_update_property_long(mongo_ce_Date, getThis(), &quot;sec&quot;, strlen(&quot;sec&quot;), sec TSRMLS_CC);
+<span class="lineNum">     405 </span>                :     zend_update_property_long(mongo_ce_Date, getThis(), &quot;usec&quot;, strlen(&quot;usec&quot;), 0 TSRMLS_CC);
+<span class="lineNum">     406 </span>                : #else
+<span class="lineNum">     407 </span>                :     struct timeval time;
+<span class="lineNum">     408 </span><span class="lineCov">             16 :     gettimeofday(&amp;time, NULL);</span>
+<span class="lineNum">     409 </span>                : 
+<span class="lineNum">     410 </span><span class="lineCov">             16 :     zend_update_property_long(mongo_ce_Date, getThis(), &quot;sec&quot;, strlen(&quot;sec&quot;), time.tv_sec TSRMLS_CC);</span>
+<span class="lineNum">     411 </span><span class="lineCov">             16 :     zend_update_property_long(mongo_ce_Date, getThis(), &quot;usec&quot;, strlen(&quot;usec&quot;), (time.tv_usec/1000)*1000 TSRMLS_CC);</span>
+<span class="lineNum">     412 </span>                : #endif
+<span class="lineNum">     413 </span>                :   }
+<span class="lineNum">     414 </span>                :   }
+<span class="lineNum">     415 </span>                : }
+<span class="lineNum">     416 </span>                : /* }}} */
+<span class="lineNum">     417 </span>                : 
+<span class="lineNum">     418 </span>                : 
+<a name="419"><span class="lineNum">     419 </span>                : /* {{{ MongoDate::__toString()</a>
+<span class="lineNum">     420 </span>                :  */
+<span class="lineNum">     421 </span><span class="lineNoCov">              0 : PHP_METHOD(MongoDate, __toString) {</span>
+<span class="lineNum">     422 </span><span class="lineNoCov">              0 :   zval *zsec = zend_read_property( mongo_ce_Date, getThis(), &quot;sec&quot;, strlen(&quot;sec&quot;), NOISY TSRMLS_CC );</span>
+<span class="lineNum">     423 </span><span class="lineNoCov">              0 :   long sec = Z_LVAL_P( zsec );</span>
+<span class="lineNum">     424 </span><span class="lineNoCov">              0 :   zval *zusec = zend_read_property( mongo_ce_Date, getThis(), &quot;usec&quot;, strlen(&quot;usec&quot;), NOISY TSRMLS_CC );</span>
+<span class="lineNum">     425 </span><span class="lineNoCov">              0 :   long usec = Z_LVAL_P( zusec );</span>
+<span class="lineNum">     426 </span><span class="lineNoCov">              0 :   double dusec = (double)usec/1000000;</span>
+<span class="lineNum">     427 </span>                :   char *str;
+<span class="lineNum">     428 </span>                : 
+<span class="lineNum">     429 </span><span class="lineNoCov">              0 :   spprintf(&amp;str, 0, &quot;%.8f %ld&quot;, dusec, sec);</span>
+<span class="lineNum">     430 </span><span class="lineNoCov">              0 :   RETURN_STRING(str, 0);</span>
+<span class="lineNum">     431 </span>                : }
+<span class="lineNum">     432 </span>                : /* }}} */
+<span class="lineNum">     433 </span>                : 
+<span class="lineNum">     434 </span>                : 
+<span class="lineNum">     435 </span>                : 
+<span class="lineNum">     436 </span>                : static zend_function_entry MongoDate_methods[] = {
+<span class="lineNum">     437 </span>                :   PHP_ME(MongoDate, __construct, NULL, ZEND_ACC_PUBLIC)
+<span class="lineNum">     438 </span>                :   PHP_ME(MongoDate, __toString, NULL, ZEND_ACC_PUBLIC)
+<span class="lineNum">     439 </span>                :   { NULL, NULL, NULL }
+<a name="440"><span class="lineNum">     440 </span>                : };</a>
+<span class="lineNum">     441 </span>                : 
+<span class="lineNum">     442 </span><span class="lineCov">             48 : void mongo_init_MongoDate(TSRMLS_D) {</span>
+<span class="lineNum">     443 </span>                :   zend_class_entry ce;
+<span class="lineNum">     444 </span>                : 
+<span class="lineNum">     445 </span><span class="lineCov">             48 :   INIT_CLASS_ENTRY(ce, &quot;MongoDate&quot;, MongoDate_methods);</span>
+<span class="lineNum">     446 </span><span class="lineCov">             48 :   mongo_ce_Date = zend_register_internal_class(&amp;ce TSRMLS_CC);</span>
+<span class="lineNum">     447 </span>                : 
+<span class="lineNum">     448 </span><span class="lineCov">             48 :   zend_declare_property_long(mongo_ce_Date, &quot;sec&quot;, strlen(&quot;sec&quot;), 0, ZEND_ACC_PUBLIC TSRMLS_CC);</span>
+<span class="lineNum">     449 </span><span class="lineCov">             48 :   zend_declare_property_long(mongo_ce_Date, &quot;usec&quot;, strlen(&quot;usec&quot;), 0, ZEND_ACC_PUBLIC TSRMLS_CC);</span>
+<span class="lineNum">     450 </span><span class="lineCov">             48 : }</span>
+<span class="lineNum">     451 </span>                : 
+<a name="452"><span class="lineNum">     452 </span>                : /* {{{ MongoBinData::__construct()</a>
+<span class="lineNum">     453 </span>                :  */
+<span class="lineNum">     454 </span><span class="lineNoCov">              0 : PHP_METHOD(MongoBinData, __construct) {</span>
+<span class="lineNum">     455 </span>                :   char *bin;
+<span class="lineNum">     456 </span><span class="lineNoCov">              0 :   long bin_len, type = 2;</span>
+<span class="lineNum">     457 </span>                : 
+<span class="lineNum">     458 </span><span class="lineNoCov">              0 :   if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;s|l&quot;, &amp;bin, &amp;bin_len, &amp;type) == FAILURE) {</span>
+<span class="lineNum">     459 </span><span class="lineNoCov">              0 :     return;</span>
+<span class="lineNum">     460 </span>                :   }
+<span class="lineNum">     461 </span>                : 
+<span class="lineNum">     462 </span><span class="lineNoCov">              0 :   zend_update_property_stringl(mongo_ce_BinData, getThis(), &quot;bin&quot;, strlen(&quot;bin&quot;), bin, bin_len TSRMLS_CC);</span>
+<span class="lineNum">     463 </span><span class="lineNoCov">              0 :   zend_update_property_long(mongo_ce_BinData, getThis(), &quot;type&quot;, strlen(&quot;type&quot;), type TSRMLS_CC);</span>
+<span class="lineNum">     464 </span>                : }
+<span class="lineNum">     465 </span>                : /* }}} */
+<span class="lineNum">     466 </span>                : 
+<span class="lineNum">     467 </span>                : 
+<a name="468"><span class="lineNum">     468 </span>                : /* {{{ MongoBinData::__toString()</a>
+<span class="lineNum">     469 </span>                :  */
+<span class="lineNum">     470 </span><span class="lineNoCov">              0 : PHP_METHOD(MongoBinData, __toString) {</span>
+<span class="lineNum">     471 </span><span class="lineNoCov">              0 :   RETURN_STRING( &quot;&lt;Mongo Binary Data&gt;&quot;, 1 );</span>
+<span class="lineNum">     472 </span>                : }
+<span class="lineNum">     473 </span>                : /* }}} */
+<span class="lineNum">     474 </span>                : 
+<span class="lineNum">     475 </span>                : 
+<span class="lineNum">     476 </span>                : static zend_function_entry MongoBinData_methods[] = {
+<span class="lineNum">     477 </span>                :   PHP_ME(MongoBinData, __construct, NULL, ZEND_ACC_PUBLIC)
+<span class="lineNum">     478 </span>                :   PHP_ME(MongoBinData, __toString, NULL, ZEND_ACC_PUBLIC)
+<span class="lineNum">     479 </span>                :   { NULL, NULL, NULL }
+<a name="480"><span class="lineNum">     480 </span>                : };</a>
+<span class="lineNum">     481 </span>                : 
+<span class="lineNum">     482 </span><span class="lineCov">             48 : void mongo_init_MongoBinData(TSRMLS_D) {</span>
+<span class="lineNum">     483 </span>                :   zend_class_entry ce;
+<span class="lineNum">     484 </span>                : 
+<span class="lineNum">     485 </span><span class="lineCov">             48 :   INIT_CLASS_ENTRY(ce, &quot;MongoBinData&quot;, MongoBinData_methods);</span>
+<span class="lineNum">     486 </span><span class="lineCov">             48 :   mongo_ce_BinData = zend_register_internal_class(&amp;ce TSRMLS_CC);</span>
+<span class="lineNum">     487 </span>                : 
+<span class="lineNum">     488 </span>                :   // fields
+<span class="lineNum">     489 </span><span class="lineCov">             48 :   zend_declare_property_string(mongo_ce_BinData, &quot;bin&quot;, strlen(&quot;bin&quot;), &quot;&quot;, ZEND_ACC_PUBLIC TSRMLS_CC);</span>
+<span class="lineNum">     490 </span><span class="lineCov">             48 :   zend_declare_property_long(mongo_ce_BinData, &quot;type&quot;, strlen(&quot;type&quot;), 0, ZEND_ACC_PUBLIC TSRMLS_CC);</span>
+<span class="lineNum">     491 </span>                : 
+<span class="lineNum">     492 </span>                :   // constants
+<span class="lineNum">     493 </span>                :   // can't use FUNCTION because it's a reserved word
+<span class="lineNum">     494 </span><span class="lineCov">             48 :   zend_declare_class_constant_long(mongo_ce_BinData, &quot;FUNC&quot;, strlen(&quot;FUNC&quot;), 0x01 TSRMLS_CC);</span>
+<span class="lineNum">     495 </span>                :   // can't use ARRAY because it's a reserved word
+<span class="lineNum">     496 </span><span class="lineCov">             48 :   zend_declare_class_constant_long(mongo_ce_BinData, &quot;BYTE_ARRAY&quot;, strlen(&quot;BYTE_ARRAY&quot;), 0x02 TSRMLS_CC);</span>
+<span class="lineNum">     497 </span><span class="lineCov">             48 :   zend_declare_class_constant_long(mongo_ce_BinData, &quot;UUID&quot;, strlen(&quot;UUID&quot;), 0x03 TSRMLS_CC);</span>
+<span class="lineNum">     498 </span><span class="lineCov">             48 :   zend_declare_class_constant_long(mongo_ce_BinData, &quot;MD5&quot;, strlen(&quot;MD5&quot;), 0x05 TSRMLS_CC);</span>
+<span class="lineNum">     499 </span><span class="lineCov">             48 :   zend_declare_class_constant_long(mongo_ce_BinData, &quot;CUSTOM&quot;, strlen(&quot;CUSTOM&quot;), 0x80 TSRMLS_CC);</span>
+<span class="lineNum">     500 </span><span class="lineCov">             48 : }</span>
+<span class="lineNum">     501 </span>                : 
+<a name="502"><span class="lineNum">     502 </span>                : /* {{{ MongoRegex::__construct()</a>
+<span class="lineNum">     503 </span>                :  */
+<span class="lineNum">     504 </span><span class="lineNoCov">              0 : PHP_METHOD(MongoRegex, __construct) {</span>
+<span class="lineNum">     505 </span>                :   zval *regex;
+<span class="lineNum">     506 </span><span class="lineNoCov">              0 :   if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;z&quot;, &amp;regex) == FAILURE) {</span>
+<span class="lineNum">     507 </span><span class="lineNoCov">              0 :     return;</span>
+<span class="lineNum">     508 </span>                :   }
+<span class="lineNum">     509 </span>                : 
+<span class="lineNum">     510 </span><span class="lineNoCov">              0 :   if (Z_TYPE_P(regex) == IS_OBJECT &amp;&amp;</span>
+<span class="lineNum">     511 </span><span class="lineNoCov">              0 :       Z_OBJCE_P(regex) == mongo_ce_Regex) {</span>
+<span class="lineNum">     512 </span>                :     zval *oregex, *oflags;
+<span class="lineNum">     513 </span>                : 
+<span class="lineNum">     514 </span><span class="lineNoCov">              0 :     oregex = zend_read_property(mongo_ce_Regex, regex, &quot;regex&quot;, strlen(&quot;regex&quot;), NOISY TSRMLS_CC);</span>
+<span class="lineNum">     515 </span><span class="lineNoCov">              0 :     zend_update_property(mongo_ce_Regex, getThis(), &quot;regex&quot;, strlen(&quot;regex&quot;), oregex TSRMLS_CC);</span>
+<span class="lineNum">     516 </span>                : 
+<span class="lineNum">     517 </span><span class="lineNoCov">              0 :     oflags = zend_read_property(mongo_ce_Regex, regex, &quot;flags&quot;, strlen(&quot;flags&quot;), NOISY TSRMLS_CC);</span>
+<span class="lineNum">     518 </span><span class="lineNoCov">              0 :     zend_update_property(mongo_ce_Regex, getThis(), &quot;flags&quot;, strlen(&quot;flags&quot;), oflags TSRMLS_CC);</span>
+<span class="lineNum">     519 </span>                :   }
+<span class="lineNum">     520 </span><span class="lineNoCov">              0 :   else if (Z_TYPE_P(regex) == IS_STRING) {</span>
+<span class="lineNum">     521 </span>                :     int pattern_len, flags_len;
+<span class="lineNum">     522 </span><span class="lineNoCov">              0 :     char *re = Z_STRVAL_P(regex);</span>
+<span class="lineNum">     523 </span><span class="lineNoCov">              0 :     char *eopattern = strrchr(re, '/');</span>
+<span class="lineNum">     524 </span>                : 
+<span class="lineNum">     525 </span><span class="lineNoCov">              0 :     if (!eopattern) {</span>
+<span class="lineNum">     526 </span><span class="lineNoCov">              0 :       zend_throw_exception(mongo_ce_Exception, &quot;invalid regex&quot;, 9 TSRMLS_CC);</span>
+<span class="lineNum">     527 </span><span class="lineNoCov">              0 :       return;</span>
+<span class="lineNum">     528 </span>                :     }
+<span class="lineNum">     529 </span>                : 
+<span class="lineNum">     530 </span><span class="lineNoCov">              0 :     pattern_len = eopattern - re - 1;</span>
+<span class="lineNum">     531 </span>                : 
+<span class="lineNum">     532 </span><span class="lineNoCov">              0 :     if (pattern_len &lt; 0) {</span>
+<span class="lineNum">     533 </span><span class="lineNoCov">              0 :       zend_throw_exception(mongo_ce_Exception, &quot;invalid regex&quot;, 9 TSRMLS_CC);</span>
+<span class="lineNum">     534 </span><span class="lineNoCov">              0 :       return;</span>
+<span class="lineNum">     535 </span>                :     }
+<span class="lineNum">     536 </span>                : 
+<span class="lineNum">     537 </span>                :     // move beyond the second '/' in /foo/bar
+<span class="lineNum">     538 </span><span class="lineNoCov">              0 :     eopattern++;</span>
+<span class="lineNum">     539 </span><span class="lineNoCov">              0 :     flags_len = Z_STRLEN_P(regex) - (eopattern-re);</span>
+<span class="lineNum">     540 </span>                : 
+<span class="lineNum">     541 </span><span class="lineNoCov">              0 :     zend_update_property_stringl(mongo_ce_Regex, getThis(), &quot;regex&quot;, strlen(&quot;regex&quot;), re+1, pattern_len TSRMLS_CC);</span>
+<span class="lineNum">     542 </span><span class="lineNoCov">              0 :     zend_update_property_stringl(mongo_ce_Regex, getThis(), &quot;flags&quot;, strlen(&quot;flags&quot;), eopattern, flags_len TSRMLS_CC);</span>
+<span class="lineNum">     543 </span>                :   }
+<span class="lineNum">     544 </span>                : }
+<span class="lineNum">     545 </span>                : /* }}} */
+<span class="lineNum">     546 </span>                : 
+<span class="lineNum">     547 </span>                : 
+<a name="548"><span class="lineNum">     548 </span>                : /* {{{ MongoRegex::__toString()</a>
+<span class="lineNum">     549 </span>                :  */
+<span class="lineNum">     550 </span><span class="lineNoCov">              0 : PHP_METHOD(MongoRegex, __toString) {</span>
+<span class="lineNum">     551 </span>                :   char *field_name;
+<span class="lineNum">     552 </span><span class="lineNoCov">              0 :   zval *zre = zend_read_property( mongo_ce_Regex, getThis(), &quot;regex&quot;, strlen(&quot;regex&quot;), NOISY TSRMLS_CC );</span>
+<span class="lineNum">     553 </span><span class="lineNoCov">              0 :   char *re = Z_STRVAL_P( zre );</span>
+<span class="lineNum">     554 </span><span class="lineNoCov">              0 :   zval *zopts = zend_read_property( mongo_ce_Regex, getThis(), &quot;flags&quot;, strlen(&quot;regex&quot;), NOISY TSRMLS_CC );</span>
+<span class="lineNum">     555 </span><span class="lineNoCov">              0 :   char *opts = Z_STRVAL_P( zopts );</span>
+<span class="lineNum">     556 </span>                : 
+<span class="lineNum">     557 </span><span class="lineNoCov">              0 :   spprintf(&amp;field_name, 0, &quot;/%s/%s&quot;, re, opts);</span>
+<span class="lineNum">     558 </span><span class="lineNoCov">              0 :   RETVAL_STRING(field_name, 0);</span>
+<span class="lineNum">     559 </span><span class="lineNoCov">              0 : }</span>
+<span class="lineNum">     560 </span>                : /* }}} */
+<span class="lineNum">     561 </span>                : 
+<span class="lineNum">     562 </span>                : 
+<span class="lineNum">     563 </span>                : static zend_function_entry MongoRegex_methods[] = {
+<span class="lineNum">     564 </span>                :   PHP_ME(MongoRegex, __construct, NULL, ZEND_ACC_PUBLIC)
+<span class="lineNum">     565 </span>                :   PHP_ME(MongoRegex, __toString, NULL, ZEND_ACC_PUBLIC)
+<span class="lineNum">     566 </span>                :   { NULL, NULL, NULL }
+<a name="567"><span class="lineNum">     567 </span>                : };</a>
+<span class="lineNum">     568 </span>                : 
+<span class="lineNum">     569 </span><span class="lineCov">             48 : void mongo_init_MongoRegex(TSRMLS_D) {</span>
+<span class="lineNum">     570 </span>                :   zend_class_entry ce;
+<span class="lineNum">     571 </span>                : 
+<span class="lineNum">     572 </span><span class="lineCov">             48 :   INIT_CLASS_ENTRY(ce, &quot;MongoRegex&quot;, MongoRegex_methods);</span>
+<span class="lineNum">     573 </span><span class="lineCov">             48 :   mongo_ce_Regex = zend_register_internal_class(&amp;ce TSRMLS_CC);</span>
+<span class="lineNum">     574 </span>                : 
+<span class="lineNum">     575 </span><span class="lineCov">             48 :   zend_declare_property_string(mongo_ce_Regex, &quot;regex&quot;, strlen(&quot;regex&quot;), &quot;&quot;, ZEND_ACC_PUBLIC TSRMLS_CC);</span>
+<span class="lineNum">     576 </span><span class="lineCov">             48 :   zend_declare_property_string(mongo_ce_Regex, &quot;flags&quot;, strlen(&quot;flags&quot;), &quot;&quot;, ZEND_ACC_PUBLIC TSRMLS_CC);</span>
+<span class="lineNum">     577 </span><span class="lineCov">             48 : }</span>
+<span class="lineNum">     578 </span>                : 
+<span class="lineNum">     579 </span>                : 
+<span class="lineNum">     580 </span>                : 
+<a name="581"><span class="lineNum">     581 </span>                : /* {{{ MongoCode::__construct(string)</a>
+<span class="lineNum">     582 </span>                :  */
+<span class="lineNum">     583 </span><span class="lineNoCov">              0 : PHP_METHOD(MongoCode, __construct) {</span>
+<span class="lineNum">     584 </span>                :   char *code;
+<span class="lineNum">     585 </span>                :   int code_len;
+<span class="lineNum">     586 </span><span class="lineNoCov">              0 :   zval *zcope = 0;</span>
+<span class="lineNum">     587 </span>                : 
+<span class="lineNum">     588 </span><span class="lineNoCov">              0 :   if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;s|a&quot;, &amp;code, &amp;code_len, &amp;zcope) == FAILURE) {</span>
+<span class="lineNum">     589 </span><span class="lineNoCov">              0 :     return;</span>
+<span class="lineNum">     590 </span>                :   }
+<span class="lineNum">     591 </span>                : 
+<span class="lineNum">     592 </span><span class="lineNoCov">              0 :   zend_update_property_stringl(mongo_ce_Code, getThis(), &quot;code&quot;, strlen(&quot;code&quot;), code, code_len TSRMLS_CC);</span>
+<span class="lineNum">     593 </span>                : 
+<span class="lineNum">     594 </span><span class="lineNoCov">              0 :   if (!zcope) {</span>
+<span class="lineNum">     595 </span><span class="lineNoCov">              0 :     MAKE_STD_ZVAL(zcope);</span>
+<span class="lineNum">     596 </span><span class="lineNoCov">              0 :     array_init(zcope);</span>
+<span class="lineNum">     597 </span>                :   }
+<span class="lineNum">     598 </span>                :   else {
+<span class="lineNum">     599 </span><span class="lineNoCov">              0 :     zval_add_ref(&amp;zcope);</span>
+<span class="lineNum">     600 </span>                :   }
+<span class="lineNum">     601 </span>                : 
+<span class="lineNum">     602 </span><span class="lineNoCov">              0 :   zend_update_property(mongo_ce_Code, getThis(), &quot;scope&quot;, strlen(&quot;scope&quot;), zcope TSRMLS_CC);</span>
+<span class="lineNum">     603 </span>                : 
+<span class="lineNum">     604 </span>                :   // get rid of extra ref
+<span class="lineNum">     605 </span><span class="lineNoCov">              0 :   zval_ptr_dtor(&amp;zcope);</span>
+<span class="lineNum">     606 </span>                : }
+<span class="lineNum">     607 </span>                : /* }}} */
+<span class="lineNum">     608 </span>                : 
+<span class="lineNum">     609 </span>                : 
+<a name="610"><span class="lineNum">     610 </span>                : /* {{{ MongoCode::__toString()</a>
+<span class="lineNum">     611 </span>                :  */
+<span class="lineNum">     612 </span><span class="lineNoCov">              0 : PHP_METHOD(MongoCode, __toString ) {</span>
+<span class="lineNum">     613 </span><span class="lineNoCov">              0 :   zval *zode = zend_read_property(mongo_ce_Code, getThis(), &quot;code&quot;, strlen(&quot;code&quot;), NOISY TSRMLS_CC);</span>
+<span class="lineNum">     614 </span><span class="lineNoCov">              0 :   RETURN_STRING(Z_STRVAL_P(zode), 1 );</span>
+<span class="lineNum">     615 </span>                : }
+<span class="lineNum">     616 </span>                : /* }}} */
+<span class="lineNum">     617 </span>                : 
+<span class="lineNum">     618 </span>                : 
+<span class="lineNum">     619 </span>                : static zend_function_entry MongoCode_methods[] = {
+<span class="lineNum">     620 </span>                :   PHP_ME(MongoCode, __construct, NULL, ZEND_ACC_PUBLIC )
+<span class="lineNum">     621 </span>                :   PHP_ME(MongoCode, __toString, NULL, ZEND_ACC_PUBLIC )
+<span class="lineNum">     622 </span>                :   { NULL, NULL, NULL }
+<a name="623"><span class="lineNum">     623 </span>                : };</a>
+<span class="lineNum">     624 </span>                : 
+<span class="lineNum">     625 </span><span class="lineCov">             48 : void mongo_init_MongoCode(TSRMLS_D) {</span>
+<span class="lineNum">     626 </span>                :   zend_class_entry ce;
+<span class="lineNum">     627 </span><span class="lineCov">             48 :   INIT_CLASS_ENTRY(ce, &quot;MongoCode&quot;, MongoCode_methods);</span>
+<span class="lineNum">     628 </span><span class="lineCov">             48 :   mongo_ce_Code = zend_register_internal_class(&amp;ce TSRMLS_CC);</span>
+<span class="lineNum">     629 </span>                : 
+<span class="lineNum">     630 </span><span class="lineCov">             48 :   zend_declare_property_string(mongo_ce_Code, &quot;code&quot;, strlen(&quot;code&quot;), &quot;&quot;, ZEND_ACC_PUBLIC TSRMLS_CC);</span>
+<span class="lineNum">     631 </span><span class="lineCov">             48 :   zend_declare_property_null(mongo_ce_Code, &quot;scope&quot;, strlen(&quot;scope&quot;), ZEND_ACC_PUBLIC TSRMLS_CC);</span>
+<span class="lineNum">     632 </span><span class="lineCov">             48 : }</span>
+<span class="lineNum">     633 </span>                : 
+<span class="lineNum">     634 </span>                : /* {{{ MongoCode::create()
+<span class="lineNum">     635 </span>                :  *
+<span class="lineNum">     636 </span>                :  * DB refs are of the form:
+<a name="637"><span class="lineNum">     637 </span>                :  * array( '$ref' =&gt; &lt;collection&gt;, '$id' =&gt; &lt;id&gt;[, $db =&gt; &lt;dbname&gt;] )</a>
+<span class="lineNum">     638 </span>                :  */
+<span class="lineNum">     639 </span><span class="lineNoCov">              0 : PHP_METHOD(MongoDBRef, create) {</span>
+<span class="lineNum">     640 </span><span class="lineNoCov">              0 :   zval *zns, *zid, *zdb = 0;</span>
+<span class="lineNum">     641 </span>                : 
+<span class="lineNum">     642 </span><span class="lineNoCov">              0 :   if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;zz|z&quot;, &amp;zns, &amp;zid, &amp;zdb) == FAILURE) {</span>
+<span class="lineNum">     643 </span><span class="lineNoCov">              0 :     return;</span>
+<span class="lineNum">     644 </span>                :   }
+<span class="lineNum">     645 </span>                : 
+<span class="lineNum">     646 </span><span class="lineNoCov">              0 :   array_init(return_value);</span>
+<span class="lineNum">     647 </span>                : 
+<span class="lineNum">     648 </span>                :   // add collection name
+<span class="lineNum">     649 </span><span class="lineNoCov">              0 :   convert_to_string(zns);</span>
+<span class="lineNum">     650 </span><span class="lineNoCov">              0 :   add_assoc_zval(return_value, &quot;$ref&quot;, zns);</span>
+<span class="lineNum">     651 </span><span class="lineNoCov">              0 :   zval_add_ref(&amp;zns);</span>
+<span class="lineNum">     652 </span>                : 
+<span class="lineNum">     653 </span>                :   // add id field
+<span class="lineNum">     654 </span><span class="lineNoCov">              0 :   add_assoc_zval(return_value, &quot;$id&quot;, zid);</span>
+<span class="lineNum">     655 </span><span class="lineNoCov">              0 :   zval_add_ref(&amp;zid);</span>
+<span class="lineNum">     656 </span>                : 
+<span class="lineNum">     657 </span>                :   // if we got a database name, add that, too
+<span class="lineNum">     658 </span><span class="lineNoCov">              0 :   if (zdb) {</span>
+<span class="lineNum">     659 </span><span class="lineNoCov">              0 :     convert_to_string(zdb);</span>
+<span class="lineNum">     660 </span><span class="lineNoCov">              0 :     add_assoc_zval(return_value, &quot;$db&quot;, zdb);</span>
+<span class="lineNum">     661 </span><span class="lineNoCov">              0 :     zval_add_ref(&amp;zdb);</span>
+<span class="lineNum">     662 </span>                :   }
+<span class="lineNum">     663 </span>                : }
+<span class="lineNum">     664 </span>                : /* }}} */
+<span class="lineNum">     665 </span>                : 
+<a name="666"><span class="lineNum">     666 </span>                : /* {{{ MongoDBRef::isRef()</a>
+<span class="lineNum">     667 </span>                :  */
+<span class="lineNum">     668 </span><span class="lineNoCov">              0 : PHP_METHOD(MongoDBRef, isRef) {</span>
+<span class="lineNum">     669 </span>                :   zval *ref;
+<span class="lineNum">     670 </span><span class="lineNoCov">              0 :   if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;z&quot;, &amp;ref) == FAILURE ||</span>
+<span class="lineNum">     671 </span><span class="lineNoCov">              0 :       IS_SCALAR_P(ref)) {</span>
+<span class="lineNum">     672 </span><span class="lineNoCov">              0 :     return;</span>
+<span class="lineNum">     673 </span>                :   }
+<span class="lineNum">     674 </span>                : 
+<span class="lineNum">     675 </span>                :   // check that $ref and $id fields exists
+<span class="lineNum">     676 </span><span class="lineNoCov">              0 :   if (zend_hash_exists(HASH_P(ref), &quot;$ref&quot;, strlen(&quot;$ref&quot;)+1) &amp;&amp;</span>
+<span class="lineNum">     677 </span><span class="lineNoCov">              0 :       zend_hash_exists(HASH_P(ref), &quot;$id&quot;, strlen(&quot;$id&quot;)+1)) {</span>
+<span class="lineNum">     678 </span>                :     // good enough
+<span class="lineNum">     679 </span><span class="lineNoCov">              0 :     RETURN_TRUE;</span>
+<span class="lineNum">     680 </span>                :   }
+<span class="lineNum">     681 </span>                : 
+<span class="lineNum">     682 </span><span class="lineNoCov">              0 :   RETURN_FALSE;</span>
+<span class="lineNum">     683 </span>                : }
+<span class="lineNum">     684 </span>                : /* }}} */
+<span class="lineNum">     685 </span>                : 
+<a name="686"><span class="lineNum">     686 </span>                : /* {{{ MongoDBRef::get()</a>
+<span class="lineNum">     687 </span>                :  */
+<span class="lineNum">     688 </span><span class="lineNoCov">              0 : PHP_METHOD(MongoDBRef, get) {</span>
+<span class="lineNum">     689 </span>                :   zval *db, *ref, *collection, *query;
+<span class="lineNum">     690 </span>                :   zval **ns, **id, **dbname;
+<span class="lineNum">     691 </span><span class="lineNoCov">              0 :   zend_bool alloced_db = 0;</span>
+<span class="lineNum">     692 </span>                : 
+<span class="lineNum">     693 </span><span class="lineNoCov">              0 :   if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;Oz&quot;, &amp;db, mongo_ce_DB, &amp;ref) == FAILURE) {</span>
+<span class="lineNum">     694 </span><span class="lineNoCov">              0 :     return;</span>
+<span class="lineNum">     695 </span>                :   }
+<span class="lineNum">     696 </span>                : 
+<span class="lineNum">     697 </span><span class="lineNoCov">              0 :   if (IS_SCALAR_P(ref) ||</span>
+<span class="lineNum">     698 </span><span class="lineNoCov">              0 :       zend_hash_find(HASH_P(ref), &quot;$ref&quot;, strlen(&quot;$ref&quot;)+1, (void**)&amp;ns) == FAILURE ||</span>
+<span class="lineNum">     699 </span><span class="lineNoCov">              0 :       zend_hash_find(HASH_P(ref), &quot;$id&quot;, strlen(&quot;$id&quot;)+1, (void**)&amp;id) == FAILURE) {</span>
+<span class="lineNum">     700 </span><span class="lineNoCov">              0 :     RETURN_NULL();</span>
+<span class="lineNum">     701 </span>                :   }
+<span class="lineNum">     702 </span>                : 
+<span class="lineNum">     703 </span><span class="lineNoCov">              0 :   if (Z_TYPE_PP(ns) != IS_STRING) {</span>
+<span class="lineNum">     704 </span><span class="lineNoCov">              0 :       zend_throw_exception(mongo_ce_Exception, &quot;MongoDBRef::get: $ref field must be a string&quot;, 10 TSRMLS_CC);</span>
+<span class="lineNum">     705 </span><span class="lineNoCov">              0 :       return;</span>
+<span class="lineNum">     706 </span>                :   }
+<span class="lineNum">     707 </span>                : 
+<span class="lineNum">     708 </span>                :   // if this reference contains a db name, we have to switch dbs
+<span class="lineNum">     709 </span><span class="lineNoCov">              0 :   if (zend_hash_find(HASH_P(ref), &quot;$db&quot;, strlen(&quot;$db&quot;)+1, (void**)&amp;dbname) == SUCCESS) {</span>
+<span class="lineNum">     710 </span><span class="lineNoCov">              0 :     mongo_db *temp_db = (mongo_db*)zend_object_store_get_object(db TSRMLS_CC);</span>
+<span class="lineNum">     711 </span>                : 
+<span class="lineNum">     712 </span>                :     // just to be paranoid, make sure dbname is a string
+<span class="lineNum">     713 </span><span class="lineNoCov">              0 :     if (Z_TYPE_PP(dbname) != IS_STRING) {</span>
+<span class="lineNum">     714 </span><span class="lineNoCov">              0 :       zend_throw_exception(mongo_ce_Exception, &quot;MongoDBRef::get: $db field must be a string&quot;, 11 TSRMLS_CC);</span>
+<span class="lineNum">     715 </span><span class="lineNoCov">              0 :       return;</span>
+<span class="lineNum">     716 </span>                :     }
+<span class="lineNum">     717 </span>                : 
+<span class="lineNum">     718 </span>                :     // if the name in the $db field doesn't match the current db, make up a new db
+<span class="lineNum">     719 </span><span class="lineNoCov">              0 :     if (strcmp(Z_STRVAL_PP(dbname), Z_STRVAL_P(temp_db-&gt;name)) != 0) {</span>
+<span class="lineNum">     720 </span>                :       zval *new_db_z;
+<span class="lineNum">     721 </span><span class="lineNoCov">              0 :       MAKE_STD_ZVAL(new_db_z);</span>
+<span class="lineNum">     722 </span><span class="lineNoCov">              0 :       ZVAL_NULL(new_db_z);</span>
+<span class="lineNum">     723 </span>                : 
+<span class="lineNum">     724 </span><span class="lineNoCov">              0 :       MONGO_METHOD1(Mongo, selectDB, new_db_z, temp_db-&gt;link, *dbname);</span>
+<span class="lineNum">     725 </span>                : 
+<span class="lineNum">     726 </span>                :       // make the new db the current one
+<span class="lineNum">     727 </span><span class="lineNoCov">              0 :       db = new_db_z;</span>
+<span class="lineNum">     728 </span>                : 
+<span class="lineNum">     729 </span>                :       // so we can dtor this later
+<span class="lineNum">     730 </span><span class="lineNoCov">              0 :       alloced_db = 1;</span>
+<span class="lineNum">     731 </span>                :     }
+<span class="lineNum">     732 </span>                :   }
+<span class="lineNum">     733 </span>                : 
+<span class="lineNum">     734 </span>                :   // get the collection
+<span class="lineNum">     735 </span><span class="lineNoCov">              0 :   MAKE_STD_ZVAL(collection);</span>
+<span class="lineNum">     736 </span><span class="lineNoCov">              0 :   MONGO_METHOD1(MongoDB, selectCollection, collection, db, *ns);</span>
+<span class="lineNum">     737 </span>                : 
+<span class="lineNum">     738 </span>                :   // query for the $id
+<span class="lineNum">     739 </span><span class="lineNoCov">              0 :   MAKE_STD_ZVAL(query);</span>
+<span class="lineNum">     740 </span><span class="lineNoCov">              0 :   array_init(query);</span>
+<span class="lineNum">     741 </span><span class="lineNoCov">              0 :   add_assoc_zval(query, &quot;_id&quot;, *id);</span>
+<span class="lineNum">     742 </span><span class="lineNoCov">              0 :   zval_add_ref(id);</span>
+<span class="lineNum">     743 </span>                : 
+<span class="lineNum">     744 </span>                :   // return whatever's there
+<span class="lineNum">     745 </span><span class="lineNoCov">              0 :   MONGO_METHOD1(MongoCollection, findOne, return_value, collection, query);</span>
+<span class="lineNum">     746 </span>                : 
+<span class="lineNum">     747 </span>                :   // cleanup
+<span class="lineNum">     748 </span><span class="lineNoCov">              0 :   zval_ptr_dtor(&amp;collection);</span>
+<span class="lineNum">     749 </span><span class="lineNoCov">              0 :   zval_ptr_dtor(&amp;query);</span>
+<span class="lineNum">     750 </span><span class="lineNoCov">              0 :   if (alloced_db) {</span>
+<span class="lineNum">     751 </span><span class="lineNoCov">              0 :     zval_ptr_dtor(&amp;db);</span>
+<span class="lineNum">     752 </span>                :   }
+<span class="lineNum">     753 </span>                : }
+<span class="lineNum">     754 </span>                : /* }}} */
+<span class="lineNum">     755 </span>                : 
+<span class="lineNum">     756 </span>                : static zend_function_entry MongoDBRef_methods[] = {
+<span class="lineNum">     757 </span>                :   PHP_ME(MongoDBRef, create, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
+<span class="lineNum">     758 </span>                :   PHP_ME(MongoDBRef, isRef, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
+<span class="lineNum">     759 </span>                :   PHP_ME(MongoDBRef, get, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
+<span class="lineNum">     760 </span>                :   { NULL, NULL, NULL }
+<span class="lineNum">     761 </span>                : };
+<a name="762"><span class="lineNum">     762 </span>                : </a>
+<span class="lineNum">     763 </span>                : 
+<span class="lineNum">     764 </span><span class="lineCov">             48 : void mongo_init_MongoDBRef(TSRMLS_D) {</span>
+<span class="lineNum">     765 </span>                :   zend_class_entry ce;
+<span class="lineNum">     766 </span>                : 
+<span class="lineNum">     767 </span><span class="lineCov">             48 :   INIT_CLASS_ENTRY(ce, &quot;MongoDBRef&quot;, MongoDBRef_methods);</span>
+<span class="lineNum">     768 </span><span class="lineCov">             48 :   mongo_ce_DBRef = zend_register_internal_class(&amp;ce TSRMLS_CC);</span>
+<span class="lineNum">     769 </span>                : 
+<span class="lineNum">     770 </span><span class="lineCov">             48 :   zend_declare_property_string(mongo_ce_DBRef, &quot;refKey&quot;, strlen(&quot;refKey&quot;), &quot;$ref&quot;, ZEND_ACC_PROTECTED|ZEND_ACC_STATIC TSRMLS_CC);</span>
+<span class="lineNum">     771 </span><span class="lineCov">             48 :   zend_declare_property_string(mongo_ce_DBRef, &quot;idKey&quot;, strlen(&quot;idKey&quot;), &quot;$id&quot;, ZEND_ACC_PROTECTED|ZEND_ACC_STATIC TSRMLS_CC);</span>
+<span class="lineNum">     772 </span><span class="lineCov">             48 : }</span>
+<span class="lineNum">     773 </span>                : 
+<span class="lineNum">     774 </span>                : static zend_function_entry MongoTimestamp_methods[] = {
+<span class="lineNum">     775 </span>                :   PHP_ME(MongoTimestamp, __construct, NULL, ZEND_ACC_PUBLIC)
+<span class="lineNum">     776 </span>                :   PHP_ME(MongoTimestamp, __toString, NULL, ZEND_ACC_PUBLIC)
+<span class="lineNum">     777 </span>                :   { NULL, NULL, NULL }
+<a name="778"><span class="lineNum">     778 </span>                : };</a>
+<span class="lineNum">     779 </span>                : 
+<span class="lineNum">     780 </span><span class="lineCov">             48 : void mongo_init_MongoTimestamp(TSRMLS_D) {</span>
+<span class="lineNum">     781 </span>                :   zend_class_entry ce;
+<span class="lineNum">     782 </span>                : 
+<span class="lineNum">     783 </span><span class="lineCov">             48 :   INIT_CLASS_ENTRY(ce, &quot;MongoTimestamp&quot;, MongoTimestamp_methods);</span>
+<span class="lineNum">     784 </span><span class="lineCov">             48 :   mongo_ce_Timestamp = zend_register_internal_class(&amp;ce TSRMLS_CC);</span>
+<span class="lineNum">     785 </span>                : 
+<span class="lineNum">     786 </span><span class="lineCov">             48 :   zend_declare_property_long(mongo_ce_Timestamp, &quot;sec&quot;, strlen(&quot;sec&quot;), 0, ZEND_ACC_PUBLIC TSRMLS_CC);</span>
+<span class="lineNum">     787 </span><span class="lineCov">             48 :   zend_declare_property_long(mongo_ce_Timestamp, &quot;inc&quot;, strlen(&quot;inc&quot;), 0, ZEND_ACC_PUBLIC TSRMLS_CC);</span>
+<span class="lineNum">     788 </span><span class="lineCov">             48 : }</span>
+<span class="lineNum">     789 </span>                : 
+<span class="lineNum">     790 </span>                : /*
+<a name="791"><span class="lineNum">     791 </span>                :  * Timestamp is 4 bytes of seconds since epoch and 4 bytes of increment.</a>
+<span class="lineNum">     792 </span>                :  */
+<span class="lineNum">     793 </span><span class="lineNoCov">              0 : PHP_METHOD(MongoTimestamp, __construct) {</span>
+<span class="lineNum">     794 </span><span class="lineNoCov">              0 :   long sec = 0, inc = 0;</span>
+<span class="lineNum">     795 </span>                : 
+<span class="lineNum">     796 </span><span class="lineNoCov">              0 :   if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;|ll&quot;, &amp;sec, &amp;inc) == FAILURE) {</span>
+<span class="lineNum">     797 </span><span class="lineNoCov">              0 :     return;</span>
+<span class="lineNum">     798 </span>                :   }
+<span class="lineNum">     799 </span>                : 
+<span class="lineNum">     800 </span><span class="lineNoCov">              0 :   if (ZEND_NUM_ARGS() == 0) {</span>
+<span class="lineNum">     801 </span><span class="lineNoCov">              0 :     sec = time(0);</span>
+<span class="lineNum">     802 </span>                :   }
+<span class="lineNum">     803 </span><span class="lineNoCov">              0 :   if (ZEND_NUM_ARGS() &lt;= 1 &amp;&amp; !inc) {</span>
+<span class="lineNum">     804 </span><span class="lineNoCov">              0 :     inc = MonGlo(ts_inc)++;</span>
+<span class="lineNum">     805 </span>                :   }
+<span class="lineNum">     806 </span>                : 
+<span class="lineNum">     807 </span><span class="lineNoCov">              0 :   zend_update_property_long(mongo_ce_Timestamp, getThis(), &quot;sec&quot;, strlen(&quot;sec&quot;), sec TSRMLS_CC);</span>
+<span class="lineNum">     808 </span><span class="lineNoCov">              0 :   zend_update_property_long(mongo_ce_Timestamp, getThis(), &quot;inc&quot;, strlen(&quot;inc&quot;), inc TSRMLS_CC);</span>
+<span class="lineNum">     809 </span>                : }
+<span class="lineNum">     810 </span>                : 
+<span class="lineNum">     811 </span>                : /*
+<a name="812"><span class="lineNum">     812 </span>                :  * Just convert the seconds field to a string.</a>
+<span class="lineNum">     813 </span>                :  */
+<span class="lineNum">     814 </span><span class="lineNoCov">              0 : PHP_METHOD(MongoTimestamp, __toString) {</span>
+<span class="lineNum">     815 </span>                :   char *str;
+<span class="lineNum">     816 </span><span class="lineNoCov">              0 :   zval *sec = zend_read_property(mongo_ce_Timestamp, getThis(), &quot;sec&quot;, strlen(&quot;sec&quot;), NOISY TSRMLS_CC);</span>
+<span class="lineNum">     817 </span><span class="lineNoCov">              0 :   spprintf(&amp;str, 0, &quot;%ld&quot;, Z_LVAL_P(sec));</span>
+<span class="lineNum">     818 </span><span class="lineNoCov">              0 :   RETURN_STRING(str, 0);</span>
+<span class="lineNum">     819 </span>                : }
+<span class="lineNum">     820 </span>                : 
+<span class="lineNum">     821 </span>                : 
+<span class="lineNum">     822 </span>                : 
+<a name="823"><span class="lineNum">     823 </span>                : /* {{{ MongoInt32::__construct(string)</a>
+<span class="lineNum">     824 </span>                :  */
+<span class="lineNum">     825 </span><span class="lineNoCov">              0 : PHP_METHOD(MongoInt32, __construct) {</span>
+<span class="lineNum">     826 </span>                :   char *value;
+<span class="lineNum">     827 </span>                :   int value_len;
+<span class="lineNum">     828 </span>                : 
+<span class="lineNum">     829 </span><span class="lineNoCov">              0 :   if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;s&quot;, &amp;value, &amp;value_len) == FAILURE) {</span>
+<span class="lineNum">     830 </span><span class="lineNoCov">              0 :     return;</span>
+<span class="lineNum">     831 </span>                :   }
+<span class="lineNum">     832 </span>                : 
+<span class="lineNum">     833 </span><span class="lineNoCov">              0 :   zend_update_property_stringl(mongo_ce_Int32, getThis(), &quot;value&quot;, strlen(&quot;value&quot;), value, value_len TSRMLS_CC);</span>
+<span class="lineNum">     834 </span>                : }
+<span class="lineNum">     835 </span>                : /* }}} */
+<span class="lineNum">     836 </span>                : 
+<span class="lineNum">     837 </span>                : 
+<a name="838"><span class="lineNum">     838 </span>                : /* {{{ MongoInt32::__toString()</a>
+<span class="lineNum">     839 </span>                :  */
+<span class="lineNum">     840 </span><span class="lineNoCov">              0 : PHP_METHOD(MongoInt32, __toString ) {</span>
+<span class="lineNum">     841 </span><span class="lineNoCov">              0 :   zval *zode = zend_read_property(mongo_ce_Int32, getThis(), &quot;value&quot;, strlen(&quot;value&quot;), NOISY TSRMLS_CC);</span>
+<span class="lineNum">     842 </span><span class="lineNoCov">              0 :   RETURN_STRING(Z_STRVAL_P(zode), 1 );</span>
+<span class="lineNum">     843 </span>                : }
+<span class="lineNum">     844 </span>                : /* }}} */
+<span class="lineNum">     845 </span>                : 
+<span class="lineNum">     846 </span>                : 
+<span class="lineNum">     847 </span>                : static zend_function_entry MongoInt32_methods[] = {
+<span class="lineNum">     848 </span>                :   PHP_ME(MongoInt32, __construct, NULL, ZEND_ACC_PUBLIC )
+<span class="lineNum">     849 </span>                :   PHP_ME(MongoInt32, __toString, NULL, ZEND_ACC_PUBLIC )
+<span class="lineNum">     850 </span>                :   { NULL, NULL, NULL }
+<a name="851"><span class="lineNum">     851 </span>                : };</a>
+<span class="lineNum">     852 </span>                : 
+<span class="lineNum">     853 </span><span class="lineCov">             48 : void mongo_init_MongoInt32(TSRMLS_D) {</span>
+<span class="lineNum">     854 </span>                :   zend_class_entry ce;
+<span class="lineNum">     855 </span><span class="lineCov">             48 :   INIT_CLASS_ENTRY(ce, &quot;MongoInt32&quot;, MongoInt32_methods);</span>
+<span class="lineNum">     856 </span><span class="lineCov">             48 :   mongo_ce_Int32 = zend_register_internal_class(&amp;ce TSRMLS_CC);</span>
+<span class="lineNum">     857 </span>                : 
+<span class="lineNum">     858 </span><span class="lineCov">             48 :   zend_declare_property_string(mongo_ce_Int32, &quot;value&quot;, strlen(&quot;value&quot;), &quot;&quot;, ZEND_ACC_PUBLIC TSRMLS_CC);</span>
+<span class="lineNum">     859 </span><span class="lineCov">             48 : }</span>
+<span class="lineNum">     860 </span>                : 
+<span class="lineNum">     861 </span>                : 
+<span class="lineNum">     862 </span>                : 
+<a name="863"><span class="lineNum">     863 </span>                : /* {{{ MongoInt64::__construct(string)</a>
+<span class="lineNum">     864 </span>                :  */
+<span class="lineNum">     865 </span><span class="lineNoCov">              0 : PHP_METHOD(MongoInt64, __construct) {</span>
+<span class="lineNum">     866 </span>                :   char *value;
+<span class="lineNum">     867 </span>                :   int value_len;
+<span class="lineNum">     868 </span>                : 
+<span class="lineNum">     869 </span><span class="lineNoCov">              0 :   if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;s&quot;, &amp;value, &amp;value_len) == FAILURE) {</span>
+<span class="lineNum">     870 </span><span class="lineNoCov">              0 :     return;</span>
+<span class="lineNum">     871 </span>                :   }
+<span class="lineNum">     872 </span>                : 
+<span class="lineNum">     873 </span><span class="lineNoCov">              0 :   zend_update_property_stringl(mongo_ce_Int64, getThis(), &quot;value&quot;, strlen(&quot;value&quot;), value, value_len TSRMLS_CC);</span>
+<span class="lineNum">     874 </span>                : }
+<span class="lineNum">     875 </span>                : /* }}} */
+<span class="lineNum">     876 </span>                : 
+<span class="lineNum">     877 </span>                : 
+<a name="878"><span class="lineNum">     878 </span>                : /* {{{ MongoInt64::__toString()</a>
+<span class="lineNum">     879 </span>                :  */
+<span class="lineNum">     880 </span><span class="lineNoCov">              0 : PHP_METHOD(MongoInt64, __toString ) {</span>
+<span class="lineNum">     881 </span><span class="lineNoCov">              0 :   zval *zode = zend_read_property(mongo_ce_Int64, getThis(), &quot;value&quot;, strlen(&quot;value&quot;), NOISY TSRMLS_CC);</span>
+<span class="lineNum">     882 </span><span class="lineNoCov">              0 :   RETURN_STRING(Z_STRVAL_P(zode), 1 );</span>
+<span class="lineNum">     883 </span>                : }
+<span class="lineNum">     884 </span>                : /* }}} */
+<span class="lineNum">     885 </span>                : 
+<span class="lineNum">     886 </span>                : 
+<span class="lineNum">     887 </span>                : static zend_function_entry MongoInt64_methods[] = {
+<span class="lineNum">     888 </span>                :   PHP_ME(MongoInt64, __construct, NULL, ZEND_ACC_PUBLIC )
+<span class="lineNum">     889 </span>                :   PHP_ME(MongoInt64, __toString, NULL, ZEND_ACC_PUBLIC )
+<span class="lineNum">     890 </span>                :   { NULL, NULL, NULL }
+<a name="891"><span class="lineNum">     891 </span>                : };</a>
+<span class="lineNum">     892 </span>                : 
+<span class="lineNum">     893 </span><span class="lineCov">             48 : void mongo_init_MongoInt64(TSRMLS_D) {</span>
+<span class="lineNum">     894 </span>                :   zend_class_entry ce;
+<span class="lineNum">     895 </span><span class="lineCov">             48 :   INIT_CLASS_ENTRY(ce, &quot;MongoInt64&quot;, MongoInt64_methods);</span>
+<span class="lineNum">     896 </span><span class="lineCov">             48 :   mongo_ce_Int64 = zend_register_internal_class(&amp;ce TSRMLS_CC);</span>
+<span class="lineNum">     897 </span>                : 
+<span class="lineNum">     898 </span><span class="lineCov">             48 :   zend_declare_property_string(mongo_ce_Int64, &quot;value&quot;, strlen(&quot;value&quot;), &quot;&quot;, ZEND_ACC_PUBLIC TSRMLS_CC);</span>
+<span class="lineNum">     899 </span><span class="lineCov">             48 : }</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

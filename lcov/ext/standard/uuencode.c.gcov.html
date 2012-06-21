@@ -1,0 +1,315 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <title>LCOV - PHP Code Coverage - ext/standard/uuencode.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+        <tr>
+          <td width="5%"></td>
+          <td width="10%" class="headerItem">Current view:</td>
+          <td width="35%" class="headerValue"><a href="../../index.html">directory</a> - <a href="index.html">ext/standard</a> - uuencode.c (source / <a href="uuencode.c.func.html">functions</a>)</td>
+          <td width="10%"></td>
+          <td width="10%" class="headerCovTableHead">Found</td>
+          <td width="10%" class="headerCovTableHead">Hit</td>
+          <td width="15%" class="headerCovTableHead">Coverage</td>
+          <td width="5%"></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Test:</td>
+          <td class="headerValue">PHP Code Coverage</td>
+          <td class="headerItem">Lines:</td>
+          <td class="headerCovTableEntry">80</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Date:</td>
+          <td class="headerValue">2012-06-19</td>
+          <td class="headerItem">Functions:</td>
+          <td class="headerCovTableEntry">4</td>
+          <td class="headerCovTableEntry">0</td>
+          <td class="headerCovTableEntryLo">0.0 %</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="headerItem">Colors:</td>
+          <td class="headerValueLeg" colspan=5>
+            <span class="coverLegendNoCov">not hit</span>
+            <span class="coverLegendCov">hit</span>
+          </td>
+        </tr>
+                <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td><pre class="source">
+<a name="1"><span class="lineNum">       1 </span>                : /*</a>
+<span class="lineNum">       2 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       3 </span>                :    | PHP Version 5                                                        |
+<span class="lineNum">       4 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       5 </span>                :    | Copyright (c) 1997-2012 The PHP Group                                |
+<span class="lineNum">       6 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">       7 </span>                :    | This source file is subject to version 3.01 of the PHP license,      |
+<span class="lineNum">       8 </span>                :    | that is bundled with this package in the file LICENSE, and is        |
+<span class="lineNum">       9 </span>                :    | available through the world-wide-web at the following url:           |
+<span class="lineNum">      10 </span>                :    | http://www.php.net/license/3_01.txt                                  |
+<span class="lineNum">      11 </span>                :    | If you did not receive a copy of the PHP license and are unable to   |
+<span class="lineNum">      12 </span>                :    | obtain it through the world-wide-web, please send a note to          |
+<span class="lineNum">      13 </span>                :    | license@php.net so we can mail you a copy immediately.               |
+<span class="lineNum">      14 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      15 </span>                :    | Author: Ilia Alshanetsky &lt;ilia@php.net&gt;                              |
+<span class="lineNum">      16 </span>                :    +----------------------------------------------------------------------+
+<span class="lineNum">      17 </span>                :  */
+<span class="lineNum">      18 </span>                : 
+<span class="lineNum">      19 </span>                : /* $Id$ */
+<span class="lineNum">      20 </span>                : 
+<span class="lineNum">      21 </span>                : /*
+<span class="lineNum">      22 </span>                :  * Portions of this code are based on Berkeley's uuencode/uudecode
+<span class="lineNum">      23 </span>                :  * implementation.
+<span class="lineNum">      24 </span>                :  *
+<span class="lineNum">      25 </span>                :  * Copyright (c) 1983, 1993
+<span class="lineNum">      26 </span>                :  *  The Regents of the University of California.  All rights reserved.
+<span class="lineNum">      27 </span>                :  *
+<span class="lineNum">      28 </span>                :  * Redistribution and use in source and binary forms, with or without
+<span class="lineNum">      29 </span>                :  * modification, are permitted provided that the following conditions
+<span class="lineNum">      30 </span>                :  * are met:
+<span class="lineNum">      31 </span>                :  * 1. Redistributions of source code must retain the above copyright
+<span class="lineNum">      32 </span>                :  *    notice, this list of conditions and the following disclaimer.
+<span class="lineNum">      33 </span>                :  * 2. Redistributions in binary form must reproduce the above copyright
+<span class="lineNum">      34 </span>                :  *    notice, this list of conditions and the following disclaimer in the
+<span class="lineNum">      35 </span>                :  *    documentation and/or other materials provided with the distribution.
+<span class="lineNum">      36 </span>                :  * 3. All advertising materials mentioning features or use of this software
+<span class="lineNum">      37 </span>                :  *    must display the following acknowledgement:
+<span class="lineNum">      38 </span>                :  *  This product includes software developed by the University of
+<span class="lineNum">      39 </span>                :  *  California, Berkeley and its contributors.
+<span class="lineNum">      40 </span>                :  * 4. Neither the name of the University nor the names of its contributors
+<span class="lineNum">      41 </span>                :  *    may be used to endorse or promote products derived from this software
+<span class="lineNum">      42 </span>                :  *    without specific prior written permission.
+<span class="lineNum">      43 </span>                :  *
+<span class="lineNum">      44 </span>                :  * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+<span class="lineNum">      45 </span>                :  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+<span class="lineNum">      46 </span>                :  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+<span class="lineNum">      47 </span>                :  * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+<span class="lineNum">      48 </span>                :  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+<span class="lineNum">      49 </span>                :  * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+<span class="lineNum">      50 </span>                :  * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+<span class="lineNum">      51 </span>                :  * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+<span class="lineNum">      52 </span>                :  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+<span class="lineNum">      53 </span>                :  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+<span class="lineNum">      54 </span>                :  * SUCH DAMAGE.
+<span class="lineNum">      55 </span>                :  */
+<span class="lineNum">      56 </span>                : 
+<span class="lineNum">      57 </span>                : #include &lt;math.h&gt;
+<span class="lineNum">      58 </span>                : 
+<span class="lineNum">      59 </span>                : #include &quot;php.h&quot;
+<span class="lineNum">      60 </span>                : #include &quot;php_uuencode.h&quot;
+<span class="lineNum">      61 </span>                : 
+<span class="lineNum">      62 </span>                : #define PHP_UU_ENC(c) ((c) ? ((c) &amp; 077) + ' ' : '`')
+<span class="lineNum">      63 </span>                : #define PHP_UU_ENC_C2(c) PHP_UU_ENC(((*(c) &lt;&lt; 4) &amp; 060) | ((*((c) + 1) &gt;&gt; 4) &amp; 017))
+<span class="lineNum">      64 </span>                : #define PHP_UU_ENC_C3(c) PHP_UU_ENC(((*(c + 1) &lt;&lt; 2) &amp; 074) | ((*((c) + 2) &gt;&gt; 6) &amp; 03))
+<span class="lineNum">      65 </span>                : 
+<a name="66"><span class="lineNum">      66 </span>                : #define PHP_UU_DEC(c) (((c) - ' ') &amp; 077)</a>
+<span class="lineNum">      67 </span>                : 
+<span class="lineNum">      68 </span><span class="lineNoCov">              0 : PHPAPI int php_uuencode(char *src, int src_len, char **dest) /* {{{ */</span>
+<span class="lineNum">      69 </span>                : {
+<span class="lineNum">      70 </span><span class="lineNoCov">              0 :         int len = 45;</span>
+<span class="lineNum">      71 </span>                :         char *p, *s, *e, *ee;
+<span class="lineNum">      72 </span>                : 
+<span class="lineNum">      73 </span>                :         /* encoded length is ~ 38% greater then the original */
+<span class="lineNum">      74 </span><span class="lineNoCov">              0 :         p = *dest = safe_emalloc((size_t) ceil(src_len * 1.38), 1, 46);</span>
+<span class="lineNum">      75 </span><span class="lineNoCov">              0 :         s = src;</span>
+<span class="lineNum">      76 </span><span class="lineNoCov">              0 :         e = src + src_len;</span>
+<span class="lineNum">      77 </span>                : 
+<span class="lineNum">      78 </span><span class="lineNoCov">              0 :         while ((s + 3) &lt; e) {</span>
+<span class="lineNum">      79 </span><span class="lineNoCov">              0 :                 ee = s + len;</span>
+<span class="lineNum">      80 </span><span class="lineNoCov">              0 :                 if (ee &gt; e) {</span>
+<span class="lineNum">      81 </span><span class="lineNoCov">              0 :                         ee = e;</span>
+<span class="lineNum">      82 </span><span class="lineNoCov">              0 :                         len = ee - s;</span>
+<span class="lineNum">      83 </span><span class="lineNoCov">              0 :                         if (len % 3) {</span>
+<span class="lineNum">      84 </span><span class="lineNoCov">              0 :                                 ee = s + (int) (floor(len / 3) * 3);</span>
+<span class="lineNum">      85 </span>                :                         }
+<span class="lineNum">      86 </span>                :                 }
+<span class="lineNum">      87 </span><span class="lineNoCov">              0 :                 *p++ = PHP_UU_ENC(len);</span>
+<span class="lineNum">      88 </span>                : 
+<span class="lineNum">      89 </span><span class="lineNoCov">              0 :                 while (s &lt; ee) {</span>
+<span class="lineNum">      90 </span><span class="lineNoCov">              0 :                         *p++ = PHP_UU_ENC(*s &gt;&gt; 2);</span>
+<span class="lineNum">      91 </span><span class="lineNoCov">              0 :                         *p++ = PHP_UU_ENC_C2(s);</span>
+<span class="lineNum">      92 </span><span class="lineNoCov">              0 :                         *p++ = PHP_UU_ENC_C3(s);</span>
+<span class="lineNum">      93 </span><span class="lineNoCov">              0 :                         *p++ = PHP_UU_ENC(*(s + 2) &amp; 077);</span>
+<span class="lineNum">      94 </span>                : 
+<span class="lineNum">      95 </span><span class="lineNoCov">              0 :                         s += 3;</span>
+<span class="lineNum">      96 </span>                :                 }
+<span class="lineNum">      97 </span>                : 
+<span class="lineNum">      98 </span><span class="lineNoCov">              0 :                 if (len == 45) {</span>
+<span class="lineNum">      99 </span><span class="lineNoCov">              0 :                         *p++ = '\n';</span>
+<span class="lineNum">     100 </span>                :                 }
+<span class="lineNum">     101 </span>                :         }
+<span class="lineNum">     102 </span>                : 
+<span class="lineNum">     103 </span><span class="lineNoCov">              0 :         if (s &lt; e) {</span>
+<span class="lineNum">     104 </span><span class="lineNoCov">              0 :                 if (len == 45) {</span>
+<span class="lineNum">     105 </span><span class="lineNoCov">              0 :                         *p++ = PHP_UU_ENC(e - s);</span>
+<span class="lineNum">     106 </span><span class="lineNoCov">              0 :                         len = 0;</span>
+<span class="lineNum">     107 </span>                :                 }
+<span class="lineNum">     108 </span>                : 
+<span class="lineNum">     109 </span><span class="lineNoCov">              0 :                 *p++ = PHP_UU_ENC(*s &gt;&gt; 2);</span>
+<span class="lineNum">     110 </span><span class="lineNoCov">              0 :                 *p++ = PHP_UU_ENC_C2(s);</span>
+<span class="lineNum">     111 </span><span class="lineNoCov">              0 :                 *p++ = ((e - s) &gt; 1) ? PHP_UU_ENC_C3(s) : PHP_UU_ENC('\0');</span>
+<span class="lineNum">     112 </span><span class="lineNoCov">              0 :                 *p++ = ((e - s) &gt; 2) ? PHP_UU_ENC(*(s + 2) &amp; 077) : PHP_UU_ENC('\0');</span>
+<span class="lineNum">     113 </span>                :         }
+<span class="lineNum">     114 </span>                : 
+<span class="lineNum">     115 </span><span class="lineNoCov">              0 :         if (len &lt; 45) {</span>
+<span class="lineNum">     116 </span><span class="lineNoCov">              0 :                 *p++ = '\n';</span>
+<span class="lineNum">     117 </span>                :         }
+<span class="lineNum">     118 </span>                : 
+<span class="lineNum">     119 </span><span class="lineNoCov">              0 :         *p++ = PHP_UU_ENC('\0');</span>
+<span class="lineNum">     120 </span><span class="lineNoCov">              0 :         *p++ = '\n';</span>
+<span class="lineNum">     121 </span><span class="lineNoCov">              0 :         *p = '\0';</span>
+<span class="lineNum">     122 </span>                : 
+<span class="lineNum">     123 </span><span class="lineNoCov">              0 :         return (p - *dest);</span>
+<span class="lineNum">     124 </span>                : }
+<a name="125"><span class="lineNum">     125 </span>                : /* }}} */</a>
+<span class="lineNum">     126 </span>                : 
+<span class="lineNum">     127 </span><span class="lineNoCov">              0 : PHPAPI int php_uudecode(char *src, int src_len, char **dest) /* {{{ */</span>
+<span class="lineNum">     128 </span>                : {
+<span class="lineNum">     129 </span><span class="lineNoCov">              0 :         int len, total_len=0;</span>
+<span class="lineNum">     130 </span>                :         char *s, *e, *p, *ee;
+<span class="lineNum">     131 </span>                : 
+<span class="lineNum">     132 </span><span class="lineNoCov">              0 :         p = *dest = safe_emalloc((size_t) ceil(src_len * 0.75), 1, 1);</span>
+<span class="lineNum">     133 </span><span class="lineNoCov">              0 :         s = src;</span>
+<span class="lineNum">     134 </span><span class="lineNoCov">              0 :         e = src + src_len;</span>
+<span class="lineNum">     135 </span>                : 
+<span class="lineNum">     136 </span><span class="lineNoCov">              0 :         while (s &lt; e) {</span>
+<span class="lineNum">     137 </span><span class="lineNoCov">              0 :                 if ((len = PHP_UU_DEC(*s++)) &lt;= 0) {</span>
+<span class="lineNum">     138 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     139 </span>                :                 }
+<span class="lineNum">     140 </span>                :                 /* sanity check */
+<span class="lineNum">     141 </span><span class="lineNoCov">              0 :                 if (len &gt; src_len) {</span>
+<span class="lineNum">     142 </span><span class="lineNoCov">              0 :                         goto err;</span>
+<span class="lineNum">     143 </span>                :                 }
+<span class="lineNum">     144 </span>                : 
+<span class="lineNum">     145 </span><span class="lineNoCov">              0 :                 total_len += len;</span>
+<span class="lineNum">     146 </span>                : 
+<span class="lineNum">     147 </span><span class="lineNoCov">              0 :                 ee = s + (len == 45 ? 60 : (int) floor(len * 1.33));</span>
+<span class="lineNum">     148 </span>                :                 /* sanity check */
+<span class="lineNum">     149 </span><span class="lineNoCov">              0 :                 if (ee &gt; e) {</span>
+<span class="lineNum">     150 </span><span class="lineNoCov">              0 :                         goto err;</span>
+<span class="lineNum">     151 </span>                :                 }
+<span class="lineNum">     152 </span>                : 
+<span class="lineNum">     153 </span><span class="lineNoCov">              0 :                 while (s &lt; ee) {</span>
+<span class="lineNum">     154 </span><span class="lineNoCov">              0 :                         *p++ = PHP_UU_DEC(*s) &lt;&lt; 2 | PHP_UU_DEC(*(s + 1)) &gt;&gt; 4;</span>
+<span class="lineNum">     155 </span><span class="lineNoCov">              0 :                         *p++ = PHP_UU_DEC(*(s + 1)) &lt;&lt; 4 | PHP_UU_DEC(*(s + 2)) &gt;&gt; 2;</span>
+<span class="lineNum">     156 </span><span class="lineNoCov">              0 :                         *p++ = PHP_UU_DEC(*(s + 2)) &lt;&lt; 6 | PHP_UU_DEC(*(s + 3));</span>
+<span class="lineNum">     157 </span><span class="lineNoCov">              0 :                         s += 4;</span>
+<span class="lineNum">     158 </span>                :                 }
+<span class="lineNum">     159 </span>                : 
+<span class="lineNum">     160 </span><span class="lineNoCov">              0 :                 if (len &lt; 45) {</span>
+<span class="lineNum">     161 </span><span class="lineNoCov">              0 :                         break;</span>
+<span class="lineNum">     162 </span>                :                 }
+<span class="lineNum">     163 </span>                : 
+<span class="lineNum">     164 </span>                :                 /* skip \n */
+<span class="lineNum">     165 </span><span class="lineNoCov">              0 :                 s++;</span>
+<span class="lineNum">     166 </span>                :         }
+<span class="lineNum">     167 </span>                : 
+<span class="lineNum">     168 </span><span class="lineNoCov">              0 :         if ((len = total_len &gt; (p - *dest))) {</span>
+<span class="lineNum">     169 </span><span class="lineNoCov">              0 :                 *p++ = PHP_UU_DEC(*s) &lt;&lt; 2 | PHP_UU_DEC(*(s + 1)) &gt;&gt; 4;</span>
+<span class="lineNum">     170 </span><span class="lineNoCov">              0 :                 if (len &gt; 1) {</span>
+<span class="lineNum">     171 </span><span class="lineNoCov">              0 :                         *p++ = PHP_UU_DEC(*(s + 1)) &lt;&lt; 4 | PHP_UU_DEC(*(s + 2)) &gt;&gt; 2;</span>
+<span class="lineNum">     172 </span><span class="lineNoCov">              0 :                         if (len &gt; 2) {</span>
+<span class="lineNum">     173 </span><span class="lineNoCov">              0 :                                 *p++ = PHP_UU_DEC(*(s + 2)) &lt;&lt; 6 | PHP_UU_DEC(*(s + 3));</span>
+<span class="lineNum">     174 </span>                :                         }
+<span class="lineNum">     175 </span>                :                 }
+<span class="lineNum">     176 </span>                :         }
+<span class="lineNum">     177 </span>                : 
+<span class="lineNum">     178 </span><span class="lineNoCov">              0 :         *(*dest + total_len) = '\0';</span>
+<span class="lineNum">     179 </span>                : 
+<span class="lineNum">     180 </span><span class="lineNoCov">              0 :         return total_len;</span>
+<span class="lineNum">     181 </span>                : 
+<span class="lineNum">     182 </span>                : err:
+<span class="lineNum">     183 </span><span class="lineNoCov">              0 :         efree(*dest);</span>
+<span class="lineNum">     184 </span><span class="lineNoCov">              0 :         return -1;</span>
+<span class="lineNum">     185 </span>                : }
+<span class="lineNum">     186 </span>                : /* }}} */
+<span class="lineNum">     187 </span>                : 
+<a name="188"><span class="lineNum">     188 </span>                : /* {{{ proto string convert_uuencode(string data) </a>
+<span class="lineNum">     189 </span>                :    uuencode a string */
+<span class="lineNum">     190 </span><span class="lineNoCov">              0 : PHP_FUNCTION(convert_uuencode)</span>
+<span class="lineNum">     191 </span>                : {
+<span class="lineNum">     192 </span>                :         char *src, *dst;
+<span class="lineNum">     193 </span>                :         int src_len, dst_len;
+<span class="lineNum">     194 </span>                : 
+<span class="lineNum">     195 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;s&quot;, &amp;src, &amp;src_len) == FAILURE || src_len &lt; 1) {</span>
+<span class="lineNum">     196 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     197 </span>                :         }
+<span class="lineNum">     198 </span>                : 
+<span class="lineNum">     199 </span><span class="lineNoCov">              0 :         dst_len = php_uuencode(src, src_len, &amp;dst);</span>
+<span class="lineNum">     200 </span>                : 
+<span class="lineNum">     201 </span><span class="lineNoCov">              0 :         RETURN_STRINGL(dst, dst_len, 0);</span>
+<span class="lineNum">     202 </span>                : }
+<span class="lineNum">     203 </span>                : /* }}} */
+<span class="lineNum">     204 </span>                : 
+<a name="205"><span class="lineNum">     205 </span>                : /* {{{ proto string convert_uudecode(string data)</a>
+<span class="lineNum">     206 </span>                :    decode a uuencoded string */
+<span class="lineNum">     207 </span><span class="lineNoCov">              0 : PHP_FUNCTION(convert_uudecode)</span>
+<span class="lineNum">     208 </span>                : {
+<span class="lineNum">     209 </span>                :         char *src, *dst;
+<span class="lineNum">     210 </span>                :         int src_len, dst_len;
+<span class="lineNum">     211 </span>                : 
+<span class="lineNum">     212 </span><span class="lineNoCov">              0 :         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &quot;s&quot;, &amp;src, &amp;src_len) == FAILURE || src_len &lt; 1) {</span>
+<span class="lineNum">     213 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     214 </span>                :         }
+<span class="lineNum">     215 </span>                : 
+<span class="lineNum">     216 </span><span class="lineNoCov">              0 :         dst_len = php_uudecode(src, src_len, &amp;dst);</span>
+<span class="lineNum">     217 </span><span class="lineNoCov">              0 :         if (dst_len &lt; 0) {</span>
+<span class="lineNum">     218 </span><span class="lineNoCov">              0 :                 php_error_docref(NULL TSRMLS_CC, E_WARNING, &quot;The given parameter is not a valid uuencoded string&quot;);</span>
+<span class="lineNum">     219 </span><span class="lineNoCov">              0 :                 RETURN_FALSE;</span>
+<span class="lineNum">     220 </span>                :         }
+<span class="lineNum">     221 </span>                : 
+<span class="lineNum">     222 </span><span class="lineNoCov">              0 :         RETURN_STRINGL(dst, dst_len, 0);</span>
+<span class="lineNum">     223 </span>                : }
+<span class="lineNum">     224 </span>                : /* }}} */
+<span class="lineNum">     225 </span>                : 
+<span class="lineNum">     226 </span>                : /*
+<span class="lineNum">     227 </span>                :  * Local variables:
+<span class="lineNum">     228 </span>                :  * tab-width: 4
+<span class="lineNum">     229 </span>                :  * c-basic-offset: 4
+<span class="lineNum">     230 </span>                :  * End:
+<span class="lineNum">     231 </span>                :  * vim600: noet sw=4 ts=4 fdm=marker
+<span class="lineNum">     232 </span>                :  * vim&lt;600: noet sw=4 ts=4
+<span class="lineNum">     233 </span>                :  */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+  <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.7</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>
