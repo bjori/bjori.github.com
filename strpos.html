@@ -1,0 +1,189 @@
+<style>
+body {
+    font-family: "Source Sans Pro", Helvetica, Arial, sans-serif;
+    padding: 20px;
+    margin: 20px;
+    border: 1px solid #ddd;
+    box-shadow: -2px 2px 6px #bbb;
+
+    background-color: #eeeef6;
+    color: #444;
+}
+h2 ~ * {
+    margin: 0px 0 0 40px;
+}
+h1 ~ * {
+    background: #fff;
+    margin: 0px 30px;
+    padding: 10px;
+    box-shadow: -2px 2px 6px #bbb;
+}
+h1,h2 {
+    background-color: #99c;
+    font-weight: normal;
+    font-variant: small-caps;
+    box-shadow: -2px 2px 6px #bbb;
+    border-bottom: 0.2em solid #669;
+
+    padding: .75em;
+    margin: 30px 0 0 0;
+}
+h1 {
+    font-size: 1.2em;
+}
+h2 {
+    font-size: 1em;
+    margin: 0px 30px 0 30px;
+}
+h2 ~ h2 {
+    margin-top: 10px;
+}
+div.wtfm-div-warning {
+    padding: 1.5em;
+    border: 1px solid #D8BBBB;
+    box-shadow: -2px 2px 6px #bbb;
+    background: #FFE8E8;
+    color: #b94a48;
+}
+div.wtfm-div-note {
+    background-color: #eef;
+    border: 1px solid #e5e6e9;
+    border-color: #bce8f1;
+}
+
+code.wtfm-code {
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    background-color: #eeeef6;
+    font-weight: bold;
+    color: #447;
+    font: 400 .875em / 1.5 "Source Code Pro", monospace;
+}
+blockquote.wtfm-blockquote-code {
+    border: 1px solid #ccc;
+    box-shadow: -2px 2px 6px #bbb;
+    border-radius: 3px;
+    line-height: 1.5;
+}
+ul {
+    list-style-type: none;
+    box-shadow: -2px 2px 6px #bbb;
+    margin-bottom: 0px;
+    padding-bottom: 0px;
+    padding-top: 0px;
+}
+li > p{
+    padding-left: 60px;
+}
+li {
+    margin: -0px -10px;
+    padding: 10px;
+    box-shadow: 0px 0px 6px #bbb;
+}
+
+a:link, a:visited {
+    color: rgb(63, 67, 141);
+    border-bottom: 1px solid rgb(63, 67, 141);
+    border-bottom: 1px solid rgba(63, 67, 141, 0.5);
+}
+
+
+
+.methodsynopsis .type, .docs .constructorsynopsis .type {
+color: #092;
+border-color: #092;
+}
+.parameter {
+color: #447;
+font-style: italic;
+}
+.initializer, .initializer code {
+font-style: italic !important;
+color: #b14;
+}
+.methodname strong, .methodname a, .classsynopsis .classname {
+color: #458;
+border-color: #458;
+}
+
+</style>
+
+<h1>Synopsis</h1>
+
+<p class='wtfm wtfm-p'>Find the position of the first occurrence of a substring in a string</p>
+<h1>Description</h1>
+
+<div class="methodsynopsis dc-description">
+   <span class="type">int</span> <span class="methodname"><strong>strpos</strong></span>
+    ( <span class="methodparam"><span class="type">string</span> <code class="parameter">$haystack</code></span>
+   , <span class="methodparam"><span class="type">mixed</span> <code class="parameter">$needle</code></span>
+   [, <span class="methodparam"><span class="type">int</span> <code class="parameter">$offset</code><span class="initializer"> = 0</span></span>
+  ] )</div>
+
+<p class='wtfm wtfm-p'>Find the numeric position of the first occurrence of <code class='wtfm wtfm-code'>$needle</code> in the <code class='wtfm wtfm-code'>$haystack</code> string. </p>
+<h1>Parameters</h1>
+
+<ul class='wtfm wtfm-ul'>
+<li class='wtfm wtfm-li'> <code class='wtfm wtfm-code'>$haystack</code>
+<p class='wtfm wtfm-p'>The string to search in. </p>
+</li>
+<li class='wtfm wtfm-li'> <code class='wtfm wtfm-code'>$needle</code>
+<p class='wtfm wtfm-p'>If <code class='wtfm wtfm-code'>$needle</code> is not a string, it is converted to an integer and applied as the ordinal value of a character. </p>
+</li>
+<li class='wtfm wtfm-li'> <code class='wtfm wtfm-code'>$offset</code>
+<p class='wtfm wtfm-p'>If specified, search will start this number of characters counted from the beginning of the string. Unlike <a href='strrpos' class='wtfm wtfm-a'>strrpos</a> and <a href='strripos' class='wtfm wtfm-a'>strripos</a>, the offset cannot be negative. </p>
+</li>
+</ul>
+<h1>Returnvalues</h1>
+
+<p class='wtfm wtfm-p'>Returns the position of where the needle exists relative to the beginning of the <code class='wtfm wtfm-code'>$haystack</code> string (independent of offset). Also note that string positions start at 0, and not 1. </p>
+<p class='wtfm wtfm-p'>Returns <a href='FALSE' class='wtfm wtfm-a'>FALSE</a> if the needle was not found. </p>
+<div class='wtfm wtfm-div wtfm-div-warning'><p class='wtfm wtfm-p'>This function may return Boolean <a href='FALSE' class='wtfm wtfm-a'>FALSE</a>, but may also return a non-Boolean value which evaluates to <a href='FALSE' class='wtfm wtfm-a'>FALSE</a>. Please read the section on FIXME: NEED TO RESOLVE REAL LINK: BooleansFIXME: NEED TO RESOLVE REAL LINK: 1 for more information. Use FIXME: NEED TO RESOLVE REAL LINK: the === operatorFIXME: NEED TO RESOLVE REAL LINK: 2 for testing the return value of this function.</p>
+</div>
+<h1>Examples</h1>
+
+<h2>Using <em class='wtfm wtfm-em'>===</em></h2>
+
+<blockquote class='wtfm wtfm-blockquote-code wtfm-code-php
+'><code><span style="color: #000000">
+php<br /><span style="color: #0000BB">&lt;?php<br />$mystring&nbsp;</span><span style="color: #007700">=&nbsp;</span><span style="color: #DD0000">'abc'</span><span style="color: #007700">;<br /></span><span style="color: #0000BB">$findme&nbsp;&nbsp;&nbsp;</span><span style="color: #007700">=&nbsp;</span><span style="color: #DD0000">'a'</span><span style="color: #007700">;<br /></span><span style="color: #0000BB">$pos&nbsp;</span><span style="color: #007700">=&nbsp;</span><span style="color: #0000BB">strpos</span><span style="color: #007700">(</span><span style="color: #0000BB">$mystring</span><span style="color: #007700">,&nbsp;</span><span style="color: #0000BB">$findme</span><span style="color: #007700">);<br /></span><span style="color: #FF8000">//&nbsp;Note&nbsp;our&nbsp;use&nbsp;of&nbsp;===.&nbsp;&nbsp;Simply&nbsp;==&nbsp;would&nbsp;not&nbsp;work&nbsp;as&nbsp;expected<br />//&nbsp;because&nbsp;the&nbsp;position&nbsp;of&nbsp;'a'&nbsp;was&nbsp;the&nbsp;0th&nbsp;(first)&nbsp;character.<br /></span><span style="color: #007700">if&nbsp;(</span><span style="color: #0000BB">$pos&nbsp;</span><span style="color: #007700">===&nbsp;</span><span style="color: #0000BB">false</span><span style="color: #007700">)&nbsp;{<br />&nbsp;&nbsp;&nbsp;&nbsp;echo&nbsp;</span><span style="color: #DD0000">"The&nbsp;string&nbsp;'</span><span style="color: #0000BB">$findme</span><span style="color: #DD0000">'&nbsp;was&nbsp;not&nbsp;found&nbsp;in&nbsp;the&nbsp;string&nbsp;'</span><span style="color: #0000BB">$mystring</span><span style="color: #DD0000">'"</span><span style="color: #007700">;<br />}&nbsp;else&nbsp;{<br />&nbsp;&nbsp;&nbsp;&nbsp;echo&nbsp;</span><span style="color: #DD0000">"The&nbsp;string&nbsp;'</span><span style="color: #0000BB">$findme</span><span style="color: #DD0000">'&nbsp;was&nbsp;found&nbsp;in&nbsp;the&nbsp;string&nbsp;'</span><span style="color: #0000BB">$mystring</span><span style="color: #DD0000">'"</span><span style="color: #007700">;<br />&nbsp;&nbsp;&nbsp;&nbsp;echo&nbsp;</span><span style="color: #DD0000">"&nbsp;and&nbsp;exists&nbsp;at&nbsp;position&nbsp;</span><span style="color: #0000BB">$pos</span><span style="color: #DD0000">"</span><span style="color: #007700">;<br />}<br /></span><span style="color: #0000BB">?&gt;<br /></span>
+</span>
+</code></blockquote>
+<h2>Using !==</h2>
+
+<blockquote class='wtfm wtfm-blockquote-code wtfm-code-php
+'><code><span style="color: #000000">
+php<br /><span style="color: #0000BB">&lt;?php<br />$mystring&nbsp;</span><span style="color: #007700">=&nbsp;</span><span style="color: #DD0000">'abc'</span><span style="color: #007700">;<br /></span><span style="color: #0000BB">$findme&nbsp;&nbsp;&nbsp;</span><span style="color: #007700">=&nbsp;</span><span style="color: #DD0000">'a'</span><span style="color: #007700">;<br /></span><span style="color: #0000BB">$pos&nbsp;</span><span style="color: #007700">=&nbsp;</span><span style="color: #0000BB">strpos</span><span style="color: #007700">(</span><span style="color: #0000BB">$mystring</span><span style="color: #007700">,&nbsp;</span><span style="color: #0000BB">$findme</span><span style="color: #007700">);<br /></span><span style="color: #FF8000">//&nbsp;The&nbsp;!==&nbsp;operator&nbsp;can&nbsp;also&nbsp;be&nbsp;used.&nbsp;&nbsp;Using&nbsp;!=&nbsp;would&nbsp;not&nbsp;work&nbsp;as&nbsp;expected<br />//&nbsp;because&nbsp;the&nbsp;position&nbsp;of&nbsp;'a'&nbsp;is&nbsp;0.&nbsp;The&nbsp;statement&nbsp;(0&nbsp;!=&nbsp;false)&nbsp;evaluates&nbsp;<br />//&nbsp;to&nbsp;false.<br /></span><span style="color: #007700">if&nbsp;(</span><span style="color: #0000BB">$pos&nbsp;</span><span style="color: #007700">!==&nbsp;</span><span style="color: #0000BB">false</span><span style="color: #007700">)&nbsp;{<br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;echo&nbsp;</span><span style="color: #DD0000">"The&nbsp;string&nbsp;'</span><span style="color: #0000BB">$findme</span><span style="color: #DD0000">'&nbsp;was&nbsp;found&nbsp;in&nbsp;the&nbsp;string&nbsp;'</span><span style="color: #0000BB">$mystring</span><span style="color: #DD0000">'"</span><span style="color: #007700">;<br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;echo&nbsp;</span><span style="color: #DD0000">"&nbsp;and&nbsp;exists&nbsp;at&nbsp;position&nbsp;</span><span style="color: #0000BB">$pos</span><span style="color: #DD0000">"</span><span style="color: #007700">;<br />}&nbsp;else&nbsp;{<br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;echo&nbsp;</span><span style="color: #DD0000">"The&nbsp;string&nbsp;'</span><span style="color: #0000BB">$findme</span><span style="color: #DD0000">'&nbsp;was&nbsp;not&nbsp;found&nbsp;in&nbsp;the&nbsp;string&nbsp;'</span><span style="color: #0000BB">$mystring</span><span style="color: #DD0000">'"</span><span style="color: #007700">;<br />}<br /></span><span style="color: #0000BB">?&gt;<br /></span>
+</span>
+</code></blockquote>
+<h2>Using An Offset</h2>
+
+<blockquote class='wtfm wtfm-blockquote-code wtfm-code-php
+'><code><span style="color: #000000">
+php<br /><span style="color: #0000BB">&lt;?php<br /></span><span style="color: #FF8000">//&nbsp;We&nbsp;can&nbsp;search&nbsp;for&nbsp;the&nbsp;character,&nbsp;ignoring&nbsp;anything&nbsp;before&nbsp;the&nbsp;offset<br /></span><span style="color: #0000BB">$newstring&nbsp;</span><span style="color: #007700">=&nbsp;</span><span style="color: #DD0000">'abcdef&nbsp;abcdef'</span><span style="color: #007700">;<br /></span><span style="color: #0000BB">$pos&nbsp;</span><span style="color: #007700">=&nbsp;</span><span style="color: #0000BB">strpos</span><span style="color: #007700">(</span><span style="color: #0000BB">$newstring</span><span style="color: #007700">,&nbsp;</span><span style="color: #DD0000">'a'</span><span style="color: #007700">,&nbsp;</span><span style="color: #0000BB">1</span><span style="color: #007700">);&nbsp;</span><span style="color: #FF8000">//&nbsp;$pos&nbsp;=&nbsp;7,&nbsp;not&nbsp;0<br /></span><span style="color: #0000BB">?&gt;<br /></span>
+</span>
+</code></blockquote>
+<h1>Notes</h1>
+
+<div class='wtfm wtfm-div wtfm-div-note'><p class='wtfm wtfm-p'>This function is binary-safe.</p>
+</div>
+<h1>Seealso</h1>
+
+<ul class='wtfm wtfm-ul'>
+<li class='wtfm wtfm-li'> <a href='stripos' class='wtfm wtfm-a'>stripos</a>
+</li>
+<li class='wtfm wtfm-li'> <a href='strrpos' class='wtfm wtfm-a'>strrpos</a>
+</li>
+<li class='wtfm wtfm-li'> <a href='strripos' class='wtfm wtfm-a'>strripos</a>
+</li>
+<li class='wtfm wtfm-li'> <a href='strstr' class='wtfm wtfm-a'>strstr</a>
+</li>
+<li class='wtfm wtfm-li'> <a href='strpbrk' class='wtfm wtfm-a'>strpbrk</a>
+</li>
+<li class='wtfm wtfm-li'> <a href='substr' class='wtfm wtfm-a'>substr</a>
+</li>
+<li class='wtfm wtfm-li'> <a href='preg_match' class='wtfm wtfm-a'>preg_match</a>
+</li>
+</ul>
+
