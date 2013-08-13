@@ -40,7 +40,7 @@ This function may return Boolean [CONSTANT:FALSE], but may also return a non-Boo
 
 ## Using _===_
 
-``php
+```php
 <?php
 $mystring = 'abc';
 $findme   = 'a';
@@ -55,10 +55,11 @@ if ($pos === false) {
     echo " and exists at position $pos";
 }
 ?>
-``
+```
+
 ## Using !==
 
-``php
+```php
 <?php
 $mystring = 'abc';
 $findme   = 'a';
@@ -74,17 +75,17 @@ if ($pos !== false) {
      echo "The string '$findme' was not found in the string '$mystring'";
 }
 ?>
-``
+```
 ## Using an offset
 
-``php
+```php
+
 <?php
 // We can search for the character, ignoring anything before the offset
 $newstring = 'abcdef abcdef';
 $pos = strpos($newstring, 'a', 1); // $pos = 7, not 0
 ?>
-``
-
+```
 
 
 # NOTES
